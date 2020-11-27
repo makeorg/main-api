@@ -28,7 +28,7 @@ import org.make.api.proposal.SelectionAlgorithmName
 import org.make.api.sequence.DefaultPersistentSequenceConfigurationServiceComponent.PersistentSequenceConfiguration
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
-import org.make.core.{DateHelper, StringValue}
+import org.make.core.DateHelper
 import org.make.core.question.QuestionId
 import org.make.core.sequence.SequenceId
 import scalikejdbc._
@@ -61,7 +61,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
     private val alias = PersistentSequenceConfiguration.alias
     private val column = PersistentSequenceConfiguration.column
 
-    private def findOne(name: SQLSyntax, value: StringValue) = {
+    private def findOne[A: ParameterBinderFactory](name: SQLSyntax, value: A) = {
       implicit val context: EC = readExecutionContext
       val futurePersistentTag = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {

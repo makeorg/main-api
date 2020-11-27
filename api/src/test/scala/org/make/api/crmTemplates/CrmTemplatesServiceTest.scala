@@ -21,8 +21,16 @@ package org.make.api.crmTemplates
 
 import org.make.api.MakeUnitTest
 import org.make.api.technical.IdGeneratorComponent
-import org.make.core.crmTemplate.{CrmTemplates, CrmTemplatesId, TemplateId}
+import org.make.core.crmTemplate.{
+  CrmLanguageTemplate,
+  CrmLanguageTemplateId,
+  CrmTemplateKind,
+  CrmTemplates,
+  CrmTemplatesId,
+  TemplateId
+}
 import org.make.core.question.QuestionId
+import org.make.core.reference.Language
 import org.make.core.technical.IdGenerator
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -33,9 +41,12 @@ import org.make.core.technical.Pagination.Start
 class CrmTemplatesServiceTest
     extends MakeUnitTest
     with DefaultCrmTemplatesServiceComponent
+    with PersistentCrmLanguageTemplateServiceComponent
     with PersistentCrmTemplatesServiceComponent
     with IdGeneratorComponent {
 
+  override val persistentCrmLanguageTemplateService: PersistentCrmLanguageTemplateService =
+    mock[PersistentCrmLanguageTemplateService]
   override val persistentCrmTemplatesService: PersistentCrmTemplatesService = mock[PersistentCrmTemplatesService]
   override val idGenerator: IdGenerator = mock[IdGenerator]
 
@@ -232,4 +243,108 @@ class CrmTemplatesServiceTest
       verify(persistentCrmTemplatesService).count(None, None)
     }
   }
+
+  Feature("language templates") {
+
+    val frenchTemplates = CrmTemplateKind.values.zipWithIndex.map {
+      case (kind, i) =>
+        CrmLanguageTemplate(CrmLanguageTemplateId(i.toString), kind, Language("FR"), TemplateId(i.toString))
+    }
+
+    Scenario("list languages") {
+      when(persistentCrmLanguageTemplateService.all())
+        .thenReturn(
+          Future.successful(
+            frenchTemplates :+ CrmLanguageTemplate(
+              CrmLanguageTemplateId("belgian"),
+              CrmTemplateKind.Welcome,
+              Language("BE"),
+              TemplateId("1")
+            )
+          )
+        )
+      whenReady(crmTemplatesService.listByLanguage()) {
+        _.keys shouldBe Set(Language("FR"))
+      }
+    }
+
+    Scenario("get templates for a configured language") {
+      when(persistentCrmLanguageTemplateService.list(Language("FR"))).thenReturn(Future.successful(frenchTemplates))
+      whenReady(crmTemplatesService.get(Language("FR"))) { result =>
+        result shouldBe defined
+        val mapping = result.get
+        CrmTemplateKind.values.zipWithIndex.foreach {
+          case (kind, i) => mapping(kind).template.value shouldBe i.toString
+        }
+      }
+    }
+
+    Scenario("get templates for a non-configured language") {
+      when(persistentCrmLanguageTemplateService.list(Language("BE"))).thenReturn(Future.successful(Nil))
+      whenReady(crmTemplatesService.get(Language("BE"))) {
+        _ shouldBe None
+      }
+    }
+
+    Scenario("get templates for a misconfigured language") {
+      when(persistentCrmLanguageTemplateService.list(Language("ES"))).thenReturn(
+        Future.successful(
+          Seq(
+            CrmLanguageTemplate(
+              CrmLanguageTemplateId("foo"),
+              CrmTemplateKind.Welcome,
+              Language("ES"),
+              TemplateId("bar")
+            )
+          )
+        )
+      )
+      whenReady(crmTemplatesService.get(Language("ES")).failed) {
+        _.getMessage shouldBe s"Missing CRM language templates for ES: ${(CrmTemplateKind.values.toSet - CrmTemplateKind.Welcome)
+          .mkString(", ")}"
+      }
+    }
+
+    Scenario("create") {
+      when(persistentCrmLanguageTemplateService.persist(any[Seq[CrmLanguageTemplate]]))
+        .thenAnswer[Seq[CrmLanguageTemplate]](Future.successful)
+      whenReady(
+        crmTemplatesService.create(Language("EN"), kind => TemplateId(CrmTemplateKind.values.indexOf(kind).toString))
+      ) { result =>
+        CrmTemplateKind.values.zipWithIndex.foreach {
+          case (kind, i) =>
+            val template = result(kind)
+            template.language shouldBe Language("EN")
+            template.template.value shouldBe i.toString
+        }
+      }
+    }
+
+    Scenario("update") {
+      val templates = CrmTemplateKind.values.zipWithIndex.map {
+        case (kind, i) =>
+          CrmLanguageTemplate(
+            CrmLanguageTemplateId(s"english-${kind.entryName}"),
+            kind,
+            Language("EN"),
+            TemplateId(i.toString)
+          )
+      }
+      when(persistentCrmLanguageTemplateService.list(Language("EN"))).thenReturn(Future.successful(templates))
+      when(persistentCrmLanguageTemplateService.modify(any[Seq[CrmLanguageTemplate]]))
+        .thenAnswer[Seq[CrmLanguageTemplate]](Future.successful)
+      whenReady(
+        crmTemplatesService.update(Language("EN"), kind => TemplateId(s"new-${CrmTemplateKind.values.indexOf(kind)}"))
+      ) { result =>
+        CrmTemplateKind.values.zipWithIndex.foreach {
+          case (kind, i) =>
+            val template = result(kind)
+            template.language shouldBe Language("EN")
+            template.template.value shouldBe s"new-$i"
+        }
+      }
+    }
+
+  }
+
 }

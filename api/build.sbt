@@ -61,6 +61,7 @@ libraryDependencies ++= Seq(
   Dependencies.scalaOAuth,
   Dependencies.scalaBcrypt,
   Dependencies.scalike,
+  Dependencies.scalikeMacros,
   Dependencies.swiftClient,
   Dependencies.postgresql,
   Dependencies.flywaydb,

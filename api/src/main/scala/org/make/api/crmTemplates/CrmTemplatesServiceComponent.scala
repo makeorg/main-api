@@ -24,13 +24,23 @@ import cats.instances.option._
 import cats.syntax.traverse._
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical._
-import org.make.core.crmTemplate.{CrmTemplates, CrmTemplatesId, TemplateId}
+import org.make.core.crmTemplate.{
+  CrmLanguageTemplate,
+  CrmLanguageTemplateId,
+  CrmTemplateKind,
+  CrmTemplates,
+  CrmTemplatesId,
+  TemplateId
+}
 import org.make.core.question.QuestionId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import org.make.core.Validation._
+import org.make.core.reference.Language
 import org.make.core.technical.Pagination._
+
+import scala.util.{Failure, Success, Try}
 
 trait CrmTemplatesServiceComponent {
   def crmTemplatesService: CrmTemplatesService
@@ -49,10 +59,17 @@ trait CrmTemplatesService extends ShortenedNames {
   def count(questionId: Option[QuestionId], locale: Option[String]): Future[Int]
   def getDefaultTemplate(locale: Option[String]): Future[Option[CrmTemplates]]
   def findOne(questionId: Option[QuestionId], locale: String): Future[Option[CrmTemplates]]
+
+  def listByLanguage(): Future[Map[Language, CrmTemplateKind => CrmLanguageTemplate]]
+  def get(language: Language): Future[Option[CrmTemplateKind => CrmLanguageTemplate]]
+  def create(language: Language, values: CrmTemplateKind => TemplateId): Future[CrmTemplateKind => CrmLanguageTemplate]
+  def update(language: Language, values: CrmTemplateKind => TemplateId): Future[CrmTemplateKind => CrmLanguageTemplate]
 }
 
 trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
-  this: PersistentCrmTemplatesServiceComponent with IdGeneratorComponent =>
+  this: PersistentCrmLanguageTemplateServiceComponent
+    with PersistentCrmTemplatesServiceComponent
+    with IdGeneratorComponent =>
 
   override lazy val crmTemplatesService: CrmTemplatesService = new DefaultCrmTemplatesService
 
@@ -150,6 +167,81 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
     override def getDefaultTemplate(locale: Option[String]): Future[Option[CrmTemplates]] = {
       locale.fold(Future.successful[Option[CrmTemplates]](None))(persistentCrmTemplatesService.getDefaultTemplate)
     }
+
+    // Language templates
+
+    override def listByLanguage(): Future[Map[Language, CrmTemplateKind => CrmLanguageTemplate]] = {
+      persistentCrmLanguageTemplateService
+        .all()
+        .map(
+          all =>
+            all
+              .groupBy(_.language)
+              .map {
+                case (language, templates) =>
+                  val validated = validate(language, templates)
+                  validated.failed.foreach(logger.error("Listing an invalid language in CRM language templates", _))
+                  language -> validated
+              }
+              .collect { case (language, Success(templates)) => language -> templates }
+        )
+    }
+
+    override def get(language: Language): Future[Option[CrmTemplateKind => CrmLanguageTemplate]] = {
+      persistentCrmLanguageTemplateService.list(language).flatMap { raw =>
+        if (raw.isEmpty) {
+          Future.successful(None)
+        } else {
+          Future.fromTry(validate(language, raw)).map(Some.apply)
+        }
+      }
+    }
+
+    override def create(
+      language: Language,
+      values: CrmTemplateKind => TemplateId
+    ): Future[CrmTemplateKind => CrmLanguageTemplate] = {
+      val templates = CrmTemplateKind.values.map(
+        kind => CrmLanguageTemplate(CrmLanguageTemplateId(idGenerator.nextId()), kind, language, values(kind))
+      )
+      persistentCrmLanguageTemplateService
+        .persist(templates)
+        .flatMap(result => Future.fromTry(validate(language, result)))
+    }
+
+    override def update(
+      language: Language,
+      values: CrmTemplateKind => TemplateId
+    ): Future[CrmTemplateKind => CrmLanguageTemplate] = {
+      persistentCrmLanguageTemplateService
+        .list(language)
+        .flatMap(
+          current =>
+            validate(language, current) match {
+              case Success(_) =>
+                persistentCrmLanguageTemplateService
+                  .modify(current.map(template => template.copy(template = values(template.kind))))
+                  .flatMap(result => Future.fromTry(validate(language, result)))
+              case Failure(e) => Future.failed(e)
+            }
+        )
+    }
+
+    private def validate(
+      language: Language,
+      templates: Seq[CrmLanguageTemplate]
+    ): Try[CrmTemplateKind => CrmLanguageTemplate] = {
+      val indexed = templates.groupMapReduce(_.kind)(identity)((template, _) => template)
+      val missing = CrmTemplateKind.values.toSet -- indexed.keys
+      if (missing.isEmpty) {
+        Success(indexed.apply)
+      } else {
+        Failure(
+          new IllegalStateException(s"Missing CRM language templates for ${language.value}: ${missing.mkString(", ")}")
+        )
+      }
+    }
+
   }
 }
 
