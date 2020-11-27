@@ -23,7 +23,7 @@ import java.time.ZonedDateTime
 
 import cats.data.NonEmptyList
 import eu.timepit.refined.auto._
-import org.make.api.DatabaseTest
+import org.make.api.{DatabaseTest, TestUtilsIT}
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
@@ -54,43 +54,6 @@ class PersistentOperationOfQuestionServiceIT
   def questionId: QuestionId = idGenerator.nextQuestionId()
   def operationId: OperationId = idGenerator.nextOperationId()
 
-  def generateOperationOfQuestion: OperationOfQuestion = OperationOfQuestion(
-    operationId = operationId,
-    questionId = questionId,
-    startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
-    endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
-    operationTitle = "title",
-    landingSequenceId = sequenceIdFR,
-    canPropose = true,
-    sequenceCardsConfiguration = SequenceCardsConfiguration(
-      introCard = IntroCard(enabled = true, title = None, description = None),
-      pushProposalCard = PushProposalCard(enabled = true),
-      signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-      finalCard = FinalCard(
-        enabled = true,
-        sharingEnabled = false,
-        title = None,
-        shareDescription = None,
-        learnMoreTitle = None,
-        learnMoreTextButton = None,
-        linkUrl = None
-      )
-    ),
-    aboutUrl = None,
-    metas = Metas(title = None, description = None, picture = None),
-    theme = QuestionTheme.default,
-    description = OperationOfQuestion.defaultDescription,
-    consultationImage = Some("https://example.com/image"),
-    consultationImageAlt = Some("alt for image"),
-    descriptionImage = Some("https://example.com/descriptionImage"),
-    descriptionImageAlt = Some("alt for descriptionImage"),
-    resultsLink = Some(ResultsLink.Internal.Results),
-    proposalsCount = 42,
-    participantsCount = 84,
-    actions = None,
-    featured = true
-  )
-
   def createOperationOfQuestion(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {
     val question = Question(
       questionId = operationOfQuestion.questionId,
@@ -119,7 +82,7 @@ class PersistentOperationOfQuestionServiceIT
 
   Feature("An operationOfQuestion can be persisted") {
     Scenario("Persist an operationOfQuestion and retrieve it") {
-      val baseOperationOfQuestion = generateOperationOfQuestion
+      val baseOperationOfQuestion = TestUtilsIT.operationOfQuestion(questionId, operationId)
 
       val futureOperationOfQuestion: Future[Option[OperationOfQuestion]] = for {
         _      <- createOperationOfQuestion(baseOperationOfQuestion)
@@ -142,13 +105,23 @@ class PersistentOperationOfQuestionServiceIT
 
   Feature("search operation of question") {
     Scenario("no filter") {
-      val operationOfQuestion1 = generateOperationOfQuestion
-      val operationOfQuestion2 = generateOperationOfQuestion
+      val operationOfQuestion1 = TestUtilsIT.operationOfQuestion(questionId, operationId)
+      val operationOfQuestion2 = TestUtilsIT.operationOfQuestion(questionId, operationId)
 
       val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
-        _      <- createOperationOfQuestion(operationOfQuestion1)
-        _      <- createOperationOfQuestion(operationOfQuestion2)
-        result <- persistentOperationOfQuestionService.search(Start.zero, None, None, None, None, None, None, None)
+        _ <- createOperationOfQuestion(operationOfQuestion1)
+        _ <- createOperationOfQuestion(operationOfQuestion2)
+        result <- persistentOperationOfQuestionService.search(
+          start = Start.zero,
+          end = None,
+          sort = None,
+          order = None,
+          questionIds = None,
+          operationIds = None,
+          operationKind = None,
+          openAt = None,
+          endAfter = None
+        )
       } yield result
 
       whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { operationOfQuestion =>
@@ -157,19 +130,20 @@ class PersistentOperationOfQuestionServiceIT
     }
 
     Scenario("questionIds filter") {
-      val operationOfQuestion3 = generateOperationOfQuestion.copy(questionId = QuestionId("toBeFiltered"))
+      val operationOfQuestion3 = TestUtilsIT.operationOfQuestion(QuestionId("toBeFiltered"), operationId)
 
       val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
         _ <- createOperationOfQuestion(operationOfQuestion3)
         result <- persistentOperationOfQuestionService.search(
-          Start.zero,
-          None,
-          None,
-          None,
-          Some(Seq(QuestionId("toBeFiltered"))),
-          None,
-          None,
-          None
+          start = Start.zero,
+          end = None,
+          sort = None,
+          order = None,
+          questionIds = Some(Seq(QuestionId("toBeFiltered"))),
+          operationIds = None,
+          operationKind = None,
+          openAt = None,
+          endAfter = None
         )
       } yield result
 
@@ -182,13 +156,15 @@ class PersistentOperationOfQuestionServiceIT
       val now = ZonedDateTime.now
       val yesterday = now.minusDays(1)
       val tomorrow = now.plusDays(1)
-      val openOOQ = generateOperationOfQuestion.copy(
+      val openOOQ = TestUtilsIT.operationOfQuestion(
         questionId = QuestionId("openAtTestCase1"),
+        operationId = operationId,
         startDate = yesterday,
         endDate = tomorrow
       )
-      val closedOOQ = generateOperationOfQuestion.copy(
+      val closedOOQ = TestUtilsIT.operationOfQuestion(
         questionId = QuestionId("openAtTestCase2"),
+        operationId = operationId,
         startDate = yesterday.minusDays(1),
         endDate = yesterday
       )
@@ -197,14 +173,15 @@ class PersistentOperationOfQuestionServiceIT
         _ <- createOperationOfQuestion(openOOQ)
         _ <- createOperationOfQuestion(closedOOQ)
         result <- persistentOperationOfQuestionService.search(
-          Start.zero,
-          None,
-          None,
-          None,
-          Some(Seq(QuestionId("openAtTestCase1"), QuestionId("openAtTestCase2"))),
-          None,
-          None,
-          Some(now)
+          start = Start.zero,
+          end = None,
+          sort = None,
+          order = None,
+          questionIds = Some(Seq(QuestionId("openAtTestCase1"), QuestionId("openAtTestCase2"))),
+          operationIds = None,
+          operationKind = None,
+          openAt = Some(now),
+          endAfter = None
         )
       } yield result
 
@@ -212,11 +189,58 @@ class PersistentOperationOfQuestionServiceIT
         operationOfQuestion.size shouldBe 1
       }
     }
+
+    Scenario("endAfter filter") {
+      val now = ZonedDateTime.now
+      val yesterday = now.minusDays(1)
+      val tomorrow = now.plusDays(1)
+      val openOOQ = TestUtilsIT.operationOfQuestion(
+        questionId = QuestionId("endAfterTestCase1"),
+        operationId = operationId,
+        startDate = yesterday,
+        endDate = tomorrow
+      )
+      val closedOOQ = TestUtilsIT.operationOfQuestion(
+        questionId = QuestionId("endAfterTestCase2"),
+        operationId = operationId,
+        startDate = yesterday.minusDays(1),
+        endDate = yesterday
+      )
+      val upcomingOOQ = TestUtilsIT.operationOfQuestion(
+        questionId = QuestionId("endAfterTestCase3"),
+        operationId = operationId,
+        startDate = tomorrow,
+        endDate = tomorrow.plusDays(1)
+      )
+
+      val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
+        _ <- createOperationOfQuestion(openOOQ)
+        _ <- createOperationOfQuestion(closedOOQ)
+        _ <- createOperationOfQuestion(upcomingOOQ)
+        result <- persistentOperationOfQuestionService.search(
+          start = Start.zero,
+          end = None,
+          sort = None,
+          order = None,
+          questionIds = Some(
+            Seq(QuestionId("endAfterTestCase1"), QuestionId("endAfterTestCase2"), QuestionId("endAfterTestCase3"))
+          ),
+          operationIds = None,
+          operationKind = None,
+          openAt = None,
+          endAfter = Some(now)
+        )
+      } yield result
+
+      whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { operationOfQuestion =>
+        operationOfQuestion.size shouldBe 2
+      }
+    }
   }
 
   Feature("Find an operationOfQuestion by operation") {
     Scenario("Persist an operationOfQuestion and find it by its operationId") {
-      val baseOperationOfQuestion = generateOperationOfQuestion
+      val baseOperationOfQuestion = TestUtilsIT.operationOfQuestion(questionId, operationId)
 
       val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
         _      <- createOperationOfQuestion(baseOperationOfQuestion)
@@ -233,7 +257,7 @@ class PersistentOperationOfQuestionServiceIT
 
   Feature("Modify an operationOfQuestion") {
     Scenario("Persist an operationOfQuestion and modify it") {
-      val baseOperationOfQuestion = generateOperationOfQuestion
+      val baseOperationOfQuestion = TestUtilsIT.operationOfQuestion(questionId, operationId)
 
       val futureOperationOfQuestion: Future[Option[OperationOfQuestion]] = for {
         _ <- createOperationOfQuestion(baseOperationOfQuestion)

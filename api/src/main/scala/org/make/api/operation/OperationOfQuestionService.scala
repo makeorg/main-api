@@ -101,7 +101,8 @@ final case class SearchOperationsOfQuestions(
   questionIds: Option[Seq[QuestionId]] = None,
   operationIds: Option[Seq[OperationId]] = None,
   operationKind: Option[Seq[OperationKind]] = None,
-  openAt: Option[ZonedDateTime] = None
+  openAt: Option[ZonedDateTime] = None,
+  endAfter: Option[ZonedDateTime] = None
 )
 
 trait OperationOfQuestionServiceComponent {
@@ -139,7 +140,8 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         request.questionIds,
         request.operationIds,
         request.operationKind,
-        request.openAt
+        request.openAt,
+        request.endAfter
       )
     }
 

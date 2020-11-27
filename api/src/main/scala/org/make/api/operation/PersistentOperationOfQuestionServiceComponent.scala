@@ -55,7 +55,8 @@ trait PersistentOperationOfQuestionService {
     questionIds: Option[Seq[QuestionId]],
     operationIds: Option[Seq[OperationId]],
     operationKind: Option[Seq[OperationKind]],
-    openAt: Option[ZonedDateTime]
+    openAt: Option[ZonedDateTime],
+    endAfter: Option[ZonedDateTime]
   ): Future[Seq[OperationOfQuestion]]
   def persist(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
   def modify(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
@@ -97,7 +98,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
       questionIds: Option[Seq[QuestionId]],
       operationIds: Option[Seq[OperationId]],
       operationKind: Option[Seq[OperationKind]],
-      openAt: Option[ZonedDateTime]
+      openAt: Option[ZonedDateTime],
+      endAfter: Option[ZonedDateTime]
     ): Future[scala.Seq[OperationOfQuestion]] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
@@ -118,15 +120,11 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                   .map(operationKind => sqls.in(operationAlias.operationKind, operationKind)),
                 openAt.map(
                   openAt =>
-                    sqls.joinWithAnd(
-                      sqls
-                        .isNull(PersistentOperationOfQuestion.column.startDate)
-                        .or(sqls.le(PersistentOperationOfQuestion.column.startDate, openAt)),
-                      sqls
-                        .isNull(PersistentOperationOfQuestion.column.endDate)
-                        .or(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
-                    )
-                )
+                    sqls
+                      .le(PersistentOperationOfQuestion.column.startDate, openAt)
+                      .and(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
+                ),
+                endAfter.map(end => sqls.ge(PersistentOperationOfQuestion.column.endDate, end))
               )
             )
 
@@ -299,13 +297,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                 openAt.map(
                   openAt =>
                     sqls
-                      .isNull(PersistentOperationOfQuestion.column.startDate)
-                      .or(sqls.le(PersistentOperationOfQuestion.column.startDate, openAt))
-                      .and(
-                        sqls
-                          .isNull(PersistentOperationOfQuestion.column.endDate)
-                          .or(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
-                      )
+                      .le(PersistentOperationOfQuestion.column.startDate, openAt)
+                      .and(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
                 )
               )
             )
