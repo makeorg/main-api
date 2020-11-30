@@ -24,6 +24,8 @@ import org.make.api.technical.IdGeneratorComponent
 import org.make.core.crmTemplate.{
   CrmLanguageTemplate,
   CrmLanguageTemplateId,
+  CrmQuestionTemplate,
+  CrmQuestionTemplateId,
   CrmTemplateKind,
   CrmTemplates,
   CrmTemplatesId,
@@ -42,11 +44,14 @@ class CrmTemplatesServiceTest
     extends MakeUnitTest
     with DefaultCrmTemplatesServiceComponent
     with PersistentCrmLanguageTemplateServiceComponent
+    with PersistentCrmQuestionTemplateServiceComponent
     with PersistentCrmTemplatesServiceComponent
     with IdGeneratorComponent {
 
   override val persistentCrmLanguageTemplateService: PersistentCrmLanguageTemplateService =
     mock[PersistentCrmLanguageTemplateService]
+  override val persistentCrmQuestionTemplateService: PersistentCrmQuestionTemplateService =
+    mock[PersistentCrmQuestionTemplateService]
   override val persistentCrmTemplatesService: PersistentCrmTemplatesService = mock[PersistentCrmTemplatesService]
   override val idGenerator: IdGenerator = mock[IdGenerator]
 
@@ -343,6 +348,76 @@ class CrmTemplatesServiceTest
             template.template.value shouldBe s"new-$i"
         }
       }
+    }
+  }
+
+  Feature("question templates") {
+
+    val questionTemplate1 = CrmQuestionTemplate(
+      CrmQuestionTemplateId("foo"),
+      CrmTemplateKind.ResendRegistration,
+      QuestionId("baz"),
+      TemplateId("1")
+    )
+    val questionTemplate2 = CrmQuestionTemplate(
+      CrmQuestionTemplateId("bar"),
+      CrmTemplateKind.B2BRegistration,
+      QuestionId("baz"),
+      TemplateId("2")
+    )
+
+    Scenario("list question templates") {
+
+      when(persistentCrmQuestionTemplateService.list(QuestionId("baz")))
+        .thenReturn(Future.successful(Seq(questionTemplate1, questionTemplate2)))
+
+      whenReady(crmTemplatesService.list(QuestionId("baz"))) {
+        _ shouldBe Seq(questionTemplate1, questionTemplate2)
+      }
+
+    }
+
+    Scenario("get question template") {
+
+      when(persistentCrmQuestionTemplateService.get(CrmQuestionTemplateId("foo")))
+        .thenAnswer(Future.successful(Some(questionTemplate1)))
+
+      whenReady(crmTemplatesService.get(CrmQuestionTemplateId("foo"))) { _ shouldBe Some(questionTemplate1) }
+
+    }
+
+    Scenario("create question template") {
+
+      when(persistentCrmQuestionTemplateService.persist(any[CrmQuestionTemplate]))
+        .thenAnswer[CrmQuestionTemplate](Future.successful)
+
+      whenReady(crmTemplatesService.create(questionTemplate1)) {
+        _ shouldBe questionTemplate1
+      }
+
+    }
+
+    Scenario("update question template") {
+
+      when(persistentCrmQuestionTemplateService.modify(any[CrmQuestionTemplate]))
+        .thenAnswer[CrmQuestionTemplate](Future.successful)
+
+      val updated = questionTemplate1.copy(template = TemplateId("9"))
+      whenReady(crmTemplatesService.update(updated)) {
+        _ shouldBe updated
+      }
+
+    }
+
+    Scenario("delete question template") {
+
+      when(persistentCrmQuestionTemplateService.remove(any[CrmQuestionTemplateId]))
+        .thenAnswer[CrmQuestionTemplateId](_ => Future.successful {})
+
+      whenReady(crmTemplatesService.delete(questionTemplate2.id)) {
+        _ shouldBe ()
+      }
+
     }
 
   }
