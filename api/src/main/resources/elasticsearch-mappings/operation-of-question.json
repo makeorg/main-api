@@ -703,7 +703,7 @@
         },
         "resultsLink": {
           "type": "text",
-          "index": false
+          "index": true
         },
         "proposalsCount": {
           "type": "integer",

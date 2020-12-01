@@ -26,6 +26,7 @@ import org.make.api.user.UserServiceComponent
 import org.make.api.views.HomePageViewResponse.PostResponse
 import org.make.core.Order
 import org.make.core.operation._
+import org.make.core.operation.indexed.OperationOfQuestionElasticsearchFieldName
 import org.make.core.post.indexed.{
   DisplayHomeSearchFilter,
   PostCountryFilter,
@@ -82,6 +83,20 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
         )
       )
 
+      val futurePastQuestions = searchQuestionOfOperations(
+        OperationOfQuestionSearchQuery(
+          filters = Some(
+            OperationOfQuestionSearchFilters(
+              status = Some(StatusSearchFilter(OperationOfQuestion.Status.Finished)),
+              hasResults = Some(HasResultsSearchFilter)
+            )
+          ),
+          limit = Some(4),
+          sort = Some(OperationOfQuestionElasticsearchFieldName.endDate),
+          order = Some(Order.desc)
+        )
+      )
+
       val futureFeaturedQuestions = searchQuestionOfOperations(
         OperationOfQuestionSearchQuery(
           filters = Some(OperationOfQuestionSearchFilters(featured = Some(FeaturedSearchFilter(true)))),
@@ -109,12 +124,14 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
         partnersCount     <- futurePartnersCount
         otherCounts       <- futureOtherCounts
         currentQuestions  <- futureCurrentQuestions
+        pastQuestions     <- futurePastQuestions
         featuredQuestions <- futureFeaturedQuestions
         posts             <- futurePosts
       } yield {
         HomePageViewResponse(
           highlights = otherCounts.copy(partnersCount = partnersCount),
           currentQuestions = currentQuestions,
+          pastQuestions = pastQuestions,
           featuredQuestions = featuredQuestions,
           posts = posts
         )
