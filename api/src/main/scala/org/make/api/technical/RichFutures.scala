@@ -29,4 +29,13 @@ object RichFutures {
     }
   }
 
+  implicit class Fallback[T](val f: () => Future[Option[Option[T]]]) extends AnyVal {
+    def or(fallback: () => Future[Option[T]])(implicit executionContext: ExecutionContext): () => Future[Option[T]] =
+      () =>
+        f().flatMap {
+          case Some(t @ Some(_)) => Future.successful(t)
+          case _                 => fallback()
+        }
+  }
+
 }

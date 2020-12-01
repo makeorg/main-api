@@ -32,7 +32,8 @@ import org.make.api.technical.crm.DefaultSendMailPublisherServiceComponent.Utm
 import org.make.api.user.UserServiceComponent
 import org.make.core.{ApplicationName, RequestContext}
 import org.make.core.BusinessConfig._
-import org.make.core.crmTemplate.{CrmTemplates, TemplateId}
+import org.make.core.crmTemplate.{CrmTemplateKind, CrmTemplates}
+import org.make.core.crmTemplate.CrmTemplateKind._
 import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.Country
@@ -160,10 +161,6 @@ trait DefaultSendMailPublisherServiceComponent
     )
   }
 
-  private def getLocale(country: Country): String = {
-    s"${country.language.value}_${country.value}"
-  }
-
   private def getUtmCampaignFromQuestionId(questionId: Option[QuestionId]): Future[String] = {
     questionId match {
       case Some(QuestionId("")) => Future.successful("unknown")
@@ -191,16 +188,15 @@ trait DefaultSendMailPublisherServiceComponent
 
   class DefaultSendMailPublisherService extends SendMailPublisherService {
     override def publishWelcome(user: User, country: Country, requestContext: RequestContext): Future[Unit] = {
-      val locale = getLocale(country)
       val questionId = requestContext.questionId
 
       resolveQuestionSlug(country, requestContext).flatMap { questionSlug =>
         crmTemplatesService
-          .findOne(questionId, locale)
-          .map(_.foreach { crmTemplates =>
+          .find(Welcome, questionId, country)
+          .map(_.foreach { templateId =>
             eventBusService.publish(
               SendEmail.create(
-                templateId = Some(crmTemplates.welcome.value.toInt),
+                templateId = Some(templateId.value.toInt),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(
                   Recipient(
@@ -227,17 +223,16 @@ trait DefaultSendMailPublisherServiceComponent
     }
 
     override def publishRegistration(user: User, country: Country, requestContext: RequestContext): Future[Unit] = {
-      val locale = getLocale(country)
       val questionId = requestContext.questionId
 
       user.verificationToken match {
         case Some(verificationToken) =>
-          crmTemplatesService.findOne(questionId, locale).flatMap {
-            case Some(crmTemplates) =>
+          crmTemplatesService.find(Registration, questionId, country).flatMap {
+            case Some(templateId) =>
               getUtmCampaignFromQuestionId(questionId).map { utmCampaign =>
                 eventBusService.publish(
                   SendEmail.create(
-                    templateId = Some(crmTemplates.registration.value.toInt),
+                    templateId = Some(templateId.value.toInt),
                     recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                     from = Some(
                       Recipient(
@@ -275,17 +270,16 @@ trait DefaultSendMailPublisherServiceComponent
     }
 
     def publishResendRegistration(user: User, country: Country, requestContext: RequestContext): Future[Unit] = {
-      val locale = getLocale(country)
       val questionId = requestContext.questionId
 
       user.verificationToken match {
         case Some(verificationToken) =>
-          crmTemplatesService.findOne(questionId, locale).flatMap {
-            case Some(crmTemplates) =>
+          crmTemplatesService.find(ResendRegistration, questionId, country).flatMap {
+            case Some(templateId) =>
               getUtmCampaignFromQuestionId(questionId).map { utmCampaign =>
                 eventBusService.publish(
                   SendEmail.create(
-                    templateId = Some(crmTemplates.resendRegistration.value.toInt),
+                    templateId = Some(templateId.value.toInt),
                     recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                     from = Some(
                       Recipient(
@@ -323,17 +317,16 @@ trait DefaultSendMailPublisherServiceComponent
       country: Country,
       requestContext: RequestContext
     ): Future[Unit] = {
-      val locale = getLocale(country)
       val questionId = requestContext.questionId
 
       user.resetToken match {
         case Some(resetToken) =>
           crmTemplatesService
-            .findOne(questionId, locale)
-            .map(_.foreach { crmTemplates =>
+            .find(ForgottenPassword, questionId, country)
+            .map(_.foreach { templateId =>
               eventBusService.publish(
                 SendEmail.create(
-                  templateId = Some(crmTemplates.forgottenPassword.value.toInt),
+                  templateId = Some(templateId.value.toInt),
                   recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                   from = Some(
                     Recipient(
@@ -368,17 +361,16 @@ trait DefaultSendMailPublisherServiceComponent
       country: Country,
       requestContext: RequestContext
     ): Future[Unit] = {
-      val locale = getLocale(country)
       val questionId = requestContext.questionId
 
       organisation.resetToken match {
         case Some(resetToken) =>
           crmTemplatesService
-            .findOne(questionId, locale)
-            .map(_.foreach { crmTemplates =>
+            .find(B2BForgottenPassword, questionId, country)
+            .map(_.foreach { templateId =>
               eventBusService.publish(
                 SendEmail.create(
-                  templateId = Some(crmTemplates.forgottenPasswordOrganisation.value.toInt),
+                  templateId = Some(templateId.value.toInt),
                   recipients = Seq(Recipient(email = organisation.email, name = organisation.fullName)),
                   from = Some(
                     Recipient(
@@ -415,15 +407,14 @@ trait DefaultSendMailPublisherServiceComponent
       requestContext: RequestContext,
       newEmail: String
     ): Future[Unit] = {
-      val locale = getLocale(country)
       val questionId = requestContext.questionId
 
       crmTemplatesService
-        .findOne(questionId, locale)
-        .map(_.foreach { crmTemplates =>
+        .find(B2BEmailChanged, questionId, country)
+        .map(_.foreach { templateId =>
           eventBusService.publish(
             SendEmail.create(
-              templateId = Some(crmTemplates.organisationEmailChangeConfirmation.value.toInt),
+              templateId = Some(templateId.value.toInt),
               recipients = Seq(Recipient(email = user.email, name = user.displayName)),
               from = Some(
                 Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
@@ -439,7 +430,7 @@ trait DefaultSendMailPublisherServiceComponent
     private def publishModerationEmail(
       proposalId: ProposalId,
       variables: (Question, User, Proposal) => Map[String, String],
-      templateId: (CrmTemplates, UserType)  => TemplateId
+      templateKind: UserType                => CrmTemplateKind
     ): Future[Unit] = {
 
       val publishSendEmail = for {
@@ -453,15 +444,14 @@ trait DefaultSendMailPublisherServiceComponent
           .orFail(
             s"question ${proposal.questionId.fold("''")(_.value)} not found, it is on proposal ${proposal.proposalId}"
           )
-        crmTemplates <- OptionT(crmTemplatesService.findOne(Some(questionId), getLocale(user.country))).orFail {
-          val locale = getLocale(user.country)
-          s"no crm templates for question ${questionId.value} and locale $locale"
+        templateId <- OptionT(crmTemplatesService.find(templateKind(user.userType), Some(questionId), user.country)).orFail {
+          s"no $templateKind crm template for question ${questionId.value} and country ${user.country.value}"
         }
       } yield {
         if (user.emailVerified) {
           eventBusService.publish(
             SendEmail.create(
-              templateId = Some(templateId(crmTemplates, user.userType).value.toInt),
+              templateId = Some(templateId.value.toInt),
               recipients = Seq(Recipient(email = user.email, name = user.fullName)),
               from = Some(
                 Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
@@ -499,15 +489,15 @@ trait DefaultSendMailPublisherServiceComponent
         )
       }
 
-      def template(crmTemplates: CrmTemplates, userType: UserType): TemplateId = {
+      def kind(userType: UserType): CrmTemplateKind = {
         if (userType == UserType.UserTypeUser) {
-          crmTemplates.proposalAccepted
+          ProposalAccepted
         } else {
-          crmTemplates.proposalAcceptedOrganisation
+          B2BProposalAccepted
         }
       }
 
-      publishModerationEmail(proposalId, variables, template)
+      publishModerationEmail(proposalId, variables, kind)
 
     }
 
@@ -528,15 +518,15 @@ trait DefaultSendMailPublisherServiceComponent
         )
       }
 
-      def template(crmTemplates: CrmTemplates, userType: UserType): TemplateId = {
+      def kind(userType: UserType): CrmTemplateKind = {
         if (userType == UserType.UserTypeUser) {
-          crmTemplates.proposalRefused
+          ProposalRefused
         } else {
-          crmTemplates.proposalRefusedOrganisation
+          B2BProposalRefused
         }
       }
 
-      publishModerationEmail(proposalId, variables, template)
+      publishModerationEmail(proposalId, variables, kind)
     }
 
     override def resendRegistration(user: User, country: Country, requestContext: RequestContext): Future[Unit] = {
@@ -548,16 +538,14 @@ trait DefaultSendMailPublisherServiceComponent
     }
 
     override def publishRegistrationB2B(user: User, country: Country, requestContext: RequestContext): Future[Unit] = {
-      val locale = getLocale(country)
-
       user.resetToken match {
         case Some(resetToken) =>
           crmTemplatesService
-            .findOne(None, locale)
-            .map(_.foreach { crmTemplates =>
+            .find(B2BRegistration, None, country)
+            .map(_.foreach { templateId =>
               eventBusService.publish(
                 SendEmail.create(
-                  templateId = Some(crmTemplates.registrationB2B.value.toInt),
+                  templateId = Some(templateId.value.toInt),
                   recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                   from = Some(
                     Recipient(

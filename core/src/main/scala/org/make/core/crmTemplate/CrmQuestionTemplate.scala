@@ -32,7 +32,7 @@ final case class CrmQuestionTemplate(
   @(ApiModelProperty @field)(dataType = "string", example = "Welcome") kind: CrmTemplateKind,
   @(ApiModelProperty @field)(dataType = "string", example = "b5a66352-a081-4518-a909-3fa1ec95e224") questionId: QuestionId,
   @(ApiModelProperty @field)(dataType = "string", example = "123456") template: TemplateId
-)
+) extends CrmTemplate
 
 object CrmQuestionTemplate {
   implicit val encoder: Encoder[CrmQuestionTemplate] = deriveEncoder[CrmQuestionTemplate]

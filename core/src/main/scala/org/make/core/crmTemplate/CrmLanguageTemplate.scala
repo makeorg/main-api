@@ -27,6 +27,6 @@ final case class CrmLanguageTemplate(
   kind: CrmTemplateKind,
   language: Language,
   template: TemplateId
-)
+) extends CrmTemplate
 
 final case class CrmLanguageTemplateId(value: String) extends StringValue
