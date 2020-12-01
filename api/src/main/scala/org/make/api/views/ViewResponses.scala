@@ -36,6 +36,7 @@ import scala.annotation.meta.field
 final case class HomePageViewResponse(
   highlights: Highlights,
   currentQuestions: Seq[QuestionOfOperationResponse],
+  pastQuestions: Seq[QuestionOfOperationResponse],
   featuredQuestions: Seq[QuestionOfOperationResponse],
   posts: Seq[PostResponse]
 )

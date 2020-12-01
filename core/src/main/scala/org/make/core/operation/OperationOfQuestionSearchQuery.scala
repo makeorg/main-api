@@ -52,7 +52,8 @@ final case class OperationOfQuestionSearchFilters(
   endDate: Option[EndDateSearchFilter] = None,
   operationKinds: Option[OperationKindsSearchFilter] = None,
   featured: Option[FeaturedSearchFilter] = None,
-  status: Option[StatusSearchFilter] = None
+  status: Option[StatusSearchFilter] = None,
+  hasResults: Option[HasResultsSearchFilter.type] = None
 )
 
 object OperationOfQuestionSearchFilters extends ElasticDsl {
@@ -102,7 +103,8 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
       buildEndDateSearchFilter(operationOfQuestionSearchQuery),
       buildOperationKindSearchFilter(operationOfQuestionSearchQuery),
       buildFeaturedSearchFilter(operationOfQuestionSearchQuery),
-      buildStatusSearchFilter(operationOfQuestionSearchQuery)
+      buildStatusSearchFilter(operationOfQuestionSearchQuery),
+      buildHasResultsSearchFilter(operationOfQuestionSearchQuery)
     ).flatten
   }
 
@@ -272,6 +274,16 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     }
   }
 
+  def buildHasResultsSearchFilter(operationOfQuestionSearchQuery: OperationOfQuestionSearchQuery): Option[Query] = {
+    operationOfQuestionSearchQuery.filters.flatMap {
+      _.hasResults match {
+        case Some(HasResultsSearchFilter) =>
+          Some(ElasticApi.existsQuery(OperationOfQuestionElasticsearchFieldName.resultsLink.field))
+        case _ => None
+      }
+    }
+  }
+
 }
 
 final case class QuestionIdsSearchFilter(questionIds: Seq[QuestionId])
@@ -283,6 +295,7 @@ final case class StartDateSearchFilter(startDate: ZonedDateTime)
 final case class EndDateSearchFilter(endDate: ZonedDateTime)
 final case class OperationKindsSearchFilter(operationKinds: Seq[OperationKind])
 final case class FeaturedSearchFilter(featured: Boolean)
+case object HasResultsSearchFilter
 final case class StatusSearchFilter(status: NonEmptyList[OperationOfQuestion.Status])
 object StatusSearchFilter {
   def apply(head: OperationOfQuestion.Status, tail: OperationOfQuestion.Status*): StatusSearchFilter =

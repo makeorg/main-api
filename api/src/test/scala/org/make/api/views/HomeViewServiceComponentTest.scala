@@ -168,6 +168,18 @@ class HomeViewServiceComponentTest
     question = "question 6 ?",
     operationId = Some(operation6.operationId)
   )
+  val question7: Question = defaultQuestion.copy(
+    questionId = QuestionId("question7"),
+    slug = "question7",
+    question = "question 7 ?",
+    operationId = Some(operation6.operationId)
+  )
+  val question8: Question = defaultQuestion.copy(
+    questionId = QuestionId("question8"),
+    slug = "question8",
+    question = "question 8 ?",
+    operationId = Some(operation6.operationId)
+  )
   val operationOfQuestion1: IndexedOperationOfQuestion =
     defaultOperationOfQuestion.copy(
       questionId = question1.questionId,
@@ -205,6 +217,23 @@ class HomeViewServiceComponentTest
       endDate = now.minusDays(1),
       status = OperationOfQuestion.Status.Upcoming
     )
+  val operationOfQuestion7: IndexedOperationOfQuestion =
+    defaultOperationOfQuestion.copy(
+      questionId = question7.questionId,
+      operationId = operation6.operationId,
+      startDate = now.minusDays(8),
+      endDate = now.minusDays(1),
+      status = OperationOfQuestion.Status.Finished,
+      resultsLink = Some("https://example.com/results")
+    )
+  val operationOfQuestion8: IndexedOperationOfQuestion =
+    defaultOperationOfQuestion.copy(
+      questionId = question8.questionId,
+      operationId = operation6.operationId,
+      startDate = now.minusDays(8),
+      endDate = now.minusDays(2),
+      status = OperationOfQuestion.Status.Finished
+    )
 
   val operations: Seq[SimpleOperation] = Seq(operation1, operation2, operation3, operation4, operation5, operation6)
   val questions: Seq[Question] = Seq(question1, question2, question3, question4, question5, question6)
@@ -216,7 +245,9 @@ class HomeViewServiceComponentTest
       operationOfQuestion3,
       operationOfQuestion4,
       operationOfQuestion5,
-      operationOfQuestion6
+      operationOfQuestion6,
+      operationOfQuestion7,
+      operationOfQuestion8
     )
   )
 
@@ -244,7 +275,7 @@ class HomeViewServiceComponentTest
                 arg match {
                   case OperationOfQuestionSearchQuery(
                       Some(
-                        OperationOfQuestionSearchFilters(_, _, _, _, _, _, _, _, Some(FeaturedSearchFilter(true)), _)
+                        OperationOfQuestionSearchFilters(_, _, _, _, _, _, _, _, Some(FeaturedSearchFilter(true)), _, _)
                       ),
                       _,
                       _,
@@ -269,7 +300,7 @@ class HomeViewServiceComponentTest
               (arg: OperationOfQuestionSearchQuery) =>
                 arg match {
                   case OperationOfQuestionSearchQuery(
-                      Some(OperationOfQuestionSearchFilters(_, _, _, _, _, _, _, _, _, Some(StatusSearchFilter(_)))),
+                      Some(OperationOfQuestionSearchFilters(_, _, _, _, _, _, _, _, _, Some(StatusSearchFilter(_)), _)),
                       _,
                       _,
                       _,
@@ -286,6 +317,21 @@ class HomeViewServiceComponentTest
           .filter(_.status == OperationOfQuestion.Status.Open)
           .sortBy(e => (e.featured, e.endDate))
           .reverse
+        OperationOfQuestionSearchResult(results.size, results)
+      })
+
+      when(
+        elasticsearchOperationOfQuestionAPI
+          .searchOperationOfQuestions(
+            argThat((arg: OperationOfQuestionSearchQuery) => arg.filters.flatMap(_.hasResults).isDefined)
+          )
+      ).thenReturn(Future.successful {
+        val results = operationOfQuestions.results
+          .filter(_.status == OperationOfQuestion.Status.Finished)
+          .filter(_.resultsLink.isDefined)
+          .sortBy(_.endDate)
+          .reverse
+          .take(4)
         OperationOfQuestionSearchResult(results.size, results)
       })
 
@@ -319,6 +365,7 @@ class HomeViewServiceComponentTest
         homePageViewResponse.currentQuestions should be(
           Seq(operationOfQuestion3, operationOfQuestion2).map(QuestionOfOperationResponse.apply)
         )
+        homePageViewResponse.pastQuestions should be(Seq(operationOfQuestion7).map(QuestionOfOperationResponse.apply))
         homePageViewResponse.featuredQuestions should be(
           Seq(operationOfQuestion3, operationOfQuestion1).map(QuestionOfOperationResponse.apply)
         )

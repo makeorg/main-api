@@ -396,4 +396,24 @@ class OperationOfQuestionSearchEngineIT
 
   }
 
+  Feature("hasResults") {
+
+    Scenario("Retrieving questions with a result link") {
+      whenReady(
+        elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(
+          OperationOfQuestionSearchQuery(filters =
+            Some(OperationOfQuestionSearchFilters(hasResults = Some(HasResultsSearchFilter)))
+          )
+        ),
+        Timeout(3.seconds)
+      ) { result =>
+        result.results.size should be > 0
+        result.results.foreach {
+          _.resultsLink should be(defined)
+        }
+      }
+    }
+
+  }
+
 }

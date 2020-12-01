@@ -79,6 +79,7 @@ object OperationOfQuestionElasticsearchFieldName extends StringEnum[OperationOfQ
   case object status extends Simple("status")
   case object participantsCount extends Simple("participantsCount")
   case object proposalsCount extends Simple("proposalsCount")
+  case object resultsLink extends Simple("resultsLink")
 
   def questionLanguageSubfield(language: Language, stemmed: Boolean = false): Option[String] = {
     BusinessConfig.supportedCountries
