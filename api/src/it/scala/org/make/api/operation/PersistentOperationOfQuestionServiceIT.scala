@@ -19,7 +19,7 @@
 
 package org.make.api.operation
 
-import java.time.ZonedDateTime
+import java.time.{LocalDate, ZonedDateTime}
 
 import cats.data.NonEmptyList
 import eu.timepit.refined.auto._
@@ -82,23 +82,40 @@ class PersistentOperationOfQuestionServiceIT
 
   Feature("An operationOfQuestion can be persisted") {
     Scenario("Persist an operationOfQuestion and retrieve it") {
-      val baseOperationOfQuestion = TestUtilsIT.operationOfQuestion(questionId, operationId)
+      val resultsDate = LocalDate.parse("2020-01-02")
+      val workshopDate = LocalDate.parse("2020-02-02")
+      val actionDate = LocalDate.parse("2020-03-03")
+      val baseOperationOfQuestion = TestUtilsIT.operationOfQuestion(
+        questionId,
+        operationId,
+        votesCount = 200_000_000,
+        resultDate = Some(resultsDate),
+        workshopDate = Some(workshopDate),
+        actionDate = Some(actionDate)
+      )
 
       val futureOperationOfQuestion: Future[Option[OperationOfQuestion]] = for {
         _      <- createOperationOfQuestion(baseOperationOfQuestion)
         result <- persistentOperationOfQuestionService.getById(baseOperationOfQuestion.questionId)
       } yield result
 
-      whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { operationOfQuestion =>
-        operationOfQuestion.isDefined shouldBe true
-        operationOfQuestion.map(_.questionId) shouldBe Some(baseOperationOfQuestion.questionId)
-        operationOfQuestion.map(_.operationId) shouldBe Some(baseOperationOfQuestion.operationId)
-        operationOfQuestion.map(_.canPropose) shouldBe Some(true)
-        operationOfQuestion.map(_.sequenceCardsConfiguration.introCard.enabled) shouldBe Some(true)
-        operationOfQuestion.map(_.sequenceCardsConfiguration.finalCard.sharingEnabled) shouldBe Some(false)
-        operationOfQuestion.map(_.proposalsCount) shouldBe Some(42)
-        operationOfQuestion.map(_.participantsCount) shouldBe Some(84)
-        operationOfQuestion.map(_.featured) shouldBe Some(true)
+      whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { maybeOperationOfQuestion =>
+        maybeOperationOfQuestion should be(defined)
+
+        maybeOperationOfQuestion.foreach { operationOfQuestion =>
+          operationOfQuestion.questionId shouldBe baseOperationOfQuestion.questionId
+          operationOfQuestion.operationId shouldBe baseOperationOfQuestion.operationId
+          operationOfQuestion.canPropose shouldBe true
+          operationOfQuestion.sequenceCardsConfiguration.introCard.enabled shouldBe true
+          operationOfQuestion.sequenceCardsConfiguration.finalCard.sharingEnabled shouldBe false
+          operationOfQuestion.proposalsCount shouldBe 42
+          operationOfQuestion.participantsCount shouldBe 84
+          operationOfQuestion.featured shouldBe true
+          operationOfQuestion.votesCount should be(200_000_000)
+          operationOfQuestion.resultDate should contain(resultsDate)
+          operationOfQuestion.workshopDate should contain(workshopDate)
+          operationOfQuestion.actionDate should contain(actionDate)
+        }
       }
     }
   }
@@ -258,7 +275,9 @@ class PersistentOperationOfQuestionServiceIT
   Feature("Modify an operationOfQuestion") {
     Scenario("Persist an operationOfQuestion and modify it") {
       val baseOperationOfQuestion = TestUtilsIT.operationOfQuestion(questionId, operationId)
-
+      val resultsDate = LocalDate.parse("2021-01-01")
+      val workshopDate = LocalDate.parse("2021-02-02")
+      val actionDate = LocalDate.parse("2021-03-03")
       val futureOperationOfQuestion: Future[Option[OperationOfQuestion]] = for {
         _ <- createOperationOfQuestion(baseOperationOfQuestion)
         _ <- persistentOperationOfQuestionService.modify(
@@ -271,23 +290,36 @@ class PersistentOperationOfQuestionServiceIT
               theme = baseOperationOfQuestion.theme.copy(color = "#424242"),
               proposalsCount = 420,
               participantsCount = 840,
-              actions = Some("some actions")
+              actions = Some("some actions"),
+              votesCount = 10_000_000,
+              votesTarget = 11_000_000,
+              resultDate = Some(resultsDate),
+              workshopDate = Some(workshopDate),
+              actionDate = Some(actionDate)
             )
         )
         result <- persistentOperationOfQuestionService.getById(baseOperationOfQuestion.questionId)
       } yield result
 
-      whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { operationOfQuestion =>
-        operationOfQuestion.isDefined shouldBe true
-        operationOfQuestion.map(_.questionId) shouldBe Some(baseOperationOfQuestion.questionId)
-        operationOfQuestion.map(_.operationId) shouldBe Some(baseOperationOfQuestion.operationId)
-        operationOfQuestion.map(_.operationTitle) shouldBe Some(s"${baseOperationOfQuestion.operationTitle} modified")
-        operationOfQuestion.map(_.canPropose) shouldBe Some(false)
-        operationOfQuestion.map(_.sequenceCardsConfiguration.pushProposalCard.enabled) shouldBe Some(false)
-        operationOfQuestion.map(_.theme.color) shouldBe Some("#424242")
-        operationOfQuestion.map(_.proposalsCount) shouldBe Some(420)
-        operationOfQuestion.map(_.participantsCount) shouldBe Some(840)
-        operationOfQuestion.flatMap(_.actions) shouldBe Some("some actions")
+      whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { maybeOperationOfQuestion =>
+        maybeOperationOfQuestion should be(defined)
+
+        maybeOperationOfQuestion.foreach { operationOfQuestion =>
+          operationOfQuestion.questionId shouldBe baseOperationOfQuestion.questionId
+          operationOfQuestion.operationId shouldBe baseOperationOfQuestion.operationId
+          operationOfQuestion.operationTitle shouldBe s"${baseOperationOfQuestion.operationTitle} modified"
+          operationOfQuestion.canPropose shouldBe false
+          operationOfQuestion.sequenceCardsConfiguration.pushProposalCard.enabled shouldBe false
+          operationOfQuestion.theme.color shouldBe "#424242"
+          operationOfQuestion.proposalsCount shouldBe 420
+          operationOfQuestion.participantsCount shouldBe 840
+          operationOfQuestion.actions shouldBe Some("some actions")
+          operationOfQuestion.votesCount should be(10_000_000)
+          operationOfQuestion.votesTarget should be(11_000_000)
+          operationOfQuestion.resultDate should contain(resultsDate)
+          operationOfQuestion.workshopDate should contain(workshopDate)
+          operationOfQuestion.actionDate should contain(actionDate)
+        }
       }
     }
   }
@@ -298,7 +330,7 @@ class PersistentOperationOfQuestionServiceIT
       val questionId = QuestionId("existing sequenceId")
       val operationId = OperationId("existing sequenceId")
       val future =
-        (for {
+        for {
           _ <- persistentQuestionService.persist(
             Question(questionId, "existing-sequence-id", NonEmptyList.of(Country("FR")), Language("fr"), "", None, None)
           )
@@ -316,7 +348,7 @@ class PersistentOperationOfQuestionServiceIT
             operationOfQuestion(questionId = questionId, landingSequenceId = sequenceId, operationId = operationId)
           )
           maybeQuestion <- persistentOperationOfQuestionService.questionIdFromSequenceId(sequenceId)
-        } yield maybeQuestion)
+        } yield maybeQuestion
       whenReady(future, Timeout(10.seconds))(_ should contain(questionId))
     }
 

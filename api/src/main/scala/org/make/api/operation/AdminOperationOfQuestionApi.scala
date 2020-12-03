@@ -107,7 +107,8 @@ trait DefaultAdminOperationOfQuestionApiComponent
                           operationOfQuestion
                             .copy(
                               proposalsCount = request.proposalsCount,
-                              participantsCount = request.participantsCount
+                              participantsCount = request.participantsCount,
+                              votesCount = request.votesCount
                             )
                         )
                       ) { _ =>
@@ -125,7 +126,7 @@ trait DefaultAdminOperationOfQuestionApiComponent
 }
 
 @ApiModel
-final case class UpdateHighlights(proposalsCount: NonNegInt, participantsCount: NonNegInt)
+final case class UpdateHighlights(proposalsCount: NonNegInt, participantsCount: NonNegInt, votesCount: NonNegInt)
 
 object UpdateHighlights extends CirceFormatters {
   implicit val decoder: Decoder[UpdateHighlights] = deriveDecoder[UpdateHighlights]

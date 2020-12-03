@@ -19,7 +19,7 @@
 
 package org.make.core.operation
 
-import java.time.ZonedDateTime
+import java.time.{LocalDate, ZonedDateTime}
 
 import enumeratum.{Enum, EnumEntry}
 import enumeratum.Circe
@@ -199,7 +199,12 @@ final case class OperationOfQuestion(
   proposalsCount: Int,
   participantsCount: Int,
   actions: Option[String],
-  featured: Boolean
+  featured: Boolean,
+  votesCount: Int,
+  votesTarget: Int,
+  resultDate: Option[LocalDate],
+  workshopDate: Option[LocalDate],
+  actionDate: Option[LocalDate]
 ) {
 
   def status: OperationOfQuestion.Status = {

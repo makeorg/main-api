@@ -95,7 +95,7 @@ class QuestionApiTest
 
   val routes: Route = sealRoute(questionApi.routes)
 
-  val baseQuestion = Question(
+  val baseQuestion: Question = Question(
     questionId = QuestionId("questionid"),
     slug = "question-slug",
     countries = NonEmptyList.of(Country("FR")),
@@ -104,7 +104,7 @@ class QuestionApiTest
     shortTitle = None,
     operationId = Some(OperationId("operationid"))
   )
-  val baseOperation = Operation(
+  val baseOperation: Operation = Operation(
     status = OperationStatus.Active,
     operationId = OperationId("operationid"),
     slug = "operation-slug",
@@ -115,18 +115,17 @@ class QuestionApiTest
     updatedAt = Some(DateHelper.now())
   )
 
-  val baseOperationOfQuestion = operationOfQuestion(
+  val baseOperationOfQuestion: OperationOfQuestion = operationOfQuestion(
     questionId = baseQuestion.questionId,
     operationId = baseOperation.operationId,
     startDate = ZonedDateTime.parse("2018-10-21T10:15:30+00:00"),
     endDate = ZonedDateTime.parse("2068-10-21T10:15:30+00:00"),
-    operationTitle = "operation title",
     landingSequenceId = SequenceId("sequenceId"),
     resultsLink = Some(ResultsLink.Internal.TopIdeas)
   )
 
-  val now = DateHelper.now()
-  val baseSimpleOperation = SimpleOperation(
+  val now: ZonedDateTime = DateHelper.now()
+  val baseSimpleOperation: SimpleOperation = SimpleOperation(
     baseOperation.operationId,
     baseOperation.status,
     baseOperation.slug,
@@ -134,22 +133,24 @@ class QuestionApiTest
     baseOperation.createdAt,
     baseOperation.updatedAt
   )
-  val openOperationOfQuestion = IndexedOperationOfQuestion.createFromOperationOfQuestion(
+  val openOperationOfQuestion: IndexedOperationOfQuestion = IndexedOperationOfQuestion.createFromOperationOfQuestion(
     baseOperationOfQuestion.copy(startDate = now.minusDays(1), endDate = now.plusDays(1)),
     baseSimpleOperation,
     baseQuestion
   )
-  val finishedOperationOfQuestion = IndexedOperationOfQuestion.createFromOperationOfQuestion(
-    baseOperationOfQuestion.copy(startDate = now.minusDays(2), endDate = now.minusDays(1)),
-    baseSimpleOperation,
-    baseQuestion
-  )
-  val upcomingOperationOfQuestion = IndexedOperationOfQuestion.createFromOperationOfQuestion(
-    baseOperationOfQuestion.copy(startDate = now.plusDays(1), endDate = now.plusDays(2)),
-    baseSimpleOperation,
-    baseQuestion
-  )
-  val indexedOperationOfQuestions =
+  val finishedOperationOfQuestion: IndexedOperationOfQuestion =
+    IndexedOperationOfQuestion.createFromOperationOfQuestion(
+      baseOperationOfQuestion.copy(startDate = now.minusDays(2), endDate = now.minusDays(1)),
+      baseSimpleOperation,
+      baseQuestion
+    )
+  val upcomingOperationOfQuestion: IndexedOperationOfQuestion =
+    IndexedOperationOfQuestion.createFromOperationOfQuestion(
+      baseOperationOfQuestion.copy(startDate = now.plusDays(1), endDate = now.plusDays(2)),
+      baseSimpleOperation,
+      baseQuestion
+    )
+  val indexedOperationOfQuestions: Seq[IndexedOperationOfQuestion] =
     Seq(openOperationOfQuestion, finishedOperationOfQuestion, upcomingOperationOfQuestion)
 
   when(operationOfQuestionService.search(any[OperationOfQuestionSearchQuery])).thenAnswer {

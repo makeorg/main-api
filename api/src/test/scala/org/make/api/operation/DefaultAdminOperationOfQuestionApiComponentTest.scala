@@ -85,7 +85,7 @@ class DefaultAdminOperationOfQuestionApiComponentTest
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(
           ContentTypes.`application/json`,
-          UpdateHighlights(proposalsCount = 4200, participantsCount = 8400).asJson.toString()
+          UpdateHighlights(proposalsCount = 4200, participantsCount = 8400, votesCount = 45000).asJson.toString()
         ) ~> routes ~> check {
 
         status should be(StatusCodes.NoContent)
@@ -97,7 +97,8 @@ class DefaultAdminOperationOfQuestionApiComponentTest
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(ContentTypes.`application/json`, """{
            | "proposalsCount": -84,
-           | "participantsCount": 1000
+           | "participantsCount": 1000,
+           | "votesCount": 1000000
            |}""".stripMargin) ~> routes ~> check {
 
         status should be(StatusCodes.BadRequest)

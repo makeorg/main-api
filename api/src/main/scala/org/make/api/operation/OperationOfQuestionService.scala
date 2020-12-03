@@ -245,7 +245,12 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         proposalsCount = 0,
         participantsCount = 0,
         actions = parameters.actions,
-        featured = false
+        featured = false,
+        votesCount = 0,
+        votesTarget = 100_000,
+        resultDate = None,
+        workshopDate = None,
+        actionDate = None
       )
 
       val sequenceConfiguration =

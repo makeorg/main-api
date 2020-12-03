@@ -19,7 +19,7 @@
 
 package org.make.api.operation
 
-import java.time.ZonedDateTime
+import java.time.{LocalDate, ZonedDateTime}
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
@@ -412,7 +412,11 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                   .when(request.displayResults)(request.resultsLink.flatMap(_.resultsLink))
                                   .flatten,
                                 actions = request.actions,
-                                featured = request.featured
+                                featured = request.featured,
+                                votesTarget = request.votesTarget,
+                                resultDate = request.resultDate,
+                                workshopDate = request.workshopDate,
+                                actionDate = request.actionDate
                               ),
                             updatedQuestion
                           )
@@ -520,7 +524,11 @@ final case class ModifyOperationOfQuestionRequest(
   descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   resultsLink: Option[ResultsLinkRequest],
   actions: Option[String],
-  featured: Boolean
+  featured: Boolean,
+  votesTarget: Int,
+  resultDate: Option[LocalDate],
+  workshopDate: Option[LocalDate],
+  actionDate: Option[LocalDate]
 ) {
 
   validate(
@@ -650,7 +658,11 @@ final case class OperationOfQuestionResponse(
   actions: Option[String],
   featured: Boolean,
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "upcoming,open,finished")
-  status: QuestionStatus
+  status: QuestionStatus,
+  votesTarget: Int,
+  resultDate: Option[LocalDate],
+  workshopDate: Option[LocalDate],
+  actionDate: Option[LocalDate]
 )
 
 object OperationOfQuestionResponse extends CirceFormatters {
@@ -684,7 +696,11 @@ object OperationOfQuestionResponse extends CirceFormatters {
       resultsLink = operationOfQuestion.resultsLink.map(ResultsLinkResponse.apply),
       actions = operationOfQuestion.actions,
       featured = operationOfQuestion.featured,
-      status = operationOfQuestion.status
+      status = operationOfQuestion.status,
+      votesTarget = operationOfQuestion.votesTarget,
+      resultDate = operationOfQuestion.workshopDate,
+      workshopDate = operationOfQuestion.workshopDate,
+      actionDate = operationOfQuestion.actionDate
     )
   }
 }

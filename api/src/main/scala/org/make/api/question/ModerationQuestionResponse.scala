@@ -18,11 +18,11 @@
  */
 
 package org.make.api.question
-import java.time.ZonedDateTime
+import java.time.{LocalDate, ZonedDateTime}
 
 import cats.data.NonEmptyList
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
+import io.circe.{Codec, Decoder, Encoder}
 import io.circe.refined._
 import io.swagger.annotations.ApiModelProperty
 import eu.timepit.refined.W
@@ -190,6 +190,29 @@ object QuestionPartnerResponse extends CirceFormatters {
   implicit val decoder: Decoder[QuestionPartnerResponse] = deriveDecoder[QuestionPartnerResponse]
 }
 
+final case class OperationOfQuestionHighlightsResponse(
+  votesTarget: Int,
+  votesCount: Int,
+  participantsCount: Int,
+  proposalsCount: Int
+)
+
+object OperationOfQuestionHighlightsResponse {
+  implicit val codec: Codec[OperationOfQuestionHighlightsResponse] = deriveCodec
+}
+
+final case class OperationOfQuestionTimelineResponse(
+  startDate: ZonedDateTime,
+  endDate: ZonedDateTime,
+  resultDate: Option[LocalDate],
+  workshopDate: Option[LocalDate],
+  actionDate: Option[LocalDate]
+)
+
+object OperationOfQuestionTimelineResponse {
+  implicit val codec: Codec[OperationOfQuestionTimelineResponse] = deriveCodec
+}
+
 final case class QuestionDetailsResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
   questionId: QuestionId,
@@ -227,7 +250,12 @@ final case class QuestionDetailsResponse(
   descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   displayResults: Boolean,
   operation: QuestionsOfOperationResponse,
-  activeFeatures: Seq[String]
+  activeFeatures: Seq[String],
+  featured: Boolean,
+  highlights: OperationOfQuestionHighlightsResponse,
+  timeline: OperationOfQuestionTimelineResponse,
+  controversyCount: Int,
+  topProposalCount: Int
 )
 
 object QuestionDetailsResponse extends CirceFormatters {
@@ -267,7 +295,23 @@ object QuestionDetailsResponse extends CirceFormatters {
     descriptionImageAlt = operationOfQuestion.descriptionImageAlt,
     displayResults = operationOfQuestion.resultsLink.isDefined,
     operation = QuestionsOfOperationResponse(questionsOfOperation),
-    activeFeatures = activeFeatures
+    activeFeatures = activeFeatures,
+    featured = operationOfQuestion.featured,
+    highlights = OperationOfQuestionHighlightsResponse(
+      votesTarget = operationOfQuestion.votesTarget,
+      votesCount = operationOfQuestion.votesCount,
+      participantsCount = operationOfQuestion.participantsCount,
+      proposalsCount = operationOfQuestion.proposalsCount
+    ),
+    timeline = OperationOfQuestionTimelineResponse(
+      startDate = operationOfQuestion.startDate,
+      endDate = operationOfQuestion.endDate,
+      resultDate = operationOfQuestion.resultDate,
+      workshopDate = operationOfQuestion.workshopDate,
+      actionDate = operationOfQuestion.actionDate
+    ),
+    controversyCount = 0,
+    topProposalCount = 0
   )
 
   implicit val encoder: Encoder[QuestionDetailsResponse] = deriveEncoder[QuestionDetailsResponse]

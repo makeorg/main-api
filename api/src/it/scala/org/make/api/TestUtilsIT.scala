@@ -20,7 +20,7 @@
 package org.make.api
 
 import java.net.URL
-import java.time.ZonedDateTime
+import java.time.{LocalDate, ZonedDateTime}
 
 import cats.data.NonEmptyList
 import eu.timepit.refined.W
@@ -223,7 +223,7 @@ trait TestUtilsIT {
       updatedAt = updatedAt
     )
 
-  val defaultSequenceCardsConfiguration = SequenceCardsConfiguration(
+  val defaultSequenceCardsConfiguration: SequenceCardsConfiguration = SequenceCardsConfiguration(
     introCard = IntroCard(enabled = true, title = None, description = None),
     pushProposalCard = PushProposalCard(enabled = true),
     signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
@@ -237,7 +237,8 @@ trait TestUtilsIT {
       linkUrl = None
     )
   )
-  val defaultMetas = Metas(title = Some("Metas title"), description = Some("Meta description"), picture = None)
+  val defaultMetas: Metas = Metas(title = Some("Metas title"), description = Some("Meta description"), picture = None)
+
   def operationOfQuestion(
     questionId: QuestionId,
     operationId: OperationId,
@@ -259,8 +260,13 @@ trait TestUtilsIT {
     proposalsCount: Int = 42,
     participantsCount: Int = 84,
     actions: Option[String] = None,
-    featured: Boolean = true
-  ) = OperationOfQuestion(
+    featured: Boolean = true,
+    votesCount: Int = 0,
+    votesTarget: Int = 100_000,
+    resultDate: Option[LocalDate] = None,
+    workshopDate: Option[LocalDate] = None,
+    actionDate: Option[LocalDate] = None
+  ): OperationOfQuestion = OperationOfQuestion(
     questionId = questionId,
     operationId = operationId,
     startDate = startDate,
@@ -281,7 +287,12 @@ trait TestUtilsIT {
     proposalsCount = proposalsCount,
     participantsCount = participantsCount,
     actions = actions,
-    featured = featured
+    featured = featured,
+    votesCount = votesCount,
+    votesTarget = votesTarget,
+    resultDate = resultDate,
+    workshopDate = workshopDate,
+    actionDate = actionDate
   )
 
   def post(
