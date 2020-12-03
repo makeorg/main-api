@@ -34,7 +34,9 @@ import enumeratum.NoSuchMember
 import io.circe.CursorOp.DownField
 import io.circe.syntax._
 import org.make.api.crmTemplates.{
-  AdminCrmTemplateApi,
+  AdminCrmLanguageTemplatesApi,
+  AdminCrmTemplatesApi,
+  DefaultAdminCrmLanguageTemplatesApiComponent,
   DefaultAdminCrmTemplatesApiComponent,
   DefaultCrmTemplatesServiceComponent,
   DefaultPersistentCrmLanguageTemplateServiceComponent,
@@ -133,6 +135,7 @@ trait MakeApi
     with DefaultActiveFeatureServiceComponent
     with DefaultAdminActiveFeatureApiComponent
     with DefaultAdminClientApiComponent
+    with DefaultAdminCrmLanguageTemplatesApiComponent
     with DefaultAdminCrmTemplatesApiComponent
     with DefaultAdminFeatureApiComponent
     with DefaultAdminIdeaMappingApiComponent
@@ -371,7 +374,8 @@ trait MakeApi
     Set(
       classOf[AdminActiveFeatureApi],
       classOf[AdminClientApi],
-      classOf[AdminCrmTemplateApi],
+      classOf[AdminCrmLanguageTemplatesApi],
+      classOf[AdminCrmTemplatesApi],
       classOf[AdminFeatureApi],
       classOf[AdminIdeaMappingApi],
       classOf[AdminOperationOfQuestionApi],
@@ -438,7 +442,8 @@ trait MakeApi
       envDependantRoutes ~
       adminActiveFeatureApi.routes ~
       adminClientApi.routes ~
-      adminCrmTemplateApi.routes ~
+      adminCrmLanguageTemplatesApi.routes ~
+      adminCrmTemplatesApi.routes ~
       adminFeatureApi.routes ~
       adminIdeaMappingApi.routes ~
       adminOperationOfQuestionApi.routes ~
