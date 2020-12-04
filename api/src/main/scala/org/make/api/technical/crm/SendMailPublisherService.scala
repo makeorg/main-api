@@ -32,7 +32,7 @@ import org.make.api.technical.crm.DefaultSendMailPublisherServiceComponent.Utm
 import org.make.api.user.UserServiceComponent
 import org.make.core.{ApplicationName, RequestContext}
 import org.make.core.BusinessConfig._
-import org.make.core.crmTemplate.{CrmTemplateKind, CrmTemplates}
+import org.make.core.crmTemplate.{CrmTemplateKind, MonitoringCategory}
 import org.make.core.crmTemplate.CrmTemplateKind._
 import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.question.{Question, QuestionId}
@@ -215,7 +215,7 @@ trait DefaultSendMailPublisherServiceComponent
                   )
                 ),
                 customCampaign = None,
-                monitoringCategory = Some(CrmTemplates.MonitoringCategory.welcome)
+                monitoringCategory = Some(MonitoringCategory.welcome)
               )
             )
           })
@@ -256,7 +256,7 @@ trait DefaultSendMailPublisherServiceComponent
                       )
                     ),
                     customCampaign = None,
-                    monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
+                    monitoringCategory = Some(MonitoringCategory.account)
                   )
                 )
               }
@@ -299,7 +299,7 @@ trait DefaultSendMailPublisherServiceComponent
                       )
                     ),
                     customCampaign = None,
-                    monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
+                    monitoringCategory = Some(MonitoringCategory.account)
                   )
                 )
               }
@@ -345,7 +345,7 @@ trait DefaultSendMailPublisherServiceComponent
                     )
                   ),
                   customCampaign = None,
-                  monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
+                  monitoringCategory = Some(MonitoringCategory.account)
                 )
               )
             })
@@ -388,7 +388,7 @@ trait DefaultSendMailPublisherServiceComponent
                     )
                   ),
                   customCampaign = None,
-                  monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
+                  monitoringCategory = Some(MonitoringCategory.account)
                 )
               )
             })
@@ -421,7 +421,7 @@ trait DefaultSendMailPublisherServiceComponent
               ),
               variables = Some(Map("email" -> newEmail)),
               customCampaign = None,
-              monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
+              monitoringCategory = Some(MonitoringCategory.account)
             )
           )
         })
@@ -458,7 +458,7 @@ trait DefaultSendMailPublisherServiceComponent
               ),
               variables = Some(variables(question, user, proposal)),
               customCampaign = None,
-              monitoringCategory = Some(CrmTemplates.MonitoringCategory.moderation)
+              monitoringCategory = Some(MonitoringCategory.moderation)
             )
           )
         }
@@ -560,7 +560,7 @@ trait DefaultSendMailPublisherServiceComponent
                     )
                   ),
                   customCampaign = None,
-                  monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
+                  monitoringCategory = Some(MonitoringCategory.account)
                 )
               )
             })

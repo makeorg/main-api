@@ -36,14 +36,11 @@ import io.circe.syntax._
 import org.make.api.crmTemplates.{
   AdminCrmLanguageTemplatesApi,
   AdminCrmQuestionTemplatesApi,
-  AdminCrmTemplatesApi,
   DefaultAdminCrmLanguageTemplatesApiComponent,
   DefaultAdminCrmQuestionTemplatesApiComponent,
-  DefaultAdminCrmTemplatesApiComponent,
   DefaultCrmTemplatesServiceComponent,
   DefaultPersistentCrmLanguageTemplateServiceComponent,
-  DefaultPersistentCrmQuestionTemplateServiceComponent,
-  DefaultPersistentCrmTemplatesServiceComponent
+  DefaultPersistentCrmQuestionTemplateServiceComponent
 }
 import org.make.api.extensions._
 import org.make.api.feature._
@@ -139,7 +136,6 @@ trait MakeApi
     with DefaultAdminClientApiComponent
     with DefaultAdminCrmLanguageTemplatesApiComponent
     with DefaultAdminCrmQuestionTemplatesApiComponent
-    with DefaultAdminCrmTemplatesApiComponent
     with DefaultAdminFeatureApiComponent
     with DefaultAdminIdeaMappingApiComponent
     with DefaultAdminOperationOfQuestionApiComponent
@@ -214,7 +210,6 @@ trait MakeApi
     with DefaultPersistentClientServiceComponent
     with DefaultPersistentCrmLanguageTemplateServiceComponent
     with DefaultPersistentCrmQuestionTemplateServiceComponent
-    with DefaultPersistentCrmTemplatesServiceComponent
     with DefaultPersistentCrmUserServiceComponent
     with DefaultPersistentFeatureServiceComponent
     with DefaultPersistentIdeaMappingServiceComponent
@@ -379,7 +374,6 @@ trait MakeApi
       classOf[AdminClientApi],
       classOf[AdminCrmLanguageTemplatesApi],
       classOf[AdminCrmQuestionTemplatesApi],
-      classOf[AdminCrmTemplatesApi],
       classOf[AdminFeatureApi],
       classOf[AdminIdeaMappingApi],
       classOf[AdminOperationOfQuestionApi],
@@ -448,7 +442,6 @@ trait MakeApi
       adminClientApi.routes ~
       adminCrmLanguageTemplatesApi.routes ~
       adminCrmQuestionTemplatesApi.routes ~
-      adminCrmTemplatesApi.routes ~
       adminFeatureApi.routes ~
       adminIdeaMappingApi.routes ~
       adminOperationOfQuestionApi.routes ~

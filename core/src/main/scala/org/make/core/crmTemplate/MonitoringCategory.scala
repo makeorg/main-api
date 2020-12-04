@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2018 Make.org
+ *  Copyright (C) 2020 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -19,6 +19,8 @@
 
 package org.make.core.crmTemplate
 
-trait CrmTemplate {
-  def template: TemplateId
+object MonitoringCategory {
+  val account = "account"
+  val welcome = "welcome"
+  val moderation = "moderation"
 }

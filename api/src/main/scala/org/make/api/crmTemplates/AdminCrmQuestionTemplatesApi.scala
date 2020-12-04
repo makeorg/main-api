@@ -128,7 +128,7 @@ trait AdminCrmQuestionTemplatesApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[CrmTemplatesResponse]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[CrmQuestionTemplate]))
   )
   @Path(value = "/{crmQuestionTemplateId}")
   def adminUpdateCrmQuestionTemplates: Route
