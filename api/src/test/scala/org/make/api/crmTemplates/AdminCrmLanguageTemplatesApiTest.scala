@@ -114,6 +114,11 @@ class AdminCrmLanguageTemplatesApiTest
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
+
+      Get("/admin/crm-templates/languages/too_long")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
     }
   }
 
@@ -239,24 +244,24 @@ class AdminCrmLanguageTemplatesApiTest
       .thenReturn(Future.successful(values(el)))
 
     Scenario("update") {
-      Post("/admin/crm-templates/languages/el")
+      Put("/admin/crm-templates/languages/el")
         .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString)) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
 
-      Post("/admin/crm-templates/languages/el")
+      Put("/admin/crm-templates/languages/el")
         .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
 
-      Post("/admin/crm-templates/languages/el")
+      Put("/admin/crm-templates/languages/el")
         .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
 
-      Post("/admin/crm-templates/languages/el")
+      Put("/admin/crm-templates/languages/el")
         .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -264,7 +269,7 @@ class AdminCrmLanguageTemplatesApiTest
     }
 
     Scenario("invalid") {
-      Post("/admin/crm-templates/languages/el")
+      Put("/admin/crm-templates/languages/el")
         .withEntity(HttpEntity(ContentTypes.`application/json`, missingTemplates))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
@@ -274,7 +279,13 @@ class AdminCrmLanguageTemplatesApiTest
         errors.map(_.field).contains("welcome") shouldBe true
       }
 
-      Post("/admin/crm-templates/languages/non")
+      Put("/admin/crm-templates/languages/non")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+
+      Put("/admin/crm-templates/languages/too_long")
         .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)

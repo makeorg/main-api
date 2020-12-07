@@ -24,6 +24,7 @@ import akka.http.scaladsl.server._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiModelProperty, _}
+
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
@@ -36,6 +37,7 @@ import org.make.core.{BusinessConfig, HttpCodes, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
+import scala.util.Try
 
 @Api(value = "Admin Crm Templates - Languages")
 @Path(value = "/admin/crm-templates/languages")
@@ -146,7 +148,7 @@ trait DefaultAdminCrmLanguageTemplatesApiComponent
     with SessionHistoryCoordinatorServiceComponent
     with MakeSettingsComponent =>
 
-  val language: PathMatcher1[Language] = Segment.map(Language.apply)
+  val language: PathMatcher1[Language] = Segment.flatMap(lang => Try(Language(lang)).toOption)
 
   override lazy val adminCrmLanguageTemplatesApi: AdminCrmLanguageTemplatesApi = new DefaultAdminCrmLanguageTemplatesApi
 
@@ -220,7 +222,7 @@ trait DefaultAdminCrmLanguageTemplatesApiComponent
       }
     }
 
-    override def adminUpdateCrmLanguageTemplates: Route = post {
+    override def adminUpdateCrmLanguageTemplates: Route = put {
       path("admin" / "crm-templates" / "languages" / language) { language =>
         makeOperation("AdminUpdateCrmLanguageTemplates") { _ =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
