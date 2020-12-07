@@ -19,11 +19,11 @@
 
 package org.make.core.crmTemplate
 
-import enumeratum.{Enum, EnumEntry}
+import enumeratum.{CirceEnum, Enum, EnumEntry}
 
 sealed abstract class CrmTemplateKind extends EnumEntry with Product with Serializable
 
-object CrmTemplateKind extends Enum[CrmTemplateKind] {
+object CrmTemplateKind extends Enum[CrmTemplateKind] with CirceEnum[CrmTemplateKind] {
 
   case object Registration extends CrmTemplateKind
   case object Welcome extends CrmTemplateKind
@@ -39,5 +39,4 @@ object CrmTemplateKind extends Enum[CrmTemplateKind] {
   case object B2BProposalRefused extends CrmTemplateKind
 
   override def values: IndexedSeq[CrmTemplateKind] = findValues
-
 }

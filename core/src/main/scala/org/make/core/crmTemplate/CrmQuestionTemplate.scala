@@ -19,6 +19,8 @@
 
 package org.make.core.crmTemplate
 
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, Encoder}
 import org.make.core.StringValue
 import org.make.core.question.QuestionId
 
@@ -29,4 +31,16 @@ final case class CrmQuestionTemplate(
   template: TemplateId
 )
 
+object CrmQuestionTemplate {
+  implicit val encoder: Encoder[CrmQuestionTemplate] = deriveEncoder[CrmQuestionTemplate]
+  implicit val decoder: Decoder[CrmQuestionTemplate] = deriveDecoder[CrmQuestionTemplate]
+}
+
 final case class CrmQuestionTemplateId(value: String) extends StringValue
+
+object CrmQuestionTemplateId {
+  implicit val CrmQuestionTemplateIdEncoder: Encoder[CrmQuestionTemplateId] =
+    Encoder[String].contramap(_.value)
+  implicit val CrmQuestionTemplateIdDecoder: Decoder[CrmQuestionTemplateId] =
+    Decoder[String].map(CrmQuestionTemplateId.apply)
+}

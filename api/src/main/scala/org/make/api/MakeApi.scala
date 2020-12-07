@@ -35,8 +35,10 @@ import io.circe.CursorOp.DownField
 import io.circe.syntax._
 import org.make.api.crmTemplates.{
   AdminCrmLanguageTemplatesApi,
+  AdminCrmQuestionTemplatesApi,
   AdminCrmTemplatesApi,
   DefaultAdminCrmLanguageTemplatesApiComponent,
+  DefaultAdminCrmQuestionTemplatesApiComponent,
   DefaultAdminCrmTemplatesApiComponent,
   DefaultCrmTemplatesServiceComponent,
   DefaultPersistentCrmLanguageTemplateServiceComponent,
@@ -136,6 +138,7 @@ trait MakeApi
     with DefaultAdminActiveFeatureApiComponent
     with DefaultAdminClientApiComponent
     with DefaultAdminCrmLanguageTemplatesApiComponent
+    with DefaultAdminCrmQuestionTemplatesApiComponent
     with DefaultAdminCrmTemplatesApiComponent
     with DefaultAdminFeatureApiComponent
     with DefaultAdminIdeaMappingApiComponent
@@ -375,6 +378,7 @@ trait MakeApi
       classOf[AdminActiveFeatureApi],
       classOf[AdminClientApi],
       classOf[AdminCrmLanguageTemplatesApi],
+      classOf[AdminCrmQuestionTemplatesApi],
       classOf[AdminCrmTemplatesApi],
       classOf[AdminFeatureApi],
       classOf[AdminIdeaMappingApi],
@@ -443,6 +447,7 @@ trait MakeApi
       adminActiveFeatureApi.routes ~
       adminClientApi.routes ~
       adminCrmLanguageTemplatesApi.routes ~
+      adminCrmQuestionTemplatesApi.routes ~
       adminCrmTemplatesApi.routes ~
       adminFeatureApi.routes ~
       adminIdeaMappingApi.routes ~
