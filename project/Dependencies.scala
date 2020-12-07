@@ -28,7 +28,7 @@ object Dependencies {
   private val kafkaVersion = "1.1.0"
   private val elastic4sVersion = "6.7.8"
   private val jerseyVersion = "2.32"
-  private val kamonVersion = "2.1.7"
+  private val kamonVersion = "2.1.9"
   private val log4jVersion = "2.13.3"
   private val circeVersion = "0.13.0"
   val kanelaVersion: String = "1.0.7"
