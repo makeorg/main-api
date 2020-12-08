@@ -139,6 +139,9 @@ class AdminCrmQuestionTemplatesApiTest
     val kind = CrmTemplateKind.Registration
     val fakeQuestionId = QuestionId("fake")
 
+    val id = CrmQuestionTemplateId("id-create")
+    when(idGenerator.nextCrmQuestionTemplateId()).thenReturn(id)
+
     when(questionService.getQuestion(eqTo(fakeQuestionId))).thenReturn(Future.successful(None))
     when(crmTemplatesService.list(eqTo(fakeQuestionId))).thenReturn(Future.successful(Seq()))
 
@@ -151,12 +154,12 @@ class AdminCrmQuestionTemplatesApiTest
     when(crmTemplatesService.list(eqTo(alreadyExistsId)))
       .thenReturn(Future.successful(Seq(template(alreadyExistsId, kind))))
 
-    val valid = template(questionId, kind)
-    val alreadyExists = template(alreadyExistsId, kind)
+    val valid = CreateCrmQuestionTemplate(kind, questionId, TemplateId("4321"))
+    val alreadyExists = CreateCrmQuestionTemplate(kind, alreadyExistsId, TemplateId("4321"))
     val fakeQuestion = valid.copy(questionId = fakeQuestionId)
 
-    when(crmTemplatesService.create(eqTo(valid)))
-      .thenReturn(Future.successful(valid))
+    when(crmTemplatesService.create(eqTo(valid.toCrmQuestionTemplate(id))))
+      .thenReturn(Future.successful(valid.toCrmQuestionTemplate(id)))
 
     Scenario("create") {
       Post("/admin/crm-templates/questions")
@@ -212,8 +215,10 @@ class AdminCrmQuestionTemplatesApiTest
   Feature("update a crmTemplates") {
     val questionId: QuestionId = QuestionId("update")
     val kind = CrmTemplateKind.Registration
+    val doNotOverrideKind = CrmTemplateKind.Welcome
     val fakeQuestionId = QuestionId("fake")
     val templateUpdate = template(questionId, kind)
+    val templateNotToOverride = templateUpdate.copy(id = CrmQuestionTemplateId("other-id"), kind = doNotOverrideKind)
 
     when(crmTemplatesService.get(eqTo(CrmQuestionTemplateId("id-fake"))))
       .thenReturn(Future.successful(None))
@@ -223,6 +228,8 @@ class AdminCrmQuestionTemplatesApiTest
       .thenReturn(Future.successful(Some(templateUpdate)))
     when(questionService.getQuestion(eqTo(questionId)))
       .thenReturn(Future.successful(Some(TestUtils.question(questionId))))
+    when(crmTemplatesService.list(eqTo(questionId)))
+      .thenReturn(Future.successful(Seq(templateUpdate, templateNotToOverride)))
 
     val valid = templateUpdate.copy(template = TemplateId("4567"))
     val fakeQuestion = valid.copy(questionId = fakeQuestionId)
@@ -260,6 +267,32 @@ class AdminCrmQuestionTemplatesApiTest
         .withEntity(HttpEntity(ContentTypes.`application/json`, fakeQuestion.asJson.toString))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
+      }
+    }
+
+    Scenario("kind already exists") {
+      Put("/admin/crm-templates/questions/id-update")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, valid.copy(kind = doNotOverrideKind).asJson.toString))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size should be(1)
+        errors.head.field should be("kind")
+      }
+    }
+
+    Scenario("fake question") {
+      Put("/admin/crm-templates/questions/id-update")
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, valid.copy(questionId = fakeQuestionId).asJson.toString)
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size should be(1)
+        errors.head.field should be("questionId")
       }
     }
   }

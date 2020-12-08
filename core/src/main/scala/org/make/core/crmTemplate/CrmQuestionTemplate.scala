@@ -21,14 +21,17 @@ package org.make.core.crmTemplate
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
+import io.swagger.annotations.ApiModelProperty
 import org.make.core.StringValue
 import org.make.core.question.QuestionId
 
+import scala.annotation.meta.field
+
 final case class CrmQuestionTemplate(
-  id: CrmQuestionTemplateId,
-  kind: CrmTemplateKind,
-  questionId: QuestionId,
-  template: TemplateId
+  @(ApiModelProperty @field)(dataType = "string", example = "97077fa2-888d-4683-a12c-1b74e0a39991") id: CrmQuestionTemplateId,
+  @(ApiModelProperty @field)(dataType = "string", example = "Welcome") kind: CrmTemplateKind,
+  @(ApiModelProperty @field)(dataType = "string", example = "b5a66352-a081-4518-a909-3fa1ec95e224") questionId: QuestionId,
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") template: TemplateId
 )
 
 object CrmQuestionTemplate {

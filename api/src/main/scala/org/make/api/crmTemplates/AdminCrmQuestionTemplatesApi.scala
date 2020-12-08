@@ -21,6 +21,8 @@ package org.make.api.crmTemplates
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.QuestionServiceComponent
@@ -28,12 +30,13 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
-import org.make.core.crmTemplate.{CrmQuestionTemplate, CrmQuestionTemplateId}
+import org.make.core.crmTemplate.{CrmQuestionTemplate, CrmQuestionTemplateId, CrmTemplateKind, TemplateId}
 import org.make.core.question.QuestionId
 import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import javax.ws.rs.Path
+import scala.annotation.meta.field
 
 @Api(value = "Admin Crm Templates - Questions")
 @Path(value = "/admin/crm-templates/questions")
@@ -50,6 +53,7 @@ trait AdminCrmQuestionTemplatesApi extends Directives {
       )
     )
   )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string")))
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[CrmQuestionTemplate]]))
   )
@@ -72,7 +76,7 @@ trait AdminCrmQuestionTemplatesApi extends Directives {
       new ApiImplicitParam(
         value = "body",
         paramType = "body",
-        dataType = "org.make.api.crmTemplates.CrmQuestionTemplates"
+        dataType = "org.make.api.crmTemplates.CreateCrmQuestionTemplate"
       )
     )
   )
@@ -82,7 +86,7 @@ trait AdminCrmQuestionTemplatesApi extends Directives {
   @Path(value = "/")
   def adminCreateCrmQuestionTemplates: Route
 
-  @Path(value = "/{question}")
+  @Path(value = "/{crmQuestionTemplateId}")
   @ApiOperation(
     value = "get-crm-question-template",
     httpMethod = "GET",
@@ -97,7 +101,9 @@ trait AdminCrmQuestionTemplatesApi extends Directives {
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[CrmQuestionTemplate]))
   )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "question", paramType = "path", dataType = "string")))
+  @ApiImplicitParams(
+    value = Array(new ApiImplicitParam(name = "crmQuestionTemplateId", paramType = "path", dataType = "string"))
+  )
   def adminGetCrmQuestionTemplates: Route
 
   @ApiOperation(
@@ -113,18 +119,18 @@ trait AdminCrmQuestionTemplatesApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "question", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "crmQuestionTemplateId", paramType = "path", dataType = "string"),
       new ApiImplicitParam(
         value = "body",
         paramType = "body",
-        dataType = "org.make.api.crmTemplates.CrmQuestionTemplates"
+        dataType = "org.make.core.crmTemplate.CrmQuestionTemplate"
       )
     )
   )
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[CrmTemplatesResponse]))
   )
-  @Path(value = "/{question}")
+  @Path(value = "/{crmQuestionTemplateId}")
   def adminUpdateCrmQuestionTemplates: Route
 
   def routes: Route =
@@ -176,7 +182,7 @@ trait DefaultAdminCrmQuestionTemplatesApiComponent
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireAdminRole(userAuth.user) {
               decodeRequest {
-                entity(as[CrmQuestionTemplate]) { request: CrmQuestionTemplate =>
+                entity(as[CreateCrmQuestionTemplate]) { request: CreateCrmQuestionTemplate =>
                   provideAsync(questionService.getQuestion(request.questionId)) { maybeQuestion =>
                     provideAsync(crmTemplatesService.list(request.questionId)) { allQuestionTemplates =>
                       Validation.validate(
@@ -193,7 +199,10 @@ trait DefaultAdminCrmQuestionTemplatesApiComponent
                           message = "CRM templates already exist for this question and templateKind."
                         )
                       )
-                      provideAsync(crmTemplatesService.create(request)) { template =>
+                      provideAsync(
+                        crmTemplatesService
+                          .create(request.toCrmQuestionTemplate(idGenerator.nextCrmQuestionTemplateId()))
+                      ) { template =>
                         complete(StatusCodes.Created -> template)
                       }
                     }
@@ -230,8 +239,26 @@ trait DefaultAdminCrmQuestionTemplatesApiComponent
               decodeRequest {
                 entity(as[CrmQuestionTemplate]) { request: CrmQuestionTemplate =>
                   provideAsyncOrNotFound(crmTemplatesService.get(crmQuestionTemplateId)) { _ =>
-                    provideAsync(crmTemplatesService.update(request)) { template =>
-                      complete(template)
+                    provideAsync(crmTemplatesService.list(request.questionId)) { templates =>
+                      provideAsync(questionService.getQuestion(request.questionId)) { maybeQuestion =>
+                        Validation.validate(
+                          Validation.validateField(
+                            field = "questionId",
+                            key = "invalid_value",
+                            condition = maybeQuestion.isDefined,
+                            message = s"Question ${request.questionId} does not exist."
+                          ),
+                          Validation.validateField(
+                            field = "kind",
+                            key = "invalid_value",
+                            condition = !templates.exists(t => t.id != request.id && t.kind == request.kind),
+                            message = s"Kind ${request.kind} already exists for this template but with a different id."
+                          )
+                        )
+                        provideAsync(crmTemplatesService.update(request)) { template =>
+                          complete(template)
+                        }
+                      }
                     }
                   }
                 }
@@ -241,6 +268,20 @@ trait DefaultAdminCrmQuestionTemplatesApiComponent
         }
       }
     }
-  }
 
+  }
+}
+
+final case class CreateCrmQuestionTemplate(
+  @(ApiModelProperty @field)(dataType = "string", example = "Welcome") kind: CrmTemplateKind,
+  @(ApiModelProperty @field)(dataType = "string", example = "0320b63d-8475-491e-9d4f-47e9fa62a0e8") questionId: QuestionId,
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") template: TemplateId
+) {
+  def toCrmQuestionTemplate(id: CrmQuestionTemplateId): CrmQuestionTemplate =
+    CrmQuestionTemplate(id = id, kind = kind, questionId = questionId, template = template)
+}
+
+object CreateCrmQuestionTemplate {
+  implicit val encoder: Encoder[CreateCrmQuestionTemplate] = deriveEncoder[CreateCrmQuestionTemplate]
+  implicit val decoder: Decoder[CreateCrmQuestionTemplate] = deriveDecoder[CreateCrmQuestionTemplate]
 }
