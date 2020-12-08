@@ -70,7 +70,7 @@ class ModerationTagTypeApiTest
       }
     }
 
-    Scenario("allow authenticated moderator") {
+    Scenario("disallow authenticated moderator") {
       Post("/moderation/tag-types")
         .withEntity(
           HttpEntity(
@@ -79,6 +79,19 @@ class ModerationTagTypeApiTest
           )
         )
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("allow authenticated admin") {
+      Post("/moderation/tag-types")
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            """{"label": "valid TagType", "display":"HIDDEN", "weight": 0, "requiredForEnrichment": false}"""
+          )
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.Created)
       }
     }
@@ -171,7 +184,7 @@ class ModerationTagTypeApiTest
       }
     }
 
-    Scenario("allow authenticated moderator on existing tag type") {
+    Scenario("disallow authenticated moderator on existing tag type") {
       Put("/moderation/tag-types/hello-tag-type")
         .withEntity(
           HttpEntity(
@@ -180,6 +193,19 @@ class ModerationTagTypeApiTest
           )
         )
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("allow authenticated admin on existing tag type") {
+      Put("/moderation/tag-types/hello-tag-type")
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            """{"label": "new label", "display":"HIDDEN", "weight": 0, "requiredForEnrichment": true}"""
+          )
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val tagType: TagTypeResponse = entityAs[TagTypeResponse]
         tagType.id should be(newHelloWorldTagType.tagTypeId)
@@ -188,7 +214,7 @@ class ModerationTagTypeApiTest
       }
     }
 
-    Scenario("not found and allow authenticated moderator on a non existing tag type") {
+    Scenario("not found and allow authenticated admin on a non existing tag type") {
       Put("/moderation/tag-types/fake-tag-type")
         .withEntity(
           HttpEntity(
@@ -196,7 +222,7 @@ class ModerationTagTypeApiTest
             """{"label": "new label", "display":"HIDDEN", "weight": 0, "requiredForEnrichment": true}"""
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }

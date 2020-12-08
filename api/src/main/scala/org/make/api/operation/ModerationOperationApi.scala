@@ -159,7 +159,7 @@ trait DefaultModerationOperationApiComponent
         path("moderation" / "operations") {
           makeOperation("ModerationPostOperation") { _ =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireModerationRole(auth.user) {
+              requireAdminRole(auth.user) {
                 decodeRequest {
                   entity(as[ModerationCreateOperationRequest]) { request: ModerationCreateOperationRequest =>
                     provideAsync(operationService.findOneBySlug(request.slug)) { maybeOperation =>
@@ -188,7 +188,7 @@ trait DefaultModerationOperationApiComponent
         path("moderation" / "operations" / operationId) { operationId =>
           makeOperation("ModerationPutOperation") { _ =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireModerationRole(auth.user) {
+              requireAdminRole(auth.user) {
                 provideAsyncOrNotFound(operationService.findOneSimple(operationId)) { _ =>
                   decodeRequest {
                     entity(as[ModerationUpdateOperationRequest]) { request: ModerationUpdateOperationRequest =>

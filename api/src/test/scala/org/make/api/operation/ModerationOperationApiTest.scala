@@ -172,10 +172,12 @@ class ModerationOperationApiTest
       |}
     """.stripMargin
 
-  val johnToken = "john-citizen-token"
-  val tyrionToken = "tyrion-citizen-token"
+  val userToken = "john-citizen-token"
+  val moderatorToken = "tyrion-citizen-token"
+  val adminToken = "daenerys-citizen-token"
 
-  override def customUserByToken: Map[String, User] = Map(johnToken -> john, tyrionToken -> tyrion)
+  override def customUserByToken: Map[String, User] =
+    Map(userToken -> john, moderatorToken -> tyrion, adminToken -> daenerys)
 
   when(userService.getUser(eqTo(john.userId))).thenReturn(Future.successful(Some(john)))
   when(userService.getUser(eqTo(tyrion.userId))).thenReturn(Future.successful(Some(tyrion)))
@@ -226,7 +228,11 @@ class ModerationOperationApiTest
     .thenReturn(Future.successful(Some(firstFullOperation.copy(operationId = OperationId("updateOperationId")))))
   when(
     operationService
-      .create(userId = tyrion.userId, slug = "my-create-operation", operationKind = OperationKind.BusinessConsultation)
+      .create(
+        userId = daenerys.userId,
+        slug = "my-create-operation",
+        operationKind = OperationKind.BusinessConsultation
+      )
   ).thenReturn(Future.successful(OperationId("createdOperationId")))
 
   when(operationService.findOneSimple(OperationId("updateOperationId")))
@@ -234,7 +240,7 @@ class ModerationOperationApiTest
   when(
     operationService.update(
       operationId = OperationId("updateOperationId"),
-      userId = tyrion.userId,
+      userId = daenerys.userId,
       status = Some(OperationStatus.Active),
       slug = Some("my-update-operation"),
       operationKind = Some(OperationKind.GreatCause)
@@ -243,7 +249,7 @@ class ModerationOperationApiTest
   when(
     operationService.update(
       operationId = OperationId("updateOperationId"),
-      userId = tyrion.userId,
+      userId = daenerys.userId,
       status = Some(OperationStatus.Active),
       slug = Some("existing-operation-slug-second"),
       operationKind = Some(OperationKind.GreatCause)
@@ -271,7 +277,7 @@ class ModerationOperationApiTest
       Then("I get a forbidden status response")
       Get("/moderation/operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(johnToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(userToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -282,7 +288,7 @@ class ModerationOperationApiTest
       Then("I get a list of 2 operations")
       Get("/moderation/operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
         header("x-total-count").map(_.value) should be(Some("2"))
         val moderationOperationsResponse = entityAs[Seq[ModerationOperationResponse]]
@@ -300,7 +306,7 @@ class ModerationOperationApiTest
       And("the operation match the slug")
       Get("/moderation/operations?slug=second-operation")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
         header("x-total-count").map(_.value) should be(Some("1"))
         val moderationOperationsResponse: Seq[ModerationOperationResponse] =
@@ -330,7 +336,7 @@ class ModerationOperationApiTest
       Then("I get a forbidden status response")
       Get("/moderation/operations/firstOperation")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(johnToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(userToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -341,7 +347,7 @@ class ModerationOperationApiTest
       Then("I get a not found status response")
       Get("/moderation/operations/fakeid")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
@@ -352,7 +358,7 @@ class ModerationOperationApiTest
       Then("the call success")
       Get("/moderation/operations/firstOperation")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
         val firstOperationResult: ModerationOperationResponse =
           entityAs[ModerationOperationResponse]
@@ -376,18 +382,28 @@ class ModerationOperationApiTest
       Then("I get a forbidden status response")
       Post("/moderation/operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validCreateJson"))
-        .withHeaders(Authorization(OAuth2BearerToken(johnToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(userToken))) ~> operationRoutes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("create an operation as moderator") {
+      When("I create a proposal with a moderation role authentication")
+      Then("I get a Forbidden status")
+      Post("/moderation/operations")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validCreateJson"))
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     Scenario("create an operation") {
-      When("I create a proposal with a moderation role authentication")
+      When("I create a proposal with an admin role authentication")
       Then("I get a success status")
       And("operation is registered")
       Post("/moderation/operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validCreateJson"))
-        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.Created)
       }
     }
@@ -403,7 +419,7 @@ class ModerationOperationApiTest
             "my-create-operation".r.replaceFirstIn(s"$validCreateJson", "existing-operation-slug")
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "slug")
@@ -432,18 +448,27 @@ class ModerationOperationApiTest
       Then("I get a forbidden status response")
       Put("/moderation/operations/updateOperationId")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validUpdateJson"))
-        .withHeaders(Authorization(OAuth2BearerToken(johnToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(userToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    Scenario("update an operation") {
-      When("I create a proposal with a moderation role authentication")
-      Then("I get a success status")
-      And("operation is registered")
+    Scenario("update an operation as a moderator") {
+      When("I update an operation with a moderation role authentication")
+      Then("I get a forbidden status code")
       Put("/moderation/operations/updateOperationId")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validUpdateJson"))
-        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("update an operation as a admin") {
+      When("I update an operation with an admin role authentication")
+      Then("I get a Ok status code")
+      Put("/moderation/operations/updateOperationId")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validUpdateJson"))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
       }
     }
@@ -459,7 +484,7 @@ class ModerationOperationApiTest
             "my-update-operation".r.replaceFirstIn(s"$validUpdateJson", "existing-operation-slug")
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "slug")
@@ -480,7 +505,7 @@ class ModerationOperationApiTest
             "my-update-operation".r.replaceFirstIn(s"$validUpdateJson", "existing-operation-slug-second")
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
       }
     }
