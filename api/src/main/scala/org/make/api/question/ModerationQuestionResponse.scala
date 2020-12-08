@@ -209,7 +209,7 @@ final case class OperationOfQuestionTimelineResponse(
   actionDate: Option[LocalDate]
 )
 
-object OperationOfQuestionTimelineResponse {
+object OperationOfQuestionTimelineResponse extends CirceFormatters {
   implicit val codec: Codec[OperationOfQuestionTimelineResponse] = deriveCodec
 }
 
