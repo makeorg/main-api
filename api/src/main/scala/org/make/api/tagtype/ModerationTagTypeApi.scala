@@ -185,7 +185,7 @@ trait DefaultModerationTagTypeApiComponent
       path("moderation" / "tag-types") {
         makeOperation("ModerationCreateTagType") { _ =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            requireModerationRole(userAuth.user) {
+            requireAdminRole(userAuth.user) {
               decodeRequest {
                 entity(as[CreateTagTypeRequest]) { request: CreateTagTypeRequest =>
                   Validation.validate(Validation.validateUserInput("label", request.label, None))
@@ -207,7 +207,7 @@ trait DefaultModerationTagTypeApiComponent
       path("moderation" / "tag-types" / moderationTagTypeId) { moderationTagTypeId =>
         makeOperation("ModerationRegisterTagType") { _ =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            requireModerationRole(userAuth.user) {
+            requireAdminRole(userAuth.user) {
               decodeRequest {
                 entity(as[UpdateTagTypeRequest]) { request: UpdateTagTypeRequest =>
                   Validation.validate(Validation.validateUserInput("label", request.label, None))
