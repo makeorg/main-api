@@ -18,7 +18,7 @@
  */
 
 package org.make.api.operation
-import java.time.ZonedDateTime
+import java.time.{LocalDate, ZonedDateTime}
 
 import cats.Show
 import cats.data.NonEmptyList
@@ -183,7 +183,12 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               PersistentOperationOfQuestion.column.proposalsCount -> operationOfQuestion.proposalsCount,
               PersistentOperationOfQuestion.column.participantsCount -> operationOfQuestion.participantsCount,
               PersistentOperationOfQuestion.column.actions -> operationOfQuestion.actions,
-              PersistentOperationOfQuestion.column.featured -> operationOfQuestion.featured
+              PersistentOperationOfQuestion.column.featured -> operationOfQuestion.featured,
+              PersistentOperationOfQuestion.column.votesCount -> operationOfQuestion.votesCount,
+              PersistentOperationOfQuestion.column.votesTarget -> operationOfQuestion.votesTarget,
+              PersistentOperationOfQuestion.column.resultDate -> operationOfQuestion.resultDate,
+              PersistentOperationOfQuestion.column.workshopDate -> operationOfQuestion.workshopDate,
+              PersistentOperationOfQuestion.column.actionDate -> operationOfQuestion.actionDate
             )
         }.execute().apply()
       }).map(_ => operationOfQuestion)
@@ -234,7 +239,12 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               PersistentOperationOfQuestion.column.proposalsCount -> operationOfQuestion.proposalsCount,
               PersistentOperationOfQuestion.column.participantsCount -> operationOfQuestion.participantsCount,
               PersistentOperationOfQuestion.column.actions -> operationOfQuestion.actions,
-              PersistentOperationOfQuestion.column.featured -> operationOfQuestion.featured
+              PersistentOperationOfQuestion.column.featured -> operationOfQuestion.featured,
+              PersistentOperationOfQuestion.column.votesCount -> operationOfQuestion.votesCount,
+              PersistentOperationOfQuestion.column.votesTarget -> operationOfQuestion.votesTarget,
+              PersistentOperationOfQuestion.column.resultDate -> operationOfQuestion.resultDate,
+              PersistentOperationOfQuestion.column.workshopDate -> operationOfQuestion.workshopDate,
+              PersistentOperationOfQuestion.column.actionDate -> operationOfQuestion.actionDate
             )
             .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, operationOfQuestion.questionId))
         }.execute().apply()
@@ -367,7 +377,12 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
     proposalsCount: Int,
     participantsCount: Int,
     actions: Option[String],
-    featured: Boolean
+    featured: Boolean,
+    votesCount: Int,
+    votesTarget: Int,
+    resultDate: Option[LocalDate],
+    workshopDate: Option[LocalDate],
+    actionDate: Option[LocalDate]
   ) {
     def toOperationOfQuestion: OperationOfQuestion = OperationOfQuestion(
       questionId = QuestionId(this.questionId),
@@ -418,7 +433,12 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
       proposalsCount = this.proposalsCount,
       participantsCount = this.participantsCount,
       actions = this.actions,
-      featured = this.featured
+      featured = this.featured,
+      votesTarget = this.votesTarget,
+      votesCount = this.votesCount,
+      resultDate = this.resultDate,
+      workshopDate = this.workshopDate,
+      actionDate = this.actionDate
     )
   }
 
@@ -477,7 +497,12 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
       proposalsCount: Int,
       participantsCount: Int,
       actions: Option[String],
-      featured: Boolean
+      featured: Boolean,
+      votesCount: Int,
+      votesTarget: Int,
+      resultDate: Option[LocalDate],
+      workshopDate: Option[LocalDate],
+      actionDate: Option[LocalDate]
     ) {
       def toQuestionAndDetails: QuestionWithDetails = {
         QuestionWithDetails(
@@ -533,7 +558,12 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
             proposalsCount = this.proposalsCount,
             participantsCount = this.participantsCount,
             actions = this.actions,
-            featured = this.featured
+            featured = this.featured,
+            votesCount = this.votesCount,
+            votesTarget = this.votesTarget,
+            resultDate = this.resultDate,
+            workshopDate = this.workshopDate,
+            actionDate = this.actionDate
           )
         )
 
@@ -600,7 +630,12 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         proposalsCount = resultSet.int(operationOfQuestionAlias.proposalsCount),
         participantsCount = resultSet.int(operationOfQuestionAlias.participantsCount),
         actions = resultSet.stringOpt(operationOfQuestionAlias.actions),
-        featured = resultSet.boolean(operationOfQuestionAlias.featured)
+        featured = resultSet.boolean(operationOfQuestionAlias.featured),
+        votesCount = resultSet.int(operationOfQuestionAlias.votesCount),
+        votesTarget = resultSet.int(operationOfQuestionAlias.votesTarget),
+        resultDate = resultSet.localDateOpt(operationOfQuestionAlias.resultDate),
+        workshopDate = resultSet.localDateOpt(operationOfQuestionAlias.workshopDate),
+        actionDate = resultSet.localDateOpt(operationOfQuestionAlias.actionDate)
       )
     }
 
@@ -648,7 +683,12 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         "proposals_count",
         "participants_count",
         "actions",
-        "featured"
+        "featured",
+        "votes_count",
+        "votes_target",
+        "result_date",
+        "workshop_date",
+        "action_date"
       )
 
     override val tableName: String = "operation_of_question"
@@ -703,7 +743,12 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         proposalsCount = resultSet.int(resultName.proposalsCount),
         participantsCount = resultSet.int(resultName.participantsCount),
         actions = resultSet.stringOpt(resultName.actions),
-        featured = resultSet.boolean(resultName.featured)
+        featured = resultSet.boolean(resultName.featured),
+        votesCount = resultSet.int(resultName.votesCount),
+        votesTarget = resultSet.int(resultName.votesTarget),
+        resultDate = resultSet.localDateOpt(resultName.resultDate),
+        workshopDate = resultSet.localDateOpt(resultName.workshopDate),
+        actionDate = resultSet.localDateOpt(resultName.actionDate)
       )
     }
   }

@@ -64,14 +64,14 @@ class ModerationOperationApiTest
     firstName = Some("John"),
     lastName = Some("Snoww")
   )
-  val daenerys = TestUtils.user(
+  val daenerys: User = TestUtils.user(
     id = UserId("the-mother-of-dragons"),
     email = "d.narys@tergarian.com",
     firstName = Some("Daenerys"),
     lastName = Some("Tergarian"),
     roles = Seq(Role.RoleAdmin)
   )
-  val tyrion = TestUtils.user(
+  val tyrion: User = TestUtils.user(
     id = UserId("the-dwarf"),
     email = "tyrion@pays-his-debts.com",
     firstName = Some("Tyrion"),

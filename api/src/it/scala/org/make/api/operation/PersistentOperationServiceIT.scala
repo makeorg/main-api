@@ -86,7 +86,7 @@ class PersistentOperationServiceIT
   val sequenceIdGB: SequenceId = idGenerator.nextSequenceId()
   val operationId: OperationId = idGenerator.nextOperationId()
 
-  val fullOperation = Operation(
+  val fullOperation: Operation = Operation(
     operationId = operationId,
     createdAt = None,
     updatedAt = None,
@@ -112,14 +112,13 @@ class PersistentOperationServiceIT
           shortTitle = None,
           operationId = Some(operationId)
         ),
-        details = OperationOfQuestion(
+        details = operationOfQuestion(
           questionId = QuestionId("some-question"),
           operationId = operationId,
           startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
           endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
           operationTitle = "bonjour operation",
           landingSequenceId = sequenceIdFR,
-          canPropose = true,
           sequenceCardsConfiguration = SequenceCardsConfiguration(
             introCard = IntroCard(enabled = true, title = None, description = None),
             pushProposalCard = PushProposalCard(enabled = true),
@@ -143,10 +142,7 @@ class PersistentOperationServiceIT
           descriptionImage = None,
           descriptionImageAlt = None,
           resultsLink = None,
-          proposalsCount = 42,
-          participantsCount = 84,
-          actions = None,
-          featured = true
+          actions = None
         )
       ),
       QuestionWithDetails(
@@ -159,14 +155,13 @@ class PersistentOperationServiceIT
           shortTitle = None,
           operationId = Some(operationId)
         ),
-        details = OperationOfQuestion(
+        details = operationOfQuestion(
           questionId = QuestionId("some-question-gb"),
           operationId = operationId,
           startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
           endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
           operationTitle = "hello operation",
           landingSequenceId = sequenceIdGB,
-          canPropose = true,
           sequenceCardsConfiguration = SequenceCardsConfiguration(
             introCard = IntroCard(enabled = true, title = None, description = None),
             pushProposalCard = PushProposalCard(enabled = true),
@@ -190,10 +185,7 @@ class PersistentOperationServiceIT
           descriptionImage = None,
           descriptionImageAlt = None,
           resultsLink = Some(ResultsLink.Internal.TopIdeas),
-          proposalsCount = 42,
-          participantsCount = 84,
-          actions = None,
-          featured = true
+          actions = None
         )
       )
     )

@@ -20,7 +20,7 @@
 package org.make.api
 
 import java.net.URL
-import java.time.ZonedDateTime
+import java.time.{LocalDate, ZonedDateTime}
 
 import cats.data.NonEmptyList
 import eu.timepit.refined.W
@@ -402,7 +402,12 @@ trait TestUtils {
     proposalsCount: Int = 42,
     participantsCount: Int = 84,
     actions: Option[String] = None,
-    featured: Boolean = true
+    featured: Boolean = true,
+    votesCount: Int = 0,
+    votesTarget: Int = 100_000,
+    resultDate: Option[LocalDate] = None,
+    workshopDate: Option[LocalDate] = None,
+    actionDate: Option[LocalDate] = None
   ) = OperationOfQuestion(
     questionId = questionId,
     operationId = operationId,
@@ -424,7 +429,12 @@ trait TestUtils {
     proposalsCount = proposalsCount,
     participantsCount = participantsCount,
     actions = actions,
-    featured = featured
+    featured = featured,
+    votesCount = votesCount,
+    votesTarget = votesTarget,
+    resultDate = resultDate,
+    workshopDate = workshopDate,
+    actionDate = actionDate
   )
 
   def postGen(

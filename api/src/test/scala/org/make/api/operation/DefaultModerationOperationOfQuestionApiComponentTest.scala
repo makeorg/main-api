@@ -53,14 +53,13 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   when(operationOfQuestionService.create(any[CreateOperationOfQuestion])).thenAnswer {
     request: CreateOperationOfQuestion =>
       Future.successful(
-        OperationOfQuestion(
+        operationOfQuestion(
           questionId = QuestionId("some-question"),
           operationId = request.operationId,
           startDate = request.startDate,
           endDate = request.endDate,
           operationTitle = request.operationTitle,
           landingSequenceId = SequenceId("some-sequence"),
-          canPropose = true,
           sequenceCardsConfiguration = SequenceCardsConfiguration(
             introCard = IntroCard(enabled = true, title = None, description = None),
             pushProposalCard = PushProposalCard(enabled = true),
@@ -84,10 +83,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           descriptionImage = None,
           descriptionImageAlt = None,
           resultsLink = None,
-          proposalsCount = 42,
-          participantsCount = 84,
-          actions = None,
-          featured = true
+          actions = None
         )
       )
   }
@@ -95,14 +91,13 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   when(operationOfQuestionService.findByQuestionId(any[QuestionId])).thenAnswer { questionId: QuestionId =>
     Future.successful(
       Some(
-        OperationOfQuestion(
+        operationOfQuestion(
           questionId = questionId,
           operationId = OperationId("some-operation"),
           startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
           endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
           operationTitle = "some title",
           landingSequenceId = SequenceId("some-sequence"),
-          canPropose = true,
           sequenceCardsConfiguration = SequenceCardsConfiguration(
             introCard = IntroCard(enabled = true, title = None, description = None),
             pushProposalCard = PushProposalCard(enabled = true),
@@ -126,10 +121,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           descriptionImage = None,
           descriptionImageAlt = None,
           resultsLink = None,
-          proposalsCount = 42,
-          participantsCount = 84,
-          actions = None,
-          featured = true
+          actions = None
         )
       )
     )
@@ -161,14 +153,13 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   when(operationOfQuestionService.findByOperationId(any[OperationId])).thenAnswer { operationId: OperationId =>
     Future.successful(
       Seq(
-        OperationOfQuestion(
+        operationOfQuestion(
           questionId = QuestionId("question-1"),
           operationId = operationId,
           startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
           endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
           operationTitle = "opération en Français",
           landingSequenceId = SequenceId("landing-1"),
-          canPropose = true,
           sequenceCardsConfiguration = SequenceCardsConfiguration(
             introCard = IntroCard(enabled = true, title = None, description = None),
             pushProposalCard = PushProposalCard(enabled = true),
@@ -192,19 +183,15 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           descriptionImage = None,
           descriptionImageAlt = None,
           resultsLink = None,
-          proposalsCount = 42,
-          participantsCount = 84,
-          actions = None,
-          featured = true
+          actions = None
         ),
-        OperationOfQuestion(
+        operationOfQuestion(
           questionId = QuestionId("question-2"),
           operationId = operationId,
           startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
           endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
           operationTitle = "Operation in English",
           landingSequenceId = SequenceId("landing-2"),
-          canPropose = true,
           sequenceCardsConfiguration = SequenceCardsConfiguration(
             introCard = IntroCard(enabled = true, title = None, description = None),
             pushProposalCard = PushProposalCard(enabled = true),
@@ -228,10 +215,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           descriptionImage = None,
           descriptionImageAlt = None,
           resultsLink = None,
-          proposalsCount = 42,
-          participantsCount = 84,
-          actions = None,
-          featured = true
+          actions = None
         )
       )
     )
@@ -282,14 +266,13 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   ).thenReturn(
     Future.successful(
       Seq(
-        OperationOfQuestion(
+        operationOfQuestion(
           questionId = QuestionId("question-1"),
           operationId = OperationId("operation-1"),
           startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
           endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
           operationTitle = "some title",
           landingSequenceId = SequenceId("sequence-1"),
-          canPropose = true,
           sequenceCardsConfiguration = SequenceCardsConfiguration(
             introCard = IntroCard(enabled = true, title = None, description = None),
             pushProposalCard = PushProposalCard(enabled = true),
@@ -313,19 +296,15 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           descriptionImage = None,
           descriptionImageAlt = None,
           resultsLink = None,
-          proposalsCount = 42,
-          participantsCount = 84,
-          actions = None,
-          featured = true
+          actions = None
         ),
-        OperationOfQuestion(
+        operationOfQuestion(
           questionId = QuestionId("question-2"),
           operationId = OperationId("operation-2"),
           startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
           endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
           operationTitle = "some title",
           landingSequenceId = SequenceId("sequence-2"),
-          canPropose = true,
           sequenceCardsConfiguration = SequenceCardsConfiguration(
             introCard = IntroCard(enabled = true, title = None, description = None),
             pushProposalCard = PushProposalCard(enabled = true),
@@ -349,10 +328,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           descriptionImage = None,
           descriptionImageAlt = None,
           resultsLink = None,
-          proposalsCount = 42,
-          participantsCount = 84,
-          actions = None,
-          featured = true
+          actions = None
         )
       )
     )
@@ -511,14 +487,13 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       when(operationOfQuestionService.findByQuestionSlug("existing-question")).thenReturn(
         Future.successful(
           Some(
-            OperationOfQuestion(
+            operationOfQuestion(
               questionId = QuestionId("existing-question"),
               operationId = OperationId("operation"),
               startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
               endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
               operationTitle = "opération en Français",
               landingSequenceId = SequenceId("landing-1"),
-              canPropose = true,
               sequenceCardsConfiguration = SequenceCardsConfiguration(
                 introCard = IntroCard(enabled = true, title = None, description = None),
                 pushProposalCard = PushProposalCard(enabled = true),
@@ -542,10 +517,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
               descriptionImage = None,
               descriptionImageAlt = None,
               resultsLink = None,
-              proposalsCount = 42,
-              participantsCount = 84,
-              actions = None,
-              featured = true
+              actions = None
             )
           )
         )
@@ -635,7 +607,11 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       descriptionImageAlt = None,
       resultsLink = Some(ResultsLinkRequest(ResultsLinkRequest.ResultsLinkKind.External, "https://example.com/results")),
       actions = Some("some actions"),
-      featured = false
+      featured = false,
+      votesTarget = 100_000,
+      resultDate = None,
+      workshopDate = None,
+      actionDate = None
     )
 
     Scenario("update as moderator") {
@@ -686,7 +662,11 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             resultsLink =
               Some(ResultsLinkRequest(ResultsLinkRequest.ResultsLinkKind.External, "https://example.com/results")),
             actions = Some("some actions"),
-            featured = false
+            featured = false,
+            votesTarget = 100_000,
+            resultDate = None,
+            workshopDate = None,
+            actionDate = None
           ).asJson.toString()
         ) ~> routes ~> check {
 
@@ -740,7 +720,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             | "description": "description",
             | "displayResults": false,
             | "consultationImage": "https://example",
-            | "featured": true
+            | "featured": true,
+            | "votesTarget": 100000
           }""".stripMargin) ~> routes ~> check {
 
         status should be(StatusCodes.BadRequest)
@@ -783,7 +764,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
            | "description": "description",
            | "displayResults": false,
            | "consultationImage": "https://example.com",
-           | "featured": true
+           | "featured": true,
+           | "votesTarget": 100000
            |}""".stripMargin
         ) ~> routes ~> check {
 
@@ -824,7 +806,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
                                                        | "displayResults": false,
                                                        | "consultationImage": "wrong URL",
                                                        | "descriptionImage": "wrong URL",
-                                                       | "featured": true
+                                                       | "featured": true,
+                                                       | "votesTarget": 100000
                                                        | }""".stripMargin) ~> routes ~> check {
 
         status should be(StatusCodes.BadRequest)

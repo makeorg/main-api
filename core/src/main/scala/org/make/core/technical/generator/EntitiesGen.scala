@@ -111,6 +111,8 @@ trait EntitiesGen extends DateGenerators {
       proposalsCount    <- arbitrary[NonNegInt]
       participantsCount <- arbitrary[NonNegInt]
       featured          <- arbitrary[Boolean]
+      votesTarget       <- Gen.choose(0, 100_000_000)
+      votesCount        <- Gen.choose(0, 100_000_000)
     } yield OperationOfQuestion(
       questionId = question.questionId,
       operationId = operation.operationId,
@@ -132,7 +134,12 @@ trait EntitiesGen extends DateGenerators {
       proposalsCount = proposalsCount,
       participantsCount = participantsCount,
       actions = None,
-      featured = featured
+      featured = featured,
+      votesCount = votesCount,
+      votesTarget = votesTarget,
+      resultDate = None,
+      workshopDate = None,
+      actionDate = None
     )
 
   val genResultsLink: Gen[ResultsLink] = Gen.frequency(
