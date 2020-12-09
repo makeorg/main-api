@@ -352,7 +352,7 @@ final case class QuestionOfOperationResponse(
   proposalsCount: Int
 )
 
-object QuestionOfOperationResponse {
+object QuestionOfOperationResponse extends CirceFormatters {
   def apply(indexedOperationOfQuestion: IndexedOperationOfQuestion): QuestionOfOperationResponse =
     QuestionOfOperationResponse(
       questionId = indexedOperationOfQuestion.questionId,
