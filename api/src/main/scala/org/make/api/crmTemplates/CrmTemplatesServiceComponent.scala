@@ -24,11 +24,13 @@ import cats.instances.option._
 import cats.syntax.traverse._
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical._
+import org.make.api.technical.RichFutures._
 import org.make.core.crmTemplate.{
   CrmLanguageTemplate,
   CrmLanguageTemplateId,
   CrmQuestionTemplate,
   CrmQuestionTemplateId,
+  CrmTemplate,
   CrmTemplateKind,
   CrmTemplates,
   CrmTemplatesId,
@@ -38,8 +40,9 @@ import org.make.core.question.QuestionId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.BusinessConfig._
 import org.make.core.Validation._
-import org.make.core.reference.Language
+import org.make.core.reference.{Country, Language}
 import org.make.core.technical.Pagination._
 
 import scala.util.{Failure, Success, Try}
@@ -61,6 +64,8 @@ trait CrmTemplatesService extends ShortenedNames {
   def count(questionId: Option[QuestionId], locale: Option[String]): Future[Int]
   def getDefaultTemplate(locale: Option[String]): Future[Option[CrmTemplates]]
   def findOne(questionId: Option[QuestionId], locale: String): Future[Option[CrmTemplates]]
+
+  def find(kind: CrmTemplateKind, questionId: Option[QuestionId], country: Country): Future[Option[TemplateId]]
 
   def listByLanguage(): Future[Map[Language, CrmTemplateKind => CrmLanguageTemplate]]
   def get(language: Language): Future[Option[CrmTemplateKind => CrmLanguageTemplate]]
@@ -175,6 +180,28 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
 
     override def getDefaultTemplate(locale: Option[String]): Future[Option[CrmTemplates]] = {
       locale.fold(Future.successful[Option[CrmTemplates]](None))(persistentCrmTemplatesService.getDefaultTemplate)
+    }
+
+    override def find(
+      kind: CrmTemplateKind,
+      questionId: Option[QuestionId],
+      country: Country
+    ): Future[Option[TemplateId]] = {
+
+      val byQuestion: () => Future[Option[Option[CrmTemplate]]] = () =>
+        questionId.traverse(id => list(id).map(_.find(_.kind == kind)))
+      val byLanguage = () => country.languageOption.traverse(language => get(language).map(_.map(_(kind))))
+      val default = ()    => get(Language("en")).map(_.map(_(kind)))
+
+      val result = byQuestion.or(byLanguage.or(default)).apply().map(_.map(_.template))
+
+      result.foreach(
+        r =>
+          if (r.isEmpty)
+            logger.error(s"No $kind template found for question: $questionId and country $country.")
+      )
+
+      result
     }
 
     // Language templates

@@ -193,8 +193,8 @@ object BusinessConfig {
   )
 
   implicit class CountryLanguageOps(val country: Country) extends AnyVal {
-    def language: Language =
-      supportedCountries.find(_.countryCode == country).map(_.defaultLanguage).getOrElse(Language("en"))
+    def languageOption: Option[Language] = supportedCountries.find(_.countryCode == country).map(_.defaultLanguage)
+    def language: Language = languageOption.getOrElse(Language("en"))
   }
 
 }

@@ -23,6 +23,10 @@ import org.make.core.{SprayJsonFormatters, StringValue}
 import org.make.core.question.QuestionId
 import spray.json.JsonFormat
 
+trait CrmTemplate {
+  def template: TemplateId
+}
+
 final case class CrmTemplates(
   crmTemplatesId: CrmTemplatesId,
   questionId: Option[QuestionId],
