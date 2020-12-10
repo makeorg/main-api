@@ -115,6 +115,8 @@ class JobActorTest extends ShardingTypedActorTest with DefaultIdGeneratorCompone
         current match {
           case Job(_, Running(_), Some(c), Some(u))
               if c.isAfter(previous.createdAt.get) && u.isAfter(previous.updatedAt.get) =>
+            succeed
+          case job => fail(s"Job not in expected state: $job")
         }
       }
     }

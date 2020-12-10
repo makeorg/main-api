@@ -57,7 +57,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
 
   private val resourceName = envName match {
     case Some(name) if !name.isEmpty => s"$name-application.conf"
-    case None                        => "default-application.conf"
+    case _                           => "default-application.conf"
   }
 
   private val configuration: Config = {
