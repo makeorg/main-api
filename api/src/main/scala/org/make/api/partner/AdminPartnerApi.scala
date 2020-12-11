@@ -29,8 +29,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.core.Validation._
-import org.make.core.{HttpCodes, Order, ParameterExtractors, Requirement}
+import org.make.core.{HttpCodes, Order, ParameterExtractors}
 import org.make.core.auth.UserRights
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.question.QuestionId
@@ -266,22 +265,7 @@ final case class CreatePartnerRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "6a90575f-f625-4025-a485-8769e8a26967")
   questionId: QuestionId,
   weight: Float
-) {
-  validate(
-    Requirement(
-      field = "logo",
-      "madatory",
-      condition = () => organisationId.isEmpty && logo.nonEmpty || organisationId.nonEmpty,
-      message = ()   => "logo must not be empty"
-    ),
-    Requirement(
-      field = "link",
-      "madatory",
-      condition = () => partnerKind != PartnerKind.Founder || link.nonEmpty,
-      message = ()   => "link must not be empty"
-    )
-  )
-}
+)
 
 object CreatePartnerRequest {
   implicit val decoder: Decoder[CreatePartnerRequest] = deriveDecoder[CreatePartnerRequest]
@@ -298,22 +282,7 @@ final case class UpdatePartnerRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "FOUNDER")
   partnerKind: PartnerKind,
   weight: Float
-) {
-  validate(
-    Requirement(
-      field = "logo",
-      "madatory",
-      condition = () => organisationId.isEmpty && logo.nonEmpty || organisationId.nonEmpty,
-      message = ()   => "logo must not be empty"
-    ),
-    Requirement(
-      field = "link",
-      "madatory",
-      condition = () => partnerKind != PartnerKind.Founder || link.nonEmpty,
-      message = ()   => "link must not be empty"
-    )
-  )
-}
+)
 
 object UpdatePartnerRequest {
   implicit val decoder: Decoder[UpdatePartnerRequest] = deriveDecoder[UpdatePartnerRequest]
