@@ -26,27 +26,26 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.crmTemplates.{
   DefaultCrmTemplatesServiceComponent,
   DefaultPersistentCrmLanguageTemplateServiceComponent,
-  DefaultPersistentCrmQuestionTemplateServiceComponent,
-  DefaultPersistentCrmTemplatesServiceComponent
+  DefaultPersistentCrmQuestionTemplateServiceComponent
 }
 import org.make.api.extensions.MakeDBExecutionContextComponent
+import org.make.api.migrations.db.V98__Split_CRM_templates_by_language_and_question.languageTemplates
+import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.technical.{DefaultIdGeneratorComponent, ShortenedNames}
 import org.make.api.technical.ExecutorServiceHelper._
-import org.make.core.crmTemplate.{CrmQuestionTemplate, CrmQuestionTemplateId, CrmTemplateKind, CrmTemplates, TemplateId}
+import org.make.core.crmTemplate.{CrmTemplateKind, TemplateId}
+import org.make.core.crmTemplate.CrmTemplateKind._
 import org.make.core.reference.Language
-import org.make.core.technical.Pagination.Start
 
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration.DurationInt
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.Future
 
 class V98__Split_CRM_templates_by_language_and_question
     extends Migration
     with DefaultCrmTemplatesServiceComponent
-    with DefaultIdGeneratorComponent
     with DefaultPersistentCrmLanguageTemplateServiceComponent
     with DefaultPersistentCrmQuestionTemplateServiceComponent
-    with DefaultPersistentCrmTemplatesServiceComponent
+    with DefaultPersistentQuestionServiceComponent
+    with DefaultIdGeneratorComponent
     with MakeDBExecutionContextComponent
     with ShortenedNames
     with StrictLogging {
@@ -56,88 +55,73 @@ class V98__Split_CRM_templates_by_language_and_question
   override val writeExecutionContext: EC = ec
 
   override def migrate(connection: Connection): Unit = {
-    val migration: Future[Unit] = crmTemplatesService.find(Start.zero, None, None, None).flatMap { existingTemplates =>
-      val (existingQuestionTemplates, existingLanguageTemplates) = existingTemplates.partition(_.questionId.isDefined)
-      val (languageTemplatesToKeep, languageTemplatesToDrop) =
-        existingLanguageTemplates.partition(templates => parseLanguage(templates).map(keep).getOrElse(false))
-      languageTemplatesToDrop
-        .foreach(templates => logger.warn(s"Discarding CRM templates for unsupported language ${templates.locale}"))
-      languageTemplatesToKeep
-        .foldLeft(Future.unit) { case (f, templates) => f.flatMap(_ => migrateLanguageTemplates(templates)) }
-        .flatMap(
-          _ =>
-            existingQuestionTemplates.foldLeft(Future.unit) {
-              case (f, templates) =>
-                f.flatMap(
-                  _ => migrateQuestionTemplates(templates, languageTemplatesToKeep.find(_.locale == templates.locale))
-                )
-            }
-        )
+    languageTemplates
+      .foldLeft(Future.unit) {
+        case (f, (language, templates)) =>
+          f.flatMap(
+            _ => crmTemplatesService.create(Language(language), templates.andThen(TemplateId.apply)).map(_ => ())
+          )
+      }
+  }
+
+}
+
+object V98__Split_CRM_templates_by_language_and_question {
+
+  def languageTemplates: Map[String, CrmTemplateKind => String] = {
+    if (System.getenv("ENV_NAME") == "prod") {
+      Map("fr" -> {
+        case Registration         => "222475"
+        case ResendRegistration   => "222475"
+        case Welcome              => "235705"
+        case ProposalAccepted     => "222512"
+        case ProposalRefused      => "222555"
+        case ForgottenPassword    => "191459"
+        case B2BRegistration      => "1395993"
+        case B2BProposalAccepted  => "393225"
+        case B2BProposalRefused   => "393224"
+        case B2BEmailChanged      => "618004"
+        case B2BForgottenPassword => "618004"
+      }, "en" -> {
+        case Registration         => "313889"
+        case ResendRegistration   => "313889"
+        case Welcome              => "313893"
+        case ProposalAccepted     => "313897"
+        case ProposalRefused      => "313899"
+        case ForgottenPassword    => "313903"
+        case B2BRegistration      => "1395993"
+        case B2BProposalAccepted  => "393225"
+        case B2BProposalRefused   => "393224"
+        case B2BEmailChanged      => "618004"
+        case B2BForgottenPassword => "618004"
+      })
+    } else {
+      Map("fr" -> {
+        case Registration         => "225362"
+        case ResendRegistration   => "225362"
+        case Welcome              => "235799"
+        case ProposalRefused      => "225359"
+        case ProposalAccepted     => "225358"
+        case ForgottenPassword    => "225361"
+        case B2BRegistration      => "1393409"
+        case B2BProposalRefused   => "393189"
+        case B2BProposalAccepted  => "408740"
+        case B2BEmailChanged      => "618010"
+        case B2BForgottenPassword => "618010"
+      }, "en" -> {
+        case Registration         => "313838"
+        case ResendRegistration   => "313838"
+        case Welcome              => "313850"
+        case ProposalRefused      => "313868"
+        case ProposalAccepted     => "313860"
+        case ForgottenPassword    => "313871"
+        case B2BRegistration      => "1393409"
+        case B2BProposalRefused   => "393189"
+        case B2BProposalAccepted  => "408740"
+        case B2BEmailChanged      => "618010"
+        case B2BForgottenPassword => "618010"
+      })
     }
-    Await.result(migration, 30.seconds)
   }
 
-  private def migrateLanguageTemplates(templates: CrmTemplates): Future[Unit] = {
-    for {
-      language <- Future.fromTry(parseLanguage(templates))
-      result <- crmTemplatesService
-        .create(language, mapTemplates(templates))
-        .map(_ => logger.info(s"Migrated CRM templates for language ${language.value}"))
-    } yield result
-  }
-
-  private def migrateQuestionTemplates(
-    questionTemplates: CrmTemplates,
-    languageTemplates: Option[CrmTemplates]
-  ): Future[Unit] = {
-    @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-    val questionId = questionTemplates.questionId.get
-    val mapping = mapTemplates(questionTemplates)
-    val default = languageTemplates.map(mapTemplates)
-    CrmTemplateKind.values.foldLeft(Future.unit) {
-      case (f, kind) =>
-        f.flatMap { _ =>
-          val defaultId = default.map(_(kind))
-          val templateId = mapping(kind)
-          if (!defaultId.contains(templateId)) {
-            logger.info(
-              s"Template $kind for questionId $questionId differs from default $defaultId for locale ${questionTemplates.locale}, creating it"
-            )
-            crmTemplatesService
-              .create(CrmQuestionTemplate(CrmQuestionTemplateId(idGenerator.nextId()), kind, questionId, mapping(kind)))
-              .map(_ => ())
-          } else {
-            logger.info(
-              s"Template $kind for questionId $questionId is the same as default $defaultId for locale ${questionTemplates.locale}, discarding it"
-            )
-            Future.unit
-          }
-        }
-    }
-  }
-
-  private def mapTemplates(templates: CrmTemplates): CrmTemplateKind => TemplateId = {
-    case CrmTemplateKind.Registration         => templates.registration
-    case CrmTemplateKind.Welcome              => templates.welcome
-    case CrmTemplateKind.ResendRegistration   => templates.resendRegistration
-    case CrmTemplateKind.ForgottenPassword    => templates.forgottenPassword
-    case CrmTemplateKind.ProposalAccepted     => templates.proposalAccepted
-    case CrmTemplateKind.ProposalRefused      => templates.proposalRefused
-    case CrmTemplateKind.B2BRegistration      => templates.registrationB2B
-    case CrmTemplateKind.B2BEmailChanged      => templates.organisationEmailChangeConfirmation
-    case CrmTemplateKind.B2BForgottenPassword => templates.forgottenPasswordOrganisation
-    case CrmTemplateKind.B2BProposalAccepted  => templates.proposalAcceptedOrganisation
-    case CrmTemplateKind.B2BProposalRefused   => templates.proposalRefusedOrganisation
-  }
-
-  private def parseLanguage(templates: CrmTemplates): Try[Language] = templates.locale.map(_.split('_')) match {
-    case Some(Array(code, _)) => Success(Language(code))
-    case Some(_) =>
-      Failure(
-        new IllegalStateException(s"Invalid locale ${templates.locale} for templates ${templates.crmTemplatesId}")
-      )
-    case None => Failure(new IllegalStateException(s"No locale for templates ${templates.crmTemplatesId}"))
-  }
-
-  private def keep(language: Language): Boolean = Seq("fr", "en").contains(language.value)
 }

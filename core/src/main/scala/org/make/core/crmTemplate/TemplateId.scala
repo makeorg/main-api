@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2018 Make.org
+ *  Copyright (C) 2020 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -17,8 +17,19 @@
  *
  */
 
-package org.make.core.crmTemplate
+package org.make.core
+package crmTemplate
 
-trait CrmTemplate {
-  def template: TemplateId
+import io.circe.{Decoder, Encoder, Json}
+import spray.json.JsonFormat
+
+final case class TemplateId(value: String) extends StringValue
+
+object TemplateId {
+  implicit lazy val TemplateIdEncoder: Encoder[TemplateId] =
+    (a: TemplateId) => Json.fromString(a.value)
+  implicit lazy val TemplateIdDecoder: Decoder[TemplateId] =
+    Decoder.decodeInt.map(id => TemplateId(id.toString))
+
+  implicit val TemplateIdFormatter: JsonFormat[TemplateId] = SprayJsonFormatters.forStringValue(TemplateId.apply)
 }
