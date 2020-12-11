@@ -84,7 +84,7 @@ class AdminPartnerApiTest
       }
     }
 
-    Scenario("post scenario with wrong request") {
+    Scenario("post scenario without logo nor link") {
       Post("/admin/partners")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
           | "name": "partner name",
@@ -93,7 +93,7 @@ class AdminPartnerApiTest
           | "weight": "20.0"
           |}""".stripMargin))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.BadRequest
+        status shouldBe StatusCodes.Created
       }
     }
   }
@@ -132,7 +132,7 @@ class AdminPartnerApiTest
       }
     }
 
-    Scenario("put partner with wrong request") {
+    Scenario("put partner without logo nor link") {
       Put("/admin/partners/partner-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
           | "name": "update name",
@@ -140,7 +140,7 @@ class AdminPartnerApiTest
           | "weight": "20.0"
           |}""".stripMargin))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.BadRequest
+        status shouldBe StatusCodes.OK
       }
     }
 

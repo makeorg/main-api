@@ -95,7 +95,7 @@ class PartnerServiceTest
     }
 
     Scenario("update when partner is found") {
-      val updatedPartner: Partner = partner.copy(name = "update-name")
+      val updatedPartner: Partner = partner.copy(name = "update-name", logo = None, link = None)
 
       when(persistentPartnerService.getById(PartnerId("partner"))).thenReturn(Future.successful(Some(partner)))
       when(persistentPartnerService.modify(updatedPartner))
@@ -106,8 +106,8 @@ class PartnerServiceTest
           partnerId = PartnerId("partner"),
           UpdatePartnerRequest(
             name = "update-name",
-            logo = Some("logo"),
-            link = Some("link"),
+            logo = None,
+            link = None,
             organisationId = None,
             partnerKind = PartnerKind.Founder,
             weight = 20f
@@ -116,6 +116,8 @@ class PartnerServiceTest
         Timeout(2.seconds)
       ) { partner =>
         partner.map(_.name) should be(Some("update-name"))
+        partner.map(_.logo) should be(Some(None))
+        partner.map(_.link) should be(Some(None))
       }
     }
   }

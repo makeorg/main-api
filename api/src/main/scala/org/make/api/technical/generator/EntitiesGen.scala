@@ -141,8 +141,8 @@ trait EntitiesGen extends CoreEntitiesGen with DateGenerators { self: IdGenerato
   def genCreatePartnerRequest(orga: Option[User], questionId: QuestionId): Gen[CreatePartnerRequest] =
     for {
       name <- CustomGenerators.LoremIpsumGen.word
-      logo <- CustomGenerators.ImageUrl.gen(width = 100, height = 100)
-      link <- CustomGenerators.URL.gen
+      logo <- CustomGenerators.ImageUrl.gen(width = 100, height = 100).asOption
+      link <- CustomGenerators.URL.gen.asOption
       partnerKind <- Gen.frequency(
         (2, PartnerKind.Media),
         (7, PartnerKind.ActionPartner),
@@ -152,8 +152,8 @@ trait EntitiesGen extends CoreEntitiesGen with DateGenerators { self: IdGenerato
       weight <- Gen.posNum[Float]
     } yield CreatePartnerRequest(
       name = orga.flatMap(_.displayName).getOrElse(name),
-      logo = orga.flatMap(_.profile.flatMap(_.avatarUrl)).orElse(Some(logo)),
-      link = orga.flatMap(_.profile.flatMap(_.website)).orElse(Some(link)),
+      logo = logo,
+      link = link,
       organisationId = orga.map(_.userId),
       partnerKind = partnerKind,
       questionId = questionId,
