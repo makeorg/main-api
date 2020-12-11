@@ -1063,7 +1063,7 @@ class CrmServiceComponentTest
       when(userJournal.currentEventsByPersistenceId(eqTo(user.userId.value), any[Long], any[Long]))
         .thenReturn(source)
 
-      when(persistentCrmUserService.truncateCrmUsers()).thenReturn(Future.successful {})
+      when(persistentCrmUserService.truncateCrmUsers()).thenReturn(Future.unit)
 
       when(userService.findUsersForCrmSynchro(None, None, 0, mailJetConfiguration.userListBatchSize))
         .thenReturn(Future.successful(Seq(user)))

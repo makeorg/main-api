@@ -144,7 +144,7 @@ class AdminActiveFeatureApiTest
     when(activeFeatureService.getActiveFeature(eqTo(ActiveFeatureId("fake-active-feature"))))
       .thenReturn(Future.successful(None))
     when(activeFeatureService.deleteActiveFeature(eqTo(helloActiveFeature.activeFeatureId)))
-      .thenReturn(Future.successful({}))
+      .thenReturn(Future.unit)
 
     Scenario("unauthorize unauthenticated") {
       Delete("/admin/active-features/hello-active-feature") ~> routes ~> check {

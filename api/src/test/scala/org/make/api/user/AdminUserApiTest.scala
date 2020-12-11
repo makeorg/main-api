@@ -589,7 +589,7 @@ class AdminUserApiTest
     Scenario("admin user") {
       when(userService.getUser(moderatorId)).thenReturn(Future.successful(Some(newModerator)))
       when(userService.anonymize(eqTo(newModerator), eqTo(adminId), any[RequestContext]))
-        .thenReturn(Future.successful({}))
+        .thenReturn(Future.unit)
       when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
       Delete(s"/admin/users/${moderatorId.value}")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
@@ -634,7 +634,7 @@ class AdminUserApiTest
 
     Scenario("admin user") {
       when(userService.anonymize(eqTo(newModerator), eqTo(adminId), any[RequestContext]))
-        .thenReturn(Future.successful({}))
+        .thenReturn(Future.unit)
       when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
       Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, request))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
@@ -1006,7 +1006,7 @@ class AdminUserApiTest
   Feature("update user email") {
 
     val request = AdminUpdateUserEmail(newCitizen.email, "kane@example.com")
-    when(userService.adminUpdateUserEmail(any[User], any[String])).thenReturn(Future.successful {})
+    when(userService.adminUpdateUserEmail(any[User], any[String])).thenReturn(Future.unit)
 
     Scenario("anonymously") {
       Post("/admin/users/update-user-email", request) ~> routes ~> check {

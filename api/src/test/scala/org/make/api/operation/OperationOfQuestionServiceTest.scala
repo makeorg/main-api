@@ -235,19 +235,19 @@ class OperationOfQuestionServiceTest
     Scenario("delete OperationOfQuestion and associated objects") {
       val questionId = QuestionId("question-id")
       when(persistentOperationOfQuestionService.delete(eqTo(questionId)))
-        .thenReturn(Future.successful({}))
+        .thenReturn(Future.unit)
       when(persistentSequenceConfigurationService.delete(eqTo(questionId)))
-        .thenReturn(Future.successful({}))
-      when(persistentQuestionService.delete(eqTo(questionId))).thenReturn(Future.successful({}))
+        .thenReturn(Future.unit)
+      when(persistentQuestionService.delete(eqTo(questionId))).thenReturn(Future.unit)
       whenReady(operationOfQuestionService.delete(questionId), Timeout(3.seconds)) { _ shouldBe () }
     }
     Scenario("delete fake questionId") {
       val questionId = QuestionId("fake")
       when(persistentOperationOfQuestionService.delete(eqTo(questionId)))
-        .thenReturn(Future.successful({}))
+        .thenReturn(Future.unit)
       when(persistentSequenceConfigurationService.delete(eqTo(questionId)))
-        .thenReturn(Future.successful({}))
-      when(persistentQuestionService.delete(eqTo(questionId))).thenReturn(Future.successful({}))
+        .thenReturn(Future.unit)
+      when(persistentQuestionService.delete(eqTo(questionId))).thenReturn(Future.unit)
       whenReady(operationOfQuestionService.delete(questionId), Timeout(3.seconds)) { _ shouldBe () }
     }
   }

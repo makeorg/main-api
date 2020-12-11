@@ -68,7 +68,7 @@ trait DefaultPersistentUserToAnonymizeServiceComponent extends PersistentUserToA
         }.execute().apply()
       }).map(_ => ()).recoverWith {
         case e: PSQLException if e.getSQLState == PSQLState.UNIQUE_VIOLATION.getState =>
-          Future.successful {}
+          Future.unit
         case other => Future.failed(other)
       }
     }

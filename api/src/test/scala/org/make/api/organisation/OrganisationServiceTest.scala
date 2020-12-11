@@ -218,7 +218,7 @@ class OrganisationServiceTest
       when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
         .thenReturn(Future.successful(Map[ProposalId, VoteAndQualifications]()))
       when(persistentUserToAnonymizeService.create(oldEmail))
-        .thenReturn(Future.successful({}))
+        .thenReturn(Future.unit)
 
       val futureOrganisation =
         organisationService.update(updatedOrganisation, None, oldEmail, RequestContext.empty)

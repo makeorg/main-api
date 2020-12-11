@@ -225,7 +225,7 @@ class AdminPersonalityRoleApiTest
     Scenario("delete personality role with admin rights") {
 
       when(personalityRoleService.deletePersonalityRole(any[PersonalityRoleId]))
-        .thenReturn(Future.successful {})
+        .thenReturn(Future.unit)
 
       Delete("/admin/personality-roles/personality-role-id")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
@@ -438,7 +438,7 @@ class AdminPersonalityRoleApiTest
     Scenario("delete personality role field with admin rights") {
 
       when(personalityRoleFieldService.deletePersonalityRoleField(any[PersonalityRoleFieldId]))
-        .thenReturn(Future.successful {})
+        .thenReturn(Future.unit)
 
       Delete("/admin/personality-roles/personality-role-id/fields/personality-role-field-id")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {

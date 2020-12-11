@@ -251,7 +251,7 @@ trait DefaultSendMailPublisherServiceComponent
                   )
                 )
               }
-            case None => Future.successful {}
+            case None => Future.unit
           }
         case _ =>
           Future.failed(
@@ -294,7 +294,7 @@ trait DefaultSendMailPublisherServiceComponent
                   )
                 )
               }
-            case None => Future.successful {}
+            case None => Future.unit
           }
         case _ =>
           Future.failed(
@@ -513,7 +513,7 @@ trait DefaultSendMailPublisherServiceComponent
 
       userService.changeEmailVerificationTokenIfNeeded(user.userId).flatMap {
         case Some(_) => publishResendRegistration(user, requestContext)
-        case None    => Future.successful {}
+        case None    => Future.unit
       }
     }
 

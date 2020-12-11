@@ -1596,7 +1596,7 @@ class UserApiTest
       when(
         userService
           .anonymize(any[User], any[UserId], any[RequestContext])
-      ).thenReturn(Future.successful({}))
+      ).thenReturn(Future.unit)
 
       when(oauth2DataHandler.removeTokenByUserId(any[UserId]))
         .thenReturn(Future.successful(1))

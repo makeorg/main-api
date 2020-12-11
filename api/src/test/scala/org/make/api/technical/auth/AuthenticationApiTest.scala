@@ -43,7 +43,7 @@ class AuthenticationApiTest
   override val tokenEndpoint: TokenEndpoint = mock[TokenEndpoint]
 
   when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId], any[RequestContext]))
-    .thenReturn(Future.successful {})
+    .thenReturn(Future.unit)
 
   reset(oauth2DataHandler)
 
@@ -117,7 +117,7 @@ class AuthenticationApiTest
       when(oauth2DataHandler.getStoredAccessToken(eqTo(fakeAuthInfo)))
         .thenReturn(Future.successful(Some(accessToken)))
       when(oauth2DataHandler.removeToken(eqTo("TOKEN")))
-        .thenReturn(Future.successful {})
+        .thenReturn(Future.unit)
 
       When("logout is called")
       val logoutRoute: RouteTestResult = Post("/logout").withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes

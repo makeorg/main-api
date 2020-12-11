@@ -59,7 +59,7 @@ object KafkaTestConsumerActor {
     implicit val timeout: Timeout = Timeout(10.seconds)
 
     (target ? CheckState).flatMap {
-      case Ready => Future.successful {}
+      case Ready => Future.unit
       case Waiting =>
         Thread.sleep(defaultInterval)
         waitUntilReady(target, retries)

@@ -220,7 +220,7 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
     when(featureService.getFeature(eqTo(FeatureId("fake-feature"))))
       .thenReturn(Future.successful(None))
     when(featureService.deleteFeature(eqTo(helloFeature.featureId)))
-      .thenReturn(Future.successful({}))
+      .thenReturn(Future.unit)
 
     Scenario("unauthorize unauthenticated") {
       Delete("/admin/features/hello-feature") ~> routes ~> check {

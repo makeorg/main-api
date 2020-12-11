@@ -112,7 +112,7 @@ trait MakeApiTestBase
   when(idGenerator.nextTagId()).thenReturn(TagId("some-id"))
   when(idGenerator.nextTagTypeId()).thenReturn(TagTypeId("some-id"))
 
-  private val successful: Future[Unit] = Future.successful {}
+  private val successful: Future[Unit] = Future.unit
   when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId], any[RequestContext]))
     .thenReturn(successful)
 

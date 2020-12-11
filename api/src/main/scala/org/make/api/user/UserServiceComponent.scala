@@ -307,7 +307,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       } else if (!canRegister) {
         Future.failed(EmailNotAllowed(lowerCasedEmail))
       } else {
-        Future.successful {}
+        Future.unit
       }
     }
 
@@ -697,7 +697,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               )
           )
       } else {
-        Future.successful({})
+        Future.unit
       }
     }
 
@@ -726,7 +726,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     private def handleEmailChangeIfNecessary(oldEmail: String, newEmail: String): Future[Unit] = {
       if (oldEmail == newEmail) {
-        Future.successful {}
+        Future.unit
       } else {
         persistentUserToAnonymizeService.create(oldEmail)
       }
@@ -764,7 +764,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               )
             )
           }
-        case None => Future.successful {}
+        case None => Future.unit
       }
     }
 
