@@ -28,7 +28,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, IdResponse, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.crmTemplate.{CrmQuestionTemplate, CrmQuestionTemplateId, CrmTemplateKind, TemplateId}
 import org.make.core.question.QuestionId
@@ -133,8 +133,26 @@ trait AdminCrmQuestionTemplatesApi extends Directives {
   @Path(value = "/{crmQuestionTemplateId}")
   def adminUpdateCrmQuestionTemplates: Route
 
+  @ApiOperation(
+    value = "delete-crm-question-template",
+    httpMethod = "DELETE",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(new ApiImplicitParam(name = "crmQuestionTemplateId", paramType = "path", dataType = "string"))
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[IdResponse])))
+  @Path(value = "/{crmQuestionTemplateId}")
+  def adminDeleteCrmQuestionTemplates: Route
+
   def routes: Route =
-    adminListCrmQuestionTemplates ~ adminCreateCrmQuestionTemplates ~ adminGetCrmQuestionTemplates ~ adminUpdateCrmQuestionTemplates
+    adminListCrmQuestionTemplates ~ adminCreateCrmQuestionTemplates ~ adminGetCrmQuestionTemplates ~ adminUpdateCrmQuestionTemplates ~ adminDeleteCrmQuestionTemplates
 }
 
 trait AdminCrmQuestionTemplatesApiComponent {
@@ -269,6 +287,21 @@ trait DefaultAdminCrmQuestionTemplatesApiComponent
       }
     }
 
+    override def adminDeleteCrmQuestionTemplates: Route = {
+      delete {
+        path("admin" / "crm-templates" / "questions" / crmQuestionTemplateId) { crmQuestionTemplateId =>
+          makeOperation("AdminGetCrmQuestionTemplates") { _ =>
+            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+              requireAdminRole(userAuth.user) {
+                provideAsync(crmTemplatesService.delete(crmQuestionTemplateId)) { _ =>
+                  complete(IdResponse(crmQuestionTemplateId))
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 
