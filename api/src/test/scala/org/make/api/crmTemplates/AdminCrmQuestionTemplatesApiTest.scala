@@ -296,4 +296,32 @@ class AdminCrmQuestionTemplatesApiTest
       }
     }
   }
+
+  Feature("delete one question templates") {
+    val id: CrmQuestionTemplateId = CrmQuestionTemplateId("id-delete")
+
+    when(crmTemplatesService.delete(eqTo(id)))
+      .thenReturn(Future.unit)
+
+    Scenario("delete crmTemplates") {
+      Delete("/admin/crm-templates/questions/id-delete") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+
+      Delete("/admin/crm-templates/questions/id-delete")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+
+      Delete("/admin/crm-templates/questions/id-delete")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+
+      Delete("/admin/crm-templates/questions/id-delete")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+  }
 }
