@@ -28,6 +28,7 @@ import org.make.core.ValidationError
 import org.make.core.crmTemplate.{CrmLanguageTemplate, CrmLanguageTemplateId, CrmTemplateKind, TemplateId}
 import org.make.core.reference.Language
 
+import scala.collection.SortedMap
 import scala.concurrent.Future
 
 class AdminCrmLanguageTemplatesApiTest
@@ -57,7 +58,7 @@ class AdminCrmLanguageTemplatesApiTest
 
   Feature("list language templates") {
     when(crmTemplatesService.listByLanguage())
-      .thenReturn(Future.successful(Map(fr -> values(fr), en -> values(en), it -> values(it))))
+      .thenReturn(Future.successful(SortedMap(fr -> values(fr), en -> values(en), it -> values(it))))
 
     Scenario("list all") {
       Get("/admin/crm-templates/languages") ~> routes ~> check {

@@ -41,6 +41,7 @@ import scala.concurrent.Future
 import org.make.core.BusinessConfig._
 import org.make.core.reference.{Country, Language}
 
+import scala.collection.SortedMap
 import scala.util.{Failure, Success, Try}
 
 trait CrmTemplatesServiceComponent {
@@ -50,8 +51,8 @@ trait CrmTemplatesServiceComponent {
 trait CrmTemplatesService extends ShortenedNames {
   def find(kind: CrmTemplateKind, questionId: Option[QuestionId], country: Country): Future[Option[TemplateId]]
 
-  def listByLanguage(): Future[Map[Language, CrmTemplateKind => CrmLanguageTemplate]]
-  def get(language: Language): Future[Option[CrmTemplateKind => CrmLanguageTemplate]]
+  def listByLanguage(): Future[SortedMap[Language, CrmTemplateKind => CrmLanguageTemplate]]
+  def get(language: Language): Future[Option[CrmTemplateKind       => CrmLanguageTemplate]]
   def create(language: Language, values: CrmTemplateKind => TemplateId): Future[CrmTemplateKind => CrmLanguageTemplate]
   def update(language: Language, values: CrmTemplateKind => TemplateId): Future[CrmTemplateKind => CrmLanguageTemplate]
 
@@ -95,20 +96,22 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
 
     // Language templates
 
-    override def listByLanguage(): Future[Map[Language, CrmTemplateKind => CrmLanguageTemplate]] = {
+    override def listByLanguage(): Future[SortedMap[Language, CrmTemplateKind => CrmLanguageTemplate]] = {
       persistentCrmLanguageTemplateService
         .all()
         .map(
           all =>
-            all
-              .groupBy(_.language)
-              .map {
-                case (language, templates) =>
-                  val validated = validate(language, templates)
-                  validated.failed.foreach(logger.error("Listing an invalid language in CRM language templates", _))
-                  language -> validated
-              }
-              .collect { case (language, Success(templates)) => language -> templates }
+            SortedMap.from(
+              all
+                .groupBy(_.language)
+                .map {
+                  case (language, templates) =>
+                    val validated = validate(language, templates)
+                    validated.failed.foreach(logger.error("Listing an invalid language in CRM language templates", _))
+                    language -> validated
+                }
+                .collect { case (language, Success(templates)) => language -> templates }
+            )
         )
     }
 
