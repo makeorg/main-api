@@ -59,7 +59,7 @@ class CrmTemplatesServiceTest
       when(persistentCrmLanguageTemplateService.all())
         .thenReturn(
           Future.successful(
-            frenchTemplates :+ CrmLanguageTemplate(
+            frenchTemplates ++ frenchTemplates.map(_.copy(language = Language("es"))) :+ CrmLanguageTemplate(
               CrmLanguageTemplateId("belgian"),
               CrmTemplateKind.Welcome,
               Language("be"),
@@ -67,8 +67,8 @@ class CrmTemplatesServiceTest
             )
           )
         )
-      whenReady(crmTemplatesService.listByLanguage()) {
-        _.keys shouldBe Set(Language("fr"))
+      whenReady(crmTemplatesService.listByLanguage()) { list =>
+        list.toSeq.map(_._1) shouldBe Seq(Language("es"), Language("fr"))
       }
     }
 

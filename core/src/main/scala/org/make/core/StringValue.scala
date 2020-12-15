@@ -27,4 +27,5 @@ trait StringValue {
 
 object StringValue {
   implicit def catsOrder[T <: StringValue]: cats.Order[T] = cats.Order.by(_.value)
+  implicit def ordering[T <: StringValue]: Ordering[T] = Ordering.by(_.value)
 }
