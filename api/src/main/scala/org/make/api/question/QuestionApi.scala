@@ -405,7 +405,7 @@ trait DefaultQuestionApiComponent
         makeOperation("StartSequenceByQuestionId") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             parameters("include".csv[ProposalId]) { includes =>
-              provideAsyncOrNotFound(
+              provideAsync(
                 sequenceService
                   .startNewSequence(
                     maybeUserId = userAuth.map(_.user.userId),

@@ -77,11 +77,7 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
           tagsIds = tagsIds,
           requestContext = requestContext
         )
-      } yield ProposalsResultSeededResponse(
-        selectedProposals.map(_.proposals.size).getOrElse(0).toLong,
-        selectedProposals.map(_.proposals).getOrElse(Seq.empty),
-        None
-      )
+      } yield ProposalsResultSeededResponse(selectedProposals.proposals.size.toLong, selectedProposals.proposals, None)
 
     }
   }
