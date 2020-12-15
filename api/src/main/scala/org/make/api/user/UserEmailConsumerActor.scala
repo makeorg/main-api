@@ -64,7 +64,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
   def handleResendValidationEmailEvent(event: ResendValidationEmailEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).flatMap {
       case Some(user) =>
-        sendMailPublisherService.resendRegistration(user, event.country, event.requestContext)
+        sendMailPublisherService.resendRegistration(user, event.requestContext)
       case None => Future.successful {}
     }
   }
@@ -72,7 +72,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
   def handleUserValidatedAccountEvent(event: UserValidatedAccountEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).flatMap {
       case Some(user) if user.isB2C =>
-        sendMailPublisherService.publishWelcome(user, event.country, event.requestContext)
+        sendMailPublisherService.publishWelcome(user, event.requestContext)
       case _ => Future.successful {}
     }
   }
@@ -80,7 +80,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
   def handleUserB2BRegisteredEvent(event: B2BRegisteredEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).flatMap {
       case Some(user) if user.isB2B =>
-        sendMailPublisherService.publishRegistrationB2B(user, event.country, event.requestContext)
+        sendMailPublisherService.publishRegistrationB2B(user, event.requestContext)
       case _ => Future.successful {}
     }
   }
@@ -88,7 +88,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
   def handleUserRegisteredEvent(event: UserRegisteredEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).flatMap {
       case Some(user) if user.isB2C && !event.isSocialLogin =>
-        sendMailPublisherService.publishRegistration(user, event.country, event.requestContext)
+        sendMailPublisherService.publishRegistration(user, event.requestContext)
       case _ => Future.successful {}
     }
   }
@@ -96,9 +96,9 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
   private def handleResetPasswordEvent(event: ResetPasswordEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).flatMap {
       case Some(user) if user.isB2B =>
-        sendMailPublisherService.publishForgottenPasswordOrganisation(user, event.country, event.requestContext)
+        sendMailPublisherService.publishForgottenPasswordOrganisation(user, event.requestContext)
       case Some(user) =>
-        sendMailPublisherService.publishForgottenPassword(user, event.country, event.requestContext)
+        sendMailPublisherService.publishForgottenPassword(user, event.requestContext)
       case None => Future.successful {}
     }
   }
@@ -108,7 +108,6 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
       case Some(organisation) =>
         sendMailPublisherService.publishEmailChanged(
           user = organisation,
-          country = event.country,
           requestContext = event.requestContext,
           newEmail = event.newEmail
         )
@@ -121,7 +120,6 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
       case Some(personality) =>
         sendMailPublisherService.publishEmailChanged(
           user = personality,
-          country = event.country,
           requestContext = event.requestContext,
           newEmail = event.newEmail
         )

@@ -89,8 +89,8 @@ class UserEmailConsumerActorIT
     Scenario("user reset password") {
       when(
         sendMailPublisherService
-          .publishForgottenPassword(eqTo(user), eqTo(country), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
+          .publishForgottenPassword(eqTo(user), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: RequestContext) =>
         probeReset.ref ! "sendMailPublisherService.publishForgottenPassword called"
         Future.successful({})
       }
@@ -106,8 +106,8 @@ class UserEmailConsumerActorIT
     Scenario("organisation reset password") {
       when(
         sendMailPublisherService
-          .publishForgottenPasswordOrganisation(eqTo(organisation), eqTo(country), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
+          .publishForgottenPasswordOrganisation(eqTo(organisation), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: RequestContext) =>
         probeReset.ref ! "sendMailPublisherService.publishForgottenPasswordOrganisation called"
         Future.successful({})
       }
@@ -123,8 +123,8 @@ class UserEmailConsumerActorIT
     Scenario("perso reset password") {
       when(
         sendMailPublisherService
-          .publishForgottenPasswordOrganisation(eqTo(personality1), eqTo(country), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
+          .publishForgottenPasswordOrganisation(eqTo(personality1), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: RequestContext) =>
         probeReset.ref ! "sendMailPublisherService.publishForgottenPasswordOrganisation perso called"
         Future.successful({})
       }
@@ -146,8 +146,8 @@ class UserEmailConsumerActorIT
     Scenario("user register") {
       when(
         sendMailPublisherService
-          .publishRegistration(eqTo(user), eqTo(country), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
+          .publishRegistration(eqTo(user), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: RequestContext) =>
         probeRegistered.ref ! "sendMailPublisherService.publishRegistration called"
         Future.successful({})
       }
@@ -179,8 +179,8 @@ class UserEmailConsumerActorIT
       val orgaProbe: TestProbe = TestProbe()
       when(
         sendMailPublisherService
-          .publishRegistrationB2B(eqTo(organisation), eqTo(country), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
+          .publishRegistrationB2B(eqTo(organisation), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: RequestContext) =>
         orgaProbe.ref ! "sendMailPublisherService.publishRegistrationB2B called"
         Future.successful({})
       }
@@ -204,8 +204,8 @@ class UserEmailConsumerActorIT
       val persoProbe: TestProbe = TestProbe()
       when(
         sendMailPublisherService
-          .publishRegistrationB2B(eqTo(personality1), eqTo(country), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
+          .publishRegistrationB2B(eqTo(personality1), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: RequestContext) =>
         persoProbe.ref ! "sendMailPublisherService.publishRegistrationB2B called"
         Future.successful({})
       }
@@ -229,8 +229,8 @@ class UserEmailConsumerActorIT
   Feature("consume UserValidatedAccountEvent") {
     Scenario("user validate") {
       val userProbe: TestProbe = TestProbe("validate")
-      when(sendMailPublisherService.publishWelcome(eqTo(user), eqTo(country), eqTo(RequestContext.empty))).thenAnswer {
-        (_: User, _: Country, _: RequestContext) =>
+      when(sendMailPublisherService.publishWelcome(eqTo(user), eqTo(RequestContext.empty))).thenAnswer {
+        (_: User, _: RequestContext) =>
           userProbe.ref ! "sendMailPublisherService.publishWelcome called"
           Future.successful({})
       }
@@ -292,8 +292,8 @@ class UserEmailConsumerActorIT
     Scenario("user resend") {
       when(
         sendMailPublisherService
-          .resendRegistration(eqTo(user), eqTo(country), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
+          .resendRegistration(eqTo(user), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: RequestContext) =>
         probeValidation.ref ! "sendMailPublisherService.resendRegistration called"
         Future.successful({})
       }
@@ -311,8 +311,8 @@ class UserEmailConsumerActorIT
     Scenario("organisation resend") {
       when(
         sendMailPublisherService
-          .resendRegistration(eqTo(organisation), eqTo(country), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
+          .resendRegistration(eqTo(organisation), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: RequestContext) =>
         probeValidation.ref ! "sendMailPublisherService.resendRegistration called"
         Future.successful({})
       }
@@ -330,8 +330,8 @@ class UserEmailConsumerActorIT
     Scenario("personality resend") {
       when(
         sendMailPublisherService
-          .resendRegistration(eqTo(personality1), eqTo(country), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
+          .resendRegistration(eqTo(personality1), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: RequestContext) =>
         probeValidation.ref ! "sendMailPublisherService.resendRegistration called"
         Future.successful({})
       }

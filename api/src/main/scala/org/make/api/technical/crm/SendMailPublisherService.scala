@@ -48,19 +48,15 @@ trait SendMailPublisherServiceComponent {
 }
 
 trait SendMailPublisherService {
-  def publishWelcome(user: User, country: Country, requestContext: RequestContext): Future[Unit]
-  def publishRegistration(user: User, country: Country, requestContext: RequestContext): Future[Unit]
-  def publishRegistrationB2B(user: User, country: Country, requestContext: RequestContext): Future[Unit]
-  def publishForgottenPassword(user: User, country: Country, requestContext: RequestContext): Future[Unit]
-  def publishForgottenPasswordOrganisation(
-    organisation: User,
-    country: Country,
-    requestContext: RequestContext
-  ): Future[Unit]
-  def publishEmailChanged(user: User, country: Country, requestContext: RequestContext, newEmail: String): Future[Unit]
+  def publishWelcome(user: User, requestContext: RequestContext): Future[Unit]
+  def publishRegistration(user: User, requestContext: RequestContext): Future[Unit]
+  def publishRegistrationB2B(user: User, requestContext: RequestContext): Future[Unit]
+  def publishForgottenPassword(user: User, requestContext: RequestContext): Future[Unit]
+  def publishForgottenPasswordOrganisation(organisation: User, requestContext: RequestContext): Future[Unit]
+  def publishEmailChanged(user: User, requestContext: RequestContext, newEmail: String): Future[Unit]
   def publishAcceptProposal(proposalId: ProposalId): Future[Unit]
   def publishRefuseProposal(proposalId: ProposalId): Future[Unit]
-  def resendRegistration(user: User, country: Country, requestContext: RequestContext): Future[Unit]
+  def resendRegistration(user: User, requestContext: RequestContext): Future[Unit]
 }
 
 trait DefaultSendMailPublisherServiceComponent
@@ -89,13 +85,22 @@ trait DefaultSendMailPublisherServiceComponent
     s"$base/${builder.toString}"
   }
 
-  private def getProposalUrl(proposal: Proposal, questionSlug: String): String = {
-    val country: String = proposal.creationContext.country.map(_.value).getOrElse("FR")
+  private def adaptUtmTerm(term: String, userType: UserType): String = {
+    if (userType != UserType.UserTypeUser) {
+      s"${term}acteur"
+    } else {
+      term
+    }
+  }
+
+  private def getProposalUrl(proposal: Proposal, question: Question, userType: UserType): String = {
+    val country: String = proposal.creationContext.country.getOrElse(question.countries.head).value
 
     buildUrl(
       base = mailJetTemplateConfiguration.mainFrontendUrl,
-      path = s"$country/consultation/$questionSlug/proposal/${proposal.proposalId.value}/${proposal.slug}",
-      maybeUtm = Some(Utm(campaign = questionSlug, term = "publication", content = "cta_share"))
+      path = s"$country/consultation/${question.slug}/proposal/${proposal.proposalId.value}/${proposal.slug}",
+      maybeUtm =
+        Some(Utm(campaign = question.slug, term = adaptUtmTerm("publication", userType), content = "cta_share"))
     )
   }
 
@@ -105,7 +110,6 @@ trait DefaultSendMailPublisherServiceComponent
     requestContext: RequestContext,
     utmCampaign: String
   ): String = {
-    val operationIdValue: String = requestContext.operationId.map(_.value).getOrElse("core")
     val country: String = requestContext.country.map(_.value).getOrElse("FR")
     val questionIdValue: String = requestContext.questionId.map(_.value).getOrElse("")
 
@@ -113,34 +117,22 @@ trait DefaultSendMailPublisherServiceComponent
       base = mailJetTemplateConfiguration.mainFrontendUrl,
       path = s"${user.country.value}/account-activation/${user.userId.value}/$verificationToken",
       maybeUtm = Some(Utm(campaign = utmCampaign, term = "validation", content = "cta")),
-      "operation" -> operationIdValue,
       "country" -> country,
       "question" -> questionIdValue
     )
   }
 
   private def getForgottenPasswordUrl(user: User, resetToken: String, requestContext: RequestContext): String = {
-    val country: String = requestContext.country.map(_.value).getOrElse("FR")
-    val operationIdValue: String = requestContext.operationId.map(_.value).getOrElse("core")
-    val questionIdValue: String = requestContext.questionId.map(_.value).getOrElse("")
-
     val appPath = s"password-recovery/${user.userId.value}/$resetToken"
 
     val (base, path) = requestContext.applicationName match {
       case Some(ApplicationName.Backoffice) =>
         (mailJetTemplateConfiguration.backofficeUrl, s"#/$appPath")
       case _ =>
-        (mailJetTemplateConfiguration.mainFrontendUrl, s"$country/$appPath")
+        (mailJetTemplateConfiguration.mainFrontendUrl, s"${user.country}/$appPath")
     }
 
-    buildUrl(
-      base = base,
-      path = path,
-      maybeUtm = None,
-      "operation" -> operationIdValue,
-      "country" -> country,
-      "question" -> questionIdValue
-    )
+    buildUrl(base = base, path = path, maybeUtm = None)
   }
 
   private def sequenceUrlForProposal(
@@ -151,12 +143,11 @@ trait DefaultSendMailPublisherServiceComponent
   ): String = {
     val country: String = proposal.creationContext.country.map(_.value).getOrElse("FR")
     val term: String = if (isAccepted) "publication" else "refus"
-    val utmTerm: String = if (userType != UserType.UserTypeUser) s"${term}acteur" else term
 
     buildUrl(
       base = mailJetTemplateConfiguration.mainFrontendUrl,
       path = s"$country/consultation/$questionSlug/selection",
-      maybeUtm = Some(Utm(content = "cta", campaign = questionSlug, term = utmTerm)),
+      maybeUtm = Some(Utm(content = "cta", campaign = questionSlug, term = adaptUtmTerm(term, userType))),
       "introCard" -> "false"
     )
   }
@@ -187,12 +178,12 @@ trait DefaultSendMailPublisherServiceComponent
   override def sendMailPublisherService: SendMailPublisherService = new DefaultSendMailPublisherService
 
   class DefaultSendMailPublisherService extends SendMailPublisherService {
-    override def publishWelcome(user: User, country: Country, requestContext: RequestContext): Future[Unit] = {
+    override def publishWelcome(user: User, requestContext: RequestContext): Future[Unit] = {
       val questionId = requestContext.questionId
 
-      resolveQuestionSlug(country, requestContext).flatMap { questionSlug =>
+      resolveQuestionSlug(user.country, requestContext).flatMap { questionSlug =>
         crmTemplatesService
-          .find(Welcome, questionId, country)
+          .find(Welcome, questionId, user.country)
           .map(_.foreach { templateId =>
             eventBusService.publish(
               SendEmail.create(
@@ -222,12 +213,12 @@ trait DefaultSendMailPublisherServiceComponent
       }
     }
 
-    override def publishRegistration(user: User, country: Country, requestContext: RequestContext): Future[Unit] = {
+    override def publishRegistration(user: User, requestContext: RequestContext): Future[Unit] = {
       val questionId = requestContext.questionId
 
       user.verificationToken match {
         case Some(verificationToken) =>
-          crmTemplatesService.find(Registration, questionId, country).flatMap {
+          crmTemplatesService.find(Registration, questionId, user.country).flatMap {
             case Some(templateId) =>
               getUtmCampaignFromQuestionId(questionId).map { utmCampaign =>
                 eventBusService.publish(
@@ -269,12 +260,12 @@ trait DefaultSendMailPublisherServiceComponent
       }
     }
 
-    def publishResendRegistration(user: User, country: Country, requestContext: RequestContext): Future[Unit] = {
+    def publishResendRegistration(user: User, requestContext: RequestContext): Future[Unit] = {
       val questionId = requestContext.questionId
 
       user.verificationToken match {
         case Some(verificationToken) =>
-          crmTemplatesService.find(ResendRegistration, questionId, country).flatMap {
+          crmTemplatesService.find(ResendRegistration, questionId, user.country).flatMap {
             case Some(templateId) =>
               getUtmCampaignFromQuestionId(questionId).map { utmCampaign =>
                 eventBusService.publish(
@@ -312,17 +303,13 @@ trait DefaultSendMailPublisherServiceComponent
       }
     }
 
-    override def publishForgottenPassword(
-      user: User,
-      country: Country,
-      requestContext: RequestContext
-    ): Future[Unit] = {
+    override def publishForgottenPassword(user: User, requestContext: RequestContext): Future[Unit] = {
       val questionId = requestContext.questionId
 
       user.resetToken match {
         case Some(resetToken) =>
           crmTemplatesService
-            .find(ForgottenPassword, questionId, country)
+            .find(ForgottenPassword, questionId, user.country)
             .map(_.foreach { templateId =>
               eventBusService.publish(
                 SendEmail.create(
@@ -358,7 +345,6 @@ trait DefaultSendMailPublisherServiceComponent
 
     override def publishForgottenPasswordOrganisation(
       organisation: User,
-      country: Country,
       requestContext: RequestContext
     ): Future[Unit] = {
       val questionId = requestContext.questionId
@@ -366,7 +352,7 @@ trait DefaultSendMailPublisherServiceComponent
       organisation.resetToken match {
         case Some(resetToken) =>
           crmTemplatesService
-            .find(B2BForgottenPassword, questionId, country)
+            .find(B2BForgottenPassword, questionId, organisation.country)
             .map(_.foreach { templateId =>
               eventBusService.publish(
                 SendEmail.create(
@@ -401,16 +387,11 @@ trait DefaultSendMailPublisherServiceComponent
       }
     }
 
-    override def publishEmailChanged(
-      user: User,
-      country: Country,
-      requestContext: RequestContext,
-      newEmail: String
-    ): Future[Unit] = {
+    override def publishEmailChanged(user: User, requestContext: RequestContext, newEmail: String): Future[Unit] = {
       val questionId = requestContext.questionId
 
       crmTemplatesService
-        .find(B2BEmailChanged, questionId, country)
+        .find(B2BEmailChanged, questionId, user.country)
         .map(_.foreach { templateId =>
           eventBusService.publish(
             SendEmail.create(
@@ -477,7 +458,7 @@ trait DefaultSendMailPublisherServiceComponent
 
       def variables(question: Question, user: User, proposal: Proposal): Map[String, String] = {
         Map(
-          "proposal_url" -> getProposalUrl(proposal, question.slug),
+          "proposal_url" -> getProposalUrl(proposal, question, user.userType),
           "proposal_text" -> proposal.content,
           "firstname" -> user.firstName.getOrElse(""),
           "organisation_name" -> user.organisationName.getOrElse(""),
@@ -505,7 +486,6 @@ trait DefaultSendMailPublisherServiceComponent
 
       def variables(question: Question, user: User, proposal: Proposal): Map[String, String] = {
         Map(
-          "proposal_url" -> getProposalUrl(proposal, question.slug),
           "proposal_text" -> proposal.content,
           "refusal_reason" -> proposal.refusalReason.getOrElse(""),
           "firstname" -> user.firstName.getOrElse(""),
@@ -529,19 +509,19 @@ trait DefaultSendMailPublisherServiceComponent
       publishModerationEmail(proposalId, variables, kind)
     }
 
-    override def resendRegistration(user: User, country: Country, requestContext: RequestContext): Future[Unit] = {
+    override def resendRegistration(user: User, requestContext: RequestContext): Future[Unit] = {
 
       userService.changeEmailVerificationTokenIfNeeded(user.userId).flatMap {
-        case Some(_) => publishResendRegistration(user, country, requestContext)
+        case Some(_) => publishResendRegistration(user, requestContext)
         case None    => Future.successful {}
       }
     }
 
-    override def publishRegistrationB2B(user: User, country: Country, requestContext: RequestContext): Future[Unit] = {
+    override def publishRegistrationB2B(user: User, requestContext: RequestContext): Future[Unit] = {
       user.resetToken match {
         case Some(resetToken) =>
           crmTemplatesService
-            .find(B2BRegistration, None, country)
+            .find(B2BRegistration, requestContext.questionId, user.country)
             .map(_.foreach { templateId =>
               eventBusService.publish(
                 SendEmail.create(
