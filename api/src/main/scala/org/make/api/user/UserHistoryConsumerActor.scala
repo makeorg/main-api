@@ -85,7 +85,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
       )
     )
 
-    Future.successful {}
+    Future.unit
   }
 
   def handleUserConnectedEvent(event: UserConnectedEvent): Future[Unit] = {
@@ -107,7 +107,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
           .map(_ => ())
       case None =>
         log.warning("User not found after UserConnectedEvent: ", event)
-        Future.successful {}
+        Future.unit
     }
   }
 
@@ -138,7 +138,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
       )
     }
 
-    Future.successful {}
+    Future.unit
   }
 
   def handleUserAnonymizedEvent(event: UserAnonymizedEvent): Future[Unit] = {
@@ -154,7 +154,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
       )
     )
 
-    Future.successful {}
+    Future.unit
   }
 
   def handleOrganisationEmailChangedEvent(event: OrganisationEmailChangedEvent): Future[Unit] = {
@@ -170,7 +170,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
       )
     )
 
-    Future.successful {}
+    Future.unit
   }
 
   def handlePersonalityEmailChangedEvent(event: PersonalityEmailChangedEvent): Future[Unit] = {
@@ -186,7 +186,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
       )
     )
 
-    Future.successful {}
+    Future.unit
   }
 }
 

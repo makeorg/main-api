@@ -65,7 +65,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
     getUserWithValidEmail(event.userId).flatMap {
       case Some(user) =>
         sendMailPublisherService.resendRegistration(user, event.requestContext)
-      case None => Future.successful {}
+      case None => Future.unit
     }
   }
 
@@ -73,7 +73,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
     getUserWithValidEmail(event.userId).flatMap {
       case Some(user) if user.isB2C =>
         sendMailPublisherService.publishWelcome(user, event.requestContext)
-      case _ => Future.successful {}
+      case _ => Future.unit
     }
   }
 
@@ -81,7 +81,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
     getUserWithValidEmail(event.userId).flatMap {
       case Some(user) if user.isB2B =>
         sendMailPublisherService.publishRegistrationB2B(user, event.requestContext)
-      case _ => Future.successful {}
+      case _ => Future.unit
     }
   }
 
@@ -89,7 +89,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
     getUserWithValidEmail(event.userId).flatMap {
       case Some(user) if user.isB2C && !event.isSocialLogin =>
         sendMailPublisherService.publishRegistration(user, event.requestContext)
-      case _ => Future.successful {}
+      case _ => Future.unit
     }
   }
 
@@ -99,7 +99,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
         sendMailPublisherService.publishForgottenPasswordOrganisation(user, event.requestContext)
       case Some(user) =>
         sendMailPublisherService.publishForgottenPassword(user, event.requestContext)
-      case None => Future.successful {}
+      case None => Future.unit
     }
   }
 
@@ -111,7 +111,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
           requestContext = event.requestContext,
           newEmail = event.newEmail
         )
-      case None => Future.successful {}
+      case None => Future.unit
     }
   }
 
@@ -123,7 +123,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
           requestContext = event.requestContext,
           newEmail = event.newEmail
         )
-      case None => Future.successful {}
+      case None => Future.unit
     }
   }
 

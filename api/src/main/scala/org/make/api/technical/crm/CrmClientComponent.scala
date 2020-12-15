@@ -364,7 +364,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, entity, _) if code.isSuccess() =>
           entity.discardBytes()
-          Future.successful {}
+          Future.unit
         case HttpResponse(StatusCodes.TooManyRequests, _, responseEntity, _) =>
           Unmarshal(responseEntity).to[String].flatMap { response =>
             Future.failed(QuotaExceeded("deleteContactById", response))

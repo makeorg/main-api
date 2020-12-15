@@ -451,7 +451,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
 
     private def hardRemoveEmailsFromAllLists(emails: Seq[String]): Future[Unit] = {
       if (emails.isEmpty) {
-        Future.successful {}
+        Future.unit
       } else {
         Source(emails)
           .map(email => Contact(email = email))

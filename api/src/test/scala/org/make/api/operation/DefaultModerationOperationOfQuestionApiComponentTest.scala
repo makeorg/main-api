@@ -148,7 +148,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     )
   }
 
-  when(operationOfQuestionService.delete(any[QuestionId])).thenReturn(Future.successful {})
+  when(operationOfQuestionService.delete(any[QuestionId])).thenReturn(Future.unit)
 
   when(operationOfQuestionService.findByOperationId(any[OperationId])).thenAnswer { operationId: OperationId =>
     Future.successful(

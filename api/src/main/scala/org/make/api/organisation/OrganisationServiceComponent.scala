@@ -318,7 +318,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
               )
             )
           }
-        case None => Future.successful {}
+        case None => Future.unit
       }
     }
 

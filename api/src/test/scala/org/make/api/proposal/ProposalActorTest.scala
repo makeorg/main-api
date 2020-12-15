@@ -117,7 +117,7 @@ class ProposalActorTest extends ShardingActorTest {
   when(
     sessionHistoryCoordinatorService
       .logTransactionalHistory(any[TransactionalSessionHistoryEvent[_]])
-  ).thenReturn(Future.successful({}))
+  ).thenReturn(Future.unit)
 
   val coordinator: ActorRef =
     system.actorOf(

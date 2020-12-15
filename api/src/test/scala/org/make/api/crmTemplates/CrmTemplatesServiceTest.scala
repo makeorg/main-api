@@ -211,7 +211,7 @@ class CrmTemplatesServiceTest
     Scenario("delete question template") {
 
       when(persistentCrmQuestionTemplateService.remove(any[CrmQuestionTemplateId]))
-        .thenAnswer[CrmQuestionTemplateId](_ => Future.successful {})
+        .thenAnswer[CrmQuestionTemplateId](_ => Future.unit)
 
       whenReady(crmTemplatesService.delete(questionTemplate2.id)) {
         _ shouldBe ()

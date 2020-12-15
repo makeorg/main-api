@@ -138,7 +138,7 @@ trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent w
           client.executeAsFuture(aliasExists(aliasName)).flatMap {
             case AliasExistsResponse(true) =>
               logger.info(s"Elasticsearch alias $aliasName exist")
-              Future.successful {}
+              Future.unit
             case AliasExistsResponse(false) =>
               logger.info(s"Elasticsearch alias $aliasName not found")
               createInitialIndexAndAlias(aliasName)

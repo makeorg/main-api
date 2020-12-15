@@ -29,7 +29,7 @@ import wartremover.{Wart, Warts}
 
 lazy val commonSettings = Seq(
   organization := "org.make",
-  scalaVersion := "2.13.3",
+  scalaVersion := "2.13.4",
   licenses     += "AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl.html"),
   credentials ++= {
     if (System.getenv().containsKey("CI_BUILD")) {
@@ -67,7 +67,8 @@ lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
     "-Yrangepos",
     "-Xlint:_",
-    "-Wconf:cat=lint-byname-implicit:s,cat=w-flag-numeric-widen:s,any:e",
+    "-Xlint:-strict-unsealed-patmat",
+    "-Wconf:cat=lint-byname-implicit:s,cat=other-non-cooperative-equals:s,cat=w-flag-numeric-widen:s,any:e",
     "-encoding",
     "UTF-8",
     "-language:_",
@@ -85,11 +86,13 @@ lazy val commonSettings = Seq(
     Wart.Any,
     Wart.DefaultArguments,
     Wart.Equals,
+    Wart.GlobalExecutionContext,
     Wart.ImplicitConversion,
     Wart.ImplicitParameter,
     Wart.NonUnitStatements,
     Wart.Nothing,
     Wart.Overloading,
+    Wart.PlatformDefault,
     Wart.StringPlusAny,
     Wart.ToString,
     Wart.Var

@@ -108,7 +108,7 @@ class UserServiceTest
   when(makeSettings.resetTokenExpiresIn).thenReturn(Duration("1 days"))
   when(makeSettings.resetTokenB2BExpiresIn).thenReturn(Duration("3 days"))
 
-  when(persistentUserToAnonymizeService.create(any[String])).thenReturn(Future.successful {})
+  when(persistentUserToAnonymizeService.create(any[String])).thenReturn(Future.unit)
 
   when(persistentUserService.updateUser(any[User])).thenAnswer { user: User =>
     Future.successful(user)
@@ -941,9 +941,9 @@ class UserServiceTest
     Scenario("anonymize user") {
       clearInvocations(eventBusService)
 
-      when(proposalService.anonymizeByUserId(any[UserId])).thenReturn(Future.successful({}))
+      when(proposalService.anonymizeByUserId(any[UserId])).thenReturn(Future.unit)
       when(persistentUserService.removeAnonymizedUserFromFollowedUserTable(any[UserId]))
-        .thenReturn(Future.successful({}))
+        .thenReturn(Future.unit)
 
       Given("a user")
       When("I anonymize this user")
@@ -964,7 +964,7 @@ class UserServiceTest
     Scenario("follow user") {
       clearInvocations(eventBusService)
       when(persistentUserService.followUser(any[UserId], any[UserId]))
-        .thenReturn(Future.successful({}))
+        .thenReturn(Future.unit)
 
       val futureFollowOrganisation =
         userService.followUser(UserId("user-id"), UserId("me"), RequestContext.empty)
@@ -979,7 +979,7 @@ class UserServiceTest
     Scenario("unfollow user") {
       clearInvocations(eventBusService)
       when(persistentUserService.unfollowUser(any[UserId], any[UserId]))
-        .thenReturn(Future.successful({}))
+        .thenReturn(Future.unit)
 
       val futureFollowOrganisation =
         userService.unfollowUser(UserId("make-org"), UserId("me"), RequestContext.empty)

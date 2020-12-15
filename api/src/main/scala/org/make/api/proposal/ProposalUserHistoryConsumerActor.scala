@@ -76,7 +76,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinatorService: UserHistor
         )
       )
     )
-    Future.successful {}
+    Future.unit
   }
 
   def handleProposalLocked(event: ProposalLocked): Future[Unit] = {
@@ -88,7 +88,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinatorService: UserHistor
         action = UserAction(date = event.eventDate, actionType = ProposalLocked.actionType, arguments = event)
       )
     )
-    Future.successful {}
+    Future.unit
   }
 
   def handleProposalAccepted(event: ProposalAccepted): Future[Unit] = {
@@ -99,7 +99,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinatorService: UserHistor
         action = UserAction(date = event.eventDate, actionType = ProposalAccepted.actionType, arguments = event)
       )
     )
-    Future.successful {}
+    Future.unit
   }
 
   def handleProposalRefused(event: ProposalRefused): Future[Unit] = {
@@ -110,7 +110,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinatorService: UserHistor
         action = UserAction(date = event.eventDate, actionType = ProposalRefused.actionType, arguments = event)
       )
     )
-    Future.successful {}
+    Future.unit
   }
 
   def handleProposalPostponed(event: ProposalPostponed): Future[Unit] = {
@@ -121,7 +121,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinatorService: UserHistor
         action = UserAction(date = event.eventDate, actionType = ProposalPostponed.actionType, arguments = event)
       )
     )
-    Future.successful {}
+    Future.unit
   }
 }
 

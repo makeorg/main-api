@@ -92,7 +92,7 @@ class UserEmailConsumerActorIT
           .publishForgottenPassword(eqTo(user), eqTo(RequestContext.empty))
       ).thenAnswer { (_: User, _: RequestContext) =>
         probeReset.ref ! "sendMailPublisherService.publishForgottenPassword called"
-        Future.successful({})
+        Future.unit
       }
 
       val event: ResetPasswordEvent = ResetPasswordEvent(None, user, country, RequestContext.empty)
@@ -109,7 +109,7 @@ class UserEmailConsumerActorIT
           .publishForgottenPasswordOrganisation(eqTo(organisation), eqTo(RequestContext.empty))
       ).thenAnswer { (_: User, _: RequestContext) =>
         probeReset.ref ! "sendMailPublisherService.publishForgottenPasswordOrganisation called"
-        Future.successful({})
+        Future.unit
       }
       val event: ResetPasswordEvent =
         ResetPasswordEvent(None, organisation, country, RequestContext.empty)
@@ -126,7 +126,7 @@ class UserEmailConsumerActorIT
           .publishForgottenPasswordOrganisation(eqTo(personality1), eqTo(RequestContext.empty))
       ).thenAnswer { (_: User, _: RequestContext) =>
         probeReset.ref ! "sendMailPublisherService.publishForgottenPasswordOrganisation perso called"
-        Future.successful({})
+        Future.unit
       }
 
       val eventPerso: ResetPasswordEvent =
@@ -149,7 +149,7 @@ class UserEmailConsumerActorIT
           .publishRegistration(eqTo(user), eqTo(RequestContext.empty))
       ).thenAnswer { (_: User, _: RequestContext) =>
         probeRegistered.ref ! "sendMailPublisherService.publishRegistration called"
-        Future.successful({})
+        Future.unit
       }
       val eventUser: UserRegisteredEvent = UserRegisteredEvent(
         connectedUserId = None,
@@ -182,7 +182,7 @@ class UserEmailConsumerActorIT
           .publishRegistrationB2B(eqTo(organisation), eqTo(RequestContext.empty))
       ).thenAnswer { (_: User, _: RequestContext) =>
         orgaProbe.ref ! "sendMailPublisherService.publishRegistrationB2B called"
-        Future.successful({})
+        Future.unit
       }
       val eventOrganisation: OrganisationRegisteredEvent = OrganisationRegisteredEvent(
         connectedUserId = None,
@@ -207,7 +207,7 @@ class UserEmailConsumerActorIT
           .publishRegistrationB2B(eqTo(personality1), eqTo(RequestContext.empty))
       ).thenAnswer { (_: User, _: RequestContext) =>
         persoProbe.ref ! "sendMailPublisherService.publishRegistrationB2B called"
-        Future.successful({})
+        Future.unit
       }
       val event: PersonalityRegisteredEvent = PersonalityRegisteredEvent(
         connectedUserId = None,
@@ -232,7 +232,7 @@ class UserEmailConsumerActorIT
       when(sendMailPublisherService.publishWelcome(eqTo(user), eqTo(RequestContext.empty))).thenAnswer {
         (_: User, _: RequestContext) =>
           userProbe.ref ! "sendMailPublisherService.publishWelcome called"
-          Future.successful({})
+          Future.unit
       }
 
       val event: UserValidatedAccountEvent = UserValidatedAccountEvent(
@@ -295,7 +295,7 @@ class UserEmailConsumerActorIT
           .resendRegistration(eqTo(user), eqTo(RequestContext.empty))
       ).thenAnswer { (_: User, _: RequestContext) =>
         probeValidation.ref ! "sendMailPublisherService.resendRegistration called"
-        Future.successful({})
+        Future.unit
       }
 
       val event: ResendValidationEmailEvent =
@@ -314,7 +314,7 @@ class UserEmailConsumerActorIT
           .resendRegistration(eqTo(organisation), eqTo(RequestContext.empty))
       ).thenAnswer { (_: User, _: RequestContext) =>
         probeValidation.ref ! "sendMailPublisherService.resendRegistration called"
-        Future.successful({})
+        Future.unit
       }
 
       val event: ResendValidationEmailEvent =
@@ -333,7 +333,7 @@ class UserEmailConsumerActorIT
           .resendRegistration(eqTo(personality1), eqTo(RequestContext.empty))
       ).thenAnswer { (_: User, _: RequestContext) =>
         probeValidation.ref ! "sendMailPublisherService.resendRegistration called"
-        Future.successful({})
+        Future.unit
       }
 
       val event: ResendValidationEmailEvent =

@@ -177,12 +177,12 @@ class ProposalServiceTest
   }
 
   when(sessionHistoryCoordinatorService.unlockSessionForVote(any[SessionId], any[ProposalId]))
-    .thenReturn(Future.successful {})
+    .thenReturn(Future.unit)
 
   when(
     sessionHistoryCoordinatorService
       .unlockSessionForQualification(any[SessionId], any[ProposalId], any[QualificationKey])
-  ).thenReturn(Future.successful {})
+  ).thenReturn(Future.unit)
 
   Feature("next proposal to moderate") {
 
@@ -1537,7 +1537,7 @@ class ProposalServiceTest
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
-        .thenReturn(Future.successful {})
+        .thenReturn(Future.unit)
       when(
         sessionHistoryCoordinatorService
           .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
@@ -1567,7 +1567,7 @@ class ProposalServiceTest
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
-        .thenReturn(Future.successful {})
+        .thenReturn(Future.unit)
 
       when(
         sessionHistoryCoordinatorService
@@ -1598,7 +1598,7 @@ class ProposalServiceTest
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
-        .thenReturn(Future.successful {})
+        .thenReturn(Future.unit)
       when(
         sessionHistoryCoordinatorService
           .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
@@ -1655,7 +1655,7 @@ class ProposalServiceTest
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
-        .thenReturn(Future.successful {})
+        .thenReturn(Future.unit)
       when(
         sessionHistoryCoordinatorService
           .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
@@ -1684,7 +1684,7 @@ class ProposalServiceTest
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
-        .thenReturn(Future.successful {})
+        .thenReturn(Future.unit)
       when(
         sessionHistoryCoordinatorService
           .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
@@ -1714,7 +1714,7 @@ class ProposalServiceTest
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
-        .thenReturn(Future.successful {})
+        .thenReturn(Future.unit)
 
       when(
         sessionHistoryCoordinatorService
@@ -1745,7 +1745,7 @@ class ProposalServiceTest
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
-        .thenReturn(Future.successful {})
+        .thenReturn(Future.unit)
       when(
         sessionHistoryCoordinatorService
           .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
@@ -1804,7 +1804,7 @@ class ProposalServiceTest
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       when(sessionHistoryCoordinatorService.lockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt))
-        .thenReturn(Future.successful {})
+        .thenReturn(Future.unit)
 
       when(
         sessionHistoryCoordinatorService
@@ -1849,7 +1849,7 @@ class ProposalServiceTest
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       when(sessionHistoryCoordinatorService.lockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt))
-        .thenReturn(Future.successful {})
+        .thenReturn(Future.unit)
 
       when(
         sessionHistoryCoordinatorService
@@ -1927,7 +1927,7 @@ class ProposalServiceTest
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       when(sessionHistoryCoordinatorService.lockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt))
-        .thenReturn(Future.successful {})
+        .thenReturn(Future.unit)
 
       when(
         sessionHistoryCoordinatorService
@@ -1969,7 +1969,7 @@ class ProposalServiceTest
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
       when(sessionHistoryCoordinatorService.lockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt))
-        .thenReturn(Future.successful {})
+        .thenReturn(Future.unit)
 
       when(
         sessionHistoryCoordinatorService

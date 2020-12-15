@@ -396,7 +396,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
             )
           )
-        case _ => Future.successful {}
+        case _ => Future.unit
       }
       logSearchContent.flatMap { _ =>
         elasticsearchProposalAPI.searchProposals(query)
