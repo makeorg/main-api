@@ -283,7 +283,7 @@ class OperationOfQuestionServiceTest
         .thenReturn(Future.successful(questionCreate))
       when(persistentSequenceConfigurationService.persist(eqTo(sequenceConfiguration)))
         .thenReturn(Future.successful(true))
-      when(persistentOperationOfQuestionService.persist(eqTo(operationOfQuestionCreate)))
+      when(persistentOperationOfQuestionService.persist(any[OperationOfQuestion]))
         .thenReturn(Future.successful(operationOfQuestionCreate))
       when(questionService.getQuestion(questionId))
         .thenReturn(
@@ -330,7 +330,7 @@ class OperationOfQuestionServiceTest
       operationOfQuestionService.count(query)
 
       verify(persistentOperationOfQuestionService)
-        .count(Some(Seq(QuestionId("first-question-id"), QuestionId("second-question-id"))), None, None)
+        .count(Some(Seq(QuestionId("first-question-id"), QuestionId("second-question-id"))), None, None, None)
     }
   }
 

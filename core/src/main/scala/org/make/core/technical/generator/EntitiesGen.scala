@@ -31,7 +31,7 @@ import eu.timepit.refined.api.RefType
 import eu.timepit.refined.auto._
 import eu.timepit.refined.types.numeric.{NonNegInt, PosInt}
 import org.make.core.DateHelper._
-import org.make.core.{BusinessConfig, RequestContext, SlugHelper}
+import org.make.core.{BusinessConfig, DateHelper, RequestContext, SlugHelper}
 import org.make.core.job.Job
 import org.make.core.job.Job.{JobId, JobStatus}
 import org.make.core.operation.{
@@ -139,7 +139,8 @@ trait EntitiesGen extends DateGenerators {
       votesTarget = votesTarget,
       resultDate = None,
       workshopDate = None,
-      actionDate = None
+      actionDate = None,
+      createdAt = DateHelper.now()
     )
 
   val genResultsLink: Gen[ResultsLink] = Gen.frequency(

@@ -662,7 +662,8 @@ final case class OperationOfQuestionResponse(
   votesTarget: Int,
   resultDate: Option[LocalDate],
   workshopDate: Option[LocalDate],
-  actionDate: Option[LocalDate]
+  actionDate: Option[LocalDate],
+  createdAt: ZonedDateTime
 )
 
 object OperationOfQuestionResponse extends CirceFormatters {
@@ -700,7 +701,8 @@ object OperationOfQuestionResponse extends CirceFormatters {
       votesTarget = operationOfQuestion.votesTarget,
       resultDate = operationOfQuestion.workshopDate,
       workshopDate = operationOfQuestion.workshopDate,
-      actionDate = operationOfQuestion.actionDate
+      actionDate = operationOfQuestion.actionDate,
+      createdAt = operationOfQuestion.createdAt
     )
   }
 }

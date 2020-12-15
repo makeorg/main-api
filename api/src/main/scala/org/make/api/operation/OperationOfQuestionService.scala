@@ -34,7 +34,7 @@ import org.make.core.operation._
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.Order
+import org.make.core.{DateHelper, Order}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -250,7 +250,8 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         votesTarget = 100_000,
         resultDate = None,
         workshopDate = None,
-        actionDate = None
+        actionDate = None,
+        createdAt = DateHelper.now()
       )
 
       val sequenceConfiguration =
@@ -266,7 +267,12 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
     }
 
     override def count(request: SearchOperationsOfQuestions): Future[Int] = {
-      persistentOperationOfQuestionService.count(request.questionIds, request.operationIds, request.openAt)
+      persistentOperationOfQuestionService.count(
+        request.questionIds,
+        request.operationIds,
+        request.openAt,
+        request.endAfter
+      )
     }
 
     override def indexById(questionId: QuestionId): Future[Option[IndexationStatus]] = {

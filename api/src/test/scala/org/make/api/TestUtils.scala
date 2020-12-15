@@ -408,7 +408,8 @@ trait TestUtils {
     votesTarget: Int = 100_000,
     resultDate: Option[LocalDate] = None,
     workshopDate: Option[LocalDate] = None,
-    actionDate: Option[LocalDate] = None
+    actionDate: Option[LocalDate] = None,
+    createdAt: ZonedDateTime = ZonedDateTime.parse("1968-06-03T00:00:00.000Z")
   ) = OperationOfQuestion(
     questionId = questionId,
     operationId = operationId,
@@ -435,7 +436,8 @@ trait TestUtils {
     votesTarget = votesTarget,
     resultDate = resultDate,
     workshopDate = workshopDate,
-    actionDate = actionDate
+    actionDate = actionDate,
+    createdAt = createdAt
   )
 
   def postGen(
