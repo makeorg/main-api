@@ -22,7 +22,6 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-
 import akka.actor.ActorSystem
 import cats.data.NonEmptyList
 import com.sksamuel.elastic4s.searches.sort.SortOrder
@@ -39,6 +38,7 @@ import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.core.common.indexed.Sort
 import org.make.core.idea.IdeaId
 import org.make.core.proposal._
+import org.make.core.proposal.indexed.Zone.{Consensus, Controversy, Limbo}
 import org.make.core.proposal.indexed._
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
@@ -223,8 +223,8 @@ class ProposalSearchEngineIT
       votesSequenceCount = 287,
       votesSegmentCount = 287,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 42, 42, 0, 0, 84, 0),
-      segmentScores = IndexedScores(1, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10, 0),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 42, 42, 0, 0, 84, 0, Consensus),
+      segmentScores = IndexedScores(1, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10, 0, Limbo),
       context = italianContext,
       trending = None,
       labels = Seq(),
@@ -297,7 +297,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 310,
       votesSegmentCount = 310,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 54, 21, 0, 0, 0, 0),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 54, 21, 0, 0, 0, 0, Controversy),
       segmentScores = IndexedScores.empty,
       context = frenchContext,
       trending = None,
@@ -371,7 +371,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 127,
       votesSegmentCount = 127,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 35, 35, 0, 0, 0, 0),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 35, 35, 0, 0, 0, 0, Limbo),
       segmentScores = IndexedScores.empty,
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id-2")),
@@ -447,7 +447,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 353,
       votesSegmentCount = 353,
       toEnrich = false,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 16, 16, 0, 0, 0, 0),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 16, 16, 0, 0, 0, 0, Limbo),
       segmentScores = IndexedScores.empty,
       context = frenchContext,
       trending = None,
@@ -1714,6 +1714,28 @@ class ProposalSearchEngineIT
       whenReady(elasticsearchProposalAPI.getRandomProposalsByIdeaWithAvatar(Seq.empty, 42), Timeout(10.seconds)) {
         result =>
           result should be(Map.empty)
+      }
+    }
+  }
+
+  Feature("search by zone / segment zone") {
+    Scenario("search by zone") {
+      val query = SearchQuery(filters = Some(SearchFilters(zone = Some(ZoneSearchFilter(Consensus)))))
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(10.seconds)) { result =>
+        result.results.size should be >= 1
+        result.results.foreach { proposal =>
+          proposal.scores.zone should be(Consensus)
+        }
+      }
+    }
+
+    Scenario("search by segment zone") {
+      val query = SearchQuery(filters = Some(SearchFilters(segmentZone = Some(ZoneSearchFilter(Limbo)))))
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(10.seconds)) { result =>
+        result.results.size should be >= 1
+        result.results.foreach { proposal =>
+          proposal.segmentScores.zone should be(Limbo)
+        }
       }
     }
   }

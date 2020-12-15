@@ -123,7 +123,7 @@ object ProposalActionType extends StringEnum[ProposalActionType] {
 
 }
 
-sealed abstract class QualificationKey(val value: String) extends StringEnumEntry
+sealed abstract class QualificationKey(val value: String) extends StringEnumEntry with Key
 
 object QualificationKey extends StringEnum[QualificationKey] with StringCirceEnum[QualificationKey] {
 
@@ -141,13 +141,7 @@ object QualificationKey extends StringEnum[QualificationKey] with StringCirceEnu
 
 }
 
-trait BaseQualification {
-  def key: QualificationKey
-  def count: Int
-  def countVerified: Int
-  def countSequence: Int
-  def countSegment: Int
-}
+trait BaseQualification extends BaseVoteOrQualification[QualificationKey]
 
 final case class Qualification(
   @(ApiModelProperty @field)(dataType = "string", example = "likeIt")
@@ -167,12 +161,15 @@ object Qualification {
 
 }
 
-trait BaseVote {
-  def key: VoteKey
+trait BaseVoteOrQualification[KeyType <: Key] {
+  def key: KeyType
   def count: Int
   def countVerified: Int
   def countSequence: Int
   def countSegment: Int
+}
+
+trait BaseVote extends BaseVoteOrQualification[VoteKey] {
   def qualifications: Seq[BaseQualification]
 }
 
@@ -196,7 +193,9 @@ object Vote {
   def empty(key: VoteKey): Vote = Vote(key, 0, 0, 0, 0, Seq.empty)
 }
 
-sealed abstract class VoteKey(val value: String) extends StringEnumEntry with Product with Serializable
+sealed trait Key
+
+sealed abstract class VoteKey(val value: String) extends StringEnumEntry with Key with Product with Serializable
 
 object VoteKey extends StringEnum[VoteKey] with StringCirceEnum[VoteKey] {
 

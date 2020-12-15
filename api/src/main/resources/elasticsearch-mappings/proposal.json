@@ -1034,6 +1034,10 @@
             "scoreLowerBound": {
               "type": "double",
               "index": true
+            },
+            "zone": {
+              "type": "keyword",
+              "index": true
             }
           }
         },
@@ -1087,8 +1091,11 @@
             "scoreLowerBound": {
               "type": "double",
               "index": true
+            },
+            "zone": {
+              "type": "keyword",
+              "index": true
             }
-
           }
         },
         "slug": {

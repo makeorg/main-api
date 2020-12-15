@@ -23,7 +23,6 @@ import java.io.{BufferedReader, InputStreamReader}
 import java.nio.file.Path
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
-
 import akka.NotUsed
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem, SpawnProtocol}
@@ -55,6 +54,7 @@ import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal.ProposalActionType.ProposalVoteAction
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal._
+import org.make.core.proposal.indexed.Zone.Limbo
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
@@ -875,8 +875,8 @@ class CrmServiceComponentTest
           votesSequenceCount = 42,
           votesSegmentCount = 42,
           toEnrich = true,
-          scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-          segmentScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+          scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Limbo),
+          segmentScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Limbo),
           context = None,
           trending = None,
           labels = Seq.empty,
@@ -930,8 +930,8 @@ class CrmServiceComponentTest
           votesSequenceCount = 42,
           votesSegmentCount = 42,
           toEnrich = true,
-          scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-          segmentScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+          scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Limbo),
+          segmentScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Limbo),
           context = None,
           trending = None,
           labels = Seq.empty,
