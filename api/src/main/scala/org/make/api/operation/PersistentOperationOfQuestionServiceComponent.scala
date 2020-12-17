@@ -66,7 +66,8 @@ trait PersistentOperationOfQuestionService {
   def count(
     questionIds: Option[Seq[QuestionId]],
     operationIds: Option[Seq[OperationId]],
-    openAt: Option[ZonedDateTime]
+    openAt: Option[ZonedDateTime],
+    endAfter: Option[ZonedDateTime]
   ): Future[Int]
   // TODO: delete this method once the calling batch was run in production
   def questionIdFromSequenceId(sequenceId: SequenceId): Future[Option[QuestionId]]
@@ -291,7 +292,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
     override def count(
       questionIds: Option[Seq[QuestionId]],
       operationIds: Option[Seq[OperationId]],
-      openAt: Option[ZonedDateTime]
+      openAt: Option[ZonedDateTime],
+      endAfter: Option[ZonedDateTime]
     ): Future[Int] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
@@ -309,7 +311,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                     sqls
                       .le(PersistentOperationOfQuestion.column.startDate, openAt)
                       .and(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
-                )
+                ),
+                endAfter.map(end => sqls.ge(PersistentOperationOfQuestion.column.endDate, end))
               )
             )
         }.map(_.int(1)).single().apply().getOrElse(0)
@@ -438,7 +441,8 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
       votesCount = this.votesCount,
       resultDate = this.resultDate,
       workshopDate = this.workshopDate,
-      actionDate = this.actionDate
+      actionDate = this.actionDate,
+      createdAt = this.createdAt
     )
   }
 
@@ -502,7 +506,8 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
       votesTarget: Int,
       resultDate: Option[LocalDate],
       workshopDate: Option[LocalDate],
-      actionDate: Option[LocalDate]
+      actionDate: Option[LocalDate],
+      createdAt: ZonedDateTime
     ) {
       def toQuestionAndDetails: QuestionWithDetails = {
         QuestionWithDetails(
@@ -563,7 +568,8 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
             votesTarget = this.votesTarget,
             resultDate = this.resultDate,
             workshopDate = this.workshopDate,
-            actionDate = this.actionDate
+            actionDate = this.actionDate,
+            createdAt = this.createdAt
           )
         )
 
@@ -635,7 +641,8 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         votesTarget = resultSet.int(operationOfQuestionAlias.votesTarget),
         resultDate = resultSet.localDateOpt(operationOfQuestionAlias.resultDate),
         workshopDate = resultSet.localDateOpt(operationOfQuestionAlias.workshopDate),
-        actionDate = resultSet.localDateOpt(operationOfQuestionAlias.actionDate)
+        actionDate = resultSet.localDateOpt(operationOfQuestionAlias.actionDate),
+        createdAt = resultSet.zonedDateTime(operationOfQuestionAlias.createdAt)
       )
     }
 

@@ -204,7 +204,8 @@ final case class OperationOfQuestion(
   votesTarget: Int,
   resultDate: Option[LocalDate],
   workshopDate: Option[LocalDate],
-  actionDate: Option[LocalDate]
+  actionDate: Option[LocalDate],
+  createdAt: ZonedDateTime
 ) {
 
   def status: OperationOfQuestion.Status = {
