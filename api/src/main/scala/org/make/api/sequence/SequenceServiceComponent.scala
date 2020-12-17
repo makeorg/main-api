@@ -30,7 +30,7 @@ import org.make.api.technical.MakeRandom
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
-import org.make.core.proposal.indexed.{IndexedProposal, SequencePool}
+import org.make.core.proposal.indexed.{IndexedProposal, SequencePool, Zone}
 import org.make.core.proposal.{
   CreationDateAlgorithm,
   ProposalId,
@@ -39,7 +39,8 @@ import org.make.core.proposal.{
   RandomAlgorithm,
   SegmentSearchFilter,
   SequencePoolSearchFilter,
-  SortAlgorithm
+  SortAlgorithm,
+  ZoneSearchFilter
 }
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
@@ -55,6 +56,7 @@ trait SequenceServiceComponent {
 
 trait SequenceService {
   def startNewSequence(
+    zone: Option[Zone],
     maybeUserId: Option[UserId],
     questionId: QuestionId,
     includedProposals: Seq[ProposalId],
@@ -78,6 +80,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
   class DefaultSequenceService extends SequenceService {
 
     override def startNewSequence(
+      zone: Option[Zone],
       maybeUserId: Option[UserId],
       questionId: QuestionId,
       includedProposals: Seq[ProposalId],
@@ -94,8 +97,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       for {
         _                     <- logStartSequenceUserHistory(Some(questionId), maybeUserId, includedProposals, requestContext)
         proposalsVoted        <- futureVotedProposals(maybeUserId = maybeUserId, requestContext = requestContext)
-        sequenceConfiguration <- sequenceConfigurationService.getSequenceConfigurationByQuestionId(questionId)
-        includedProposals     <- futureIncludedProposals
+        sequenceConfiguration <- getSequenceConfiguration(zone, questionId)
+        includedProposals     <- futureIncludedProposals // TODO shouldn't they be excluded from searches?
         maybeSegment          <- segmentService.resolveSegment(requestContext)
         searchProposals = (
           maybePool: Option[SequencePool],
@@ -129,7 +132,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                     sequenceSegmentPool = segmentPoolSearch,
                     question = Some(QuestionSearchFilter(Seq(questionId))),
                     tags = tagsSearch,
-                    segment = segmentSearch
+                    segment = segmentSearch,
+                    zone = zone.map(ZoneSearchFilter)
                   )
                 ),
                 excludes = Some(proposal.SearchFilters(proposal = Some(ProposalSearchFilter(excluded)))),
@@ -266,6 +270,19 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
           RequestSessionVoteValues(requestContext.sessionId, proposals)
         )
       }
+
+    private def getSequenceConfiguration(zone: Option[Zone], questionId: QuestionId): Future[SequenceConfiguration] = {
+      sequenceConfigurationService
+        .getSequenceConfigurationByQuestionId(questionId)
+        .map(
+          config =>
+            zone match {
+              case Some(Zone.Consensus | Zone.Controversy) =>
+                config.copy(selectionAlgorithmName = SelectionAlgorithmName.Bandit)
+              case _ => config
+            }
+        )
+    }
 
   }
 }

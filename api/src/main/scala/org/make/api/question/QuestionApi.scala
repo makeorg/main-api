@@ -51,6 +51,7 @@ import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldNam
 import org.make.core.partner.PartnerKind
 import org.make.core.personality.PersonalityRoleId
 import org.make.core.proposal.ProposalId
+import org.make.core.proposal.indexed.Zone
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
 import org.make.core.technical.Pagination._
@@ -404,10 +405,11 @@ trait DefaultQuestionApiComponent
       path("questions" / questionId / "start-sequence") { questionId =>
         makeOperation("StartSequenceByQuestionId") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters("include".csv[ProposalId]) { includes =>
+            parameters("zone".as[Zone].?, "include".csv[ProposalId]) { (zone, includes) =>
               provideAsync(
                 sequenceService
                   .startNewSequence(
+                    zone = zone,
                     maybeUserId = userAuth.map(_.user.userId),
                     questionId = questionId,
                     includedProposals = includes.getOrElse(Seq.empty),

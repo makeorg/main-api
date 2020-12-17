@@ -168,6 +168,7 @@ class QuestionApiTest
       val questionId = QuestionId("question-id")
       when(
         sequenceService.startNewSequence(
+          zone = eqTo(None),
           maybeUserId = any[Option[UserId]],
           questionId = eqTo(questionId),
           includedProposals = any[Seq[ProposalId]],
