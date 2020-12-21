@@ -83,7 +83,7 @@ class HomeViewServiceComponentTest
     slug = "",
     questionShortTitle = defaultQuestion.shortTitle,
     description = "Description opeOfQue",
-    theme = QuestionTheme("#000000", "#000000", "#000000", "#000000", None, None),
+    theme = QuestionTheme("#000000", "#000000"),
     consultationImage = None,
     consultationImageAlt = None,
     descriptionImage = None,

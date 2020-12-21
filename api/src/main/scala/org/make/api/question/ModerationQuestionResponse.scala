@@ -388,20 +388,16 @@ final case class QuestionThemeResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "#214284") gradientStart: String,
   @(ApiModelProperty @field)(dataType = "string", example = "#428421") gradientEnd: String,
   @(ApiModelProperty @field)(dataType = "string", example = "#842142") color: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "#ff0000") fontColor: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "#00ff00") secondaryColor: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "#0000ff") secondaryFontColor: Option[String]
+  @(ApiModelProperty @field)(dataType = "string", example = "#ff0000") fontColor: String
 )
 
 object QuestionThemeResponse {
   def fromQuestionTheme(theme: QuestionTheme): QuestionThemeResponse = {
     QuestionThemeResponse(
-      gradientStart = theme.gradientStart,
-      gradientEnd = theme.gradientEnd,
+      gradientStart = theme.color,
+      gradientEnd = theme.color,
       color = theme.color,
-      fontColor = theme.fontColor,
-      secondaryColor = theme.secondaryColor,
-      secondaryFontColor = theme.secondaryFontColor
+      fontColor = theme.fontColor
     )
   }
 

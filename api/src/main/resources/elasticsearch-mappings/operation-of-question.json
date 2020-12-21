@@ -631,27 +631,11 @@
         "theme": {
           "type": "object",
           "properties": {
-            "gradientStart": {
-              "type": "text",
-              "index": false
-            },
-            "gradientEnd": {
-              "type": "text",
-              "index": false
-            },
             "color": {
               "type": "text",
               "index": false
             },
             "fontColor": {
-              "type": "text",
-              "index": false
-            },
-            "secondaryColor": {
-              "type": "text",
-              "index": false
-            },
-            "secondaryFontColor": {
               "type": "text",
               "index": false
             }
