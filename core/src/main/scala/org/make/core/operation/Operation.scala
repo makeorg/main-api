@@ -147,18 +147,10 @@ object Metas extends CirceFormatters {
 }
 
 final case class QuestionTheme(
-  @(ApiModelProperty @field)(dataType = "string", example = "#214284")
-  gradientStart: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "#428421")
-  gradientEnd: String,
   @(ApiModelProperty @field)(dataType = "string", example = "#842142")
   color: String,
   @(ApiModelProperty @field)(dataType = "string", example = "#ff0000")
-  fontColor: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "#00ff00")
-  secondaryColor: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "#0000ff")
-  secondaryFontColor: Option[String]
+  fontColor: String
 )
 
 object QuestionTheme {
@@ -167,14 +159,7 @@ object QuestionTheme {
 
   val default: QuestionTheme = {
     val defaultColor = "#000000"
-    QuestionTheme(
-      gradientStart = defaultColor,
-      gradientEnd = defaultColor,
-      color = defaultColor,
-      fontColor = defaultColor,
-      secondaryColor = None,
-      secondaryFontColor = None
-    )
+    QuestionTheme(color = defaultColor, fontColor = defaultColor)
   }
 }
 

@@ -537,8 +537,6 @@ final case class ModifyOperationOfQuestionRequest(
       validateUserInput("operationTitle", operationTitle, None),
       validateOptionalUserInput("shortTitle", shortTitle.map(_.value), None),
       validateOptionalUserInput("description", description, None),
-      validateColor("gradientStart", theme.gradientStart, None),
-      validateColor("gradientEnd", theme.gradientEnd, None),
       validateColor("color", theme.color, None),
       validateColor("fontColor", theme.fontColor, None),
       validateField(
@@ -553,11 +551,7 @@ final case class ModifyOperationOfQuestionRequest(
         descriptionImage.forall(_.value.startsWith("https://")),
         "descriptionImage must be a secure https url"
       )
-    ) ++
-      theme.secondaryColor
-        .fold(Seq.empty[Requirement])(color => Seq(validateColor("secondaryColor", color, None))) ++
-      theme.secondaryFontColor
-        .fold(Seq.empty[Requirement])(color => Seq(validateColor("secondaryFontColor", color, None))): _*
+    ): _*
   )
 }
 

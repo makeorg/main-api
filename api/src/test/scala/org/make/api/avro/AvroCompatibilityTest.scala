@@ -85,7 +85,6 @@ class AvroCompatibilityTest extends MakeUnitTest with AvroSerializers with Stric
     }
 
     // check that the current schema is in the list of schemas
-    println(currentSchema.toString(true))
     schemas.last.toString(true) should be(currentSchema.toString(true))
   }
 }

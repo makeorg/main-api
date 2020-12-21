@@ -712,10 +712,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             | },
             | "metas": { "title": "metas" },
             | "theme": {
-            |   "gradientStart": "wrongFormattedColor",
-            |   "gradientEnd": "#000000",
             |   "color": "#000000",
-            |   "fontColor": "#000000"
+            |   "fontColor": "wrongFormattedColor"
             | },
             | "description": "description",
             | "displayResults": false,
@@ -727,7 +725,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         errors.size should be(1)
-        errors.head.field shouldBe "gradientStart"
+        errors.head.field shouldBe "fontColor"
       }
     }
 
@@ -756,8 +754,6 @@ class DefaultModerationOperationOfQuestionApiComponentTest
            | },
            | "metas": { "title": "metas" },
            | "theme": {
-           |   "gradientStart": "#000000",
-           |   "gradientEnd": "#000000",
            |   "color": "#000000",
            |   "fontColor": "#000000"
            | },
