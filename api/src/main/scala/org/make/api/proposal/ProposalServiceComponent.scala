@@ -20,17 +20,18 @@
 package org.make.api.proposal
 
 import java.time.ZonedDateTime
-
 import akka.Done
 import akka.stream.scaladsl.Sink
 import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.typesafe.scalalogging.StrictLogging
+import eu.timepit.refined.auto._
 import kamon.Kamon
 import kamon.tag.TagSet
 import org.make.api.ActorSystemComponent
 import org.make.api.idea.{IdeaMappingServiceComponent, IdeaServiceComponent}
+import org.make.api.partner.PartnerServiceComponent
 import org.make.api.question.{AuthorRequest, QuestionServiceComponent}
 import org.make.api.segment.SegmentServiceComponent
 import org.make.api.semantic.{GetPredictedTagsResponse, PredictedTagsEvent, SemanticComponent, SimilarIdea}
@@ -38,7 +39,7 @@ import org.make.api.sessionhistory._
 import org.make.api.tag.TagServiceComponent
 import org.make.api.tagtype.TagTypeServiceComponent
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
-import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ReadJournalComponent}
+import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeRandom, ReadJournalComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory._
@@ -58,8 +59,10 @@ import org.make.core.{BusinessConfig, CirceFormatters, CountryConfiguration, Dat
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import org.make.api.technical.crm.QuestionResolver
+import org.make.core.partner.Partner
 import org.make.core.reference.Country
 import org.make.core.session.SessionId
+import org.make.core.technical.Pagination.Start
 
 trait ProposalServiceComponent {
   def proposalService: ProposalService
@@ -239,27 +242,37 @@ trait ProposalService {
     userId: UserId,
     eventDate: ZonedDateTime
   ): Future[Option[Question]]
+
+  def questionFeaturedProposals(
+    questionId: QuestionId,
+    maxPartnerProposals: Int,
+    limit: Int,
+    seed: Option[Int],
+    maybeUserId: Option[UserId],
+    requestContext: RequestContext
+  ): Future[ProposalsResultSeededResponse]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with StrictLogging {
-  this: IdGeneratorComponent
-    with ProposalServiceComponent
-    with ProposalCoordinatorServiceComponent
-    with UserHistoryCoordinatorServiceComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with ProposalSearchEngineComponent
-    with SemanticComponent
-    with EventBusServiceComponent
+  this: ProposalServiceComponent
     with ActorSystemComponent
-    with UserServiceComponent
-    with IdeaServiceComponent
-    with QuestionServiceComponent
+    with EventBusServiceComponent
     with IdeaMappingServiceComponent
-    with TagServiceComponent
-    with TagTypeServiceComponent
+    with IdeaServiceComponent
+    with IdGeneratorComponent
+    with PartnerServiceComponent
+    with ProposalCoordinatorServiceComponent
+    with ProposalSearchEngineComponent
+    with QuestionServiceComponent
+    with ReadJournalComponent
     with SecurityConfigurationComponent
     with SegmentServiceComponent
-    with ReadJournalComponent =>
+    with SemanticComponent
+    with SessionHistoryCoordinatorServiceComponent
+    with TagServiceComponent
+    with TagTypeServiceComponent
+    with UserHistoryCoordinatorServiceComponent
+    with UserServiceComponent =>
 
   override lazy val proposalService: DefaultProposalService = new DefaultProposalService
 
@@ -1170,7 +1183,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         SearchQuery(
           filters = Some(
             SearchFilters(
-              user = Some(UserSearchFilter(userId)),
+              users = Some(UserSearchFilter(Seq(userId))),
               status = Some(StatusSearchFilter(ProposalStatus.values))
             )
           ),
@@ -1299,7 +1312,10 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     private def searchUserProposals(userId: UserId): Future[ProposalsSearchResult] = {
       val filters =
-        SearchFilters(user = Some(UserSearchFilter(userId)), status = Some(StatusSearchFilter(ProposalStatus.values)))
+        SearchFilters(
+          users = Some(UserSearchFilter(Seq(userId))),
+          status = Some(StatusSearchFilter(ProposalStatus.values))
+        )
       elasticsearchProposalAPI
         .countProposals(SearchQuery(filters = Some(filters)))
         .flatMap { count =>
@@ -1336,5 +1352,77 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           }
       }
     }
+
+    override def questionFeaturedProposals(
+      questionId: QuestionId,
+      maxPartnerProposals: Int,
+      limit: Int,
+      seed: Option[Int],
+      maybeUserId: Option[UserId],
+      requestContext: RequestContext
+    ): Future[ProposalsResultSeededResponse] = {
+      val randomSeed: Int = seed.getOrElse(MakeRandom.nextInt())
+      val futurePartnerProposals: Future[ProposalsResultSeededResponse] = Math.min(maxPartnerProposals, limit) match {
+        case 0 => Future.successful(ProposalsResultSeededResponse.empty)
+        case posInt =>
+          partnerService
+            .find(
+              start = Start.zero,
+              end = None,
+              sort = None,
+              order = None,
+              questionId = Some(questionId),
+              organisationId = None,
+              partnerKind = None
+            )
+            .flatMap { partners =>
+              partners.collect {
+                case Partner(_, _, _, _, Some(orgaId), _, _, _) => orgaId
+              } match {
+                case Seq() => Future.successful(ProposalsResultSeededResponse.empty)
+                case orgaIds =>
+                  searchForUser(
+                    maybeUserId,
+                    query = SearchQuery(
+                      filters = Some(
+                        SearchFilters(
+                          question = Some(QuestionSearchFilter(Seq(questionId))),
+                          users = Some(UserSearchFilter(orgaIds))
+                        )
+                      ),
+                      sortAlgorithm = Some(RandomAlgorithm(randomSeed)),
+                      limit = Some(posInt)
+                    ),
+                    requestContext = requestContext
+                  )
+              }
+            }
+      }
+      val futureProposalsRest: Future[ProposalsResultSeededResponse] =
+        searchForUser(
+          maybeUserId = maybeUserId,
+          query = SearchQuery(
+            filters = Some(
+              SearchFilters(
+                question = Some(QuestionSearchFilter(Seq(questionId))),
+                userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeUser)))
+              )
+            ),
+            limit = Some(limit),
+            sort = Some(Sort(Some(ProposalElasticsearchFieldName.createdAt.field), Some(SortOrder.DESC)))
+          ),
+          requestContext = requestContext
+        )
+      for {
+        partnerProposals <- futurePartnerProposals
+        rest             <- futureProposalsRest
+      } yield ProposalsResultSeededResponse(
+        partnerProposals.total + rest.total,
+        partnerProposals.results ++ rest.results.take(limit - partnerProposals.results.size),
+        Some(randomSeed)
+      )
+
+    }
+
   }
 }

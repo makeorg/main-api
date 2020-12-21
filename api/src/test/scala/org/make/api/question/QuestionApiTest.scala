@@ -19,8 +19,6 @@
 
 package org.make.api.question
 
-import java.time.ZonedDateTime
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import cats.data.NonEmptyList
@@ -55,11 +53,14 @@ import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user._
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
-import org.make.core.{DateHelper, Order, RequestContext}
+import org.make.core.{DateHelper, Order, RequestContext, ValidationError}
+
+import java.time.ZonedDateTime
+
+import org.make.core.technical.Pagination.{End, Start}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
-import org.make.core.technical.Pagination.{End, Start}
 
 class QuestionApiTest
     extends MakeApiTestBase
@@ -648,4 +649,42 @@ class QuestionApiTest
 
   }
 
+  Feature("featured-proposals") {
+    Scenario("fake question") {
+      when(questionService.getQuestion(eqTo(QuestionId("fake")))).thenReturn(Future.successful(None))
+      Get("/questions/fake/featured-proposals") ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+
+    Scenario("get featured proposals") {
+      when(questionService.getQuestion(eqTo(QuestionId("question-id"))))
+        .thenReturn(Future.successful(Some(baseQuestion)))
+
+      when(
+        proposalService.questionFeaturedProposals(
+          any[QuestionId],
+          any[Int],
+          any[Int],
+          any[Option[Int]],
+          any[Option[UserId]],
+          any[RequestContext]
+        )
+      ).thenReturn(Future.successful(ProposalsResultSeededResponse(total = 0, results = Seq.empty, seed = None)))
+
+      Get("/questions/question-id/featured-proposals?maxPartnerProposals=5&limit=10") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+
+    }
+
+    Scenario("invalid") {
+      Get("/questions/question-id/featured-proposals?maxPartnerProposals=-1&limit=-2") ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size shouldBe 3
+        errors.map(_.field).toSet shouldBe Set("maxPartnerProposals", "limit")
+      }
+    }
+  }
 }

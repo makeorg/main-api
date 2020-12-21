@@ -20,12 +20,12 @@
 package org.make.api.proposal
 
 import java.time.{LocalDate, ZonedDateTime}
-
 import akka.actor.ActorSystem
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import cats.data.NonEmptyList
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import org.make.api.idea._
+import org.make.api.partner.{PartnerService, PartnerServiceComponent}
 import org.make.api.question.{AuthorRequest, QuestionService, QuestionServiceComponent}
 import org.make.api.segment.{SegmentService, SegmentServiceComponent}
 import org.make.api.semantic._
@@ -63,7 +63,7 @@ import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
 import org.make.core.session.SessionId
 import org.make.core.tag._
-import org.make.core.user.{Role, User, UserId}
+import org.make.core.user.{Role, User, UserId, UserType}
 import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.make.core.proposal.Vote
@@ -71,29 +71,32 @@ import org.make.core.proposal.Vote
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import org.make.api.technical.crm.QuestionResolver
+import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.technical.IdGenerator
+import org.make.core.technical.Pagination.Start
 
 class ProposalServiceTest
     extends MakeUnitTest
     with DefaultProposalServiceComponent
-    with TagServiceComponent
-    with IdGeneratorComponent
-    with ProposalServiceComponent
-    with ProposalCoordinatorServiceComponent
-    with UserHistoryCoordinatorServiceComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with ProposalSearchEngineComponent
-    with SemanticComponent
-    with EventBusServiceComponent
-    with ReadJournalComponent
     with ActorSystemComponent
-    with UserServiceComponent
-    with QuestionServiceComponent
-    with IdeaServiceComponent
+    with EventBusServiceComponent
     with IdeaMappingServiceComponent
-    with TagTypeServiceComponent
+    with IdeaServiceComponent
+    with IdGeneratorComponent
+    with PartnerServiceComponent
+    with ProposalCoordinatorServiceComponent
+    with ProposalSearchEngineComponent
+    with ProposalServiceComponent
+    with QuestionServiceComponent
+    with ReadJournalComponent
     with SecurityConfigurationComponent
-    with SegmentServiceComponent {
+    with SegmentServiceComponent
+    with SemanticComponent
+    with SessionHistoryCoordinatorServiceComponent
+    with TagServiceComponent
+    with TagTypeServiceComponent
+    with UserHistoryCoordinatorServiceComponent
+    with UserServiceComponent {
 
   type MakeReadJournal = CassandraReadJournal
 
@@ -117,6 +120,7 @@ class ProposalServiceTest
   override val tagTypeService: TagTypeService = mock[TagTypeService]
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
   override val segmentService: SegmentService = mock[SegmentService]
+  override val partnerService: PartnerService = mock[PartnerService]
 
   when(segmentService.resolveSegment(any[RequestContext])).thenReturn(Future.successful(None))
 
@@ -2546,7 +2550,10 @@ class ProposalServiceTest
       val date = DateHelper.now().minusHours(5)
 
       val filters =
-        SearchFilters(user = Some(UserSearchFilter(userId)), status = Some(StatusSearchFilter(ProposalStatus.values)))
+        SearchFilters(
+          users = Some(UserSearchFilter(Seq(userId))),
+          status = Some(StatusSearchFilter(ProposalStatus.values))
+        )
 
       when(
         elasticsearchProposalAPI
@@ -2567,7 +2574,10 @@ class ProposalServiceTest
       val date = DateHelper.now().minusHours(5)
 
       val query = SearchQuery(filters = Some(
-        SearchFilters(user = Some(UserSearchFilter(userId)), status = Some(StatusSearchFilter(ProposalStatus.values)))
+        SearchFilters(
+          users = Some(UserSearchFilter(Seq(userId))),
+          status = Some(StatusSearchFilter(ProposalStatus.values))
+        )
       )
       )
 
@@ -2589,6 +2599,221 @@ class ProposalServiceTest
       val result = proposalService.resolveQuestionFromUserProposal(resolver, requestContext, userId, date)
       whenReady(result, Timeout(2.seconds)) {
         _ should contain(question)
+      }
+    }
+
+  }
+
+  Feature("get question featured proposals") {
+
+    Scenario("without partner proposals") {
+      val questionId = QuestionId("question-without-partner-proposals")
+
+      val searchQuery = SearchQuery(
+        filters = Some(
+          SearchFilters(
+            question = Some(QuestionSearchFilter(Seq(questionId))),
+            userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeUser)))
+          )
+        ),
+        limit = Some(1),
+        sort = Some(Sort(Some(ProposalElasticsearchFieldName.createdAt.field), Some(SortOrder.DESC)))
+      )
+
+      when(elasticsearchProposalAPI.searchProposals(searchQuery))
+        .thenReturn(
+          Future.successful(ProposalsSearchResult(total = 1, results = Seq(indexedProposal(ProposalId("a-result")))))
+        )
+
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(
+            RequestSessionVoteValues(SessionId("session-featured-proposals"), Seq(ProposalId("a-result")))
+          )
+      ).thenReturn(
+        Future
+          .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
+      )
+
+      val featuredProposals = proposalService.questionFeaturedProposals(
+        questionId = questionId,
+        maxPartnerProposals = 0,
+        limit = 1,
+        seed = None,
+        maybeUserId = None,
+        requestContext = RequestContext.empty.copy(sessionId = SessionId("session-featured-proposals"))
+      )
+
+      whenReady(featuredProposals, Timeout(5.seconds)) { result =>
+        result.results.size should be(1)
+        result.results.head.id shouldBe ProposalId("a-result")
+      }
+    }
+
+    Scenario("with partner proposals but partners doesn't have organisationId") {
+      val questionId = QuestionId("question-with-partner-proposals-no-orgaId")
+
+      when(
+        partnerService
+          .find(
+            start = eqTo(Start.zero),
+            end = eqTo(None),
+            sort = eqTo(None),
+            order = eqTo(None),
+            questionId = eqTo(Some(questionId)),
+            organisationId = eqTo(None),
+            partnerKind = eqTo(None)
+          )
+      ).thenReturn(Future.successful(Seq.empty))
+
+      val searchQuery = SearchQuery(
+        filters = Some(
+          SearchFilters(
+            question = Some(QuestionSearchFilter(Seq(questionId))),
+            userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeUser)))
+          )
+        ),
+        limit = Some(2),
+        sort = Some(Sort(Some(ProposalElasticsearchFieldName.createdAt.field), Some(SortOrder.DESC)))
+      )
+
+      when(elasticsearchProposalAPI.searchProposals(searchQuery))
+        .thenReturn(
+          Future.successful(ProposalsSearchResult(total = 1, results = Seq(indexedProposal(ProposalId("a-result")))))
+        )
+
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(
+            RequestSessionVoteValues(SessionId("session-featured-proposals"), Seq(ProposalId("a-result")))
+          )
+      ).thenReturn(
+        Future
+          .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
+      )
+
+      val featuredProposals = proposalService.questionFeaturedProposals(
+        questionId = questionId,
+        maxPartnerProposals = 1,
+        limit = 2,
+        seed = None,
+        maybeUserId = None,
+        requestContext = RequestContext.empty.copy(sessionId = SessionId("session-featured-proposals"))
+      )
+
+      whenReady(featuredProposals, Timeout(5.seconds)) { result =>
+        result.results.size should be(1)
+        result.results.head.id shouldBe ProposalId("a-result")
+      }
+    }
+
+    Scenario("with partner proposals") {
+      val questionId = QuestionId("question-with-partner-proposals")
+
+      when(
+        partnerService
+          .find(
+            start = eqTo(Start.zero),
+            end = eqTo(None),
+            sort = eqTo(None),
+            order = eqTo(None),
+            questionId = eqTo(Some(questionId)),
+            organisationId = eqTo(None),
+            partnerKind = eqTo(None)
+          )
+      ).thenReturn(
+        Future.successful(
+          Seq(
+            Partner(
+              PartnerId("p-id"),
+              "partner",
+              None,
+              None,
+              Some(UserId("orga-id")),
+              PartnerKind.ActionPartner,
+              questionId,
+              0f
+            ),
+            Partner(
+              PartnerId("p-id-2"),
+              "partner without orga-id",
+              None,
+              None,
+              None,
+              PartnerKind.ActionPartner,
+              questionId,
+              0f
+            )
+          )
+        )
+      )
+
+      val partnerSearchQuery = SearchQuery(
+        filters = Some(
+          SearchFilters(
+            question = Some(QuestionSearchFilter(Seq(questionId))),
+            users = Some(UserSearchFilter(Seq(UserId("orga-id"))))
+          )
+        ),
+        sortAlgorithm = Some(RandomAlgorithm(any[Int])),
+        limit = Some(1)
+      )
+      when(elasticsearchProposalAPI.searchProposals(partnerSearchQuery))
+        .thenReturn(
+          Future.successful(
+            ProposalsSearchResult(total = 1, results = Seq(indexedProposal(ProposalId("a-partner-result"))))
+          )
+        )
+
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(
+            RequestSessionVoteValues(SessionId("session-featured-proposals"), Seq(ProposalId("a-partner-result")))
+          )
+      ).thenReturn(
+        Future
+          .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
+      )
+
+      val searchQuery = SearchQuery(
+        filters = Some(
+          SearchFilters(
+            question = Some(QuestionSearchFilter(Seq(questionId))),
+            userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeUser)))
+          )
+        ),
+        limit = Some(2),
+        sort = Some(Sort(Some(ProposalElasticsearchFieldName.createdAt.field), Some(SortOrder.DESC)))
+      )
+
+      when(elasticsearchProposalAPI.searchProposals(searchQuery))
+        .thenReturn(
+          Future.successful(ProposalsSearchResult(total = 1, results = Seq(indexedProposal(ProposalId("a-result")))))
+        )
+
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(
+            RequestSessionVoteValues(SessionId("session-featured-proposals"), Seq(ProposalId("a-result")))
+          )
+      ).thenReturn(
+        Future
+          .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
+      )
+
+      val featuredProposals = proposalService.questionFeaturedProposals(
+        questionId = questionId,
+        maxPartnerProposals = 1,
+        limit = 2,
+        seed = None,
+        maybeUserId = None,
+        requestContext = RequestContext.empty.copy(sessionId = SessionId("session-featured-proposals"))
+      )
+
+      whenReady(featuredProposals, Timeout(5.seconds)) { result =>
+        result.results.size should be(2)
+        result.results.head.id shouldBe ProposalId("a-partner-result")
+        result.results(1).id shouldBe ProposalId("a-result")
       }
     }
 

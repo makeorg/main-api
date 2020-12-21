@@ -1360,7 +1360,7 @@ class UserApiTest
             SearchQuery(
               filters = Some(
                 SearchFilters(
-                  user = Some(UserSearchFilter(userId = sylvain.userId)),
+                  users = Some(UserSearchFilter(userIds = Seq(sylvain.userId))),
                   status = Some(StatusSearchFilter(status = ProposalStatus.values.filter(_ != ProposalStatus.Archived)))
                 )
               ),

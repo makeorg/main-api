@@ -46,7 +46,7 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
   val slugFilter = SlugSearchFilter(slug = "my-awesome-slug")
   val languageFilter = LanguageSearchFilter(language = Language("en"))
   val countryFilter = CountrySearchFilter(country = Country("GB"))
-  val userFilter = UserSearchFilter(userId = UserId("A34343-ERER"))
+  val userFilter = UserSearchFilter(userIds = Seq(UserId("A34343-ERER"), UserId("A34343-ERER-2")))
 
   val filters =
     SearchFilters(
@@ -60,7 +60,7 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
       slug = Some(slugFilter),
       language = Some(languageFilter),
       country = Some(countryFilter),
-      user = Some(userFilter)
+      users = Some(userFilter)
     )
 
   val sort = Some(IndexedSort(Some("field"), Some(SortOrder.ASC)))
@@ -208,7 +208,7 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
       val userSearchFilterResult = SearchFilters.buildUserSearchFilter(searchQuery.filters)
       Then("result is a termQuery")
       userSearchFilterResult shouldBe Some(
-        ElasticApi.termQuery(ProposalElasticsearchFieldName.userId.field, "A34343-ERER")
+        ElasticApi.termsQuery(ProposalElasticsearchFieldName.userId.field, List("A34343-ERER", "A34343-ERER-2"))
       )
     }
   }

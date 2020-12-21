@@ -279,7 +279,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
         _ <- elasticsearchProposalAPI
           .searchProposals(searchQuery = SearchQuery(filters = Some(
             SearchFilters(
-              user = Some(UserSearchFilter(userId = organisationId)),
+              users = Some(UserSearchFilter(userIds = Seq(organisationId))),
               status = Some(StatusSearchFilter(ProposalStatus.values.filter(_ != ProposalStatus.Archived)))
             )
           )

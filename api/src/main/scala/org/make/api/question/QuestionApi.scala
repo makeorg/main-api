@@ -19,14 +19,11 @@
 
 package org.make.api.question
 
-import java.time.ZonedDateTime
-
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
-import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.feature.{ActiveFeatureServiceComponent, FeatureServiceComponent}
 import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
@@ -34,13 +31,19 @@ import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationSer
 import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.PartnerServiceComponent
 import org.make.api.personality.PersonalityRoleServiceComponent
-import org.make.api.proposal.{ProposalSearchEngineComponent, ProposalServiceComponent, ProposalsResultResponse}
+import org.make.api.proposal.{
+  ProposalSearchEngineComponent,
+  ProposalServiceComponent,
+  ProposalsResultResponse,
+  ProposalsResultSeededResponse
+}
 import org.make.api.sequence.{SequenceResult, SequenceServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.tag.TagServiceComponent
+import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{EndpointType, IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.api.technical.CsvReceptacle._
+import org.make.core.Validation.validateField
 import org.make.core.auth.UserRights
 import org.make.core.idea.TopIdeaId
 import org.make.core.operation._
@@ -50,13 +53,15 @@ import org.make.core.personality.PersonalityRoleId
 import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
+import org.make.core.technical.Pagination._
 import org.make.core.user.{CountrySearchFilter => _, DescriptionSearchFilter => _, LanguageSearchFilter => _, _}
 import org.make.core.{HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
+import java.time.ZonedDateTime
+import javax.ws.rs.Path
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import org.make.core.technical.Pagination._
 
 trait QuestionApiComponent {
   def questionApi: QuestionApi
@@ -258,9 +263,25 @@ trait QuestionApi extends Directives {
   @Path(value = "/")
   def listQuestions: Route
 
+  @ApiOperation(value = "featured-proposals", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "maxPartnerProposals", paramType = "query", dataType = "integer", required = true),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer", required = true),
+      new ApiImplicitParam(name = "seed", paramType = "query", dataType = "integer")
+    )
+  )
+  @ApiResponses(
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse]))
+  )
+  @Path(value = "/{questionId}/featured-proposals")
+  def featuredProposals: Route
+
   def routes: Route =
     questionDetails ~ startSequenceByQuestionId ~ searchQuestions ~ getPopularTags ~ getTopProposals ~ getPartners ~
-      getPersonalities ~ getTopIdeas ~ getTopIdea ~ listQuestions
+      getPersonalities ~ getTopIdeas ~ getTopIdea ~ listQuestions ~ featuredProposals
 }
 
 trait DefaultQuestionApiComponent
@@ -702,6 +723,47 @@ trait DefaultQuestionApiComponent
                   )
                 }
             }
+          }
+        }
+      }
+    }
+
+    override def featuredProposals: Route = get {
+      path("questions" / questionId / "featured-proposals") { questionId =>
+        makeOperation("GetFeaturedProposals") { requestContext =>
+          parameters("maxPartnerProposals".as[Int], "limit".as[Int], "seed".as[Int].?) {
+            (maxPartnerProposals: Int, limit: Int, seed: Option[Int]) =>
+              Validation.validate(
+                validateField(
+                  "maxPartnerProposals",
+                  "invalid_value",
+                  maxPartnerProposals >= 0,
+                  "maxPartnerProposals should be positive"
+                ),
+                validateField(
+                  "maxPartnerProposals",
+                  "invalid_value",
+                  maxPartnerProposals <= limit,
+                  "maxPartnerProposals should be lower or equal to limit"
+                ),
+                validateField("limit", "invalid_value", limit > 0, "limit should be strictly positive")
+              )
+              optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
+                provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+                  provideAsync(
+                    proposalService.questionFeaturedProposals(
+                      questionId = questionId,
+                      maxPartnerProposals = maxPartnerProposals,
+                      limit = limit,
+                      seed = seed,
+                      maybeUserId = userAuth.map(_.user.userId),
+                      requestContext = requestContext
+                    )
+                  ) { proposalsResponse =>
+                    complete(proposalsResponse)
+                  }
+                }
+              }
           }
         }
       }

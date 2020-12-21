@@ -78,7 +78,7 @@ final case class SearchFilters(
   idea: Option[IdeaSearchFilter] = None,
   language: Option[LanguageSearchFilter] = None,
   country: Option[CountrySearchFilter] = None,
-  user: Option[UserSearchFilter] = None,
+  users: Option[UserSearchFilter] = None,
   minVotesCount: Option[MinVotesCountSearchFilter] = None,
   toEnrich: Option[ToEnrichSearchFilter] = None,
   minScore: Option[MinScoreSearchFilter] = None,
@@ -262,9 +262,11 @@ object SearchFilters extends ElasticDsl {
 
   def buildUserSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
     filters.flatMap {
-      _.user match {
-        case Some(UserSearchFilter(userId)) =>
+      _.users match {
+        case Some(UserSearchFilter(Seq(userId))) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.userId.field, userId.value))
+        case Some(UserSearchFilter(userIds)) =>
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldName.userId.field, userIds.map(_.value)))
         case _ => None
       }
     }
@@ -600,7 +602,7 @@ object SearchFilters extends ElasticDsl {
 
 final case class ProposalSearchFilter(proposalIds: Seq[ProposalId])
 
-final case class UserSearchFilter(userId: UserId)
+final case class UserSearchFilter(userIds: Seq[UserId])
 
 final case class InitialProposalFilter(isInitialProposal: Boolean)
 

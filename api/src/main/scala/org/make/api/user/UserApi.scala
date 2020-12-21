@@ -997,7 +997,7 @@ trait DefaultUserApiComponent
                       query = SearchQuery(
                         filters = Some(
                           SearchFilters(
-                            user = Some(UserSearchFilter(userId = userId)),
+                            users = Some(UserSearchFilter(userIds = Seq(userId))),
                             status =
                               Some(StatusSearchFilter(ProposalStatus.values.filter(_ != ProposalStatus.Archived)))
                           )
