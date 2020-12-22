@@ -360,6 +360,8 @@ final case class ProposalsResultSeededResponse(
 object ProposalsResultSeededResponse {
   implicit val encoder: Encoder[ProposalsResultSeededResponse] = deriveEncoder[ProposalsResultSeededResponse]
   implicit val decoder: Decoder[ProposalsResultSeededResponse] = deriveDecoder[ProposalsResultSeededResponse]
+
+  val empty: ProposalsResultSeededResponse = ProposalsResultSeededResponse(0, Seq.empty, None)
 }
 
 final case class ProposalResultWithUserVote(

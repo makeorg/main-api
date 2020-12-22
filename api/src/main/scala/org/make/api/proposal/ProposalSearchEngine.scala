@@ -187,7 +187,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         SearchFilters(
           question = maybeQuestionIds.map(QuestionSearchFilter.apply),
           status = status.map(StatusSearchFilter.apply),
-          user = maybeUserId.map(UserSearchFilter.apply)
+          users = maybeUserId.map(userId => UserSearchFilter(Seq(userId)))
         )
       )
       )

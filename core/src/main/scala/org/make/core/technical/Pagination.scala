@@ -19,6 +19,7 @@
 
 package org.make.core.technical
 
+// It is currently NOT possible to use refine here because we can not mock a refined value.
 trait Pagination { val value: Int }
 
 object Pagination {

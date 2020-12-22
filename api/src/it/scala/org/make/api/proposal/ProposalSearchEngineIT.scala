@@ -1425,17 +1425,21 @@ class ProposalSearchEngineIT
 
     Scenario("search proposal by user") {
       val userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5")
+      val userId2 = UserId("fb600b89-0e04-419a-9f16-4c3311d2c53a")
       val query = SearchQuery(
         Some(
           SearchFilters(
             status = Some(StatusSearchFilter(Seq(ProposalStatus.Pending, ProposalStatus.Accepted))),
-            user = Some(UserSearchFilter(userId))
+            users = Some(UserSearchFilter(Seq(userId, userId2)))
           )
         )
       )
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
-        result.total should be(4)
+        result.total should be(7)
+        result.results.map(_.userId).toSet should be(
+          Set(UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"), UserId("fb600b89-0e04-419a-9f16-4c3311d2c53a"))
+        )
       }
     }
 

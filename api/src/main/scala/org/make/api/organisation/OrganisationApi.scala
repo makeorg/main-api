@@ -264,7 +264,7 @@ trait DefaultOrganisationApiComponent
                         SearchQuery(
                           filters = Some(
                             SearchFilters(
-                              user = Some(UserSearchFilter(organisationId)),
+                              users = Some(UserSearchFilter(Seq(organisationId))),
                               operationKinds = Some(OperationKindsSearchFilter(OperationKind.publicKinds))
                             )
                           ),
