@@ -26,6 +26,7 @@ import org.make.api.tagtype.{PersistentTagTypeService, PersistentTagTypeServiceC
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.idea.{Idea, IdeaId, IdeaMapping, IdeaMappingId}
 import org.make.core.proposal._
+import org.make.core.proposal.indexed.Zone.Limbo
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -137,8 +138,8 @@ class IdeaMappingServiceTest
           votesSequenceCount = 0,
           votesSegmentCount = 0,
           toEnrich = false,
-          scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-          segmentScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+          scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Limbo),
+          segmentScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Limbo),
           context = None,
           trending = None,
           labels = Seq.empty,

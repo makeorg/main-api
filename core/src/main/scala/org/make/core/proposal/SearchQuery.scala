@@ -21,7 +21,6 @@ package org.make.core.proposal
 
 import java.time.format.DateTimeFormatter
 import java.time.{ZoneOffset, ZonedDateTime}
-
 import com.sksamuel.elastic4s.{ElasticApi, Operator}
 import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.funcscorer.WeightScore
@@ -32,7 +31,7 @@ import org.make.core.Validation.{validate, validateField}
 import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{OperationId, OperationKind}
-import org.make.core.proposal.indexed.{ProposalElasticsearchFieldName, SequencePool}
+import org.make.core.proposal.indexed.{ProposalElasticsearchFieldName, SequencePool, Zone}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.tag.TagId
@@ -88,7 +87,9 @@ final case class SearchFilters(
   operationKinds: Option[OperationKindsSearchFilter] = None,
   questionIsOpen: Option[QuestionIsOpenSearchFilter] = None,
   segment: Option[SegmentSearchFilter] = None,
-  userTypes: Option[UserTypesSearchFilter] = None
+  userTypes: Option[UserTypesSearchFilter] = None,
+  zone: Option[ZoneSearchFilter] = None,
+  segmentZone: Option[ZoneSearchFilter] = None
 )
 
 object SearchFilters extends ElasticDsl {
@@ -214,7 +215,9 @@ object SearchFilters extends ElasticDsl {
       buildOperationKindSearchFilter(searchQuery.filters),
       buildQuestionIsOpenSearchFilter(searchQuery.filters),
       buildSegmentSearchFilter(searchQuery.filters),
-      buildUserTypesSearchFilter(searchQuery.filters)
+      buildUserTypesSearchFilter(searchQuery.filters),
+      buildSegmentZoneSearchFilter(searchQuery.filters),
+      buildZoneSearchFilter(searchQuery.filters)
     ).flatten
 
   def getExcludeFilters(searchQuery: SearchQuery): Seq[Query] = {
@@ -598,6 +601,26 @@ object SearchFilters extends ElasticDsl {
       }
     }
   }
+
+  def buildZoneSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
+      _.zone match {
+        case Some(ZoneSearchFilter(zone)) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.zone.field, zone.entryName.toLowerCase()))
+        case _ => None
+      }
+    }
+  }
+
+  def buildSegmentZoneSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
+      _.segmentZone match {
+        case Some(ZoneSearchFilter(zone)) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.segmentZone.field, zone.entryName.toLowerCase()))
+        case _ => None
+      }
+    }
+  }
 }
 
 final case class ProposalSearchFilter(proposalIds: Seq[ProposalId])
@@ -649,3 +672,4 @@ final case class OperationKindsSearchFilter(kinds: Seq[OperationKind])
 final case class QuestionIsOpenSearchFilter(isOpen: Boolean)
 final case class SegmentSearchFilter(segment: String)
 final case class UserTypesSearchFilter(userTypes: Seq[UserType])
+final case class ZoneSearchFilter(zone: Zone)

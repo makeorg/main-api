@@ -63,7 +63,7 @@ import scala.concurrent.Future
   *  - selectionAlgorithmName: Name of the selection algorithm to use. At the moment, this can be "Bandit" or "RoundRobin"
   *
   * Additional informations:
-  *  - The proposal "pool" is defined at indexation time in `ProposalScorerHelper.sequencePool`.
+  *  - The proposal "pool" is defined at indexation time in `ProposalScorer.sequencePool`.
   *  - A new proposal is a proposal in the "new" pool.
   *  - A tested proposal is a proposal in the "tested" pool.
   *  - A excluded proposal is a proposal in the "excluded" pool.

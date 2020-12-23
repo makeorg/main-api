@@ -19,12 +19,9 @@
 
 package org.make.api.technical.elasticsearch
 
-import java.time.temporal.ChronoUnit
-import java.time.{LocalDate, ZonedDateTime}
-
-import akka.stream.{FlowShape, Materializer}
 import akka.stream.scaladsl.GraphDSL.Implicits._
 import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Partition, Sink, Source}
+import akka.stream.{FlowShape, Materializer}
 import akka.{Done, NotUsed}
 import cats.data.OptionT
 import cats.implicits._
@@ -32,10 +29,10 @@ import com.sksamuel.elastic4s.IndexAndType
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
 import org.make.api.organisation.OrganisationServiceComponent
-import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
+import org.make.api.proposal.ProposalScorer.VotesCounter
 import org.make.api.proposal.{
   ProposalCoordinatorServiceComponent,
-  ProposalScorerHelper,
+  ProposalScorer,
   ProposalSearchEngine,
   ProposalSearchEngineComponent
 }
@@ -46,6 +43,7 @@ import org.make.api.sequence.{SequenceConfiguration, SequenceConfigurationCompon
 import org.make.api.tag.TagServiceComponent
 import org.make.api.tagtype.TagTypeServiceComponent
 import org.make.api.user.UserServiceComponent
+import org.make.core.SlugHelper
 import org.make.core.operation.{OperationOfQuestion, SimpleOperation}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{
@@ -56,13 +54,16 @@ import org.make.core.proposal.indexed.{
   IndexedScores,
   IndexedTag,
   IndexedVote,
+  SequencePool,
+  Zone,
   IndexedContext => ProposalContext
 }
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.tag.{Tag, TagType}
 import org.make.core.user.User
-import org.make.core.SlugHelper
 
+import java.time.temporal.ChronoUnit
+import java.time.{LocalDate, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -246,13 +247,13 @@ trait ProposalIndexationStream
 
     val isBeforeContextSourceFeature: Boolean =
       proposal.createdAt.exists(_.isBefore(ZonedDateTime.parse("2018-09-01T00:00:00Z")))
-    val regularScore = ScoreCounts.fromSequenceVotes(proposal.votes)
-    val scoreWithEverything = ScoreCounts.fromVerifiedVotes(proposal.votes)
+    val sequenceScore =
+      ProposalScorer(proposal.votes, VotesCounter.SequenceVotesCounter, sequenceConfiguration.scoreAdjustementFactor)
 
     // If the proposal is not segmented, the scores should all be at 0
     val segmentScore = segment.map { _ =>
-      ScoreCounts.fromSegmentVotes(proposal.votes)
-    }.getOrElse(ScoreCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+      ProposalScorer(proposal.votes, VotesCounter.SegmentVotesCounter, sequenceConfiguration.scoreAdjustementFactor)
+    }
 
     IndexedProposal(
       id = proposal.proposalId,
@@ -272,40 +273,32 @@ trait ProposalIndexationStream
       votesSegmentCount = proposal.votes.map(_.countSegment).sum,
       toEnrich = needsEnrichment,
       scores = IndexedScores(
-        engagement = regularScore.engagement(),
-        agreement = regularScore.agreement(),
-        adhesion = regularScore.adhesion(),
-        realistic = regularScore.realistic(),
-        platitude = regularScore.platitude(),
-        topScore = ScoreCounts.topScore(sequenceConfiguration, scoreWithEverything, regularScore),
-        topScoreAjustedWithVotes = ScoreCounts.topScoreAjustedWithVotes(
-          sequenceConfiguration,
-          scoreWithEverything,
-          regularScore,
-          proposal.votes.map(_.countVerified).sum
-        ),
-        controversy = regularScore.controversy(),
-        rejection = regularScore.rejection(),
-        scoreUpperBound = ScoreCounts.topScoreUpperBound(sequenceConfiguration, scoreWithEverything, regularScore),
-        scoreLowerBound = ScoreCounts.topScoreLowerBound(sequenceConfiguration, scoreWithEverything, regularScore)
+        engagement = sequenceScore.engagement.lowerBound,
+        agreement = sequenceScore.adhesion.lowerBound,
+        adhesion = sequenceScore.adhesion.lowerBound,
+        realistic = sequenceScore.realistic.lowerBound,
+        platitude = sequenceScore.platitude.lowerBound,
+        topScore = sequenceScore.topScore.score,
+        topScoreAjustedWithVotes = sequenceScore.topScore.lowerBound,
+        controversy = sequenceScore.controversy.lowerBound,
+        rejection = sequenceScore.rejection.lowerBound,
+        scoreUpperBound = sequenceScore.topScore.upperBound,
+        scoreLowerBound = sequenceScore.topScore.lowerBound,
+        zone = sequenceScore.zone
       ),
       segmentScores = IndexedScores(
-        engagement = segmentScore.engagement(),
-        agreement = segmentScore.agreement(),
-        adhesion = segmentScore.adhesion(),
-        realistic = segmentScore.realistic(),
-        platitude = segmentScore.platitude(),
-        topScore = ScoreCounts.topScore(sequenceConfiguration, scoreWithEverything, segmentScore),
-        topScoreAjustedWithVotes = ScoreCounts.topScoreAjustedWithVotes(
-          sequenceConfiguration,
-          scoreWithEverything,
-          segmentScore,
-          proposal.votes.map(_.countSegment).sum
-        ),
-        controversy = segmentScore.controversy(),
-        rejection = segmentScore.rejection(),
-        scoreUpperBound = ScoreCounts.topScoreUpperBound(sequenceConfiguration, scoreWithEverything, regularScore),
-        scoreLowerBound = ScoreCounts.topScoreLowerBound(sequenceConfiguration, scoreWithEverything, regularScore)
+        engagement = segmentScore.map(_.engagement.lowerBound).getOrElse(0),
+        agreement = segmentScore.map(_.adhesion.lowerBound).getOrElse(0),
+        adhesion = segmentScore.map(_.adhesion.lowerBound).getOrElse(0),
+        realistic = segmentScore.map(_.realistic.lowerBound).getOrElse(0),
+        platitude = segmentScore.map(_.platitude.lowerBound).getOrElse(0),
+        topScore = segmentScore.map(_.topScore.score).getOrElse(0),
+        topScoreAjustedWithVotes = segmentScore.map(_.topScore.lowerBound).getOrElse(0),
+        controversy = segmentScore.map(_.controversy.lowerBound).getOrElse(0),
+        rejection = segmentScore.map(_.rejection.lowerBound).getOrElse(0),
+        scoreUpperBound = segmentScore.map(_.topScore.upperBound).getOrElse(0),
+        scoreLowerBound = segmentScore.map(_.topScore.lowerBound).getOrElse(0),
+        zone = segmentScore.map(_.zone).getOrElse(Zone.Limbo)
       ),
       context = Some(ProposalContext(proposal.creationContext, isBeforeContextSourceFeature)),
       trending = None,
@@ -350,10 +343,10 @@ trait ProposalIndexationStream
             isOpen = operationOfQuestion.status == OperationOfQuestion.Status.Open
           )
       ),
-      sequencePool = ProposalScorerHelper
-        .sequencePool(sequenceConfiguration, proposal.status, ScoreCounts.fromSequenceVotes(proposal.votes)),
-      sequenceSegmentPool = ProposalScorerHelper
-        .sequencePool(sequenceConfiguration, proposal.status, ScoreCounts.fromSegmentVotes(proposal.votes)),
+      sequencePool = sequenceScore
+        .pool(sequenceConfiguration, proposal.status),
+      sequenceSegmentPool =
+        segmentScore.map(_.pool(sequenceConfiguration, proposal.status)).getOrElse(SequencePool.Excluded),
       initialProposal = proposal.initialProposal,
       refusalReason = proposal.refusalReason,
       operationKind = Option(operation.operationKind),

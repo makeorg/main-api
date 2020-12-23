@@ -19,15 +19,13 @@
 
 package org.make.api
 
-import java.net.URL
-import java.time.{LocalDate, ZonedDateTime}
-
 import cats.data.NonEmptyList
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.MaxSize
-import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
+import org.make.api.proposal.ProposalScorer
+import org.make.api.proposal.ProposalScorer.VotesCounter
 import org.make.core.auth.{Client, ClientId}
 import org.make.core.idea.IdeaId
 import org.make.core.operation._
@@ -56,6 +54,9 @@ import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
 import org.make.core.{RequestContext, SlugHelper}
+
+import java.net.URL
+import java.time.{LocalDate, ZonedDateTime}
 
 trait TestUtils {
 
@@ -206,21 +207,13 @@ trait TestUtils {
     ideaId: Option[IdeaId] = None,
     selectedStakeTag: Option[IndexedTag] = None,
     initialProposal: Boolean = false,
-    regularTopScore: Double = 0d,
-    regularTopScoreAjustedWithVotes: Double = 0d,
-    segmentTopScore: Double = 0d,
-    segmentTopScoreAjustedWithVotes: Double = 0d,
-    regularTopScoreUpperBound: Double = 0d,
-    regularTopScoreLowerBound: Double = 0d,
-    segmentTopScoreUpperBound: Double = 0d,
-    segmentTopScoreLowerBound: Double = 0d,
     createdAt: ZonedDateTime = ZonedDateTime.parse("2019-10-10T10:10:10.000Z"),
     updatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T15:10:10.000Z")),
     toEnrich: Boolean = false
   ): IndexedProposal = {
 
-    val regularScore = ScoreCounts.fromSequenceVotes(votes)
-    val segmentScore = ScoreCounts.fromSegmentVotes(votes)
+    val regularScore = ProposalScorer(votes, VotesCounter.SequenceVotesCounter, 0.5)
+    val segmentScore = ProposalScorer(votes, VotesCounter.SegmentVotesCounter, 0.5)
 
     IndexedProposal(
       id = id,
@@ -237,30 +230,32 @@ trait TestUtils {
       votesSegmentCount = votes.map(_.countSegment).sum,
       toEnrich = toEnrich,
       scores = IndexedScores(
-        engagement = regularScore.engagement(),
-        agreement = regularScore.agreement(),
-        adhesion = regularScore.adhesion(),
-        realistic = regularScore.realistic(),
-        platitude = regularScore.platitude(),
-        topScore = regularTopScore,
-        topScoreAjustedWithVotes = regularTopScoreAjustedWithVotes,
-        controversy = regularScore.controversy(),
-        rejection = regularScore.rejection(),
-        scoreUpperBound = regularTopScoreUpperBound,
-        scoreLowerBound = regularTopScoreLowerBound
+        engagement = regularScore.engagement.lowerBound,
+        agreement = regularScore.adhesion.lowerBound,
+        adhesion = regularScore.adhesion.lowerBound,
+        realistic = regularScore.realistic.lowerBound,
+        platitude = regularScore.platitude.lowerBound,
+        topScore = regularScore.topScore.score,
+        topScoreAjustedWithVotes = regularScore.topScore.score,
+        controversy = regularScore.controversy.lowerBound,
+        rejection = regularScore.rejection.lowerBound,
+        scoreUpperBound = regularScore.topScore.upperBound,
+        scoreLowerBound = regularScore.topScore.lowerBound,
+        zone = regularScore.zone
       ),
       segmentScores = IndexedScores(
-        engagement = segmentScore.engagement(),
-        agreement = segmentScore.agreement(),
-        adhesion = segmentScore.adhesion(),
-        realistic = segmentScore.realistic(),
-        platitude = segmentScore.platitude(),
-        topScore = segmentTopScore,
-        topScoreAjustedWithVotes = segmentTopScoreAjustedWithVotes,
-        controversy = segmentScore.controversy(),
-        rejection = segmentScore.rejection(),
-        scoreUpperBound = segmentTopScoreUpperBound,
-        scoreLowerBound = segmentTopScoreLowerBound
+        engagement = segmentScore.engagement.lowerBound,
+        agreement = segmentScore.adhesion.lowerBound,
+        adhesion = segmentScore.adhesion.lowerBound,
+        realistic = segmentScore.realistic.lowerBound,
+        platitude = segmentScore.platitude.lowerBound,
+        topScore = segmentScore.topScore.score,
+        topScoreAjustedWithVotes = segmentScore.topScore.score,
+        controversy = segmentScore.controversy.lowerBound,
+        rejection = segmentScore.rejection.lowerBound,
+        scoreUpperBound = segmentScore.topScore.upperBound,
+        scoreLowerBound = segmentScore.topScore.lowerBound,
+        zone = segmentScore.zone
       ),
       context = requestContext.map(IndexedContext.apply(_, false)),
       trending = None,

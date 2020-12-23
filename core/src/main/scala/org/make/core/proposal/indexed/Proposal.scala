@@ -19,10 +19,9 @@
 
 package org.make.core.proposal.indexed
 
-import java.time.ZonedDateTime
-
 import cats.data.NonEmptyList
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
+import enumeratum.{Circe, Enum, EnumEntry}
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
@@ -35,6 +34,7 @@ import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
 import org.make.core.{CirceFormatters, RequestContext}
 
+import java.time.ZonedDateTime
 import scala.annotation.meta.field
 
 sealed abstract class ProposalElasticsearchFieldName(val value: String, val sortable: Boolean = false)
@@ -152,6 +152,8 @@ object ProposalElasticsearchFieldName extends StringEnum[ProposalElasticsearchFi
   case object updatedAt extends Simple("updatedAt", sortable = true)
   case object userId extends Simple("userId")
   case object votesCount extends Simple("votesCount")
+  case object zone extends Simple("scores.zone")
+  case object segmentZone extends Simple("segmentScores.zone")
 
   override def values: IndexedSeq[ProposalElasticsearchFieldName] = findValues
 }
@@ -349,6 +351,20 @@ object IndexedQualification {
   def empty(key: QualificationKey): IndexedQualification = IndexedQualification(key, 0, 0, 0, 0)
 }
 
+sealed abstract class Zone extends EnumEntry
+
+object Zone extends Enum[Zone] {
+  case object Consensus extends Zone
+  case object Rejection extends Zone
+  case object Limbo extends Zone
+  case object Controversy extends Zone
+
+  override val values: IndexedSeq[Zone] = findValues
+
+  implicit val decoder: Decoder[Zone] = Circe.decodeCaseInsensitive(this)
+  implicit val encoder: Encoder[Zone] = Circe.encoderLowercase(this)
+}
+
 final case class IndexedScores(
   boost: Double = 0,
   engagement: Double,
@@ -361,14 +377,15 @@ final case class IndexedScores(
   controversy: Double,
   rejection: Double,
   scoreUpperBound: Double,
-  scoreLowerBound: Double
+  scoreLowerBound: Double,
+  zone: Zone
 )
 
 object IndexedScores {
   implicit val encoder: Encoder[IndexedScores] = deriveEncoder[IndexedScores]
   implicit val decoder: Decoder[IndexedScores] = deriveDecoder[IndexedScores]
 
-  def empty: IndexedScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+  def empty: IndexedScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Zone.Limbo)
 }
 
 final case class ProposalsSearchResult(total: Long, results: Seq[IndexedProposal])
