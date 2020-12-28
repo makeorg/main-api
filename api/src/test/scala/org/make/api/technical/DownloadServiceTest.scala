@@ -36,7 +36,7 @@ class DownloadServiceTest extends MakeUnitTest with DefaultDownloadServiceCompon
       Files.createTempFile("tmp", s".${contentType.mediaType.subType}").toFile
 
     Scenario("correct image url") {
-      val imageUrl = "https://via.placeholder.com/150"
+      val imageUrl = "https://assets.make.org/assets/home/hero-desktop-170720.png?w=680"
       val futureImage = downloadService.downloadImage(imageUrl, destFn)
       whenReady(futureImage, Timeout(3.seconds)) {
         case (contentType, _) =>
