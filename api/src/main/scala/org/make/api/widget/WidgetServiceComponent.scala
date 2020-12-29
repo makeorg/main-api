@@ -71,17 +71,14 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
 
       for {
         selectedProposals <- sequenceService.startNewSequence(
+          zone = None,
           maybeUserId = maybeUserId,
           questionId = questionId,
           includedProposals = Seq.empty,
           tagsIds = tagsIds,
           requestContext = requestContext
         )
-      } yield ProposalsResultSeededResponse(
-        selectedProposals.map(_.proposals.size).getOrElse(0).toLong,
-        selectedProposals.map(_.proposals).getOrElse(Seq.empty),
-        None
-      )
+      } yield ProposalsResultSeededResponse(selectedProposals.proposals.size.toLong, selectedProposals.proposals, None)
 
     }
   }

@@ -25,7 +25,7 @@ import com.sksamuel.elastic4s.http.ElasticDsl.{functionScoreQuery, scriptScore}
 import com.sksamuel.elastic4s.script.Script
 import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.queries.funcscorer.{CombineFunction, WeightScore}
-import com.sksamuel.elastic4s.searches.sort.{ScoreSort, SortOrder}
+import com.sksamuel.elastic4s.searches.sort.{FieldSort, ScoreSort, SortOrder}
 import enumeratum.values.{StringEnum, StringEnumEntry}
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldName
 import org.make.core.technical.enumeratum.EnumKeys.StringEnumKeys
@@ -194,6 +194,11 @@ case object B2BFirstAlgorithm extends SortAlgorithm {
         .sortBy(ScoreSort(SortOrder.DESC) +: request.sorts)
     }.getOrElse(request)
   }
+}
+
+final case class CreationDateAlgorithm(order: SortOrder) extends SortAlgorithm {
+  override def sortDefinition(request: SearchRequest): SearchRequest =
+    request.sortBy(FieldSort(field = ProposalElasticsearchFieldName.createdAt.field, order = order))
 }
 
 sealed abstract class AlgorithmSelector(

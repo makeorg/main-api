@@ -168,32 +168,19 @@ class QuestionApiTest
       val questionId = QuestionId("question-id")
       when(
         sequenceService.startNewSequence(
+          zone = eqTo(None),
           maybeUserId = any[Option[UserId]],
           questionId = eqTo(questionId),
           includedProposals = any[Seq[ProposalId]],
           tagsIds = any[Option[Seq[TagId]]],
           requestContext = any[RequestContext]
         )
-      ).thenReturn(Future.successful(Some(SequenceResult(SequenceId("sequence-id"), "title", "slug", Seq.empty))))
+      ).thenReturn(Future.successful(SequenceResult(SequenceId("sequence-id"), "title", "slug", Seq.empty)))
       Get(s"/questions/${questionId.value}/start-sequence") ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
-    Scenario("invalid question") {
-      val questionId = QuestionId("invalid-question-id")
-      when(
-        sequenceService.startNewSequence(
-          maybeUserId = any[Option[UserId]],
-          questionId = eqTo(questionId),
-          includedProposals = any[Seq[ProposalId]],
-          tagsIds = any[Option[Seq[TagId]]],
-          requestContext = any[RequestContext]
-        )
-      ).thenReturn(Future.successful(None))
-      Get(s"/questions/${questionId.value}/start-sequence") ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
-      }
-    }
+
   }
 
   Feature("get question details") {
