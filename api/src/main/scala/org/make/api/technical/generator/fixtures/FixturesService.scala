@@ -258,7 +258,12 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
       val sampleSize = if (proposals.size > 50) 50 else proposals.size
       val proposalsSample = Gen.pick(sampleSize, proposals).value
       def proposalKey(proposalId: ProposalId, sessionId: SessionId): String =
-        SecurityHelper.generateProposalKeyHash(proposalId, sessionId, None, securityConfiguration.secureVoteSalt)
+        SecurityHelper.generateProposalKeyHash(
+          proposalId,
+          sessionId,
+          Some("fixtures"),
+          securityConfiguration.secureVoteSalt
+        )
       def requestContext(sessionId: SessionId) =
         RequestContext.empty.copy(sessionId = sessionId, location = Some("fixtures"))
 
