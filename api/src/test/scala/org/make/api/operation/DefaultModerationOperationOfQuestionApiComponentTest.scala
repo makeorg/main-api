@@ -18,8 +18,7 @@
  */
 
 package org.make.api.operation
-import java.time.ZonedDateTime
-
+import java.time.{LocalDate, ZonedDateTime}
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
@@ -609,9 +608,11 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       actions = Some("some actions"),
       featured = false,
       votesTarget = 100_000,
-      resultDate = None,
-      workshopDate = None,
-      actionDate = None
+      timeline = OperationOfQuestionTimelineContract(
+        TimelineElementContract(defined = false, None, None, None),
+        TimelineElementContract(defined = false, None, None, None),
+        TimelineElementContract(defined = false, None, None, None)
+      )
     )
 
     Scenario("update as moderator") {
@@ -664,9 +665,26 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             actions = Some("some actions"),
             featured = false,
             votesTarget = 100_000,
-            resultDate = None,
-            workshopDate = None,
-            actionDate = None
+            timeline = OperationOfQuestionTimelineContract(
+              action = TimelineElementContract(
+                defined = true,
+                date = Some(LocalDate.now()),
+                dateText = Some("in a long time"),
+                description = Some("action description")
+              ),
+              result = TimelineElementContract(
+                defined = false,
+                date = Some(LocalDate.now()),
+                dateText = Some("in a long time"),
+                description = Some("results description")
+              ),
+              workshop = TimelineElementContract(
+                defined = true,
+                date = Some(LocalDate.now()),
+                dateText = Some("in a long time"),
+                description = Some("workshop description")
+              )
+            )
           ).asJson.toString()
         ) ~> routes ~> check {
 
@@ -719,8 +737,28 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             | "displayResults": false,
             | "consultationImage": "https://example",
             | "featured": true,
-            | "votesTarget": 100000
-          }""".stripMargin) ~> routes ~> check {
+            | "votesTarget": 100000,
+            | "timeline": {
+            |   "action": {
+            |     "defined": true,
+            |     "date": "2168-12-01",
+            |     "dateText": "in a long time",
+            |     "description": "action description"
+            |   },
+            |   "result": {
+            |     "defined": false,
+            |     "date": "2168-12-01",
+            |     "dateText": "in a long time",
+            |     "description": "results description"
+            |   },
+            |   "workshop": {
+            |     "defined": true,
+            |     "date": "2168-12-01",
+            |     "dateText": "in a long time",
+            |     "description": "workshop description"
+            |   }
+            | }
+            |}""".stripMargin) ~> routes ~> check {
 
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
@@ -761,7 +799,21 @@ class DefaultModerationOperationOfQuestionApiComponentTest
            | "displayResults": false,
            | "consultationImage": "https://example.com",
            | "featured": true,
-           | "votesTarget": 100000
+           | "votesTarget": 100000,
+           | "timeline": {
+           |   "action": {
+           |     "defined": true,
+           |     "date": "2168-12-01",
+           |     "dateText": "in a long time",
+           |     "description": "action description"
+           |   },
+           |   "result": {
+           |     "defined": false
+           |   },
+           |   "workshop": {
+           |     "defined": false
+           |   }
+           | }
            |}""".stripMargin
         ) ~> routes ~> check {
 
@@ -803,14 +855,84 @@ class DefaultModerationOperationOfQuestionApiComponentTest
                                                        | "consultationImage": "wrong URL",
                                                        | "descriptionImage": "wrong URL",
                                                        | "featured": true,
-                                                       | "votesTarget": 100000
-                                                       | }""".stripMargin) ~> routes ~> check {
+                                                       | "votesTarget": 100000,
+                                                       | "timeline": {
+                                                       |   "action": {
+                                                       |     "defined": false
+                                                       |   },
+                                                       |   "result": {
+                                                       |     "defined": false
+                                                       |   },
+                                                       |   "workshop": {
+                                                       |     "defined": false
+                                                       |   }
+                                                       | }
+                                                       |}""".stripMargin) ~> routes ~> check {
 
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         errors.size should be(2)
         errors.head.field shouldBe "consultationImage"
         errors(1).field shouldBe "descriptionImage"
+      }
+    }
+
+    Scenario("update with invalid timeline") {
+
+      Put("/moderation/operations-of-questions/my-question")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(ContentTypes.`application/json`, """{
+            | "startDate": "2018-12-01T10:15:30.000Z",
+            | "endDate": "2068-12-01T10:15:30.000Z",
+            | "canPropose": true,
+            | "question": "question ?",
+            | "operationTitle": "title",
+            | "countries": ["BE", "FR"],
+            | "shortTitle": "short title",
+            | "sequenceCardsConfiguration": {
+            |   "introCard": { "enabled": true },
+            |   "pushProposalCard": { "enabled": true },
+            |   "signUpCard": { "enabled": true },
+            |   "finalCard": {
+            |     "enabled": true,
+            |     "sharingEnabled": false
+            |   }
+            | },
+            | "metas": { "title": "metas" },
+            | "theme": {
+            |   "color": "#000000",
+            |   "fontColor": "#000000"
+            | },
+            | "description": "description",
+            | "displayResults": false,
+            | "consultationImage": "https://example.com",
+            | "featured": true,
+            | "votesTarget": 100000,
+            | "timeline": {
+            |   "action": {
+            |     "defined": true,
+            |     "date": "2168-12-01",
+            |     "dateText": "missing description"
+            |   },
+            |   "result": {
+            |     "defined": false,
+            |     "date": "2168-12-01",
+            |     "dateText": "in a long time",
+            |     "description": "results description"
+            |   },
+            |   "workshop": {
+            |     "defined": true,
+            |     "date": "2168-12-01",
+            |     "dateText": "in a long time",
+            |     "description": "workshop description"
+            |   }
+            | }
+            |}""".stripMargin) ~> routes ~> check {
+
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size should be(1)
+        errors.head.field shouldBe "timeline.description"
       }
     }
   }

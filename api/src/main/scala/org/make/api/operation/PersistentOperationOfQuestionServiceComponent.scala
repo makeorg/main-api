@@ -24,7 +24,6 @@ import cats.Show
 import cats.data.NonEmptyList
 import eu.timepit.refined.W
 import eu.timepit.refined.auto._
-import org.make.api.technical.ScalikeSupport._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.MaxSize
 import com.typesafe.scalalogging.StrictLogging
@@ -36,6 +35,7 @@ import org.make.api.question.DefaultPersistentQuestionServiceComponent.{COUNTRY_
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
+import org.make.api.technical.ScalikeSupport._
 import org.make.core.{DateHelper, Order}
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
@@ -183,9 +183,22 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               PersistentOperationOfQuestion.column.featured -> operationOfQuestion.featured,
               PersistentOperationOfQuestion.column.votesCount -> operationOfQuestion.votesCount,
               PersistentOperationOfQuestion.column.votesTarget -> operationOfQuestion.votesTarget,
-              PersistentOperationOfQuestion.column.resultDate -> operationOfQuestion.resultDate,
-              PersistentOperationOfQuestion.column.workshopDate -> operationOfQuestion.workshopDate,
-              PersistentOperationOfQuestion.column.actionDate -> operationOfQuestion.actionDate
+              PersistentOperationOfQuestion.column.actionDate -> operationOfQuestion.timeline.action.map(_.date),
+              PersistentOperationOfQuestion.column.actionDateText -> operationOfQuestion.timeline.action
+                .map(_.dateText),
+              PersistentOperationOfQuestion.column.actionDescription -> operationOfQuestion.timeline.action
+                .map(_.description),
+              PersistentOperationOfQuestion.column.resultDate -> operationOfQuestion.timeline.result.map(_.date),
+              PersistentOperationOfQuestion.column.resultDateText -> operationOfQuestion.timeline.result
+                .map(_.dateText),
+              PersistentOperationOfQuestion.column.resultDescription -> operationOfQuestion.timeline.result
+                .map(_.description),
+              PersistentOperationOfQuestion.column.workshopDate -> operationOfQuestion.timeline.workshop.map(_.date),
+              PersistentOperationOfQuestion.column.workshopDateText -> operationOfQuestion.timeline.workshop
+                .map(_.dateText),
+              PersistentOperationOfQuestion.column.workshopDescription -> operationOfQuestion.timeline.workshop.map(
+                _.description
+              )
             )
         }.execute().apply()
       }).map(_ => operationOfQuestion)
@@ -235,9 +248,27 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               PersistentOperationOfQuestion.column.featured -> operationOfQuestion.featured,
               PersistentOperationOfQuestion.column.votesCount -> operationOfQuestion.votesCount,
               PersistentOperationOfQuestion.column.votesTarget -> operationOfQuestion.votesTarget,
-              PersistentOperationOfQuestion.column.resultDate -> operationOfQuestion.resultDate,
-              PersistentOperationOfQuestion.column.workshopDate -> operationOfQuestion.workshopDate,
-              PersistentOperationOfQuestion.column.actionDate -> operationOfQuestion.actionDate
+              PersistentOperationOfQuestion.column.actionDate -> operationOfQuestion.timeline.action.map(_.date),
+              PersistentOperationOfQuestion.column.actionDateText -> operationOfQuestion.timeline.action.map(
+                _.dateText
+              ),
+              PersistentOperationOfQuestion.column.actionDescription -> operationOfQuestion.timeline.action.map(
+                _.description
+              ),
+              PersistentOperationOfQuestion.column.resultDate -> operationOfQuestion.timeline.result.map(_.date),
+              PersistentOperationOfQuestion.column.resultDateText -> operationOfQuestion.timeline.result.map(
+                _.dateText
+              ),
+              PersistentOperationOfQuestion.column.resultDescription -> operationOfQuestion.timeline.result.map(
+                _.description
+              ),
+              PersistentOperationOfQuestion.column.workshopDate -> operationOfQuestion.timeline.workshop.map(_.date),
+              PersistentOperationOfQuestion.column.workshopDateText -> operationOfQuestion.timeline.workshop.map(
+                _.dateText
+              ),
+              PersistentOperationOfQuestion.column.workshopDescription -> operationOfQuestion.timeline.workshop.map(
+                _.description
+              )
             )
             .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, operationOfQuestion.questionId))
         }.execute().apply()
@@ -371,9 +402,15 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
     featured: Boolean,
     votesCount: Int,
     votesTarget: Int,
+    actionDate: Option[LocalDate],
+    actionDateText: Option[String Refined MaxSize[W.`20`.T]],
+    actionDescription: Option[String Refined MaxSize[W.`150`.T]],
     resultDate: Option[LocalDate],
+    resultDateText: Option[String Refined MaxSize[W.`20`.T]],
+    resultDescription: Option[String Refined MaxSize[W.`150`.T]],
     workshopDate: Option[LocalDate],
-    actionDate: Option[LocalDate]
+    workshopDateText: Option[String Refined MaxSize[W.`20`.T]],
+    workshopDescription: Option[String Refined MaxSize[W.`150`.T]]
   ) {
     def toOperationOfQuestion: OperationOfQuestion = OperationOfQuestion(
       questionId = QuestionId(this.questionId),
@@ -420,9 +457,23 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
       featured = this.featured,
       votesTarget = this.votesTarget,
       votesCount = this.votesCount,
-      resultDate = this.resultDate,
-      workshopDate = this.workshopDate,
-      actionDate = this.actionDate,
+      timeline = OperationOfQuestionTimeline(
+        action = (this.actionDate, this.actionDateText, this.actionDescription) match {
+          case (Some(date), Some(dateText), Some(description)) =>
+            Some(TimelineElement(date = date, dateText = dateText, description = description))
+          case _ => None
+        },
+        result = (this.resultDate, this.resultDateText, this.resultDescription) match {
+          case (Some(date), Some(dateText), Some(description)) =>
+            Some(TimelineElement(date = date, dateText = dateText, description = description))
+          case _ => None
+        },
+        workshop = (this.workshopDate, this.workshopDateText, this.workshopDescription) match {
+          case (Some(date), Some(dateText), Some(description)) =>
+            Some(TimelineElement(date = date, dateText = dateText, description = description))
+          case _ => None
+        }
+      ),
       createdAt = this.createdAt
     )
   }
@@ -481,9 +532,15 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
       featured: Boolean,
       votesCount: Int,
       votesTarget: Int,
-      resultDate: Option[LocalDate],
-      workshopDate: Option[LocalDate],
       actionDate: Option[LocalDate],
+      actionDateText: Option[String Refined MaxSize[W.`20`.T]],
+      actionDescription: Option[String Refined MaxSize[W.`150`.T]],
+      resultDate: Option[LocalDate],
+      resultDateText: Option[String Refined MaxSize[W.`20`.T]],
+      resultDescription: Option[String Refined MaxSize[W.`150`.T]],
+      workshopDate: Option[LocalDate],
+      workshopDateText: Option[String Refined MaxSize[W.`20`.T]],
+      workshopDescription: Option[String Refined MaxSize[W.`150`.T]],
       createdAt: ZonedDateTime
     ) {
       def toQuestionAndDetails: QuestionWithDetails = {
@@ -536,9 +593,23 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
             featured = this.featured,
             votesCount = this.votesCount,
             votesTarget = this.votesTarget,
-            resultDate = this.resultDate,
-            workshopDate = this.workshopDate,
-            actionDate = this.actionDate,
+            timeline = OperationOfQuestionTimeline(
+              action = (this.actionDate, this.actionDateText, this.actionDescription) match {
+                case (Some(date), Some(dateText), Some(description)) =>
+                  Some(TimelineElement(date = date, dateText = dateText, description = description))
+                case _ => None
+              },
+              result = (this.resultDate, this.resultDateText, this.resultDescription) match {
+                case (Some(date), Some(dateText), Some(description)) =>
+                  Some(TimelineElement(date = date, dateText = dateText, description = description))
+                case _ => None
+              },
+              workshop = (this.workshopDate, this.workshopDateText, this.workshopDescription) match {
+                case (Some(date), Some(dateText), Some(description)) =>
+                  Some(TimelineElement(date = date, dateText = dateText, description = description))
+                case _ => None
+              }
+            ),
             createdAt = this.createdAt
           )
         )
@@ -605,9 +676,15 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         featured = resultSet.boolean(operationOfQuestionAlias.featured),
         votesCount = resultSet.int(operationOfQuestionAlias.votesCount),
         votesTarget = resultSet.int(operationOfQuestionAlias.votesTarget),
-        resultDate = resultSet.localDateOpt(operationOfQuestionAlias.resultDate),
-        workshopDate = resultSet.localDateOpt(operationOfQuestionAlias.workshopDate),
         actionDate = resultSet.localDateOpt(operationOfQuestionAlias.actionDate),
+        actionDateText = resultSet.get(operationOfQuestionAlias.actionDateText),
+        actionDescription = resultSet.get(operationOfQuestionAlias.actionDescription),
+        resultDate = resultSet.localDateOpt(operationOfQuestionAlias.resultDate),
+        resultDateText = resultSet.get(operationOfQuestionAlias.resultDateText),
+        resultDescription = resultSet.get(operationOfQuestionAlias.resultDescription),
+        workshopDate = resultSet.localDateOpt(operationOfQuestionAlias.workshopDate),
+        workshopDateText = resultSet.get(operationOfQuestionAlias.workshopDateText),
+        workshopDescription = resultSet.get(operationOfQuestionAlias.workshopDescription),
         createdAt = resultSet.zonedDateTime(operationOfQuestionAlias.createdAt)
       )
     }
@@ -655,9 +732,15 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         "featured",
         "votes_count",
         "votes_target",
+        "action_date",
+        "action_date_text",
+        "action_description",
         "result_date",
+        "result_date_text",
+        "result_description",
         "workshop_date",
-        "action_date"
+        "workshop_date_text",
+        "workshop_description"
       )
 
     override val tableName: String = "operation_of_question"
@@ -711,9 +794,15 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         featured = resultSet.boolean(resultName.featured),
         votesCount = resultSet.int(resultName.votesCount),
         votesTarget = resultSet.int(resultName.votesTarget),
+        actionDate = resultSet.localDateOpt(resultName.actionDate),
+        actionDateText = resultSet.get(resultName.actionDateText),
+        actionDescription = resultSet.get(resultName.actionDescription),
         resultDate = resultSet.localDateOpt(resultName.resultDate),
+        resultDateText = resultSet.get(resultName.resultDateText),
+        resultDescription = resultSet.get(resultName.resultDescription),
         workshopDate = resultSet.localDateOpt(resultName.workshopDate),
-        actionDate = resultSet.localDateOpt(resultName.actionDate)
+        workshopDateText = resultSet.get(resultName.workshopDateText),
+        workshopDescription = resultSet.get(resultName.workshopDescription)
       )
     }
   }

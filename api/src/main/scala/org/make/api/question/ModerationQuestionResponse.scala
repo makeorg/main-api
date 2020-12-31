@@ -18,17 +18,15 @@
  */
 
 package org.make.api.question
-import java.time.{LocalDate, ZonedDateTime}
-
 import cats.data.NonEmptyList
-import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
-import io.circe.{Codec, Decoder, Encoder}
-import io.circe.refined._
-import io.swagger.annotations.ApiModelProperty
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.MaxSize
+import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
+import io.circe.{Codec, Decoder, Encoder}
+import io.swagger.annotations.ApiModelProperty
 import org.make.api.operation.ResultsLinkResponse
+import io.circe.refined._
 import org.make.core.operation._
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.partner.{Partner, PartnerKind}
@@ -38,6 +36,7 @@ import org.make.core.sequence.SequenceId
 import org.make.core.user.UserId
 import org.make.core.{CirceFormatters, SlugHelper}
 
+import java.time.ZonedDateTime
 import scala.annotation.meta.field
 
 final case class ModerationQuestionResponse(
@@ -201,18 +200,6 @@ object OperationOfQuestionHighlightsResponse {
   implicit val codec: Codec[OperationOfQuestionHighlightsResponse] = deriveCodec
 }
 
-final case class OperationOfQuestionTimelineResponse(
-  startDate: ZonedDateTime,
-  endDate: ZonedDateTime,
-  resultDate: Option[LocalDate],
-  workshopDate: Option[LocalDate],
-  actionDate: Option[LocalDate]
-)
-
-object OperationOfQuestionTimelineResponse extends CirceFormatters {
-  implicit val codec: Codec[OperationOfQuestionTimelineResponse] = deriveCodec
-}
-
 final case class QuestionDetailsResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
   questionId: QuestionId,
@@ -253,7 +240,7 @@ final case class QuestionDetailsResponse(
   activeFeatures: Seq[String],
   featured: Boolean,
   highlights: OperationOfQuestionHighlightsResponse,
-  timeline: OperationOfQuestionTimelineResponse,
+  timeline: OperationOfQuestionTimeline,
   controversyCount: Int,
   topProposalCount: Int
 )
@@ -303,13 +290,7 @@ object QuestionDetailsResponse extends CirceFormatters {
       participantsCount = operationOfQuestion.participantsCount,
       proposalsCount = operationOfQuestion.proposalsCount
     ),
-    timeline = OperationOfQuestionTimelineResponse(
-      startDate = operationOfQuestion.startDate,
-      endDate = operationOfQuestion.endDate,
-      resultDate = operationOfQuestion.resultDate,
-      workshopDate = operationOfQuestion.workshopDate,
-      actionDate = operationOfQuestion.actionDate
-    ),
+    timeline = operationOfQuestion.timeline,
     controversyCount = 0,
     topProposalCount = 0
   )

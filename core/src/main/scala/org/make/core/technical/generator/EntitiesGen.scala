@@ -20,40 +20,31 @@
 package org.make.core.technical
 package generator
 
-import java.net.URL
-import java.time.Period
-import java.time.temporal.ChronoUnit
-
 import _root_.enumeratum.values.scalacheck._
 import cats.data.NonEmptyList
-import eu.timepit.refined.scalacheck.numeric._
+import eu.timepit.refined.{refineV, W}
 import eu.timepit.refined.api.RefType
 import eu.timepit.refined.auto._
+import eu.timepit.refined.collection.MaxSize
+import eu.timepit.refined.scalacheck.numeric._
 import eu.timepit.refined.types.numeric.{NonNegInt, PosInt}
 import org.make.core.DateHelper._
-import org.make.core.{BusinessConfig, DateHelper, RequestContext, SlugHelper}
 import org.make.core.job.Job
 import org.make.core.job.Job.{JobId, JobStatus}
-import org.make.core.operation.{
-  Metas,
-  OperationId,
-  OperationKind,
-  OperationOfQuestion,
-  OperationStatus,
-  QuestionTheme,
-  ResultsLink,
-  SequenceCardsConfiguration,
-  SimpleOperation
-}
-import org.make.core.proposal.{Proposal, ProposalStatus, Qualification, QualificationKey, Vote, VoteKey}
+import org.make.core.operation._
+import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.technical.generator.CustomGenerators.ImageUrl
 import org.make.core.user.{Role, User, UserType}
-import org.scalacheck.{Arbitrary, Gen}
+import org.make.core.{BusinessConfig, DateHelper, RequestContext, SlugHelper}
 import org.scalacheck.Arbitrary.arbitrary
+import org.scalacheck.{Arbitrary, Gen}
 
+import java.net.URL
+import java.time.temporal.ChronoUnit
+import java.time.{Period, ZoneOffset, ZonedDateTime}
 import scala.concurrent.duration.FiniteDuration
 
 trait EntitiesGen extends DateGenerators {
@@ -95,6 +86,25 @@ trait EntitiesGen extends DateGenerators {
       operationId = operationId
     )
 
+  def genTimelineElement(fromDate: ZonedDateTime): Gen[TimelineElement] =
+    for {
+      date        <- genDateWithOffset(lowerOffset = Period.ofYears(0), upperOffset = Period.ofYears(3), fromDate = fromDate)
+      dateText    <- CustomGenerators.LoremIpsumGen.sentence(Some(20)).map(refineV[MaxSize[W.`20`.T]].unsafeFrom(_))
+      description <- CustomGenerators.LoremIpsumGen.sentence(Some(150)).map(refineV[MaxSize[W.`150`.T]].unsafeFrom(_))
+    } yield TimelineElement(date = date.toLocalDate, dateText = dateText, description = description)
+
+  def genOOQTimeline(startDate: ZonedDateTime): Gen[OperationOfQuestionTimeline] =
+    for {
+      result <- genTimelineElement(startDate).asOption
+      action <- genTimelineElement(result.map(_.date.atStartOfDay(ZoneOffset.UTC)).getOrElse(startDate)).asOption
+      workshop <- genTimelineElement(
+        action
+          .map(_.date.atStartOfDay(ZoneOffset.UTC))
+          .orElse(result.map(_.date.atStartOfDay(ZoneOffset.UTC)))
+          .getOrElse(startDate)
+      ).asOption
+    } yield OperationOfQuestionTimeline(action = action, result = result, workshop = workshop)
+
   def genOperationOfQuestion: Gen[OperationOfQuestion] =
     for {
       operation <- genSimpleOperation
@@ -113,6 +123,7 @@ trait EntitiesGen extends DateGenerators {
       featured          <- arbitrary[Boolean]
       votesTarget       <- Gen.choose(0, 100_000_000)
       votesCount        <- Gen.choose(0, 100_000_000)
+      timeline          <- genOOQTimeline(startDate)
     } yield OperationOfQuestion(
       questionId = question.questionId,
       operationId = operation.operationId,
@@ -137,9 +148,7 @@ trait EntitiesGen extends DateGenerators {
       featured = featured,
       votesCount = votesCount,
       votesTarget = votesTarget,
-      resultDate = None,
-      workshopDate = None,
-      actionDate = None,
+      timeline = timeline,
       createdAt = DateHelper.now()
     )
 

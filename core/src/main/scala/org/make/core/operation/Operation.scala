@@ -19,16 +19,14 @@
 
 package org.make.core.operation
 
-import java.time.{LocalDate, ZonedDateTime}
-
-import enumeratum.{Enum, EnumEntry}
-import enumeratum.Circe
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
+import enumeratum.{Circe, Enum, EnumEntry}
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.MaxSize
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json}
+import io.circe.refined._
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.SprayJsonFormatters._
 import org.make.core._
@@ -39,6 +37,7 @@ import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
 
+import java.time.{LocalDate, ZonedDateTime}
 import scala.annotation.meta.field
 
 final case class QuestionWithDetails(question: Question, details: OperationOfQuestion)
@@ -187,9 +186,7 @@ final case class OperationOfQuestion(
   featured: Boolean,
   votesCount: Int,
   votesTarget: Int,
-  resultDate: Option[LocalDate],
-  workshopDate: Option[LocalDate],
-  actionDate: Option[LocalDate],
+  timeline: OperationOfQuestionTimeline,
   createdAt: ZonedDateTime
 ) {
 
@@ -288,4 +285,26 @@ object OperationKind
 
   val publicKinds: Seq[OperationKind] = Seq(OperationKind.GreatCause, OperationKind.BusinessConsultation)
 
+}
+
+final case class OperationOfQuestionTimeline(
+  action: Option[TimelineElement],
+  result: Option[TimelineElement],
+  workshop: Option[TimelineElement]
+)
+
+object OperationOfQuestionTimeline extends CirceFormatters {
+  implicit val encoder: Encoder[OperationOfQuestionTimeline] = deriveEncoder[OperationOfQuestionTimeline]
+  implicit val decoder: Decoder[OperationOfQuestionTimeline] = deriveDecoder[OperationOfQuestionTimeline]
+}
+
+final case class TimelineElement(
+  date: LocalDate,
+  dateText: String Refined MaxSize[W.`20`.T],
+  description: String Refined MaxSize[W.`150`.T]
+)
+
+object TimelineElement extends CirceFormatters {
+  implicit val encoder: Encoder[TimelineElement] = deriveEncoder[TimelineElement]
+  implicit val decoder: Decoder[TimelineElement] = deriveDecoder[TimelineElement]
 }
