@@ -182,7 +182,7 @@ class ProposalScorerTest extends MakeUnitTest {
     Scenario("news proposal") {
       val configuration = SequenceConfiguration(SequenceId("fake"), QuestionId("fake-too"))
 
-      ProposalScorer(proposalWithoutvote.votes, VotesCounter.SequenceVotesCounter, configuration.scoreAdjustementFactor)
+      ProposalScorer(proposalWithoutvote.votes, VotesCounter.SequenceVotesCounter, configuration.nonSequenceVotesWeight)
         .pool(configuration, Accepted) should be(SequencePool.New)
     }
 

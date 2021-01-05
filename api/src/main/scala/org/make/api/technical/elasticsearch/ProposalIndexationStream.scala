@@ -248,11 +248,11 @@ trait ProposalIndexationStream
     val isBeforeContextSourceFeature: Boolean =
       proposal.createdAt.exists(_.isBefore(ZonedDateTime.parse("2018-09-01T00:00:00Z")))
     val sequenceScore =
-      ProposalScorer(proposal.votes, VotesCounter.SequenceVotesCounter, sequenceConfiguration.scoreAdjustementFactor)
+      ProposalScorer(proposal.votes, VotesCounter.SequenceVotesCounter, sequenceConfiguration.nonSequenceVotesWeight)
 
     // If the proposal is not segmented, the scores should all be at 0
     val segmentScore = segment.map { _ =>
-      ProposalScorer(proposal.votes, VotesCounter.SegmentVotesCounter, sequenceConfiguration.scoreAdjustementFactor)
+      ProposalScorer(proposal.votes, VotesCounter.SegmentVotesCounter, sequenceConfiguration.nonSequenceVotesWeight)
     }
 
     IndexedProposal(

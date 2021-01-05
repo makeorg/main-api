@@ -252,7 +252,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         // pick most engaging
         val sortedTestedProposal: Seq[IndexedProposal] =
           testedIncludedProposals.sortBy { proposal =>
-            val scorer = computeProposalScores(maybeUserSegment, proposal, sequenceConfiguration.scoreAdjustementFactor)
+            val scorer = computeProposalScores(maybeUserSegment, proposal, sequenceConfiguration.nonSequenceVotesWeight)
             -1 * scorer.engagement.lowerBound
           }
         Seq(sortedTestedProposal.head) ++ MakeRandom.shuffleSeq(newIncludedProposals ++ sortedTestedProposal.tail)
@@ -296,7 +296,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
 
       val proposalsScored: Seq[Scored[IndexedProposal]] =
         proposals.map { proposal =>
-          val scorer = computeProposalScores(maybeUserSegment, proposal, sequenceConfiguration.scoreAdjustementFactor)
+          val scorer = computeProposalScores(maybeUserSegment, proposal, sequenceConfiguration.nonSequenceVotesWeight)
 
           Scored(proposal, scorer.topScore.sample(sequenceConfiguration.nonSequenceVotesWeight))
         }
@@ -335,7 +335,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
     ): (SequenceConfiguration, Seq[IndexedProposal], Option[String]) => IndexedProposal = {
       (sequenceConfiguration, proposals, maybeUserSegment) =>
         proposals.maxBy { proposal =>
-          val scorer = computeProposalScores(maybeUserSegment, proposal, sequenceConfiguration.scoreAdjustementFactor)
+          val scorer = computeProposalScores(maybeUserSegment, proposal, sequenceConfiguration.nonSequenceVotesWeight)
           score(scorer).lowerBound
         }
     }
@@ -374,7 +374,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
     ): Seq[IdeaId] = {
       champions.toSeq.map {
         case (idea, proposal) =>
-          val scorer = computeProposalScores(maybeUserSegment, proposal, sequenceConfiguration.scoreAdjustementFactor)
+          val scorer = computeProposalScores(maybeUserSegment, proposal, sequenceConfiguration.nonSequenceVotesWeight)
           val score = scoringFunction(scorer)
           Scored(idea, score)
       }.sortBy(-1 * _.score).take(ideaCount).map(_.item)
@@ -426,12 +426,12 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
   private def computeProposalScores(
     maybeUserSegment: Option[String],
     proposal: IndexedProposal,
-    adjustmentFactor: Double
+    nonSequenceVotesWeight: Double
   ): ProposalScorer = {
     if (maybeUserSegment.isDefined && maybeUserSegment == proposal.segment) {
-      ProposalScorer(proposal.votes, VotesCounter.SegmentVotesCounter, adjustmentFactor)
+      ProposalScorer(proposal.votes, VotesCounter.SegmentVotesCounter, nonSequenceVotesWeight)
     } else {
-      ProposalScorer(proposal.votes, VotesCounter.SequenceVotesCounter, adjustmentFactor)
+      ProposalScorer(proposal.votes, VotesCounter.SequenceVotesCounter, nonSequenceVotesWeight)
     }
   }
 

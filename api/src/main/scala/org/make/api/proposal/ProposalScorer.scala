@@ -30,10 +30,10 @@ import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{SequencePool, Zone}
 
-final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, adjustmentFactor: Double) {
+final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, nonSequenceVotesWeight: Double) {
 
   private def tradeOff(generalScore: Double, specificScore: Double): Double = {
-    adjustmentFactor * generalScore + (1 - adjustmentFactor) * specificScore
+    nonSequenceVotesWeight * generalScore + (1 - nonSequenceVotesWeight) * specificScore
   }
 
   def countVotes(counter: VotesCounter): Int = {
@@ -171,8 +171,8 @@ final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, adjustme
   * it defines the computations from the dial.
   */
 object ProposalScorer extends StrictLogging {
-  def apply(votes: Seq[BaseVote], counter: VotesCounter, adjustmentFactor: Double): ProposalScorer = {
-    new ProposalScorer(votes, counter, adjustmentFactor)
+  def apply(votes: Seq[BaseVote], counter: VotesCounter, nonSequenceVotesWeight: Double): ProposalScorer = {
+    new ProposalScorer(votes, counter, nonSequenceVotesWeight)
   }
 
   val random: RandomGenerator = new MersenneTwister()
