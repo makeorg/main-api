@@ -800,6 +800,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         .increment()
     }
 
+    private val sequenceLocations: Set[String] = Set("sequence", "widget", "sequence-popular", "sequence-controversial")
+
     def resolveVoteTrust(
       proposalKey: Option[String],
       proposalId: ProposalId,
@@ -824,7 +826,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         } yield userSegment == proposalSegment
       ).exists(identity)
 
-      val inSequence = page.contains("sequence") | page.contains("widget")
+      val inSequence = page.exists(sequenceLocations.contains)
       (proposalKey, proposalKey.contains(newHash), inSequence, isInSegment) match {
         case (None, _, _, _) =>
           logger.warn(s"No proposal key for proposal ${proposalId.value}, on context ${requestContext.toString}")
