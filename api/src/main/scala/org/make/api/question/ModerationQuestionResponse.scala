@@ -241,8 +241,8 @@ final case class QuestionDetailsResponse(
   featured: Boolean,
   highlights: OperationOfQuestionHighlightsResponse,
   timeline: OperationOfQuestionTimeline,
-  controversyCount: Int,
-  topProposalCount: Int
+  controversyCount: Long,
+  topProposalCount: Long
 )
 
 object QuestionDetailsResponse extends CirceFormatters {
@@ -252,7 +252,9 @@ object QuestionDetailsResponse extends CirceFormatters {
     operationOfQuestion: OperationOfQuestion,
     partners: Seq[Partner],
     questionsOfOperation: Seq[QuestionOfOperationResponse],
-    activeFeatures: Seq[String]
+    activeFeatures: Seq[String],
+    controversyCount: Long,
+    topProposalCount: Long
   ): QuestionDetailsResponse = QuestionDetailsResponse(
     questionId = question.questionId,
     operationId = operation.operationId,
@@ -291,8 +293,8 @@ object QuestionDetailsResponse extends CirceFormatters {
       proposalsCount = operationOfQuestion.proposalsCount
     ),
     timeline = operationOfQuestion.timeline,
-    controversyCount = 0,
-    topProposalCount = 0
+    controversyCount = controversyCount,
+    topProposalCount = topProposalCount
   )
 
   implicit val encoder: Encoder[QuestionDetailsResponse] = deriveEncoder[QuestionDetailsResponse]

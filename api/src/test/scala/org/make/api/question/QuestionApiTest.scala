@@ -46,7 +46,7 @@ import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQ
 import org.make.core.operation.{OperationId, _}
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.personality.{PersonalityRole, PersonalityRoleId}
-import org.make.core.proposal.ProposalId
+import org.make.core.proposal.{ProposalId, SearchQuery}
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
@@ -54,6 +54,7 @@ import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user._
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
 import org.make.core.{DateHelper, Order, RequestContext, ValidationError}
+import org.make.core.proposal.indexed.Zone
 
 import java.time.ZonedDateTime
 
@@ -163,6 +164,14 @@ class QuestionApiTest
       Future.successful(OperationOfQuestionSearchResult(result.size, result))
   }
 
+  when(elasticsearchProposalAPI.countProposals(any[SearchQuery])).thenAnswer { query: SearchQuery =>
+    Future.successful(query.filters.flatMap(_.zone.map(_.zone)) match {
+      case Some(Zone.Consensus)   => 48
+      case Some(Zone.Controversy) => 24
+      case _                      => 0
+    })
+  }
+
   Feature("start sequence by question id") {
     Scenario("valid question") {
       val questionId = QuestionId("question-id")
@@ -251,6 +260,9 @@ class QuestionApiTest
           ResultsLinkResponse(ResultsLinkRequest.ResultsLinkKind.Internal, ResultsLink.Internal.TopIdeas.value)
         )
         questionDetailsResponse.activeFeatures should be(Seq("f1"))
+        questionDetailsResponse.controversyCount shouldBe 24
+        questionDetailsResponse.topProposalCount shouldBe 48
+
       }
     }
     Scenario("get by slug") {
