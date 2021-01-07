@@ -82,16 +82,31 @@ class PersistentOperationOfQuestionServiceIT
 
   Feature("An operationOfQuestion can be persisted") {
     Scenario("Persist an operationOfQuestion and retrieve it") {
-      val resultsDate = LocalDate.parse("2020-01-02")
-      val workshopDate = LocalDate.parse("2020-02-02")
-      val actionDate = LocalDate.parse("2020-03-03")
+      val actionTimeline = TimelineElement(
+        date = LocalDate.parse("2020-03-01"),
+        dateText = "2020-03-03",
+        description = "action description"
+      )
+      val resultTimeline = TimelineElement(
+        date = LocalDate.parse("2020-03-02"),
+        dateText = "2020-03-03",
+        description = "result description"
+      )
+      val workshopTimeline = TimelineElement(
+        date = LocalDate.parse("2020-03-03"),
+        dateText = "2020-03-03",
+        description = "workshop description"
+      )
+
       val baseOperationOfQuestion = TestUtilsIT.operationOfQuestion(
         questionId,
         operationId,
         votesCount = 200_000_000,
-        resultDate = Some(resultsDate),
-        workshopDate = Some(workshopDate),
-        actionDate = Some(actionDate)
+        timeline = OperationOfQuestionTimeline(
+          action = Some(actionTimeline),
+          result = Some(resultTimeline),
+          workshop = Some(workshopTimeline)
+        )
       )
 
       val futureOperationOfQuestion: Future[Option[OperationOfQuestion]] = for {
@@ -112,9 +127,15 @@ class PersistentOperationOfQuestionServiceIT
           operationOfQuestion.participantsCount shouldBe 84
           operationOfQuestion.featured shouldBe true
           operationOfQuestion.votesCount should be(200_000_000)
-          operationOfQuestion.resultDate should contain(resultsDate)
-          operationOfQuestion.workshopDate should contain(workshopDate)
-          operationOfQuestion.actionDate should contain(actionDate)
+          operationOfQuestion.timeline.action.map(_.date) should contain(actionTimeline.date)
+          operationOfQuestion.timeline.action.map(_.dateText) should contain(actionTimeline.dateText)
+          operationOfQuestion.timeline.action.map(_.description) should contain(actionTimeline.description)
+          operationOfQuestion.timeline.result.map(_.date) should contain(resultTimeline.date)
+          operationOfQuestion.timeline.result.map(_.dateText) should contain(resultTimeline.dateText)
+          operationOfQuestion.timeline.result.map(_.description) should contain(resultTimeline.description)
+          operationOfQuestion.timeline.workshop.map(_.date) should contain(workshopTimeline.date)
+          operationOfQuestion.timeline.workshop.map(_.dateText) should contain(workshopTimeline.dateText)
+          operationOfQuestion.timeline.workshop.map(_.description) should contain(workshopTimeline.description)
         }
       }
     }
@@ -275,9 +296,21 @@ class PersistentOperationOfQuestionServiceIT
   Feature("Modify an operationOfQuestion") {
     Scenario("Persist an operationOfQuestion and modify it") {
       val baseOperationOfQuestion = TestUtilsIT.operationOfQuestion(questionId, operationId)
-      val resultsDate = LocalDate.parse("2021-01-01")
-      val workshopDate = LocalDate.parse("2021-02-02")
-      val actionDate = LocalDate.parse("2021-03-03")
+      val actionTimeline = TimelineElement(
+        date = LocalDate.parse("2030-03-01"),
+        dateText = "2030-03-03",
+        description = "action description modified"
+      )
+      val resultTimeline = TimelineElement(
+        date = LocalDate.parse("2030-03-02"),
+        dateText = "2030-03-03",
+        description = "result description modified"
+      )
+      val workshopTimeline = TimelineElement(
+        date = LocalDate.parse("2030-03-03"),
+        dateText = "2030-03-03",
+        description = "workshop description modified"
+      )
       val futureOperationOfQuestion: Future[Option[OperationOfQuestion]] = for {
         _ <- createOperationOfQuestion(baseOperationOfQuestion)
         _ <- persistentOperationOfQuestionService.modify(
@@ -293,9 +326,7 @@ class PersistentOperationOfQuestionServiceIT
               actions = Some("some actions"),
               votesCount = 10_000_000,
               votesTarget = 11_000_000,
-              resultDate = Some(resultsDate),
-              workshopDate = Some(workshopDate),
-              actionDate = Some(actionDate)
+              timeline = OperationOfQuestionTimeline(Some(actionTimeline), Some(resultTimeline), Some(workshopTimeline))
             )
         )
         result <- persistentOperationOfQuestionService.getById(baseOperationOfQuestion.questionId)
@@ -316,9 +347,15 @@ class PersistentOperationOfQuestionServiceIT
           operationOfQuestion.actions shouldBe Some("some actions")
           operationOfQuestion.votesCount should be(10_000_000)
           operationOfQuestion.votesTarget should be(11_000_000)
-          operationOfQuestion.resultDate should contain(resultsDate)
-          operationOfQuestion.workshopDate should contain(workshopDate)
-          operationOfQuestion.actionDate should contain(actionDate)
+          operationOfQuestion.timeline.action.map(_.date) should contain(actionTimeline.date)
+          operationOfQuestion.timeline.action.map(_.dateText) should contain(actionTimeline.dateText)
+          operationOfQuestion.timeline.action.map(_.description) should contain(actionTimeline.description)
+          operationOfQuestion.timeline.result.map(_.date) should contain(resultTimeline.date)
+          operationOfQuestion.timeline.result.map(_.dateText) should contain(resultTimeline.dateText)
+          operationOfQuestion.timeline.result.map(_.description) should contain(resultTimeline.description)
+          operationOfQuestion.timeline.workshop.map(_.date) should contain(workshopTimeline.date)
+          operationOfQuestion.timeline.workshop.map(_.dateText) should contain(workshopTimeline.dateText)
+          operationOfQuestion.timeline.workshop.map(_.description) should contain(workshopTimeline.description)
         }
       }
     }

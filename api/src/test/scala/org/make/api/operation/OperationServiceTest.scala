@@ -19,9 +19,6 @@
 
 package org.make.api.operation
 
-import java.time.{LocalDate, ZonedDateTime}
-import java.util.UUID
-
 import cats.data.NonEmptyList
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.MakeDBExecutionContextComponent
@@ -37,6 +34,8 @@ import org.make.core.technical.IdGenerator
 import org.make.core.user.UserId
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import java.time.{LocalDate, ZonedDateTime}
+import java.util.UUID
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 

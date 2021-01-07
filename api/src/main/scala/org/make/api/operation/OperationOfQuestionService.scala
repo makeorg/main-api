@@ -248,9 +248,7 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         featured = false,
         votesCount = 0,
         votesTarget = 100_000,
-        resultDate = None,
-        workshopDate = None,
-        actionDate = None,
+        timeline = OperationOfQuestionTimeline(None, None, None),
         createdAt = DateHelper.now()
       )
 

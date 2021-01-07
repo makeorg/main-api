@@ -19,9 +19,6 @@
 
 package org.make.api
 
-import java.net.URL
-import java.time.{LocalDate, ZonedDateTime}
-
 import cats.data.NonEmptyList
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
@@ -53,6 +50,9 @@ import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext, SlugHelper}
+
+import java.net.URL
+import java.time.ZonedDateTime
 
 trait TestUtilsIT {
 
@@ -263,9 +263,7 @@ trait TestUtilsIT {
     featured: Boolean = true,
     votesCount: Int = 0,
     votesTarget: Int = 100_000,
-    resultDate: Option[LocalDate] = None,
-    workshopDate: Option[LocalDate] = None,
-    actionDate: Option[LocalDate] = None,
+    timeline: OperationOfQuestionTimeline = OperationOfQuestionTimeline(None, None, None),
     createdAt: ZonedDateTime = ZonedDateTime.parse("1968-06-03T00:00:00.000Z")
   ): OperationOfQuestion = OperationOfQuestion(
     questionId = questionId,
@@ -291,9 +289,7 @@ trait TestUtilsIT {
     featured = featured,
     votesCount = votesCount,
     votesTarget = votesTarget,
-    resultDate = resultDate,
-    workshopDate = workshopDate,
-    actionDate = actionDate,
+    timeline = timeline,
     createdAt = createdAt
   )
 

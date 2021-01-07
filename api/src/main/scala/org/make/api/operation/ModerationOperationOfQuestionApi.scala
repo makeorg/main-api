@@ -20,12 +20,12 @@
 package org.make.api.operation
 
 import java.time.{LocalDate, ZonedDateTime}
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import cats.data.NonEmptyList
 import com.typesafe.scalalogging.StrictLogging
 import eu.timepit.refined.W
+import eu.timepit.refined.auto._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Url
 import eu.timepit.refined.collection.MaxSize
@@ -33,6 +33,7 @@ import io.circe.refined._
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.QuestionServiceComponent
@@ -40,7 +41,14 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.technical.CsvReceptacle._
-import org.make.core.Validation.{validate, validateColor, validateField, validateOptionalUserInput, validateUserInput}
+import org.make.core.Validation.{
+  requirePresent,
+  validate,
+  validateColor,
+  validateField,
+  validateOptionalUserInput,
+  validateUserInput
+}
 import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationOfQuestion.{Status => QuestionStatus}
@@ -414,9 +422,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                 actions = request.actions,
                                 featured = request.featured,
                                 votesTarget = request.votesTarget,
-                                resultDate = request.resultDate,
-                                workshopDate = request.workshopDate,
-                                actionDate = request.actionDate
+                                timeline = request.timeline.toOOQTimeline
                               ),
                             updatedQuestion
                           )
@@ -526,9 +532,7 @@ final case class ModifyOperationOfQuestionRequest(
   actions: Option[String],
   featured: Boolean,
   votesTarget: Int,
-  resultDate: Option[LocalDate],
-  workshopDate: Option[LocalDate],
-  actionDate: Option[LocalDate]
+  timeline: OperationOfQuestionTimelineContract
 ) {
 
   validate(
@@ -612,6 +616,68 @@ object CreateOperationOfQuestionRequest extends CirceFormatters {
   implicit val encoder: Encoder[CreateOperationOfQuestionRequest] = deriveEncoder[CreateOperationOfQuestionRequest]
 }
 
+final case class OperationOfQuestionTimelineContract(
+  action: TimelineElementContract,
+  result: TimelineElementContract,
+  workshop: TimelineElementContract
+) {
+  def toOOQTimeline: OperationOfQuestionTimeline = OperationOfQuestionTimeline(
+    action = action.toTimelineElement,
+    result = result.toTimelineElement,
+    workshop = workshop.toTimelineElement
+  )
+}
+
+object OperationOfQuestionTimelineContract extends CirceFormatters {
+  implicit val decoder: Decoder[OperationOfQuestionTimelineContract] =
+    deriveDecoder[OperationOfQuestionTimelineContract]
+  implicit val encoder: Encoder[OperationOfQuestionTimelineContract] =
+    deriveEncoder[OperationOfQuestionTimelineContract]
+
+  def apply(timeline: OperationOfQuestionTimeline): OperationOfQuestionTimelineContract =
+    OperationOfQuestionTimelineContract(
+      action = TimelineElementContract(timeline.action),
+      result = TimelineElementContract(timeline.result),
+      workshop = TimelineElementContract(timeline.workshop)
+    )
+}
+
+final case class TimelineElementContract(
+  defined: Boolean,
+  date: Option[LocalDate],
+  dateText: Option[String Refined MaxSize[W.`20`.T]],
+  description: Option[String Refined MaxSize[W.`150`.T]]
+) {
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  def toTimelineElement: Option[TimelineElement] =
+    if (!defined) {
+      None
+    } else {
+      validate(
+        requirePresent("timeline.date", date),
+        requirePresent("timeline.dateText", dateText),
+        requirePresent("timeline.description", description)
+      )
+      for {
+        d    <- date
+        text <- dateText
+        desc <- description
+      } yield TimelineElement(date = d, dateText = text, description = desc)
+    }
+}
+
+object TimelineElementContract extends CirceFormatters {
+  implicit val decoder: Decoder[TimelineElementContract] = deriveDecoder[TimelineElementContract]
+  implicit val encoder: Encoder[TimelineElementContract] = deriveEncoder[TimelineElementContract]
+
+  def apply(timelineElement: Option[TimelineElement]): TimelineElementContract = TimelineElementContract(
+    defined = timelineElement.isDefined,
+    date = timelineElement.map(_.date),
+    dateText = timelineElement.map(_.dateText),
+    description = timelineElement.map(_.description)
+  )
+}
+
 @ApiModel
 final case class OperationOfQuestionResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
@@ -654,9 +720,7 @@ final case class OperationOfQuestionResponse(
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "upcoming,open,finished")
   status: QuestionStatus,
   votesTarget: Int,
-  resultDate: Option[LocalDate],
-  workshopDate: Option[LocalDate],
-  actionDate: Option[LocalDate],
+  timeline: OperationOfQuestionTimelineContract,
   createdAt: ZonedDateTime
 )
 
@@ -693,9 +757,7 @@ object OperationOfQuestionResponse extends CirceFormatters {
       featured = operationOfQuestion.featured,
       status = operationOfQuestion.status,
       votesTarget = operationOfQuestion.votesTarget,
-      resultDate = operationOfQuestion.workshopDate,
-      workshopDate = operationOfQuestion.workshopDate,
-      actionDate = operationOfQuestion.actionDate,
+      timeline = OperationOfQuestionTimelineContract(operationOfQuestion.timeline),
       createdAt = operationOfQuestion.createdAt
     )
   }

@@ -56,7 +56,7 @@ import org.make.core.user._
 import org.make.core.{RequestContext, SlugHelper}
 
 import java.net.URL
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.ZonedDateTime
 
 trait TestUtils {
 
@@ -401,9 +401,7 @@ trait TestUtils {
     featured: Boolean = true,
     votesCount: Int = 0,
     votesTarget: Int = 100_000,
-    resultDate: Option[LocalDate] = None,
-    workshopDate: Option[LocalDate] = None,
-    actionDate: Option[LocalDate] = None,
+    timeline: OperationOfQuestionTimeline = OperationOfQuestionTimeline(None, None, None),
     createdAt: ZonedDateTime = ZonedDateTime.parse("1968-06-03T00:00:00.000Z")
   ) = OperationOfQuestion(
     questionId = questionId,
@@ -429,9 +427,7 @@ trait TestUtils {
     featured = featured,
     votesCount = votesCount,
     votesTarget = votesTarget,
-    resultDate = resultDate,
-    workshopDate = workshopDate,
-    actionDate = actionDate,
+    timeline = timeline,
     createdAt = createdAt
   )
 
