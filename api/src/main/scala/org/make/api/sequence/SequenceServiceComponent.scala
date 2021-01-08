@@ -37,6 +37,7 @@ import org.make.core.proposal.{
   ProposalSearchFilter,
   QuestionSearchFilter,
   RandomAlgorithm,
+  SegmentFirstAlgorithm,
   SegmentSearchFilter,
   SequencePoolSearchFilter,
   SortAlgorithm,
@@ -182,11 +183,15 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
           logger.warn(
             s"Sequence fallback for user ${requestContext.sessionId.value} and question ${sequenceConfiguration.questionId.value}"
           )
+          val sortAlgorithm: SortAlgorithm = maybeSegment
+            .map[SortAlgorithm](SegmentFirstAlgorithm)
+            .getOrElse[SortAlgorithm](CreationDateAlgorithm(SortOrder.Desc))
+
           searchProposals(
             None,
             votes ++ selectedProposals.map(_.id),
             sequenceConfiguration.sequenceSize - selectedProposals.size,
-            CreationDateAlgorithm(SortOrder.Desc)
+            sortAlgorithm
           )
         } else {
           Future.successful(Nil)

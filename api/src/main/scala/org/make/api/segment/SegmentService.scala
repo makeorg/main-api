@@ -53,14 +53,14 @@ trait DefaultSegmentServiceComponent extends SegmentServiceComponent {
       )
     }
 
-    val segmentResolverFromUtm: SegmentResolver = { requestContext =>
-      Future.successful(requestContext.getParameters.flatMap(_.get("utm_segment")).map(_.trim).filter(!_.isEmpty))
+    val segmentResolverFromCustomData: SegmentResolver = { requestContext =>
+      Future.successful(requestContext.customData.get("segment").map(_.trim).filter(_.nonEmpty))
     }
 
     val segmentResolvers: Map[String, SegmentResolver] = Map(
       "consultation-department-compulsory" -> segmentResolverFromDepartment,
       "segment_from_department" -> segmentResolverFromDepartment,
-      "sequence-utm-segment" -> segmentResolverFromUtm
+      "sequence-custom-data-segment" -> segmentResolverFromCustomData
     )
 
     override def resolveSegment(requestContext: RequestContext): Future[Option[String]] = {
