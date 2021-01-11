@@ -20,11 +20,10 @@
 package org.make.core.proposal
 
 import java.time.ZonedDateTime
-
 import com.sksamuel.avro4s.AvroSortPriority
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.SprayJsonFormatters._
 import org.make.core.idea.IdeaId
@@ -104,6 +103,8 @@ final case class ProposalAction(date: ZonedDateTime, user: UserId, actionType: S
 object ProposalAction {
   implicit val proposalActionFormatter: RootJsonFormat[ProposalAction] =
     DefaultJsonProtocol.jsonFormat4(ProposalAction.apply)
+
+  implicit val codec: Codec[ProposalAction] = deriveCodec
 }
 
 sealed abstract class ProposalActionType(val value: String) extends StringEnumEntry

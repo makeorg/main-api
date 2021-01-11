@@ -24,7 +24,7 @@ import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.MaxSize
-import org.make.core.idea.IdeaId
+import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
 import org.make.core.operation._
 import org.make.core.post.indexed.IndexedPost
 import org.make.core.post.{Post, PostId}
@@ -46,7 +46,7 @@ import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.sequence.SequenceId
-import org.make.core.tag.TagId
+import org.make.core.tag.{Tag, TagDisplay, TagId, TagType, TagTypeId}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext, SlugHelper}
@@ -341,6 +341,46 @@ trait TestUtilsIT {
       summary = summary,
       country = country
     )
+
+  def idea(
+    ideaId: IdeaId,
+    name: String = "idea name",
+    question: Option[String] = None,
+    operationId: Option[OperationId] = None,
+    questionId: Option[QuestionId] = None,
+    status: IdeaStatus = IdeaStatus.Activated,
+    createdAt: Option[ZonedDateTime] = None,
+    updatedAt: Option[ZonedDateTime] = None
+  ): Idea =
+    Idea(
+      ideaId = ideaId,
+      name = name,
+      question = question,
+      operationId = operationId,
+      questionId = questionId,
+      status = status,
+      createdAt = createdAt,
+      updatedAt = updatedAt
+    )
+
+  def tag(
+    tagId: TagId,
+    label: String = "tag label",
+    display: TagDisplay = TagDisplay.Inherit,
+    tagTypeId: TagTypeId = TagType.LEGACY.tagTypeId,
+    weight: Float = 42f,
+    operationId: Option[OperationId] = None,
+    questionId: Option[QuestionId] = None
+  ): Tag = Tag(
+    tagId = tagId,
+    label = label,
+    display = display,
+    tagTypeId = tagTypeId,
+    weight = weight,
+    operationId = operationId,
+    questionId = questionId
+  )
+
 }
 
 object TestUtilsIT extends TestUtilsIT

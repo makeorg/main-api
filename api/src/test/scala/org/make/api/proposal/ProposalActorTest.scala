@@ -20,7 +20,6 @@
 package org.make.api.proposal
 
 import java.time.ZonedDateTime
-
 import akka.actor.{Actor, ActorRef}
 import akka.testkit.TestKit
 import cats.data.NonEmptyList
@@ -39,7 +38,7 @@ import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
 import org.make.core.user.{User, UserId}
-import org.make.core.{DateHelper, RequestContext}
+import org.make.core.{ApplicationName, DateHelper, RequestContext}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -1297,6 +1296,7 @@ class ProposalActorTest extends ShardingActorTest {
 
       expectMsgType[ProposalEnveloppe]
 
+      val dateVisitor = DateHelper.now()
       coordinator ! PatchProposalCommand(
         proposalId,
         UserId("1234"),
@@ -1305,17 +1305,23 @@ class ProposalActorTest extends ShardingActorTest {
             requestId = Some("my-request-id"),
             sessionId = Some(SessionId("session-id")),
             visitorId = Some(VisitorId("visitor-id")),
+            visitorCreatedAt = Some(dateVisitor),
             externalId = Some("external-id"),
             country = Some(Country("BE")),
+            detectedCountry = Some(Country("FR")),
             language = Some(Language("nl")),
-            operation = None /*Some("my-operation")*/, // TODO: use Operation
+            operation = Some(OperationId("my-operation-id")),
             source = Some("my-source"),
             location = Some("my-location"),
             question = Some("my-question"),
             hostname = Some("my-hostname"),
             ipAddress = Some("1.2.3.4"),
             getParameters = Some(Map("parameter" -> "value")),
-            userAgent = Some("my-user-agent")
+            userAgent = Some("my-user-agent"),
+            questionId = Some(QuestionId("my-question-id")),
+            applicationName = Some(ApplicationName.Backoffice),
+            referrer = Some("my-referrer"),
+            customData = Some(Map("my-key-1" -> "my-value-1", "my-key-2" -> "my-value-2"))
           )
         )
         ),
@@ -1330,11 +1336,12 @@ class ProposalActorTest extends ShardingActorTest {
           requestId = "my-request-id",
           sessionId = SessionId("session-id"),
           visitorId = Some(VisitorId("visitor-id")),
+          visitorCreatedAt = Some(dateVisitor),
           externalId = "external-id",
           country = Some(Country("BE")),
-          detectedCountry = None,
+          detectedCountry = Some(Country("FR")),
           language = Some(Language("nl")),
-          operationId = None,
+          operationId = Some(OperationId("my-operation-id")),
           source = Some("my-source"),
           location = Some("my-location"),
           question = Some("my-question"),
@@ -1342,8 +1349,10 @@ class ProposalActorTest extends ShardingActorTest {
           ipAddress = Some("1.2.3.4"),
           getParameters = Some(Map("parameter" -> "value")),
           userAgent = Some("my-user-agent"),
-          applicationName = None,
-          referrer = None
+          questionId = Some(QuestionId("my-question-id")),
+          applicationName = Some(ApplicationName.Backoffice),
+          referrer = Some("my-referrer"),
+          customData = Map("my-key-1" -> "my-value-1", "my-key-2" -> "my-value-2")
         )
       )
     }
@@ -1370,15 +1379,18 @@ class ProposalActorTest extends ShardingActorTest {
         proposalId,
         UserId("1234"),
         PatchProposalRequest(
-          creationContext = None,
           slug = Some("some-custom-slug"),
           content = Some("some content different from the slug"),
           author = Some(UserId("the user id")),
           labels = Some(Seq(LabelId("my-label"))),
           status = Some(Refused),
           refusalReason = Some("I don't want"),
+          tags = Some(Seq(TagId("my-tag"))),
+          questionId = Some(QuestionId("my-question-id")),
+          creationContext = None,
           ideaId = Some(IdeaId("my-idea")),
-          tags = Some(Seq(TagId("my-tag")))
+          operation = Some(OperationId("my-operation-id")),
+          initialProposal = Some(false)
         ),
         RequestContext.empty
       )
@@ -1391,8 +1403,11 @@ class ProposalActorTest extends ShardingActorTest {
       proposal.labels should be(Seq(LabelId("my-label")))
       proposal.status should be(Refused)
       proposal.refusalReason should be(Some("I don't want"))
-      proposal.idea should be(Some(IdeaId("my-idea")))
       proposal.tags should be(Seq(TagId("my-tag")))
+      proposal.questionId should be(Some(QuestionId("my-question-id")))
+      proposal.idea should be(Some(IdeaId("my-idea")))
+      proposal.operation should be(Some(OperationId("my-operation-id")))
+      proposal.initialProposal should be(false)
     }
 
     Scenario("patch other proposal information") {
