@@ -24,7 +24,7 @@ object Dependencies {
   private val akkaVersion = "2.6.10"
   private val akkaHttpVersion = "10.2.2"
   private val alpakkaVersion = "1.1.2"
-  private val nettyVersion = "4.1.55.Final"
+  private val nettyVersion = "4.1.56.Final"
   private val kafkaVersion = "1.1.0"
   private val elastic4sVersion = "6.7.8"
   private val jerseyVersion = "2.32"
@@ -33,11 +33,12 @@ object Dependencies {
   private val circeVersion = "0.13.0"
   val kanelaVersion: String = "1.0.7"
   val swaggerUiVersion: String = "3.20.9"
-  private val refinedVersion: String = "0.9.19"
+  private val refinedVersion: String = "0.9.20"
   private val scalikeVersion = "3.5.0"
   private val staminaVersion: String = "0.1.5+1-74109b8e"
   private val calibanVersion = "0.9.1"
   private val zioVersion = "1.0.1"
+  private val mockitoVersion = "1.16.15"
 
   val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.2"
   val logger: ModuleID = "org.apache.logging.log4j"         % "log4j"            % log4jVersion
@@ -57,7 +58,7 @@ object Dependencies {
   val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion
   val akkaStream: ModuleID = "com.typesafe.akka"          %% "akka-stream-typed"           % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"                   % akkaHttpVersion
-  val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"             % "1.35.2"
+  val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"             % "1.35.3"
   val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "1.2.0")
     .exclude("javax.ws.rs", "jsr311-api")
   val akkaPersistence: ModuleID = "com.typesafe.akka"      %% "akka-persistence-typed" % akkaVersion
@@ -123,7 +124,7 @@ object Dependencies {
   val stamina: ModuleID = "com.scalapenos"    %% "stamina-json" % staminaVersion
   val sprayJson: ModuleID = "io.spray"        %% "spray-json"   % "1.3.5"
   val jsonLenses = "net.virtual-void"         %% "json-lenses"  % "0.6.2"
-  val scalaCheck: ModuleID = "org.scalacheck" %% "scalacheck"   % "1.15.1"
+  val scalaCheck: ModuleID = "org.scalacheck" %% "scalacheck"   % "1.15.2"
 
   val zio: ModuleID = "dev.zio"                           %% "zio"               % zioVersion
   val zioStreams: ModuleID = "dev.zio"                    %% "zio-streams"       % zioVersion
@@ -136,8 +137,8 @@ object Dependencies {
   val scalaTest: ModuleID = "org.scalatest"               %% "scalatest"                % "3.2.3"         % "it,test"
   val scalaTestScalaCheck: ModuleID = "org.scalatestplus" %% "scalacheck-1-15"          % "3.2.3.0"       % "it,test"
   val akkaHttpTest: ModuleID = "com.typesafe.akka"        %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
-  val mockito: ModuleID = "org.mockito"                   %% "mockito-scala"            % "1.16.3"        % "it,test"
-  val mockitoScalatest: ModuleID = "org.mockito"          %% "mockito-scala-scalatest"  % "1.16.3"        % "it,test"
+  val mockito: ModuleID = "org.mockito"                   %% "mockito-scala"            % mockitoVersion  % "it,test"
+  val mockitoScalatest: ModuleID = "org.mockito"          %% "mockito-scala-scalatest"  % mockitoVersion  % "it,test"
   val dockerScalatest: ModuleID = "com.whisk"             %% "docker-testkit-scalatest" % "0.9.9"         % "it"
   val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.9" % "it")
     .exclude("io.netty", "netty-handler")
