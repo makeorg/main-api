@@ -201,6 +201,25 @@ final case class CreationDateAlgorithm(order: SortOrder) extends SortAlgorithm {
     request.sortBy(FieldSort(field = ProposalElasticsearchFieldName.createdAt.field, order = order))
 }
 
+final case class SegmentFirstAlgorithm(segment: String) extends SortAlgorithm {
+  override def sortDefinition(request: SearchRequest): SearchRequest = {
+    val script = s"""${docField(ProposalElasticsearchFieldName.segment)}.value == "$segment" ? 10 : 1"""
+    request.query.map { query =>
+      request.query(
+        functionScoreQuery()
+          .query(query)
+          .functions(
+            scriptScore(Script(script)),
+            gaussianScore(ProposalElasticsearchFieldName.createdAt.field, "now", "7d")
+              .decay(0.8d)
+          )
+          .scoreMode("sum")
+          .boostMode(CombineFunction.Replace)
+      )
+    }.getOrElse(request)
+  }
+}
+
 sealed abstract class AlgorithmSelector(
   val value: String,
   val build: (Int, SortAlgorithmConfiguration) => SortAlgorithm

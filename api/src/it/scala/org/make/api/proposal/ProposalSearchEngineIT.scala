@@ -48,6 +48,7 @@ import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
+import java.util.concurrent.atomic.AtomicLong
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.math.Ordering.Double.TotalOrdering
@@ -96,12 +97,13 @@ class ProposalSearchEngineIT
   )
 
   private val now = DateHelper.now()
+  private val decrementer = new AtomicLong()
   private def newProposal = IndexedProposal(
     id = ProposalId(UUID.randomUUID().toString),
     userId = UserId("user-id"),
     content = "This is a test proposal",
     slug = "this-is-a-test-proposal",
-    createdAt = now,
+    createdAt = now.minusDays(decrementer.incrementAndGet()),
     updatedAt = None,
     votes = Seq(
       IndexedVote
@@ -184,8 +186,8 @@ class ProposalSearchEngineIT
       userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content = "Il faut que mon/ma député(e) fasse la promotion de la permaculture",
       slug = "il-faut-que-mon-ma-depute-fasse-la-promotion-de-la-permaculture",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      createdAt = now.minusDays(49).minusHours(4),
+      updatedAt = Some(now.minusDays(49).minusHours(4)),
       votes = Seq(
         IndexedVote
           .empty(key = VoteKey.Agree)
@@ -258,8 +260,8 @@ class ProposalSearchEngineIT
       userId = UserId("fb600b89-0e04-419a-9f16-4c3311d2c53a"),
       content = "Il faut qu'il/elle interdise les élevages et cultures intensives",
       slug = "il-faut-qu-il-elle-interdise-les-elevages-et-cultures-intensives",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-01T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-01T01:01:01.123Z"))),
+      createdAt = now.minusDays(50),
+      updatedAt = Some(now.minusDays(50)),
       votes = Seq(
         IndexedVote
           .empty(key = VoteKey.Agree)
@@ -332,8 +334,8 @@ class ProposalSearchEngineIT
       userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content = "Il faut qu'il/elle privilégie les petites exploitations agricoles aux fermes usines",
       slug = "il-faut-qu-il-elle-privilegie-les-petites-exploitations-agricoles-aux-fermes-usines",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-03T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-03T01:01:01.123Z"))),
+      createdAt = now.minusDays(48),
+      updatedAt = Some(now.minusDays(48)),
       votes = Seq(
         IndexedVote
           .empty(key = VoteKey.Agree)
@@ -408,8 +410,8 @@ class ProposalSearchEngineIT
         "Il faut qu'il/elle protège notre agriculture locale et donne les moyens aux agriculteurs de vivre de leur métier de production",
       slug =
         "il-faut-qu-il-elle-protege-notre-agriculture-locale-et-donne-les-moyens-aux-agriculteurs-de-vivre-de-leur-metier-de-production",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-04T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-04T01:01:01.123Z"))),
+      createdAt = now.minusDays(47),
+      updatedAt = Some(now.minusDays(47)),
       votes = Seq(
         IndexedVote
           .empty(key = VoteKey.Agree)
@@ -482,8 +484,8 @@ class ProposalSearchEngineIT
       userId = UserId("c0cbad58-b143-492d-8895-1b9c5dbe48bb"),
       content = "Il faut qu'il/elle favorise l'accès à l'alimentation issue de l'agriculture biologique",
       slug = "il-faut-qu-il-elle-favorise-l-acces-a-l-alimentation-issue-de-l-agriculture-biologique",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      createdAt = now.minusDays(49).minusHours(8),
+      updatedAt = Some(now.minusDays(49).minusHours(8)),
       votes = Seq(
         IndexedVote
           .empty(key = VoteKey.Agree)
@@ -558,8 +560,8 @@ class ProposalSearchEngineIT
         "Il faut qu'il/elle dissolve la SAFER et ainsi laisser les petits paysans s'installer, avec des petites exploitations",
       slug =
         "il-faut-qu-il-elle-dissolve-la-SAFER-et-ainsi-laisser-les-petits-paysans-s-installer-avec-des-petites-exploitations",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-01T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-01T01:01:01.123Z"))),
+      createdAt = now.minusDays(50).minusHours(1),
+      updatedAt = Some(now.minusDays(50).minusHours(1)),
       votes = Seq(
         IndexedVote
           .empty(key = VoteKey.Agree)
@@ -632,8 +634,8 @@ class ProposalSearchEngineIT
       userId = UserId("c0cbad58-b143-492d-8895-1b9c5dbe48bb"),
       content = "C'è bisogno lui / lei deve sostenere e difendere l'agricoltura nel mio dipartimento",
       slug = "c-e-bisogno-lui-lei-deve-sostenere-e-difendere-l-agricoltura-nel-mio-dipartimento",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-05T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-05T01:01:01.123Z"))),
+      createdAt = now.minusDays(46),
+      updatedAt = Some(now.minusDays(46)),
       votes = Seq(
         IndexedVote
           .empty(key = VoteKey.Agree)
@@ -706,8 +708,8 @@ class ProposalSearchEngineIT
       userId = UserId("c0cbad58-b143-492d-8895-1b9c5dbe48bb"),
       content = "C'è bisogno lui / lei deve favorire i produttori locali per le mense e i pasti a casa.",
       slug = "c-e-bisogno-lui-lei-deve-favorire-i-produttori-locali-per-le-mense-e-i-pasti-a-casa",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-07T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-07T01:01:01.123Z"))),
+      createdAt = now.minusDays(44),
+      updatedAt = Some(now.minusDays(44)),
       votes = Seq(
         IndexedVote
           .empty(key = VoteKey.Agree)
@@ -785,8 +787,8 @@ class ProposalSearchEngineIT
         "Il faut qu'il/elle favorise l'agriculture qualitative plut\\u00f4t que l'agriculture intensive (plus de pesticides pour plus de rendements)",
       slug =
         "il-faut-qu-il-elle-favorise-l-agriculture-qualitative-plutot-que-l-agriculture-intensive-plus-de-pesticides-pour-plus-de-rendements",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      createdAt = now.minusDays(49).minusHours(1),
+      updatedAt = Some(now.minusDays(49).minusHours(1)),
       votes = Seq(
         IndexedVote
           .empty(key = VoteKey.Agree)
@@ -861,8 +863,8 @@ class ProposalSearchEngineIT
         "Il faut qu'il/elle vote une loi pour obliger l'industrie pharmaceutique d'investir dans la recherche sur les maladies rares",
       slug =
         "il-faut-qu-il-elle-vote-une-loi-pour-obliger-l-industrie-pharmaceutique-d-investir-dans-la-recherche-sur-les-maladies-rares",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      createdAt = now.minusDays(45),
+      updatedAt = Some(now.minusDays(45)),
       votes = Seq(
         IndexedVote
           .empty(key = VoteKey.Agree)
@@ -937,8 +939,8 @@ class ProposalSearchEngineIT
         "Il faut qu'il/elle propose d'interdire aux politiques l'utilisation du big data menant à faire des projets démagogiques",
       slug =
         "il-faut-qu-il-elle-propose-d-interdire-aux-politiques-l-utilisation-du-big-data-menant-a-faire-des-projets-demagogiques",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      createdAt = now.minusDays(49).minusHours(2),
+      updatedAt = Some(now.minusDays(49).minusHours(2)),
       votes = Seq(
         IndexedVote
           .empty(key = VoteKey.Agree)
@@ -1013,8 +1015,8 @@ class ProposalSearchEngineIT
         "Il faut qu'il/elle mette en avant la création de lieux de culture et d'échange, avec quelques petites subventions",
       slug =
         "Il-faut-qu-il-elle-mette-en-avant-la-creation-de-lieux-de-culture-et-d-echange-avec-quelques-petites-subventions",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      createdAt = now.minusDays(49).minusHours(3),
+      updatedAt = Some(now.minusDays(49).minusHours(3)),
       votes = Seq(
         IndexedVote
           .empty(key = VoteKey.Agree)
@@ -1087,8 +1089,8 @@ class ProposalSearchEngineIT
       userId = UserId("463e2937-42f4-4a18-9555-0a962531a55f"),
       content = "Il faut qu'il/elle défende un meilleur accès à la culture et à l'éducation pour tous.",
       slug = "il-faut-qu-il-elle-defende-un-meilleur-acces-a-la-culture-et-a-l-education-pour-tous",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      createdAt = now.minusDays(49).minusHours(5),
+      updatedAt = Some(now.minusDays(49).minusHours(5)),
       votes = Seq(
         IndexedVote
           .empty(key = VoteKey.Agree)
@@ -1161,8 +1163,8 @@ class ProposalSearchEngineIT
       userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content = "Il faut qu'il/elle pratique le mécennat et crée des aides pour les artistes, surtout les jeunes.",
       slug = "il-faut-qu-il-elle-pratique-le-mecennat-et-cree-des-aides-pour-les-artistes-surtout-les-jeunes",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      createdAt = now.minusDays(49).minusHours(6),
+      updatedAt = Some(now.minusDays(49).minusHours(6)),
       votes = Seq(
         IndexedVote
           .empty(key = VoteKey.Agree)
@@ -1236,8 +1238,8 @@ class ProposalSearchEngineIT
       content =
         "C'è bisogno lui / lei deve difendere la Francofonia nel mondo combattendo contro l'egemonia dell'inglese",
       slug = "c'e'bisogno-lui-lei-deve-difendere-la-francofonia-nel-mondo-combattendo-contro-l-egemonia-dell-inglese",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      createdAt = now.minusDays(49).minusHours(7),
+      updatedAt = Some(now.minusDays(49).minusHours(7)),
       votes = Seq(
         IndexedVote
           .empty(key = VoteKey.Agree)
@@ -1445,7 +1447,7 @@ class ProposalSearchEngineIT
 
     Scenario("search proposals by created date") {
 
-      val searchDate: ZonedDateTime = ZonedDateTime.from(dateFormatter.parse("2017-06-04T01:01:01.123Z"))
+      val searchDate: ZonedDateTime = now.minusDays(47)
       val queryBefore: SearchQuery = SearchQuery(
         Some(SearchFilters(createdAt = Some(CreatedAtSearchFilter(before = Some(searchDate), after = None))))
       )
@@ -1579,6 +1581,27 @@ class ProposalSearchEngineIT
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(10.seconds)) { results =>
         results.results.size should be(1)
         results.results.foreach(_.segment should contain("ubik"))
+      }
+    }
+  }
+
+  Feature("segment-first algorithm") {
+    Scenario("segment-first algorithm") {
+      val segment = "ubik"
+      val query = SearchQuery(sortAlgorithm = Some(SegmentFirstAlgorithm(segment)), limit = Some(10))
+
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(10.seconds)) { results =>
+        val proposals = results.results
+
+        val segmentProposals = proposals.takeWhile(_.segment.contains(segment))
+        segmentProposals.size should be >= 1
+        segmentProposals.foreach(_.segment should contain(segment))
+        segmentProposals.sortBy(_.createdAt.toString).reverse should be(segmentProposals)
+
+        val nonSegmentProposals = proposals.dropWhile(_.segment.contains(segment))
+        nonSegmentProposals.size should be >= 1
+        nonSegmentProposals.foreach(_.segment should not contain (segment))
+        nonSegmentProposals.sortBy(_.createdAt.toString).reverse.map(_.id) should be(nonSegmentProposals.map(_.id))
       }
     }
   }
