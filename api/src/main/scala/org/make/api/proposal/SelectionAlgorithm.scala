@@ -95,6 +95,7 @@ object SelectionAlgorithmName extends StringEnum[SelectionAlgorithmName] with St
 
   final case object Bandit extends SelectionAlgorithmName("Bandit")
   final case object RoundRobin extends SelectionAlgorithmName("RoundRobin")
+  final case object Random extends SelectionAlgorithmName("Random")
 
   override def values: IndexedSeq[SelectionAlgorithmName] = findValues
 
@@ -103,6 +104,7 @@ object SelectionAlgorithmName extends StringEnum[SelectionAlgorithmName] with St
 trait SelectionAlgorithmComponent {
   val banditSelectionAlgorithm: SelectionAlgorithm
   val roundRobinSelectionAlgorithm: SelectionAlgorithm
+  val randomSelectionAlgorithm: SelectionAlgorithm
 }
 
 trait SelectionAlgorithm {
@@ -122,6 +124,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
 
   override val banditSelectionAlgorithm: BanditSelectionAlgorithm = new BanditSelectionAlgorithm
   override val roundRobinSelectionAlgorithm: RoundRobinSelectionAlgorithm = new RoundRobinSelectionAlgorithm
+  override val randomSelectionAlgorithm: RandomSelectionAlgorithm = new RandomSelectionAlgorithm
 
   def isSameIdea(ideaOption1: Option[IdeaId], ideaOption2: Option[IdeaId]): Boolean = {
     (ideaOption1, ideaOption2) match {
@@ -507,6 +510,27 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       }
     }
   }
+
+  class RandomSelectionAlgorithm extends SelectionAlgorithm {
+    override def name: SelectionAlgorithmName = SelectionAlgorithmName.Random
+
+    override def selectProposalsForSequence(
+      sequenceConfiguration: SequenceConfiguration,
+      includedProposals: Seq[IndexedProposal],
+      newProposals: Seq[IndexedProposal],
+      testedProposals: Seq[IndexedProposal],
+      votedProposals: Seq[ProposalId],
+      userSegment: Option[String]
+    ): Seq[IndexedProposal] = {
+
+      val excludedIds = votedProposals ++ includedProposals.map(_.id)
+      val candidates = (newProposals ++ testedProposals)
+        .filter(p => !excludedIds.contains(p.id))
+      val shuffled = MakeRandom.shuffleSeq(candidates)
+      includedProposals ++ shuffled.take(sequenceConfiguration.sequenceSize - includedProposals.size)
+    }
+  }
+
 }
 
 object DefaultSelectionAlgorithmComponent {

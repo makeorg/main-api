@@ -78,6 +78,13 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
     selectionAlgorithmName = SelectionAlgorithmName.RoundRobin
   )
 
+  val randomSequenceConfiguration: SequenceConfiguration = SequenceConfiguration(
+    sequenceId = SequenceId("test-sequence-random"),
+    questionId = QuestionId("test-question-random"),
+    sequenceSize = 20,
+    selectionAlgorithmName = SelectionAlgorithmName.Random
+  )
+
   val banditProposalIds: Seq[ProposalId] =
     (1 to banditSequenceConfiguration.sequenceSize).map(i => ProposalId(s"proposal$i"))
   val roundRobinProposalIds: Seq[ProposalId] =
@@ -1428,6 +1435,95 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
 
       selectedProposals.size should be(roundRobinSequenceConfiguration.sequenceSize)
       selectedProposals.toSet should be(testedProposals.take(roundRobinSequenceConfiguration.sequenceSize).toSet)
+    }
+  }
+
+  Feature("random: proposal sampling") {
+    Scenario("no proposal") {
+      val chosen =
+        randomSelectionAlgorithm.selectProposalsForSequence(
+          sequenceConfiguration = randomSequenceConfiguration,
+          includedProposals = Seq.empty,
+          newProposals = Seq.empty,
+          testedProposals = Seq.empty,
+          votedProposals = Seq.empty,
+          userSegment = None
+        )
+      chosen.length should be(0)
+    }
+
+    Scenario("included proposals only") {
+      val proposals = (1 to 5)
+        .map(i => ProposalId(s"included-$i"))
+        .map(id => fakeProposal(id, Map.empty, SequencePool.Tested))
+
+      val selectedProposals =
+        randomSelectionAlgorithm.selectProposalsForSequence(
+          sequenceConfiguration = randomSequenceConfiguration,
+          includedProposals = proposals,
+          newProposals = Seq.empty,
+          testedProposals = Seq.empty,
+          votedProposals = Seq.empty,
+          userSegment = None
+        )
+
+      selectedProposals should be(proposals)
+    }
+
+    Scenario("with voted proposals") {
+
+      val proposals = (1 to 200)
+        .map(i => ProposalId(s"proposal-$i"))
+        .map(id => fakeProposal(id, Map.empty, SequencePool.Tested))
+
+      val votes = proposals.take(5).map(_.id)
+
+      (1 to 200).foreach { _ =>
+        val selectedProposals =
+          randomSelectionAlgorithm.selectProposalsForSequence(
+            sequenceConfiguration = randomSequenceConfiguration,
+            includedProposals = Seq.empty,
+            newProposals = Seq.empty,
+            testedProposals = proposals,
+            votedProposals = votes,
+            userSegment = None
+          )
+
+        selectedProposals.size should be(randomSequenceConfiguration.sequenceSize)
+        val ids = selectedProposals.map(_.id)
+        ids.intersect(votes) should be(empty)
+      }
+    }
+
+    Scenario("with everything") {
+
+      val newProposals = (1 to 20)
+        .map(i => ProposalId(s"new-proposal-$i"))
+        .map(id => fakeProposal(id, Map.empty, SequencePool.Tested))
+
+      val proposals = (1 to 200)
+        .map(i => ProposalId(s"proposal-$i"))
+        .map(id => fakeProposal(id, Map.empty, SequencePool.Tested))
+
+      val votes = proposals.take(5).map(_.id)
+
+      (1 to 200).foreach { _ =>
+        val included = MakeRandom.shuffleSeq(proposals).take(3)
+        val selectedProposals =
+          randomSelectionAlgorithm.selectProposalsForSequence(
+            sequenceConfiguration = randomSequenceConfiguration,
+            includedProposals = included,
+            newProposals = newProposals,
+            testedProposals = proposals,
+            votedProposals = votes,
+            userSegment = None
+          )
+
+        selectedProposals.size should be(randomSequenceConfiguration.sequenceSize)
+        selectedProposals.take(included.size) should be(included)
+        val ids = selectedProposals.map(_.id).drop(included.size)
+        ids.intersect(votes) should be(empty)
+      }
     }
   }
 
