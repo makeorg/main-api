@@ -50,7 +50,7 @@ import org.make.core.operation._
 import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldName, OperationOfQuestionSearchResult}
 import org.make.core.partner.PartnerKind
 import org.make.core.personality.PersonalityRoleId
-import org.make.core.proposal.ProposalId
+import org.make.core.proposal.{ProposalId, QuestionSearchFilter, SearchFilters, SearchQuery, ZoneSearchFilter}
 import org.make.core.proposal.indexed.Zone
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
@@ -339,16 +339,33 @@ trait DefaultQuestionApiComponent
                   ) { partners =>
                     provideAsync(findQuestionsOfOperation(operationOfQuestion.operationId)) { questions =>
                       provideAsync(findActiveFeatureSlugsByQuestionId(question.questionId)) { activeFeatureSlugs =>
-                        complete(
-                          QuestionDetailsResponse(
-                            question,
-                            operation,
-                            operationOfQuestion,
-                            partners,
-                            questions,
-                            activeFeatureSlugs
+                        def zoneCount(zone: Zone) = elasticsearchProposalAPI.countProposals(
+                          SearchQuery(filters = Some(
+                            SearchFilters(
+                              question = Some(QuestionSearchFilter(Seq(question.questionId))),
+                              zone = Some(ZoneSearchFilter(zone))
+                            )
+                          )
                           )
                         )
+                        val futureConsensusCount = zoneCount(Zone.Consensus)
+                        val futureControversyCount = zoneCount(Zone.Controversy)
+                        provideAsync(futureConsensusCount) { consensusCount =>
+                          provideAsync(futureControversyCount) { controversyCount =>
+                            complete(
+                              QuestionDetailsResponse(
+                                question,
+                                operation,
+                                operationOfQuestion,
+                                partners,
+                                questions,
+                                activeFeatureSlugs,
+                                controversyCount,
+                                consensusCount
+                              )
+                            )
+                          }
+                        }
                       }
                     }
                   }
