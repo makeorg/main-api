@@ -33,7 +33,7 @@ trait DockerCassandraService extends DockerBaseTest {
   override val StartContainersTimeout: FiniteDuration = 1.minute
 
   private def cassandraContainer: DockerContainer =
-    DockerContainer(image = "cassandra:3.10", name = Some(getClass.getSimpleName))
+    DockerContainer(image = "cassandra:3.10", name = Some(s"${getClass.getSimpleName}-cassandra"))
       .withPorts(defaultCassandraPort -> Some(cassandraExposedPort))
       .withReadyChecker(DockerReadyChecker.LogLineContains("Starting listening for CQL clients"))
 

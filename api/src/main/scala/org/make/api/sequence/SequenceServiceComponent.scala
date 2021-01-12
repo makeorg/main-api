@@ -189,7 +189,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
 
           searchProposals(
             None,
-            votes ++ selectedProposals.map(_.id),
+            proposalsVoted ++ selectedProposals.map(_.id),
             sequenceConfiguration.sequenceSize - selectedProposals.size,
             sortAlgorithm
           )
