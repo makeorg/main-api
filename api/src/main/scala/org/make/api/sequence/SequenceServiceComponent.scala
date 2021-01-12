@@ -169,6 +169,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             (banditSelectionAlgorithm, newProposals, testedProposals)
           case SelectionAlgorithmName.RoundRobin =>
             (roundRobinSelectionAlgorithm, allNewProposals, allTestedProposals)
+          case SelectionAlgorithmName.Random =>
+            (randomSelectionAlgorithm, allNewProposals, allTestedProposals)
         }
 
         selectedProposals = selectionAlgorithm.selectProposalsForSequence(
@@ -283,7 +285,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
           config =>
             zone match {
               case Some(Zone.Consensus | Zone.Controversy) =>
-                config.copy(selectionAlgorithmName = SelectionAlgorithmName.Bandit)
+                config.copy(selectionAlgorithmName = SelectionAlgorithmName.Random)
               case _ => config
             }
         )
