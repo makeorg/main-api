@@ -116,9 +116,10 @@ import org.make.api.userhistory.{
 import org.make.core.{DefaultDateHelperComponent, RequestContext}
 import org.make.core.job.Job
 import org.make.core.job.Job.JobId
-import org.make.core.proposal.indexed.Zone
-import org.make.core.proposal.{ProposalStatus, SearchFilters, SearchQuery, StatusSearchFilter, VoteKey}
+import org.make.core.proposal.indexed.{SequencePool, Zone}
+import org.make.core.proposal.{Proposal, ProposalStatus, SearchFilters, SearchQuery, StatusSearchFilter, VoteKey}
 import org.make.core.question.QuestionId
+import org.make.core.sequence.SequenceId
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
@@ -232,7 +233,7 @@ class SequenceServiceIT
   when(persistentSequenceConfigurationService.persist(any)).thenReturn(Future.successful(true))
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
   when(sequenceConfigurationService.getSequenceConfigurationByQuestionId(any)).thenAnswer { _: QuestionId =>
-    Future.successful(SequenceConfiguration.default.copy(questionId = questionId))
+    Future.successful(sequenceConfiguration)
   }
 
   override val proposalJournal: MakeReadJournal = new InMemoryReadJournal(
@@ -259,6 +260,8 @@ class SequenceServiceIT
 
   private var questionId: QuestionId = null
   private val requestContext = RequestContext.empty.copy(sessionId = idGenerator.nextSessionId())
+  private def sequenceConfiguration =
+    SequenceConfiguration(sequenceId = SequenceId(questionId.value), questionId = questionId)
 
   override def beforeAll(): Unit = {
 
@@ -318,12 +321,11 @@ class SequenceServiceIT
     reindex()
   }
 
-  private def getZone(proposal: ProposalResponse): Zone =
-    ProposalScorer(
-      whenReady(proposalService.getEventSourcingProposal(proposal.id, RequestContext.empty), Timeout(5.seconds))(_.get).votes,
-      VotesCounter.SequenceVotesCounter,
-      SequenceConfiguration.default.nonSequenceVotesWeight
-    ).zone
+  private def getProposal(proposal: ProposalResponse): Proposal =
+    whenReady(proposalService.getEventSourcingProposal(proposal.id, RequestContext.empty), Timeout(5.seconds))(_.get)
+
+  private def getScorer(proposal: Proposal): ProposalScorer =
+    ProposalScorer(proposal.votes, VotesCounter.SequenceVotesCounter, sequenceConfiguration.nonSequenceVotesWeight)
 
   Feature("Start a sequence") {
     Scenario("no zone") {
@@ -332,7 +334,7 @@ class SequenceServiceIT
         Timeout(60.seconds)
       ) { result =>
         result.proposals.size should be > 0
-        result.proposals.map(getZone).distinct.size should be > 1
+        result.proposals.map(p => getScorer(getProposal(p)).zone).distinct.size should be > 1
         result.proposals.foreach(_.votes.foreach(_.hasVoted shouldBe false))
       }
     }
@@ -343,9 +345,12 @@ class SequenceServiceIT
           Timeout(60.seconds)
         ) { result =>
           result.proposals.size should be > 0
-          result.proposals.foreach { proposal =>
-            getZone(proposal) shouldBe zone
-            proposal.votes.foreach(_.hasVoted shouldBe false)
+          result.proposals.foreach { p =>
+            val proposal = getProposal(p)
+            val scorer = getScorer(proposal)
+            scorer.zone shouldBe zone
+            scorer.pool(sequenceConfiguration, proposal.status) should not be SequencePool.Excluded
+            p.votes.foreach(_.hasVoted shouldBe false)
           }
         }
       }

@@ -284,6 +284,16 @@ trait EntitiesGen extends DateGenerators {
     )
   }
 
+  implicit val arbProposalStatus: Arbitrary[ProposalStatus] = Arbitrary(
+    Gen.frequency(
+      (10, ProposalStatus.Pending),
+      (5, ProposalStatus.Postponed),
+      (70, ProposalStatus.Accepted),
+      (14, ProposalStatus.Refused),
+      (1, ProposalStatus.Archived)
+    )
+  )
+
   def genProposal(question: Question, users: Seq[User], tagsIds: Seq[TagId]): Gen[Proposal] = {
     val maxLength: Option[PosInt] = RefType.applyRef[PosInt](BusinessConfig.defaultProposalMaxLength).toOption
     for {
