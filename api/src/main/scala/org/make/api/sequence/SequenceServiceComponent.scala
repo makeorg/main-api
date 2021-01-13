@@ -144,12 +144,14 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             )
             .map(_.results)
         }
-        allNewProposals <- searchProposals(
-          Some(SequencePool.New),
-          proposalsVoted,
-          sequenceConfiguration.sequenceSize * 3,
-          CreationDateAlgorithm(SortOrder.Asc)
-        )
+        allNewProposals <- if (zone.isEmpty)
+          searchProposals(
+            Some(SequencePool.New),
+            proposalsVoted,
+            sequenceConfiguration.sequenceSize * 3,
+            CreationDateAlgorithm(SortOrder.Asc)
+          )
+        else Future.successful(Nil)
         allTestedProposals <- searchProposals(
           Some(SequencePool.Tested),
           proposalsVoted,
