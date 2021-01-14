@@ -23,7 +23,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import cats.data.NonEmptyList
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import eu.timepit.refined.W
 import eu.timepit.refined.auto._
 import eu.timepit.refined.api.Refined
@@ -228,7 +228,7 @@ trait ModerationOperationOfQuestionApiComponent {
 trait DefaultModerationOperationOfQuestionApiComponent
     extends ModerationOperationOfQuestionApiComponent
     with MakeAuthenticationDirectives
-    with StrictLogging
+    with Logging
     with ParameterExtractors {
 
   this: MakeDataHandlerComponent

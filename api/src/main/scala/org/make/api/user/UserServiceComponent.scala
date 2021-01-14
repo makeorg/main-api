@@ -25,7 +25,7 @@ import java.time.{LocalDate, ZonedDateTime}
 
 import akka.http.scaladsl.model.ContentType
 import com.github.t3hnar.bcrypt._
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
@@ -172,7 +172,7 @@ final case class PersonalityRegisterData(
   politicalParty: Option[String]
 )
 
-trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames with StrictLogging {
+trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames with Logging {
   this: IdGeneratorComponent
     with MakeDataHandlerComponent
     with UserTokenGeneratorComponent
@@ -437,9 +437,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         }
         .getOrElse {
           logger.error(
-            "We couldn't find any email on social login. UserInfo: {}, requestContext: {}",
-            userInfo.toString,
-            requestContext.toString
+            s"We couldn't find any email on social login. UserInfo: $userInfo, requestContext: $requestContext"
           )
           Future
             .failed(ValidationFailedError(Seq(ValidationError("email", "missing", Some("No email found for user")))))

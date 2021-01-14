@@ -21,7 +21,7 @@ package org.make.api.sequence
 
 import akka.pattern.ask
 import akka.util.Timeout
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
@@ -161,7 +161,7 @@ trait SequenceConfigurationComponent {
   val sequenceConfigurationService: SequenceConfigurationService
 }
 
-trait DefaultSequenceConfigurationComponent extends SequenceConfigurationComponent with StrictLogging {
+trait DefaultSequenceConfigurationComponent extends SequenceConfigurationComponent with Logging {
   self: SequenceConfigurationActorComponent =>
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout

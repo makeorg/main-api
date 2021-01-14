@@ -22,7 +22,7 @@ package org.make.api.idea.topIdeaComments
 import java.time.ZonedDateTime
 
 import cats.data.NonEmptyList
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.idea.topIdeaComments.DefaultPersistentTopIdeaCommentServiceComponent.PersistentTopIdeaComment
 import org.make.api.technical.DatabaseTransactions._
@@ -65,7 +65,7 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
   class DefaultPersistentTopIdeaCommentService
       extends PersistentTopIdeaCommentService
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     private val topIdeaCommentAlias = PersistentTopIdeaComment.alias
     private val column = PersistentTopIdeaComment.column
@@ -230,7 +230,7 @@ object DefaultPersistentTopIdeaCommentServiceComponent {
   implicit object PersistentTopIdeaComment
       extends PersistentCompanion[PersistentTopIdeaComment, TopIdeaComment]
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     override val columnNames: Seq[String] =
       Seq(

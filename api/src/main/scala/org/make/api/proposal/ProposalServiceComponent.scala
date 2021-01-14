@@ -25,7 +25,7 @@ import akka.stream.scaladsl.Sink
 import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import eu.timepit.refined.auto._
 import kamon.Kamon
 import kamon.tag.TagSet
@@ -253,7 +253,7 @@ trait ProposalService {
   ): Future[ProposalsResultSeededResponse]
 }
 
-trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with StrictLogging {
+trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with Logging {
   this: ProposalServiceComponent
     with ActorSystemComponent
     with EventBusServiceComponent
@@ -1288,7 +1288,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         }
         .runWith(Sink.ignore)
         .map { res =>
-          logger.info("ResetVotes ended in {} ms", System.currentTimeMillis() - start)
+          val time = System.currentTimeMillis() - start
+          logger.info(s"ResetVotes ended in $time ms")
           res
         }
     }

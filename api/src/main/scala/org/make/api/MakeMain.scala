@@ -31,7 +31,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.pattern.ask
 import com.typesafe.config.{Config, ConfigFactory}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import kamon.Kamon
 import org.make.api.MakeGuardian.Ping
 import org.make.api.extensions.ThreadPoolMonitoringActor.MonitorThreadPool
@@ -47,7 +47,7 @@ import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.jdk.CollectionConverters._
 
 @SuppressWarnings(Array("org.wartremover.warts.While"))
-object MakeMain extends App with StrictLogging with MakeApi {
+object MakeMain extends App with Logging with MakeApi {
 
   Thread.setDefaultUncaughtExceptionHandler { (thread, exception) =>
     logger.error(s"Error in thread ${thread.getName}:", exception)

@@ -20,7 +20,7 @@
 package org.make.api.partner
 
 import cats.data.NonEmptyList
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.partner.DefaultPersistentPartnerServiceComponent.PersistentPartner
 import org.make.api.technical.DatabaseTransactions._
@@ -212,7 +212,7 @@ object DefaultPersistentPartnerServiceComponent {
   implicit object PersistentPartner
       extends PersistentCompanion[PersistentPartner, Partner]
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     override val columnNames: Seq[String] =
       Seq("id", "name", "logo", "link", "organisation_id", "partner_kind", "question_id", "weight")

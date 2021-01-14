@@ -21,7 +21,7 @@ package org.make.api.user
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Url
 import io.circe.refined._
@@ -380,7 +380,7 @@ trait AdminUserApiComponent {
 trait DefaultAdminUserApiComponent
     extends AdminUserApiComponent
     with MakeAuthenticationDirectives
-    with StrictLogging
+    with Logging
     with ParameterExtractors {
 
   this: UserServiceComponent

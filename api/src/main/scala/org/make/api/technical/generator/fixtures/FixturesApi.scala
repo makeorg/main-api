@@ -21,7 +21,7 @@ package org.make.api.technical.generator.fixtures
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
@@ -62,7 +62,7 @@ trait FixturesApiComponent {
   def fixturesApi: FixturesApi
 }
 
-trait DefaultFixturesApiComponent extends FixturesApiComponent with MakeAuthenticationDirectives with StrictLogging {
+trait DefaultFixturesApiComponent extends FixturesApiComponent with MakeAuthenticationDirectives with Logging {
   this: MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent

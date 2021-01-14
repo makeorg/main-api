@@ -21,7 +21,7 @@ package org.make.api.user
 
 import java.time.ZonedDateTime
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
@@ -53,7 +53,7 @@ trait DefaultPersistentUserToAnonymizeServiceComponent extends PersistentUserToA
   class DefaultPersistentUserToAnonymizeService
       extends PersistentUserToAnonymizeService
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     private val userToAnonymizeAlias = PersistentUserToAnonymize.userToAnonymizeAlias
     private val column = PersistentUserToAnonymize.column
@@ -130,7 +130,7 @@ object DefaultPersistentUserToAnonymizeServiceComponent {
   object PersistentUserToAnonymize
       extends SQLSyntaxSupport[PersistentUserToAnonymize]
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     override val columnNames: Seq[String] = Seq("email", "request_date")
 

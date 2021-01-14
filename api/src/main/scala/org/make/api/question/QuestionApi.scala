@@ -22,7 +22,7 @@ package org.make.api.question
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.feature.{ActiveFeatureServiceComponent, FeatureServiceComponent}
@@ -289,7 +289,7 @@ trait DefaultQuestionApiComponent
     extends QuestionApiComponent
     with SequenceServiceComponent
     with MakeAuthenticationDirectives
-    with StrictLogging
+    with Logging
     with ParameterExtractors {
 
   this: QuestionServiceComponent

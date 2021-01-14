@@ -19,7 +19,7 @@
 
 package org.make.api.technical.crm
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.ShortenedNames
 import scalikejdbc.{ResultName, WrappedResultSet, _}
@@ -130,7 +130,7 @@ trait DefaultPersistentCrmUserServiceComponent extends PersistentCrmUserServiceC
   }
 }
 
-object PersistentCrmUser extends SQLSyntaxSupport[PersistentCrmUser] with ShortenedNames with StrictLogging {
+object PersistentCrmUser extends SQLSyntaxSupport[PersistentCrmUser] with ShortenedNames with Logging {
   override val columnNames: Seq[String] =
     Seq(
       "user_id",

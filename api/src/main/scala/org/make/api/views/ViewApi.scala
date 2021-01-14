@@ -21,7 +21,7 @@ package org.make.api.views
 
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -102,7 +102,7 @@ trait DefaultViewApiComponent
     extends ViewApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors
-    with StrictLogging {
+    with Logging {
   this: SessionHistoryCoordinatorServiceComponent
     with IdGeneratorComponent
     with MakeSettingsComponent

@@ -23,7 +23,7 @@ import java.time.ZonedDateTime
 
 import com.sksamuel.avro4s
 import com.sksamuel.avro4s._
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.circe.Decoder._
 import io.circe.{Decoder, DecodingFailure, HCursor}
 import org.apache.avro.Schema
@@ -103,7 +103,7 @@ sealed trait MailJetError extends Product with Serializable {
   def relatedTo: MailJetErrorRelatedTo
   def name: String
 }
-object MailJetError extends StrictLogging {
+object MailJetError extends Logging {
 
   implicit object MailJetErrorAvroEncoder extends Encoder[MailJetError] {
     override def encode(value: MailJetError, schema: Schema, fieldMapper: FieldMapper): String = value.name

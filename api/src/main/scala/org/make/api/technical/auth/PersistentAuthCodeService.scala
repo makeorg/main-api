@@ -20,7 +20,7 @@
 package org.make.api.technical.auth
 import java.time.ZonedDateTime
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.ShortenedNames
 import org.make.core.auth.{AuthCode, ClientId}
@@ -109,7 +109,7 @@ final case class PersistentAuthCode(
     AuthCode(authorizationCode, scope, redirectUri, createdAt, expiresIn, UserId(makeUserUuid), ClientId(clientUuid))
 }
 
-object PersistentAuthCode extends SQLSyntaxSupport[PersistentAuthCode] with ShortenedNames with StrictLogging {
+object PersistentAuthCode extends SQLSyntaxSupport[PersistentAuthCode] with ShortenedNames with Logging {
   override val columnNames: Seq[String] =
     Seq("authorization_code", "scope", "redirect_uri", "created_at", "expires_in", "make_user_uuid", "client_uuid")
 

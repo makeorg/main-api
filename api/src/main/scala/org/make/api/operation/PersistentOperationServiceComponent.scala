@@ -22,7 +22,7 @@ package org.make.api.operation
 import java.time.{LocalDate, ZonedDateTime}
 
 import cats.data.NonEmptyList
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.operation.DefaultPersistentOperationOfQuestionServiceComponent.PersistentOperationOfQuestion
 import org.make.api.operation.DefaultPersistentOperationOfQuestionServiceComponent.PersistentOperationOfQuestion.FlatQuestionWithDetails
@@ -79,7 +79,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
 
   override lazy val persistentOperationService: PersistentOperationService = new DefaultPersistentOperationService
 
-  class DefaultPersistentOperationService extends PersistentOperationService with ShortenedNames with StrictLogging {
+  class DefaultPersistentOperationService extends PersistentOperationService with ShortenedNames with Logging {
 
     private val operationAlias = PersistentOperation.alias
     private val operationOfQuestionAlias = PersistentOperationOfQuestion.alias
@@ -354,7 +354,7 @@ object DefaultPersistentOperationServiceComponent {
   object PersistentOperationAction
       extends SQLSyntaxSupport[PersistentOperationAction]
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     override val columnNames: Seq[String] =
       Seq("operation_uuid", "make_user_uuid", "action_date", "action_type", "arguments")
@@ -386,7 +386,7 @@ object DefaultPersistentOperationServiceComponent {
   implicit object PersistentOperation
       extends PersistentCompanion[PersistentOperation, Operation]
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     override val columnNames: Seq[String] =
       Seq("uuid", "status", "slug", "operation_kind", "created_at", "updated_at")

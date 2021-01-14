@@ -21,7 +21,7 @@ package org.make.api.organisation
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.boolean.And
@@ -132,7 +132,7 @@ trait ModerationOrganisationApiComponent {
 trait DefaultModerationOrganisationApiComponent
     extends ModerationOrganisationApiComponent
     with MakeAuthenticationDirectives
-    with StrictLogging
+    with Logging
     with ParameterExtractors {
   this: OrganisationServiceComponent
     with MakeDataHandlerComponent

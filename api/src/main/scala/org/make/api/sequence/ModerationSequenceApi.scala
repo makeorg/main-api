@@ -19,7 +19,7 @@
 
 package org.make.api.sequence
 import akka.http.scaladsl.server._
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -120,7 +120,7 @@ trait ModerationSequenceApiComponent {
 trait DefaultModerationSequenceApiComponent
     extends ModerationSequenceApiComponent
     with MakeAuthenticationDirectives
-    with StrictLogging {
+    with Logging {
 
   this: SequenceServiceComponent
     with MakeDataHandlerComponent

@@ -21,7 +21,7 @@ package org.make.api.idea
 
 import java.time.ZonedDateTime
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.idea.DefaultPersistentIdeaServiceComponent.PersistentIdea
 import org.make.api.technical.DatabaseTransactions._
@@ -54,7 +54,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
 
   override lazy val persistentIdeaService: PersistentIdeaService = new DefaultPersistentIdeaService
 
-  class DefaultPersistentIdeaService extends PersistentIdeaService with ShortenedNames with StrictLogging {
+  class DefaultPersistentIdeaService extends PersistentIdeaService with ShortenedNames with Logging {
 
     private val ideaAlias = PersistentIdea.ideaAlias
     private val column = PersistentIdea.column
@@ -198,7 +198,7 @@ object DefaultPersistentIdeaServiceComponent {
       )
   }
 
-  object PersistentIdea extends SQLSyntaxSupport[PersistentIdea] with ShortenedNames with StrictLogging {
+  object PersistentIdea extends SQLSyntaxSupport[PersistentIdea] with ShortenedNames with Logging {
 
     override val columnNames: Seq[String] =
       Seq("id", "name", "question_id", "operation_id", "question", "status", "created_at", "updated_at")

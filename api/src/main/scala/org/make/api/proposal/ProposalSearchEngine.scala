@@ -38,7 +38,7 @@ import com.sksamuel.elastic4s.searches.queries.{BoolQuery, ExistsQuery, IdQuery,
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import com.sksamuel.elastic4s.searches.{IncludeExclude, SearchRequest => ElasticSearchRequest}
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.question.{AvatarsAndProposalsCount, PopularTagResponse}
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
 import org.make.core.DateHelper
@@ -111,7 +111,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
   override lazy val elasticsearchProposalAPI: DefaultProposalSearchEngine = new DefaultProposalSearchEngine
 
-  class DefaultProposalSearchEngine extends ProposalSearchEngine with StrictLogging {
+  class DefaultProposalSearchEngine extends ProposalSearchEngine with Logging {
 
     private lazy val client = elasticsearchClient.client
 

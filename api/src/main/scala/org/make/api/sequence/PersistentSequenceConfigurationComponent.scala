@@ -21,7 +21,7 @@ package org.make.api.sequence
 
 import java.time.ZonedDateTime
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.ScalikeSupport._
 import org.make.api.proposal.SelectionAlgorithmName
@@ -56,7 +56,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
   class DefaultPersistentSequenceConfigurationService
       extends PersistentSequenceConfigurationService
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     private val alias = PersistentSequenceConfiguration.alias
     private val column = PersistentSequenceConfiguration.column
@@ -239,7 +239,7 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
   object PersistentSequenceConfiguration
       extends SQLSyntaxSupport[PersistentSequenceConfiguration]
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     override val columnNames: Seq[String] =
       Seq(

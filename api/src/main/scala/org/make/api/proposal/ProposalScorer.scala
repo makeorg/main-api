@@ -19,7 +19,7 @@
 
 package org.make.api.proposal
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.apache.commons.math3.distribution.BetaDistribution
 import org.apache.commons.math3.random.{MersenneTwister, RandomGenerator}
 import org.make.api.proposal.ProposalScorer.{findSmoothing, Score, ScorePart, VotesCounter}
@@ -170,7 +170,7 @@ final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, nonSeque
   * See https://gitlab.com/makeorg/data-science/make-data/-/blob/preproduction/make_data/score_v2.py
   * it defines the computations from the dial.
   */
-object ProposalScorer extends StrictLogging {
+object ProposalScorer extends Logging {
   def apply(votes: Seq[BaseVote], counter: VotesCounter, nonSequenceVotesWeight: Double): ProposalScorer = {
     new ProposalScorer(votes, counter, nonSequenceVotesWeight)
   }

@@ -22,7 +22,7 @@ package org.make.api.technical.elasticsearch
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.idea.{DefaultPersistentIdeaServiceComponent, IdeaSearchEngine, IdeaSearchEngineComponent}
 import org.make.api.operation._
@@ -56,7 +56,7 @@ class IndexationComponentTest
     with DefaultIndexationComponent
     with ElasticsearchConfigurationComponent
     with ElasticsearchClientComponent
-    with StrictLogging
+    with Logging
     with ActorSystemTypedComponent
     with ProposalCoordinatorServiceComponent
     with ReadJournalComponent

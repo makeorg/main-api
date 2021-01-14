@@ -21,7 +21,7 @@ package org.make.api.technical.crm
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.technical.ActorProtocol
 import org.make.api.technical.crm.BasicCrmResponse.ManageContactsWithCsvResponse
 import org.make.api.technical.crm.CrmSynchroCsvMonitor.Protocol.Command
@@ -30,7 +30,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
-object CrmSynchroCsvMonitor extends StrictLogging {
+object CrmSynchroCsvMonitor extends Logging {
 
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def apply(crmClient: CrmClient, promise: Promise[Unit], tickInterval: FiniteDuration)(

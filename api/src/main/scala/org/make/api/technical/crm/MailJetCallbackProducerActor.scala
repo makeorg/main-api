@@ -23,11 +23,11 @@ import java.time.{Instant, ZoneOffset, ZonedDateTime}
 
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.technical.BasicProducerActor
 import org.make.core.{DateHelper, MakeSerializable}
 
-class MailJetCallbackProducerActor extends BasicProducerActor[MailJetEventWrapper, MailJetEvent] with StrictLogging {
+class MailJetCallbackProducerActor extends BasicProducerActor[MailJetEventWrapper, MailJetEvent] with Logging {
   override protected lazy val eventClass: Class[MailJetEvent] = classOf[MailJetEvent]
   override protected lazy val format: RecordFormat[MailJetEventWrapper] = MailJetEventWrapper.recordFormat
   override protected lazy val schema: SchemaFor[MailJetEventWrapper] = MailJetEventWrapper.schemaFor

@@ -27,14 +27,14 @@ import caliban.Value.{EnumValue, StringValue => CalibanString}
 import caliban.introspection.adt.{__EnumValue, __Type, __TypeKind}
 import caliban.schema.{ArgBuilder, PureStep, Schema, Step}
 import caliban.wrappers.Wrapper.OverallWrapper
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import enumeratum.values.{NoSuchMember, StringEnum, StringEnumEntry, ValueEnumEntry}
 import org.make.core.StringValue
 import zio.console.Console
 import zio.query.Request
 import zio.{IO, UIO, ULayer, ZLayer}
 
-object GraphQLUtils extends StrictLogging {
+object GraphQLUtils extends Logging {
   lazy val debugPrint: OverallWrapper[Console] =
     OverallWrapper { process => request =>
       IO.effectTotal(logger.debug(request.toString)) *> process(request)

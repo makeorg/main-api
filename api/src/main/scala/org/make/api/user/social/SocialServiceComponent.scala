@@ -19,7 +19,7 @@
 
 package org.make.api.user.social
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.user.SocialProvider.{Facebook, Google, GooglePeople}
@@ -53,7 +53,7 @@ trait SocialService {
 }
 
 trait DefaultSocialServiceComponent extends SocialServiceComponent {
-  self: UserServiceComponent with MakeDataHandlerComponent with StrictLogging =>
+  self: UserServiceComponent with MakeDataHandlerComponent with Logging =>
 
   override lazy val socialService: SocialService = new DefaultSocialService
 

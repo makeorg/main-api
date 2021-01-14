@@ -27,7 +27,7 @@ import akka.http.scaladsl.server._
 import akka.util.Timeout
 import buildinfo.BuildInfo
 import com.typesafe.config.Config
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport.DecodingFailures
 import enumeratum.NoSuchMember
@@ -285,7 +285,7 @@ trait MakeApi
     with SequenceConfigurationActorComponent
     with SessionHistoryCoordinatorComponent
     with SpawnActorRefComponent
-    with StrictLogging
+    with Logging
     with UserHistoryCoordinatorComponent {
 
   override lazy val proposalCoordinator: ActorRef = Await.result(
@@ -481,7 +481,7 @@ trait MakeApi
       widgetApi.routes)
 }
 
-object MakeApi extends StrictLogging with Directives with ErrorAccumulatingCirceSupport {
+object MakeApi extends Logging with Directives with ErrorAccumulatingCirceSupport {
 
   def defaultError(id: String): String =
     s"""

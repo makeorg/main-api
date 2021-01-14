@@ -31,7 +31,7 @@ import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.{ActorAttributes, OverflowStrategy, QueueOfferResult}
 import cats.data.OptionT
 import cats.instances.future._
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import io.circe._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
@@ -72,7 +72,7 @@ object IndexProposalsWrapper {
   implicit val decoder: Decoder[IndexProposalsWrapper] = deriveDecoder[IndexProposalsWrapper]
 }
 
-trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingCirceSupport with StrictLogging {
+trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingCirceSupport with Logging {
   this: ActorSystemComponent
     with SemanticConfigurationComponent
     with IdeaServiceComponent
@@ -136,7 +136,7 @@ trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingC
           entity = entity
         )
         doHttpCall(request)
-          .map((response: HttpMessage) => logger.debug(s"Indexing response: {}", response))
+          .map((response: HttpMessage) => logger.debug(s"Indexing response: $response"))
       }
     }
 
@@ -149,7 +149,7 @@ trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingC
             entity = entities
           )
           doHttpCall(request)
-            .map((response: HttpMessage) => logger.debug(s"Indexing response: {}", response))
+            .map((response: HttpMessage) => logger.debug(s"Indexing response: $response"))
       }
     }
 

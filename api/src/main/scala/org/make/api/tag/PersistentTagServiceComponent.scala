@@ -22,7 +22,7 @@ package org.make.api.tag
 import java.time.ZonedDateTime
 
 import cats.data.NonEmptyList
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent.PersistentTag
 import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent.PersistentTagType
@@ -80,7 +80,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
 
   override lazy val persistentTagService: PersistentTagService = new DefaultPersistentTagService
 
-  class DefaultPersistentTagService extends PersistentTagService with ShortenedNames with StrictLogging {
+  class DefaultPersistentTagService extends PersistentTagService with ShortenedNames with Logging {
 
     private val tagAlias = PersistentTag.alias
     private val tagTypeAlias = PersistentTagType.tagTypeAlias
@@ -362,7 +362,7 @@ object DefaultPersistentTagServiceComponent {
       )
   }
 
-  implicit object PersistentTag extends PersistentCompanion[PersistentTag, Tag] with ShortenedNames with StrictLogging {
+  implicit object PersistentTag extends PersistentCompanion[PersistentTag, Tag] with ShortenedNames with Logging {
 
     override val columnNames: Seq[String] =
       Seq("id", "label", "display", "tag_type_id", "operation_id", "weight", "created_at", "updated_at", "question_id")

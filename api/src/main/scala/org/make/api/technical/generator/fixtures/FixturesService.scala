@@ -22,7 +22,7 @@ package org.make.api.technical.generator.fixtures
 import java.util.concurrent.Executors
 
 import akka.stream.scaladsl.{Sink, Source}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.ActorSystemComponent
 import org.make.api.operation.{
   CreateOperationOfQuestion,
@@ -66,7 +66,7 @@ trait FixturesServiceComponent {
   def fixturesService: FixturesService
 }
 
-trait DefaultFixturesServiceComponent extends FixturesServiceComponent with StrictLogging {
+trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Logging {
   this: OperationServiceComponent
     with UserServiceComponent
     with QuestionServiceComponent

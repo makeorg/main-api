@@ -19,11 +19,11 @@
 
 package org.make.api.technical
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import kamon.Kamon
 import kamon.instrumentation.http.{HttpMessage, HttpOperationNameGenerator}
 
-class MakeServerOperationNameGenerator extends HttpOperationNameGenerator with StrictLogging {
+class MakeServerOperationNameGenerator extends HttpOperationNameGenerator with Logging {
 
   logger.info("creating make name generator for akka-http")
 

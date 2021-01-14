@@ -24,7 +24,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequ
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.Http
 import akka.stream.scaladsl.{Flow, Source => AkkaSource}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.circe.Encoder
 import io.circe.syntax._
 import org.make.core.StringValue
@@ -35,7 +35,7 @@ import scala.concurrent.duration.DurationInt
 import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
 
-trait SearchEngineIT[Id <: StringValue, T] extends DockerElasticsearchService with StrictLogging { self: Suite =>
+trait SearchEngineIT[Id <: StringValue, T] extends DockerElasticsearchService with Logging { self: Suite =>
 
   def eSIndexName: String
   def eSDocType: String

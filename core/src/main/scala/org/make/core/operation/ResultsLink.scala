@@ -22,7 +22,7 @@ package org.make.core.operation
 import java.net.URL
 
 import cats.Show
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import enumeratum.values.{StringEnum, StringEnumEntry}
 import org.make.core.CirceFormatters
 
@@ -30,7 +30,7 @@ import scala.util.Try
 
 sealed trait ResultsLink extends Product with Serializable
 
-object ResultsLink extends CirceFormatters with StrictLogging {
+object ResultsLink extends CirceFormatters with Logging {
 
   def parse(value: String): Option[ResultsLink] = {
     val result = Internal.withValueOpt(value).orElse(Try(External(new URL(value))).toOption)

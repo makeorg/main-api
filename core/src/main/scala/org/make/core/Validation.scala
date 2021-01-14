@@ -21,7 +21,7 @@ package org.make.core
 
 import java.time.LocalDate
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
@@ -31,7 +31,7 @@ import org.jsoup.safety.{Cleaner, Whitelist}
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
-object Validation extends StrictLogging {
+object Validation extends Logging {
 
   // Taken from https://emailregex.com/ a more simple one might be needed
   val emailRegex: Regex =

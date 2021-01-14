@@ -20,7 +20,7 @@
 package org.make.api.idea
 import java.util.concurrent.Executors
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.proposal.{
   ModerationProposalResponse,
   PatchProposalRequest,
@@ -87,7 +87,7 @@ trait IdeaMappingServiceComponent {
   def ideaMappingService: IdeaMappingService
 }
 
-trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent with StrictLogging {
+trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent with Logging {
   self: PersistentIdeaMappingServiceComponent
     with PersistentIdeaServiceComponent
     with TagServiceComponent

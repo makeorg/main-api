@@ -22,7 +22,7 @@ package org.make.api.technical
 import java.util
 
 import com.sksamuel.avro4s.{DefaultFieldMapper, RecordFormat, SchemaFor}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
 import io.confluent.kafka.serializers.KafkaAvroSerializer
 import org.apache.kafka.common.serialization.Serializer
@@ -31,7 +31,7 @@ import scala.jdk.CollectionConverters._
 
 class MakeKafkaAvroSerializer[T](registryUrl: String, schema: SchemaFor[T], format: RecordFormat[T])
     extends Serializer[T]
-    with StrictLogging {
+    with Logging {
 
   private val identityMapCapacity = 1000
   private val delegate: Serializer[Object] = new KafkaAvroSerializer(

@@ -22,7 +22,7 @@ package org.make.api.user
 import akka.actor.Props
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory._
 import org.make.core.AvroSerializers
@@ -34,7 +34,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
     extends KafkaConsumerActor[UserEventWrapper]
     with ActorEventBusServiceComponent
     with AvroSerializers
-    with StrictLogging {
+    with Logging {
 
   override protected lazy val kafkaTopic: String = UserProducerActor.topicKey
   override protected val format: RecordFormat[UserEventWrapper] = UserEventWrapper.recordFormat

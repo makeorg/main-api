@@ -25,7 +25,7 @@ import cats.implicits._
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.MaxSize
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.question.{PersistentQuestionServiceComponent, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sequence.{PersistentSequenceConfigurationComponent, SequenceConfiguration}
 import org.make.api.technical.IdGeneratorComponent
@@ -109,7 +109,7 @@ trait OperationOfQuestionServiceComponent {
   def operationOfQuestionService: OperationOfQuestionService
 }
 
-trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServiceComponent with StrictLogging {
+trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServiceComponent with Logging {
   this: PersistentQuestionServiceComponent
     with PersistentSequenceConfigurationComponent
     with PersistentOperationOfQuestionServiceComponent

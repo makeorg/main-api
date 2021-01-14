@@ -21,8 +21,8 @@ package org.make.api.proposal
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
+import grizzled.slf4j.Logging
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 
 import javax.ws.rs.Path
@@ -121,7 +121,7 @@ trait AdminProposalApiComponent {
 trait DefaultAdminProposalApiComponent
     extends AdminProposalApiComponent
     with MakeAuthenticationDirectives
-    with StrictLogging
+    with Logging
     with ParameterExtractors {
 
   this: ProposalServiceComponent

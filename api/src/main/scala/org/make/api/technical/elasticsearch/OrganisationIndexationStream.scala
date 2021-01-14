@@ -23,7 +23,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
 import com.sksamuel.elastic4s.IndexAndType
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.organisation.{OrganisationSearchEngine, OrganisationSearchEngineComponent}
 import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.tagtype.PersistentTagTypeServiceComponent
@@ -48,7 +48,7 @@ trait OrganisationIndexationStream
     with PersistentTagTypeServiceComponent
     with UserHistoryCoordinatorServiceComponent
     with ProposalSearchEngineComponent
-    with StrictLogging {
+    with Logging {
   object OrganisationStream {
     def runIndexOrganisations(
       organisationIndexName: String

@@ -21,7 +21,7 @@ package org.make.api.technical.crm
 
 import akka.actor.{Actor, Props}
 import akka.pattern.pipe
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.technical.crm.BasicCrmResponse.ManageManyContactsJobDetailsResponse
 import org.make.api.technical.crm.CrmJobChecker.Protocol.{CrmCallFailed, CrmCallSucceeded, QuotaAvailable, Tick}
 
@@ -32,7 +32,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 class CrmJobChecker(crmClient: CrmClient, jobs: Seq[String], promise: Promise[Unit])(
   implicit executionContext: ExecutionContext
 ) extends Actor
-    with StrictLogging {
+    with Logging {
 
   @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
   private val queue: mutable.Queue[String] = mutable.Queue[String]()

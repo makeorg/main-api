@@ -23,7 +23,7 @@ import java.nio.charset.Charset
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.{Http, HttpExt}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.circe.parser._
 import org.make.api.ActorSystemComponent
 import org.make.api.user.social.models.facebook.{UserInfo => FacebookUserInfo}
@@ -46,7 +46,7 @@ trait DefaultFacebookApiComponent extends FacebookApiComponent {
 
   override lazy val facebookApi: FacebookApi = new DefaultFacebookApi
 
-  class DefaultFacebookApi extends FacebookApi with StrictLogging {
+  class DefaultFacebookApi extends FacebookApi with Logging {
     private val http: HttpExt = Http()
 
     def getUserInfo(accessToken: String): Future[FacebookUserInfo] = {

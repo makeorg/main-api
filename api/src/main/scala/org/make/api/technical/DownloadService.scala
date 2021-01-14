@@ -26,7 +26,7 @@ import akka.http.javadsl.model.headers.Accept
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl.FileIO
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import kamon.annotation.api.Trace
 import org.make.api.ActorSystemComponent
 import org.make.api.technical.ExecutorServiceHelper._
@@ -43,7 +43,7 @@ trait DownloadService {
   def downloadImage(imageUrl: String, destFn: ContentType => File, redirectCount: Int = 0): Future[(ContentType, File)]
 }
 
-trait DefaultDownloadServiceComponent extends DownloadServiceComponent with StrictLogging {
+trait DefaultDownloadServiceComponent extends DownloadServiceComponent with Logging {
   this: ActorSystemComponent =>
 
   override lazy val downloadService: DownloadService = new DefaultDownloadService

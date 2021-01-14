@@ -27,7 +27,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.{ActorAttributes, OverflowStrategy, QueueOfferResult}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import enumeratum.{Enum, EnumEntry}
 import eu.timepit.refined._
@@ -60,10 +60,7 @@ trait WebflowClientComponent {
   def webflowClient: WebflowClient
 }
 
-trait DefaultWebflowClientComponent
-    extends WebflowClientComponent
-    with ErrorAccumulatingCirceSupport
-    with StrictLogging {
+trait DefaultWebflowClientComponent extends WebflowClientComponent with ErrorAccumulatingCirceSupport with Logging {
   self: WebflowConfigurationComponent with ActorSystemComponent =>
 
   override lazy val webflowClient: WebflowClient = new DefaultWebflowClient

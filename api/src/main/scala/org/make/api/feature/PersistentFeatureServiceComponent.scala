@@ -20,7 +20,7 @@
 package org.make.api.feature
 
 import cats.data.NonEmptyList
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.feature.DefaultPersistentFeatureServiceComponent.PersistentFeature
 import org.make.api.technical.DatabaseTransactions._
@@ -60,7 +60,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
 
   override lazy val persistentFeatureService: PersistentFeatureService = new DefaultPersistentFeatureService
 
-  class DefaultPersistentFeatureService extends PersistentFeatureService with ShortenedNames with StrictLogging {
+  class DefaultPersistentFeatureService extends PersistentFeatureService with ShortenedNames with Logging {
 
     private val featureAlias = PersistentFeature.alias
 
@@ -209,7 +209,7 @@ object DefaultPersistentFeatureServiceComponent {
   implicit object PersistentFeature
       extends PersistentCompanion[PersistentFeature, Feature]
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     override val columnNames: Seq[String] = Seq("id", "slug", "name")
 

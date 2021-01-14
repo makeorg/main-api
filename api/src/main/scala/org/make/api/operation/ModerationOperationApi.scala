@@ -21,7 +21,7 @@ package org.make.api.operation
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -132,7 +132,7 @@ trait ModerationOperationApiComponent {
 trait DefaultModerationOperationApiComponent
     extends ModerationOperationApiComponent
     with MakeAuthenticationDirectives
-    with StrictLogging
+    with Logging
     with ParameterExtractors {
 
   this: OperationServiceComponent

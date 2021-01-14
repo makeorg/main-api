@@ -22,7 +22,7 @@ package org.make.api.technical.elasticsearch
 import akka.stream.scaladsl.Flow
 import akka.{Done, NotUsed}
 import com.sksamuel.elastic4s.IndexAndType
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.idea.{IdeaSearchEngine, IdeaSearchEngineComponent, PersistentIdeaServiceComponent}
 import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.tagtype.PersistentTagTypeServiceComponent
@@ -38,7 +38,7 @@ trait IdeaIndexationStream
     with ProposalSearchEngineComponent
     with PersistentIdeaServiceComponent
     with PersistentTagTypeServiceComponent
-    with StrictLogging {
+    with Logging {
   object IdeaStream {
     def runIndexIdeas(ideaIndexName: String): Flow[Seq[Idea], Done, NotUsed] =
       Flow[Seq[Idea]].mapAsync(parallelism)(ideas => executeIndexIdeas(ideas, ideaIndexName))

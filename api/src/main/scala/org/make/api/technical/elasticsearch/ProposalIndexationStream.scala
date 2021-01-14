@@ -26,7 +26,7 @@ import akka.{Done, NotUsed}
 import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.elastic4s.IndexAndType
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
 import org.make.api.organisation.OrganisationServiceComponent
 import org.make.api.proposal.ProposalScorer.VotesCounter
@@ -81,7 +81,7 @@ trait ProposalIndexationStream
     with ProposalSearchEngineComponent
     with SequenceConfigurationComponent
     with SemanticComponent
-    with StrictLogging
+    with Logging
     with SegmentServiceComponent {
 
   object ProposalStream {

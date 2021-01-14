@@ -20,7 +20,7 @@
 package org.make.api.feature
 
 import cats.data.NonEmptyList
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.feature.DefaultPersistentActiveFeatureServiceComponent.PersistentActiveFeature
 import org.make.api.technical.DatabaseTransactions._
@@ -58,10 +58,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
   override lazy val persistentActiveFeatureService: PersistentActiveFeatureService =
     new DefaultPersistentActiveFeatureService
 
-  class DefaultPersistentActiveFeatureService
-      extends PersistentActiveFeatureService
-      with ShortenedNames
-      with StrictLogging {
+  class DefaultPersistentActiveFeatureService extends PersistentActiveFeatureService with ShortenedNames with Logging {
 
     private val activeFeatureAlias = PersistentActiveFeature.alias
 
@@ -165,7 +162,7 @@ object DefaultPersistentActiveFeatureServiceComponent {
   implicit object PersistentActiveFeature
       extends PersistentCompanion[PersistentActiveFeature, ActiveFeature]
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     override val columnNames: Seq[String] = Seq("id", "feature_id", "question_id")
 

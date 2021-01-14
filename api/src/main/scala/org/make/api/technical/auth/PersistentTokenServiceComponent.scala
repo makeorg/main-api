@@ -21,7 +21,7 @@ package org.make.api.technical.auth
 
 import java.time.ZonedDateTime
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
@@ -68,7 +68,7 @@ object PersistentTokenServiceComponent {
     }
   }
 
-  object PersistentToken extends SQLSyntaxSupport[PersistentToken] with ShortenedNames with StrictLogging {
+  object PersistentToken extends SQLSyntaxSupport[PersistentToken] with ShortenedNames with Logging {
 
     override val columnNames: Seq[String] =
       Seq(
@@ -126,7 +126,7 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
 
   override lazy val persistentTokenService: PersistentTokenService = new DefaultPersistentTokenService
 
-  class DefaultPersistentTokenService extends PersistentTokenService with ShortenedNames with StrictLogging {
+  class DefaultPersistentTokenService extends PersistentTokenService with ShortenedNames with Logging {
 
     private val tokenAlias = PersistentToken.tokenAlias
     private val column = PersistentToken.column

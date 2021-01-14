@@ -25,7 +25,7 @@ import java.util.concurrent.{Executors, ThreadPoolExecutor}
 import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.github.t3hnar.bcrypt._
 import com.typesafe.config.Config
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.apache.commons.dbcp2.BasicDataSource
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.MigrationVersion
@@ -41,7 +41,7 @@ import org.make.api.technical.ExecutorServiceHelper._
 class DatabaseConfiguration(override protected val configuration: Config)
     extends Extension
     with ConfigurationSupport
-    with StrictLogging {
+    with Logging {
 
   private val user: String = configuration.getString("database.user")
   private val password: String = configuration.getString("database.password")
