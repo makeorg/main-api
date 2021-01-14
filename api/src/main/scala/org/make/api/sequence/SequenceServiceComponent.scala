@@ -181,7 +181,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
           votedProposals = votes,
           userSegment = maybeSegment
         )
-        fallbackProposals <- if (selectedProposals.size < sequenceConfiguration.sequenceSize) {
+        fallbackProposals <- if (zone.isEmpty && selectedProposals.size < sequenceConfiguration.sequenceSize) {
           logger.warn(
             s"Sequence fallback for user ${requestContext.sessionId.value} and question ${sequenceConfiguration.questionId.value}"
           )

@@ -207,7 +207,7 @@ object VoteKey extends StringEnum[VoteKey] with StringCirceEnum[VoteKey] {
 
 }
 
-sealed abstract class ProposalStatus(val value: String) extends StringEnumEntry
+sealed abstract class ProposalStatus(val value: String) extends StringEnumEntry with Product with Serializable
 
 object ProposalStatus extends StringEnum[ProposalStatus] with StringCirceEnum[ProposalStatus] {
 
