@@ -349,7 +349,7 @@ class SequenceServiceIT
             val proposal = getProposal(p)
             val scorer = getScorer(proposal)
             scorer.zone shouldBe zone
-            scorer.pool(sequenceConfiguration, proposal.status) should not be SequencePool.Excluded
+            scorer.pool(sequenceConfiguration, proposal.status) shouldBe SequencePool.Tested
             p.votes.foreach(_.hasVoted shouldBe false)
           }
         }
