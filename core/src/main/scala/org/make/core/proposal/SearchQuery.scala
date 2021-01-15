@@ -89,7 +89,8 @@ final case class SearchFilters(
   segment: Option[SegmentSearchFilter] = None,
   userTypes: Option[UserTypesSearchFilter] = None,
   zone: Option[ZoneSearchFilter] = None,
-  segmentZone: Option[ZoneSearchFilter] = None
+  segmentZone: Option[ZoneSearchFilter] = None,
+  minScoreLowerBound: Option[MinScoreLowerBoundSearchFilter] = None
 )
 
 object SearchFilters extends ElasticDsl {
@@ -119,7 +120,10 @@ object SearchFilters extends ElasticDsl {
     operationKinds: Option[OperationKindsSearchFilter] = None,
     questionIsOpen: Option[QuestionIsOpenSearchFilter] = None,
     segment: Option[SegmentSearchFilter] = None,
-    userTypes: Option[UserTypesSearchFilter] = None
+    userTypes: Option[UserTypesSearchFilter] = None,
+    zone: Option[ZoneSearchFilter] = None,
+    segmentZone: Option[ZoneSearchFilter] = None,
+    minScoreLowerBound: Option[MinScoreLowerBoundSearchFilter] = None
   ): Option[SearchFilters] = {
 
     Seq[Option[Any]](
@@ -146,7 +150,10 @@ object SearchFilters extends ElasticDsl {
       operationKinds,
       questionIsOpen,
       segment,
-      userTypes
+      userTypes,
+      zone,
+      segmentZone,
+      minScoreLowerBound
     ).flatten match {
       case Seq() => None
       case _ =>
@@ -175,7 +182,10 @@ object SearchFilters extends ElasticDsl {
             operationKinds,
             questionIsOpen,
             segment,
-            userTypes
+            userTypes,
+            zone,
+            segmentZone,
+            minScoreLowerBound
           )
         )
     }
@@ -217,7 +227,8 @@ object SearchFilters extends ElasticDsl {
       buildSegmentSearchFilter(searchQuery.filters),
       buildUserTypesSearchFilter(searchQuery.filters),
       buildSegmentZoneSearchFilter(searchQuery.filters),
-      buildZoneSearchFilter(searchQuery.filters)
+      buildZoneSearchFilter(searchQuery.filters),
+      buildMinScoreLowerBoundSearchFilter(searchQuery.filters)
     ).flatten
 
   def getExcludeFilters(searchQuery: SearchQuery): Seq[Query] = {
@@ -621,6 +632,16 @@ object SearchFilters extends ElasticDsl {
       }
     }
   }
+
+  def buildMinScoreLowerBoundSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
+      _.minScoreLowerBound match {
+        case Some(MinScoreLowerBoundSearchFilter(minLowerBound)) =>
+          Some(ElasticApi.rangeQuery(ProposalElasticsearchFieldName.scoreLowerBound.field).gte(minLowerBound))
+        case _ => None
+      }
+    }
+  }
 }
 
 final case class ProposalSearchFilter(proposalIds: Seq[ProposalId])
@@ -666,10 +687,11 @@ final case class CountrySearchFilter(country: Country)
 final case class LanguageSearchFilter(language: Language)
 final case class MinVotesCountSearchFilter(minVotesCount: Int)
 final case class ToEnrichSearchFilter(toEnrich: Boolean)
-final case class MinScoreSearchFilter(minScore: Float)
+final case class MinScoreSearchFilter(minScore: Double)
 final case class SequencePoolSearchFilter(sequencePool: SequencePool)
 final case class OperationKindsSearchFilter(kinds: Seq[OperationKind])
 final case class QuestionIsOpenSearchFilter(isOpen: Boolean)
 final case class SegmentSearchFilter(segment: String)
 final case class UserTypesSearchFilter(userTypes: Seq[UserType])
 final case class ZoneSearchFilter(zone: Zone)
+final case class MinScoreLowerBoundSearchFilter(minLowerBound: Double)

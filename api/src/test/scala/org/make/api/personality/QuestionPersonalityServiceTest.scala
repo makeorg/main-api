@@ -260,7 +260,8 @@ class QuestionPersonalityServiceTest
                 participantsCount = 84,
                 actions = None,
                 featured = true,
-                status = OperationOfQuestion.Status.Open
+                status = OperationOfQuestion.Status.Open,
+                top20ConsensusThreshold = None
               ),
               IndexedOperationOfQuestion(
                 operationId = OperationId("operation-id-two"),
@@ -286,7 +287,8 @@ class QuestionPersonalityServiceTest
                 participantsCount = 840,
                 actions = None,
                 featured = false,
-                status = OperationOfQuestion.Status.Finished
+                status = OperationOfQuestion.Status.Finished,
+                top20ConsensusThreshold = None
               )
             )
           )
