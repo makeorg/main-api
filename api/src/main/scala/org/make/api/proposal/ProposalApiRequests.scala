@@ -19,10 +19,11 @@
 
 package org.make.api.proposal
 
+import eu.timepit.refined.auto._
 import java.time.ZonedDateTime
-
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
+import io.circe.refined._
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.technical.MakeRandom
 import org.make.core.Validation._
@@ -35,7 +36,15 @@ import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
-import org.make.core.{BusinessConfig, CirceFormatters, FrontConfiguration, Order, RequestContext, Validation}
+import org.make.core.{
+  ApplicationName,
+  BusinessConfig,
+  CirceFormatters,
+  FrontConfiguration,
+  Order,
+  RequestContext,
+  Validation
+}
 
 import scala.annotation.meta.field
 
@@ -353,8 +362,6 @@ object QualificationProposalRequest {
 final case class PatchProposalRequest(
   slug: Option[String] = None,
   content: Option[String] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "2a774774-33ca-41a3-a0fa-65931397fbfc")
-  ideaId: Option[IdeaId] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
   author: Option[UserId] = None,
   @(ApiModelProperty @field)(dataType = "list[string]")
@@ -369,14 +376,19 @@ final case class PatchProposalRequest(
   refusalReason: Option[String] = None,
   @(ApiModelProperty @field)(dataType = "list[string]")
   tags: Option[Seq[TagId]] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
+  questionId: Option[QuestionId] = None,
   creationContext: Option[PatchRequestContext] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "2a774774-33ca-41a3-a0fa-65931397fbfc")
+  ideaId: Option[IdeaId] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
   operation: Option[OperationId] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
-  questionId: Option[QuestionId] = None
+  @(ApiModelProperty @field)(dataType = "boolean")
+  initialProposal: Option[Boolean] = None
 )
 
 object PatchProposalRequest {
+  implicit val encoder: Encoder[PatchProposalRequest] = deriveEncoder[PatchProposalRequest]
   implicit val decoder: Decoder[PatchProposalRequest] = deriveDecoder[PatchProposalRequest]
 }
 
@@ -387,10 +399,14 @@ final case class PatchRequestContext(
   sessionId: Option[SessionId] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "e52d2ac3-a929-43ec-acfa-fb1f486a8c75")
   visitorId: Option[VisitorId] = None,
+  @(ApiModelProperty @field)(dataType = "dateTime")
+  visitorCreatedAt: Option[ZonedDateTime] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "ea3caa65-0bc3-430a-9af9-e8c473730601")
   externalId: Option[String] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Option[Country] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  detectedCountry: Option[Country] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Option[Language] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
@@ -402,10 +418,22 @@ final case class PatchRequestContext(
   @(ApiModelProperty @field)(dataType = "string", example = "0.0.0.0")
   ipAddress: Option[String] = None,
   getParameters: Option[Map[String, String]] = None,
-  userAgent: Option[String] = None
+  userAgent: Option[String] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "f626cabc-d0f1-49ef-aec1-eb8d50c8dda1")
+  questionId: Option[QuestionId] = None,
+  @(ApiModelProperty @field)(
+    dataType = "string",
+    example = "main-front",
+    allowableValues = "main-front,legacy-front,backoffice,widget,widget-manager,dial,bi-batchs,dial-batchs,infra"
+  )
+  applicationName: Option[ApplicationName] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "main-front")
+  referrer: Option[String] = None,
+  customData: Option[Map[String, String]] = None
 )
 
-object PatchRequestContext {
+object PatchRequestContext extends CirceFormatters {
+  implicit val encoder: Encoder[PatchRequestContext] = deriveEncoder[PatchRequestContext]
   implicit val decoder: Decoder[PatchRequestContext] = deriveDecoder[PatchRequestContext]
 }
 

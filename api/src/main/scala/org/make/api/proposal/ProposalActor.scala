@@ -120,34 +120,41 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
             requestId = contextChanges.requestId.getOrElse(proposal.creationContext.requestId),
             sessionId = contextChanges.sessionId.getOrElse(proposal.creationContext.sessionId),
             visitorId = contextChanges.visitorId.orElse(proposal.creationContext.visitorId),
+            visitorCreatedAt = contextChanges.visitorCreatedAt.orElse(proposal.creationContext.visitorCreatedAt),
             externalId = contextChanges.externalId.getOrElse(proposal.creationContext.externalId),
-            country = contextChanges.country.map(Some(_)).getOrElse(proposal.creationContext.country),
-            language = contextChanges.language.map(Some(_)).getOrElse(proposal.creationContext.language),
-            operationId = contextChanges.operation.map(Some(_)).getOrElse(proposal.creationContext.operationId),
-            source = contextChanges.source.map(Some(_)).getOrElse(proposal.creationContext.source),
-            location = contextChanges.location.map(Some(_)).getOrElse(proposal.creationContext.location),
-            question = contextChanges.question.map(Some(_)).getOrElse(proposal.creationContext.question),
-            hostname = contextChanges.hostname.map(Some(_)).getOrElse(proposal.creationContext.hostname),
-            ipAddress = contextChanges.ipAddress.map(Some(_)).getOrElse(proposal.creationContext.ipAddress),
-            getParameters = contextChanges.getParameters.map(Some(_)).getOrElse(proposal.creationContext.getParameters),
-            userAgent = contextChanges.userAgent.map(Some(_)).getOrElse(proposal.creationContext.userAgent)
+            country = contextChanges.country.orElse(proposal.creationContext.country),
+            detectedCountry = contextChanges.detectedCountry.orElse(proposal.creationContext.detectedCountry),
+            language = contextChanges.language.orElse(proposal.creationContext.language),
+            operationId = contextChanges.operation.orElse(proposal.creationContext.operationId),
+            source = contextChanges.source.orElse(proposal.creationContext.source),
+            location = contextChanges.location.orElse(proposal.creationContext.location),
+            question = contextChanges.question.orElse(proposal.creationContext.question),
+            hostname = contextChanges.hostname.orElse(proposal.creationContext.hostname),
+            ipAddress = contextChanges.ipAddress.orElse(proposal.creationContext.ipAddress),
+            getParameters = contextChanges.getParameters.orElse(proposal.creationContext.getParameters),
+            userAgent = contextChanges.userAgent.orElse(proposal.creationContext.userAgent),
+            questionId = contextChanges.questionId.orElse(proposal.creationContext.questionId),
+            applicationName = contextChanges.applicationName.orElse(proposal.creationContext.applicationName),
+            referrer = contextChanges.referrer.orElse(proposal.creationContext.referrer),
+            customData = contextChanges.customData.getOrElse(proposal.creationContext.customData)
           )
         }.getOrElse(proposal.creationContext)
 
       val modifiedProposal =
         proposal.copy(
-          creationContext = modifiedContext,
           slug = changes.slug.getOrElse(proposal.slug),
           content = changes.content.getOrElse(proposal.content),
-          idea = changes.ideaId.map(Some(_)).getOrElse(proposal.idea),
           author = changes.author.getOrElse(proposal.author),
           labels = changes.labels.getOrElse(proposal.labels),
           status = changes.status.getOrElse(proposal.status),
-          refusalReason = changes.refusalReason.map(Some(_)).getOrElse(proposal.refusalReason),
+          refusalReason = changes.refusalReason.orElse(proposal.refusalReason),
           tags = changes.tags.getOrElse(proposal.tags),
-          updatedAt = Some(DateHelper.now()),
+          questionId = changes.questionId.orElse(proposal.questionId),
+          creationContext = modifiedContext,
+          idea = changes.ideaId.orElse(proposal.idea),
           operation = changes.operation.orElse(proposal.operation),
-          questionId = changes.questionId.orElse(proposal.questionId)
+          updatedAt = Some(DateHelper.now()),
+          initialProposal = changes.initialProposal.getOrElse(proposal.initialProposal)
         )
 
       persistAndPublishEvent(

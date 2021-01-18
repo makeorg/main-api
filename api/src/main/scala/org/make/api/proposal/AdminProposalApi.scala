@@ -21,17 +21,23 @@ package org.make.api.proposal
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
+import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.idea.IdeaServiceComponent
+import org.make.api.operation.OperationServiceComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
+import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalId
 import org.make.core.question.Question
-import org.make.core.{DateHelper, HttpCodes, ParameterExtractors}
+import org.make.core.{DateHelper, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -123,7 +129,11 @@ trait DefaultAdminProposalApiComponent
     with QuestionServiceComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent =>
+    with SessionHistoryCoordinatorServiceComponent
+    with IdeaServiceComponent
+    with OperationServiceComponent
+    with UserServiceComponent
+    with TagServiceComponent =>
 
   override lazy val adminProposalApi: AdminProposalApi = new DefaultAdminProposalApi
 
@@ -166,9 +176,65 @@ trait DefaultAdminProposalApiComponent
               requireAdminRole(auth.user) {
                 decodeRequest {
                   entity(as[PatchProposalRequest]) { patch =>
-                    provideAsyncOrNotFound(proposalService.patchProposal(id, auth.user.userId, context, patch)) {
-                      proposal =>
+                    val author = patch.author.traverse(userService.getUser(_)).map(_.flatten)
+                    val ideaId = patch.ideaId.traverse(ideaService.fetchOne(_)).map(_.flatten)
+                    val operation = patch.operation.traverse(operationService.findOneSimple(_)).map(_.flatten)
+                    val questionId = patch.questionId.traverse(questionService.getQuestion(_)).map(_.flatten)
+                    val tags = patch.tags.traverse(tagService.findByTagIds(_).map(_.map(_.tagId)))
+
+                    val validationValue = for {
+                      maybeAuthorId    <- author
+                      maybeIdeaId      <- ideaId
+                      maybeOperationId <- operation
+                      maybeQuestionId  <- questionId
+                      maybeTagIds      <- tags
+                    } yield {
+                      Validation.validateOptional(
+                        patch.author.map(
+                          _ =>
+                            Validation.validateField(
+                              field = "author",
+                              key = "invalid_value",
+                              condition = maybeAuthorId.isDefined,
+                              message = s"UserId ${patch.author} does not exist."
+                            )
+                        ),
+                        patch.ideaId.map(
+                          _ =>
+                            Validation.validateField(
+                              field = "ideaId",
+                              key = "invalid_value",
+                              condition = maybeIdeaId.isDefined,
+                              message = s"Idea ${patch.ideaId} does not exist."
+                            )
+                        ),
+                        patch.operation.map(
+                          _ =>
+                            Validation.validateField(
+                              field = "operation",
+                              key = "invalid_value",
+                              condition = maybeOperationId.isDefined,
+                              message = s"Operation ${patch.operation} does not exist."
+                            )
+                        ),
+                        patch.questionId.map(
+                          _ =>
+                            Validation.validateField(
+                              field = "questionId",
+                              key = "invalid_value",
+                              condition = maybeQuestionId.isDefined,
+                              message = s"Question ${patch.questionId} does not exist."
+                            )
+                        )
+                      )
+                      maybeTagIds
+                    }
+                    provideAsync(validationValue) { maybeTagIds =>
+                      provideAsyncOrNotFound(
+                        proposalService.patchProposal(id, auth.user.userId, context, patch.copy(tags = maybeTagIds))
+                      ) { proposal =>
                         complete(proposal)
+                      }
                     }
                   }
                 }

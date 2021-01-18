@@ -19,8 +19,6 @@
 
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
-
 import akka.Done
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
@@ -29,9 +27,15 @@ import cats.data.NonEmptyList
 import io.circe.syntax._
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.idea.{IdeaService, IdeaServiceComponent}
+import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
+import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.IdGeneratorComponent
+import org.make.api.user.{UserService, UserServiceComponent}
+import org.make.core.idea.IdeaId
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.QualificationKey.{
   DoNotCare,
@@ -48,9 +52,11 @@ import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
+import org.make.core.tag.TagId
 import org.make.core.user.UserId
-import org.make.core.{DateHelper, RequestContext}
+import org.make.core.{DateHelper, RequestContext, ValidationError}
 
+import java.time.ZonedDateTime
 import scala.concurrent.{Future, Promise}
 
 class DefaultAdminProposalApiComponentTest
@@ -61,11 +67,19 @@ class DefaultAdminProposalApiComponentTest
     with QuestionServiceComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent {
+    with SessionHistoryCoordinatorServiceComponent
+    with IdeaServiceComponent
+    with OperationServiceComponent
+    with UserServiceComponent
+    with TagServiceComponent {
 
   override val proposalService: ProposalService = mock[ProposalService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
   override val questionService: QuestionService = mock[QuestionService]
+  override val ideaService: IdeaService = mock[IdeaService]
+  override val operationService: OperationService = mock[OperationService]
+  override val userService: UserService = mock[UserService]
+  override val tagService: TagService = mock[TagService]
 
   val routes: Route = sealRoute(adminProposalApi.routes)
 
@@ -316,6 +330,150 @@ class DefaultAdminProposalApiComponentTest
       Post("/admin/proposals/reset-votes")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.Accepted)
+      }
+    }
+  }
+
+  Feature("patch") {
+    val id = ProposalId("patch-proposal-id")
+    when(proposalService.patchProposal(eqTo(id), any[UserId], any[RequestContext], any[PatchProposalRequest]))
+      .thenReturn(Future.successful(Some(proposal(id))))
+    when(
+      proposalService
+        .patchProposal(eqTo(ProposalId("fake")), any[UserId], any[RequestContext], any[PatchProposalRequest])
+    ).thenReturn(Future.successful(None))
+
+    when(userService.getUser(eqTo(UserId("fake")))).thenReturn(Future.successful(None))
+    when(ideaService.fetchOne(eqTo(IdeaId("fake")))).thenReturn(Future.successful(None))
+    when(operationService.findOneSimple(eqTo(OperationId("fake")))).thenReturn(Future.successful(None))
+    when(questionService.getQuestion(eqTo(QuestionId("fake")))).thenReturn(Future.successful(None))
+
+    val ideaId = IdeaId("idea")
+    val authorId = UserId("author")
+    val operationId = OperationId("operation")
+    val questionId = QuestionId("question")
+    val tags = Seq(TagId("tag-1"), TagId("tag-2"))
+    when(ideaService.fetchOne(eqTo(ideaId))).thenReturn(Future.successful(Some(idea(ideaId))))
+    when(userService.getUser(eqTo(authorId))).thenReturn(Future.successful(Some(user(authorId))))
+    when(operationService.findOneSimple(eqTo(operationId)))
+      .thenReturn(Future.successful(Some(simpleOperation(operationId))))
+    when(questionService.getQuestion(eqTo(questionId))).thenReturn(Future.successful(Some(question(questionId))))
+    when(tagService.findByTagIds(eqTo(tags))).thenReturn(Future.successful(Seq(tag(tags.head), tag(tags(1)))))
+    when(tagService.findByTagIds(eqTo(tags :+ TagId("fake"))))
+      .thenReturn(Future.successful(Seq(tag(tags.head), tag(tags(1)))))
+
+    val validPatch = PatchProposalRequest(
+      ideaId = Some(ideaId),
+      author = Some(authorId),
+      tags = Some(tags),
+      operation = Some(operationId),
+      questionId = Some(questionId)
+    )
+
+    Scenario("unauthorized user") {
+      Patch("/admin/proposals/patch-proposal-id") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    Scenario("forbidden citizen") {
+      Patch("/admin/proposals/patch-proposal-id")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("forbidden moderator") {
+      Patch("/admin/proposals/patch-proposal-id")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("allowed admin") {
+      Patch("/admin/proposals/patch-proposal-id")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, validPatch.asJson.toString)) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+
+    Scenario("proposal does not exist") {
+      Patch("/admin/proposals/fake")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, validPatch.asJson.toString)) ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+
+    Scenario("idea does not exist") {
+      Patch("/admin/proposals/patch-proposal-id")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, validPatch.copy(ideaId = Some(IdeaId("fake"))).asJson.toString)
+        ) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size shouldBe 1
+        errors.head.field shouldBe "ideaId"
+      }
+    }
+
+    Scenario("author does not exist") {
+      Patch("/admin/proposals/patch-proposal-id")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, validPatch.copy(author = Some(UserId("fake"))).asJson.toString)
+        ) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size shouldBe 1
+        errors.head.field shouldBe "author"
+      }
+    }
+
+    Scenario("operation does not exist") {
+      Patch("/admin/proposals/patch-proposal-id")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            validPatch.copy(operation = Some(OperationId("fake"))).asJson.toString
+          )
+        ) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size shouldBe 1
+        errors.head.field shouldBe "operation"
+      }
+    }
+
+    Scenario("question does not exist") {
+      Patch("/admin/proposals/patch-proposal-id")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            validPatch.copy(questionId = Some(QuestionId("fake"))).asJson.toString
+          )
+        ) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size shouldBe 1
+        errors.head.field shouldBe "questionId"
+      }
+    }
+
+    Scenario("ok even if a tag does not exist") {
+      Patch("/admin/proposals/patch-proposal-id")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            validPatch.copy(tags = Some(tags :+ TagId("fake"))).asJson.toString
+          )
+        ) ~> routes ~> check {
+        status should be(StatusCodes.OK)
       }
     }
   }
