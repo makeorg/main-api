@@ -155,42 +155,41 @@ trait MakeDirectives
     }
   }
 
-  def addMaybeRefreshedSecureCookie(tokenRefreshed: Option[Token]): Directive0 = {
-    respondWithDefaultHeaders {
+  def addMaybeRefreshedSecureCookie(
+    applicationName: Option[ApplicationName],
+    tokenRefreshed: Option[Token]
+  ): Directive0 = {
+    addDefaultCookies(
+      applicationName,
       Seq(
         tokenRefreshed.map(
           token =>
-            `Set-Cookie`(
-              HttpCookie(
-                name = makeSettings.SecureCookie.name,
-                value = token.accessToken,
-                secure = makeSettings.SecureCookie.isSecure,
-                httpOnly = true,
-                // In order to have auto-refresh work we need to keep this cookie until the refresh token expires
-                // Since the refresh is not mandatory, we need to take the one with the longest lifetime
-                maxAge = Some(Math.max(token.refreshExpiresIn, token.expiresIn)),
-                path = Some("/"),
-                domain = Some(makeSettings.SecureCookie.domain)
-              )
+            HttpCookie(
+              name = makeSettings.SecureCookie.name,
+              value = token.accessToken,
+              secure = makeSettings.SecureCookie.isSecure,
+              httpOnly = true,
+              // In order to have auto-refresh work we need to keep this cookie until the refresh token expires
+              // Since the refresh is not mandatory, we need to take the one with the longest lifetime
+              maxAge = Some(Math.max(token.refreshExpiresIn, token.expiresIn)),
+              path = Some("/"),
+              domain = Some(makeSettings.SecureCookie.domain)
             )
         ),
         tokenRefreshed.map(
           token =>
-            `Set-Cookie`(
-              HttpCookie(
-                name = makeSettings.SecureCookie.expirationName,
-                value =
-                  DateHelper.format(token.createdAt.getOrElse(DateHelper.now()).plusSeconds(token.refreshExpiresIn)),
-                secure = makeSettings.SecureCookie.isSecure,
-                httpOnly = false,
-                maxAge = Some(365.days.toSeconds),
-                path = Some("/"),
-                domain = Some(makeSettings.SecureCookie.domain)
-              )
+            HttpCookie(
+              name = makeSettings.SecureCookie.expirationName,
+              value = DateHelper.format(token.createdAt.getOrElse(DateHelper.now()).plusSeconds(token.refreshExpiresIn)),
+              secure = makeSettings.SecureCookie.isSecure,
+              httpOnly = false,
+              maxAge = Some(365.days.toSeconds),
+              path = Some("/"),
+              domain = Some(makeSettings.SecureCookie.domain)
             )
         )
-      ).collect { case Some(setCookie) => setCookie }
-    }
+      ).collect { case Some(cookie) => cookie }
+    )
   }
 
   def addCorsHeaders(origin: Option[String]): Directive0 = {
@@ -200,6 +199,7 @@ trait MakeDirectives
   }
 
   def addMakeHeaders(
+    applicationName: Option[ApplicationName],
     requestId: String,
     routeName: String,
     sessionId: String,
@@ -208,9 +208,9 @@ trait MakeDirectives
     startTime: Long,
     externalId: String
   ): Directive0 = {
+    val sessionExpirationDate =
+      DateHelper.format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds))
     respondWithDefaultHeaders {
-      val sessionExpirationDate =
-        DateHelper.format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds))
       Seq[HttpHeader](
         `X-Route-Time`(startTime),
         `X-Request-Id`(requestId),
@@ -219,8 +219,12 @@ trait MakeDirectives
         `X-Session-Id`(sessionId),
         `X-Session-Id-Expiration`(sessionExpirationDate),
         `X-Visitor-Id`(visitorId),
-        `X-Visitor-CreatedAt`(DateHelper.format(visitorCreatedAt)),
-        `Set-Cookie`(
+        `X-Visitor-CreatedAt`(DateHelper.format(visitorCreatedAt))
+      )
+    }.tflatMap { _ =>
+      addDefaultCookies(
+        applicationName,
+        Seq(
           HttpCookie(
             name = makeSettings.SessionCookie.name,
             value = sessionId,
@@ -229,9 +233,7 @@ trait MakeDirectives
             maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
             path = Some("/"),
             domain = Some(makeSettings.SessionCookie.domain)
-          )
-        ),
-        `Set-Cookie`(
+          ),
           HttpCookie(
             name = makeSettings.SessionCookie.expirationName,
             value = sessionExpirationDate,
@@ -240,9 +242,7 @@ trait MakeDirectives
             maxAge = None,
             path = Some("/"),
             domain = Some(makeSettings.SessionCookie.domain)
-          )
-        ),
-        `Set-Cookie`(
+          ),
           HttpCookie(
             name = makeSettings.VisitorCookie.name,
             value = visitorId,
@@ -251,9 +251,7 @@ trait MakeDirectives
             maxAge = Some(365.days.toSeconds),
             path = Some("/"),
             domain = Some(makeSettings.VisitorCookie.domain)
-          )
-        ),
-        `Set-Cookie`(
+          ),
           HttpCookie(
             name = makeSettings.VisitorCookie.createdAtName,
             value = DateHelper.format(visitorCreatedAt),
@@ -333,7 +331,10 @@ trait MakeDirectives
       visitorCreatedAt <- visitorCreatedAt
       externalId       <- optionalNonEmptyHeaderValueByName(`X-Make-External-Id`.name).map(_.getOrElse(requestId))
       currentSessionId <- getCurrentSessionId
+      maybeApplicationName <- optionalNonEmptyHeaderValueByName(`X-Make-App-Name`.name)
+        .map(_.flatMap(ApplicationName.withValueOpt))
       _ <- addMakeHeaders(
+        maybeApplicationName,
         requestId,
         slugifiedName,
         currentSessionId.value,
@@ -345,7 +346,7 @@ trait MakeDirectives
       _                    <- handleExceptions(MakeApi.exceptionHandler(slugifiedName, requestId))
       _                    <- handleRejections(MakeApi.rejectionHandler)
       maybeTokenRefreshed  <- makeTriggerAuthRefreshFromCookie()
-      _                    <- addMaybeRefreshedSecureCookie(maybeTokenRefreshed)
+      _                    <- addMaybeRefreshedSecureCookie(maybeApplicationName, maybeTokenRefreshed)
       _                    <- makeAuthCookieHandlers(maybeTokenRefreshed)
       maybeIpAddress       <- extractClientIP
       maybeUser            <- optionalMakeOAuth2
@@ -362,7 +363,6 @@ trait MakeDirectives
       maybeHostName        <- optionalNonEmptyHeaderValueByName(`X-Hostname`.name)
       maybeGetParameters   <- optionalNonEmptyHeaderValueByName(`X-Get-Parameters`.name)
       maybeQuestionId      <- optionalNonEmptyHeaderValueByName(`X-Make-Question-Id`.name)
-      maybeApplicationName <- optionalNonEmptyHeaderValueByName(`X-Make-App-Name`.name)
       maybeReferrer        <- optionalNonEmptyHeaderValueByName(`X-Make-Referrer`.name)
       maybeCustomData      <- optionalNonEmptyHeaderValueByName(`X-Make-Custom-Data`.name)
     } yield {
@@ -394,7 +394,7 @@ trait MakeDirectives
         ),
         userAgent = maybeUserAgent,
         questionId = maybeQuestionId.map(QuestionId.apply),
-        applicationName = maybeApplicationName.flatMap(ApplicationName.withValueOpt),
+        applicationName = maybeApplicationName,
         referrer = maybeReferrer,
         customData = maybeCustomData
           .map(
@@ -525,56 +525,71 @@ trait MakeDirectives
     }
   }
 
-  def setMakeSecure(token: TokenResponse, userId: UserId): Directive0 = {
+  def setMakeSecure(applicationName: Option[ApplicationName], token: TokenResponse, userId: UserId): Directive0 = {
+    var alreadySet = false
     mapResponseHeaders { responseHeaders =>
-      if (responseHeaders.exists {
-            case `Set-Cookie`(cookie) => cookie.name == makeSettings.SecureCookie.name
-            case _                    => false
-          }) {
-        responseHeaders
-      } else {
-        responseHeaders ++ Seq(
-          `Set-Cookie`(
-            HttpCookie(
-              name = makeSettings.SecureCookie.name,
-              value = token.accessToken,
-              secure = makeSettings.SecureCookie.isSecure,
-              httpOnly = true,
-              // In order to have auto-refresh work we need to keep this cookie until the refresh token expires
-              // Since the refresh is not mandatory, we need to take the one with the longest lifetime
-              maxAge = Some(Math.max(token.refreshExpiresIn.getOrElse(token.expiresIn), token.expiresIn)),
-              path = Some("/"),
-              domain = Some(makeSettings.SecureCookie.domain)
-            )
+      alreadySet = responseHeaders.exists {
+        case `Set-Cookie`(cookie) => cookie.name == makeSettings.SecureCookie.name
+        case _                    => false
+      }
+      responseHeaders
+    }
+    if (!alreadySet) {
+      addCookies(
+        applicationName,
+        Seq(
+          HttpCookie(
+            name = makeSettings.SecureCookie.name,
+            value = token.accessToken,
+            secure = makeSettings.SecureCookie.isSecure,
+            httpOnly = true,
+            // In order to have auto-refresh work we need to keep this cookie until the refresh token expires
+            // Since the refresh is not mandatory, we need to take the one with the longest lifetime
+            maxAge = Some(Math.max(token.refreshExpiresIn.getOrElse(token.expiresIn), token.expiresIn)),
+            path = Some("/"),
+            domain = Some(makeSettings.SecureCookie.domain)
           ),
-          `Set-Cookie`(
-            HttpCookie(
-              name = makeSettings.SecureCookie.expirationName,
-              value = DateHelper.format(
-                ZonedDateTime
-                  .parse(token.createdAt)
-                  .plusSeconds(token.refreshExpiresIn.getOrElse(token.expiresIn))
-              ),
-              secure = makeSettings.SecureCookie.isSecure,
-              httpOnly = false,
-              maxAge = Some(365.days.toSeconds),
-              path = Some("/"),
-              domain = Some(makeSettings.SecureCookie.domain)
-            )
+          HttpCookie(
+            name = makeSettings.SecureCookie.expirationName,
+            value = DateHelper.format(
+              ZonedDateTime
+                .parse(token.createdAt)
+                .plusSeconds(token.refreshExpiresIn.getOrElse(token.expiresIn))
+            ),
+            secure = makeSettings.SecureCookie.isSecure,
+            httpOnly = false,
+            maxAge = Some(365.days.toSeconds),
+            path = Some("/"),
+            domain = Some(makeSettings.SecureCookie.domain)
           ),
-          `Set-Cookie`(
-            HttpCookie(
-              name = makeSettings.UserIdCookie.name,
-              value = userId.value,
-              secure = makeSettings.UserIdCookie.isSecure,
-              httpOnly = true,
-              maxAge = Some(365.days.toSeconds),
-              path = Some("/"),
-              domain = Some(makeSettings.UserIdCookie.domain)
-            )
+          HttpCookie(
+            name = makeSettings.UserIdCookie.name,
+            value = userId.value,
+            secure = makeSettings.UserIdCookie.isSecure,
+            httpOnly = true,
+            maxAge = Some(365.days.toSeconds),
+            path = Some("/"),
+            domain = Some(makeSettings.UserIdCookie.domain)
           )
         )
-      }
+      )
+    } else {
+      Directive.Empty
+    }
+  }
+
+  val addCookies: (Option[ApplicationName], Seq[HttpCookie]) => Directive0 =
+    addCookiesHeaders(respondWithHeaders)
+
+  val addDefaultCookies: (Option[ApplicationName], Seq[HttpCookie]) => Directive0 =
+    addCookiesHeaders(respondWithDefaultHeaders)
+
+  private def addCookiesHeaders(
+    f: Seq[HttpHeader] => Directive0
+  ): (Option[ApplicationName], Seq[HttpCookie]) => Directive0 = { (applicationName, cookies) =>
+    applicationName match {
+      case Some(ApplicationName.Backoffice | ApplicationName.Widget) => Directive.Empty
+      case _                                                         => f(cookies.map(`Set-Cookie`.apply))
     }
   }
 

@@ -32,7 +32,7 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth._
 import org.make.core.auth.{ClientId, Token, UserRights}
 import org.make.core.user.{Role, UserId}
-import org.make.core.{DateHelper, RequestContext}
+import org.make.core.{ApplicationName, DateHelper, RequestContext}
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
@@ -637,6 +637,32 @@ class MakeDirectivesTest
       Get("/test").withHeaders(Authorization(OAuth2BearerToken("token"))) ~> optionalTokenRoute ~> check {
         status should be(StatusCodes.OK)
         responseAs[String] should be("token")
+      }
+    }
+  }
+
+  Feature("cookieless navigation") {
+    val cookieless = Seq(ApplicationName.Backoffice, ApplicationName.Widget)
+    for (app <- cookieless) {
+      Scenario(s"cookieless $app") {
+        Get("/test").withHeaders(`X-Make-App-Name`(app.value)) ~> route ~> check {
+          status should be(StatusCodes.OK)
+          headers.count(_.is(`Set-Cookie`.lowercaseName)) shouldBe 0
+        }
+      }
+    }
+    for (app <- ApplicationName.values.toSet -- cookieless) {
+      Scenario(s"cookiefull $app") {
+        Get("/test").withHeaders(`X-Make-App-Name`(app.value)) ~> route ~> check {
+          status should be(StatusCodes.OK)
+          headers.count(_.is(`Set-Cookie`.lowercaseName)) should be > 0
+        }
+      }
+    }
+    Scenario("cookiefull unknown application") {
+      Get("/test") ~> route ~> check {
+        status should be(StatusCodes.OK)
+        headers.count(_.is(`Set-Cookie`.lowercaseName)) should be > 0
       }
     }
   }
