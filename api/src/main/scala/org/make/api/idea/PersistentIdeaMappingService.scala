@@ -19,7 +19,7 @@
 
 package org.make.api.idea
 import cats.data.NonEmptyList
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.idea.DefaultPersistentIdeaMappingServiceComponent.PersistentIdeaMapping
 import org.make.api.technical.DatabaseTransactions.RichDatabase
@@ -66,7 +66,7 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
 
   override lazy val persistentIdeaMappingService: PersistentIdeaMappingService = new DefaultPersistentIdeaMappingService
 
-  class DefaultPersistentIdeaMappingService extends PersistentIdeaMappingService with StrictLogging {
+  class DefaultPersistentIdeaMappingService extends PersistentIdeaMappingService with Logging {
     override def persist(mapping: IdeaMapping): Future[IdeaMapping] = {
       implicit val context: EC = writeExecutionContext
       Future(NamedDB("WRITE").retryableTx { implicit session =>
@@ -201,7 +201,7 @@ object DefaultPersistentIdeaMappingServiceComponent {
   implicit object PersistentIdeaMapping
       extends PersistentCompanion[PersistentIdeaMapping, IdeaMapping]
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     override val columnNames: Seq[String] = Seq("id", "question_id", "stake_tag_id", "solution_type_tag_id", "idea_id")
     override val tableName: String = "idea_mapping"

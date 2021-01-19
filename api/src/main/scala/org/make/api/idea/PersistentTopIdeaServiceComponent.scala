@@ -20,7 +20,7 @@
 package org.make.api.idea
 
 import cats.data.NonEmptyList
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.idea.DefaultPersistentTopIdeaServiceComponent.PersistentTopIdea
 import org.make.api.technical.DatabaseTransactions._
@@ -61,7 +61,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
 
   override lazy val persistentTopIdeaService: PersistentTopIdeaService = new DefaultPersistentTopIdeaService
 
-  class DefaultPersistentTopIdeaService extends PersistentTopIdeaService with ShortenedNames with StrictLogging {
+  class DefaultPersistentTopIdeaService extends PersistentTopIdeaService with ShortenedNames with Logging {
 
     private val topIdeaAlias = PersistentTopIdea.alias
     private val column = PersistentTopIdea.column
@@ -227,7 +227,7 @@ object DefaultPersistentTopIdeaServiceComponent {
   implicit object PersistentTopIdea
       extends PersistentCompanion[PersistentTopIdea, TopIdea]
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     override val columnNames: Seq[String] =
       Seq(

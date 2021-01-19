@@ -24,7 +24,7 @@ import java.time.ZonedDateTime
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
@@ -384,7 +384,7 @@ trait ModerationProposalApiComponent {
 trait DefaultModerationProposalApiComponent
     extends ModerationProposalApiComponent
     with MakeAuthenticationDirectives
-    with StrictLogging
+    with Logging
     with ParameterExtractors {
   this: ProposalServiceComponent
     with MakeDataHandlerComponent
@@ -801,7 +801,9 @@ trait DefaultModerationProposalApiComponent
                             changes.proposalIds.map(_.value).diff(updatedProposals.map(_.proposalId.value))
                           if (proposalIdsDiff.nonEmpty) {
                             logger
-                              .warn("Some proposals are not updated during change idea operation: {}", proposalIdsDiff)
+                              .warn(
+                                s"Some proposals are not updated during change idea operation: ${proposalIdsDiff.mkString(", ")}"
+                              )
                           }
                           complete(StatusCodes.NoContent)
                         }

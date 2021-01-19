@@ -29,7 +29,7 @@ import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.string
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{FileIO, Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.{ActorAttributes, OverflowStrategy, QueueOfferResult}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import io.circe.syntax._
 import io.circe.{Decoder, Printer}
@@ -82,7 +82,7 @@ trait CrmClientComponent {
   def crmClient: CrmClient
 }
 
-trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatingCirceSupport with StrictLogging {
+trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatingCirceSupport with Logging {
   self: MailJetConfigurationComponent with ActorSystemComponent =>
 
   override lazy val crmClient: CrmClient = new DefaultCrmClient

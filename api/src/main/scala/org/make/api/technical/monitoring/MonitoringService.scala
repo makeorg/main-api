@@ -18,7 +18,7 @@
  */
 
 package org.make.api.technical.monitoring
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import kamon.Kamon
 import kamon.metric.{DynamicRange, Histogram, MeasurementUnit}
 import kamon.tag.TagSet
@@ -39,7 +39,7 @@ final case class HistogramName(applicationName: String, metricName: String) {
   def fullMetricName: String = s"loadtime.$applicationName.$metricName"
 }
 
-trait DefaultMonitoringService extends MonitoringServiceComponent with StrictLogging {
+trait DefaultMonitoringService extends MonitoringServiceComponent with Logging {
   override lazy val monitoringService: MonitoringService = new DefaultMonitoringService
 
   class DefaultMonitoringService extends MonitoringService {

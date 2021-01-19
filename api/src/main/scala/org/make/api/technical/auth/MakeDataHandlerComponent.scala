@@ -23,7 +23,7 @@ import java.util.Date
 import java.util.concurrent.TimeUnit
 
 import com.google.common.cache.{Cache, CacheBuilder}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandler.{CreatedAtParameter, RefreshTokenExpirationParameter}
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
@@ -64,7 +64,7 @@ object MakeDataHandler {
   }
 }
 
-trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with StrictLogging with ShortenedNames {
+trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Logging with ShortenedNames {
   this: PersistentTokenServiceComponent
     with PersistentUserServiceComponent
     with ClientServiceComponent

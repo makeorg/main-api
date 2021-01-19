@@ -19,7 +19,7 @@
 
 package org.make.api
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.mockito.scalatest.MockitoSugar
@@ -32,7 +32,7 @@ trait MakeUnitTest
     with GivenWhenThen
     with MockitoSugar
     with Matchers
-    with StrictLogging
+    with Logging
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with ScalaFutures

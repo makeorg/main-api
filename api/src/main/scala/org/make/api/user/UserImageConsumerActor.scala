@@ -24,7 +24,7 @@ import java.util.Properties
 import akka.actor.Props
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory._
@@ -37,7 +37,7 @@ class UserImageConsumerActor(userService: UserService)
     extends KafkaConsumerActor[UserEventWrapper]
     with ActorEventBusServiceComponent
     with AvroSerializers
-    with StrictLogging {
+    with Logging {
 
   override protected lazy val kafkaTopic: String = UserProducerActor.topicKey
   override protected val format: RecordFormat[UserEventWrapper] = UserEventWrapper.recordFormat

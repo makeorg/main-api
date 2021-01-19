@@ -21,7 +21,7 @@ package org.make.api.technical.auth
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
@@ -140,7 +140,7 @@ trait DefaultAdminClientApiComponent
     extends AdminClientApiComponent
     with MakeDirectives
     with MakeAuthenticationDirectives
-    with StrictLogging
+    with Logging
     with ParameterExtractors {
   self: MakeDataHandlerComponent
     with IdGeneratorComponent

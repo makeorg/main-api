@@ -22,7 +22,7 @@ package org.make.api.technical.tracking
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCode, StatusCodes}
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
-import com.typesafe.scalalogging.Logger
+import grizzled.slf4j.Logger
 import org.make.api.MakeApiTestBase
 import org.make.api.technical._
 import org.make.api.technical.monitoring.{MonitoringService, MonitoringServiceComponent}
@@ -41,7 +41,7 @@ class TrackingApiTest
   private val underlying = mock[Underlying]
   when(underlying.isWarnEnabled).thenReturn(true)
   doNothing.when(underlying).warn(any)
-  override val logger: Logger = Logger(underlying)
+  override val logger: Logger = new Logger(underlying)
 
   val routes: Route = sealRoute(trackingApi.routes)
 

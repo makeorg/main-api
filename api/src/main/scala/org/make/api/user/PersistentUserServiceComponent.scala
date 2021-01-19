@@ -23,7 +23,7 @@ import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
 import cats.data.NonEmptyList
 import com.github.t3hnar.bcrypt._
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
@@ -176,10 +176,7 @@ object PersistentUserServiceComponent {
     }
   }
 
-  implicit object PersistentUser
-      extends PersistentCompanion[PersistentUser, User]
-      with ShortenedNames
-      with StrictLogging {
+  implicit object PersistentUser extends PersistentCompanion[PersistentUser, User] with ShortenedNames with Logging {
 
     private val profileColumnNames: Seq[String] = Seq(
       "date_of_birth",
@@ -305,7 +302,7 @@ object PersistentUserServiceComponent {
 
   final case class FollowedUsers(userId: String, followedUserId: String, date: ZonedDateTime)
 
-  object FollowedUsers extends SQLSyntaxSupport[FollowedUsers] with ShortenedNames with StrictLogging {
+  object FollowedUsers extends SQLSyntaxSupport[FollowedUsers] with ShortenedNames with Logging {
 
     override val columnNames: Seq[String] = Seq("user_id", "followed_user_id", "date")
 
@@ -409,10 +406,7 @@ trait PersistentUserService {
   ): Future[Boolean]
 }
 
-trait DefaultPersistentUserServiceComponent
-    extends PersistentUserServiceComponent
-    with ShortenedNames
-    with StrictLogging {
+trait DefaultPersistentUserServiceComponent extends PersistentUserServiceComponent with ShortenedNames with Logging {
   this: MakeDBExecutionContextComponent =>
 
   override lazy val persistentUserService: PersistentUserService = new DefaultPersistentUserService

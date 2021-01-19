@@ -22,7 +22,7 @@ package org.make.api.question
 import java.time.ZonedDateTime
 
 import cats.data.NonEmptyList
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.question.DefaultPersistentQuestionServiceComponent.{COUNTRY_SEPARATOR, PersistentQuestion}
 import org.make.api.technical.DatabaseTransactions.RichDatabase
@@ -57,7 +57,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
 
   lazy val persistentQuestionService: PersistentQuestionService = new DefaultPersistentQuestionService
 
-  class DefaultPersistentQuestionService extends PersistentQuestionService with ShortenedNames with StrictLogging {
+  class DefaultPersistentQuestionService extends PersistentQuestionService with ShortenedNames with Logging {
 
     private val column = PersistentQuestion.column
     private val questionAlias = PersistentQuestion.alias
@@ -229,7 +229,7 @@ object DefaultPersistentQuestionServiceComponent {
   implicit object PersistentQuestion
       extends PersistentCompanion[PersistentQuestion, Question]
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     override val columnNames: Seq[String] =
       Seq(

@@ -21,7 +21,7 @@ package org.make.api.sequence
 
 import cats.syntax.list._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.proposal._
 import org.make.api.segment.SegmentServiceComponent
 import org.make.api.sessionhistory._
@@ -74,7 +74,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     with SequenceConfigurationComponent
     with SecurityConfigurationComponent
     with SegmentServiceComponent
-    with StrictLogging =>
+    with Logging =>
 
   override lazy val sequenceService: SequenceService = new DefaultSequenceService
 

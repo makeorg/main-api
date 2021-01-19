@@ -22,7 +22,7 @@ package org.make.api.technical.graphql
 import caliban.schema.GenericSchema
 import caliban.wrappers.Wrappers.{printErrors, printSlowQueries}
 import caliban.{GraphQL, RootResolver}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.proposal.{ProposalServiceComponent, SortAlgorithmConfigurationComponent}
 import org.make.api.technical.graphql.GraphQLProposalQuery.{GraphQLProposalQueries, ProposalSearchParams}
 import org.make.api.technical.graphql.GraphQLRuntimeComponent.{EnvType, RuntimeType}
@@ -57,7 +57,7 @@ trait DefaultGraphQLRuntimeComponent
 
   override def graphQLRuntime: GraphQLRuntime = new DefaultGraphQLRuntime
 
-  class DefaultGraphQLRuntime extends GraphQLRuntime with StrictLogging {
+  class DefaultGraphQLRuntime extends GraphQLRuntime with Logging {
     override lazy val graphQLService: GraphQL[RuntimeType] = {
       val queries = GraphQLProposalQueries(search = { parameters =>
         ZIO.accessM[RuntimeType](_.get[EnvType].get).flatMap { rc =>

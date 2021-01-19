@@ -20,7 +20,7 @@
 package org.make.api.personality
 
 import cats.data.NonEmptyList
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.personality.DefaultPersistentQuestionPersonalityServiceComponent.PersistentPersonality
 import org.make.api.technical.DatabaseTransactions._
@@ -191,7 +191,7 @@ object DefaultPersistentQuestionPersonalityServiceComponent {
   implicit object PersistentPersonality
       extends PersistentCompanion[PersistentPersonality, Personality]
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     override val columnNames: Seq[String] =
       Seq("id", "user_id", "question_id", "personality_role_id")

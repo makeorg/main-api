@@ -20,7 +20,7 @@
 package org.make.api.avro
 
 import com.sksamuel.avro4s.DefaultFieldMapper
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.apache.avro.Schema
 import org.make.api.MakeUnitTest
 import org.make.api.idea.IdeaEventWrapper
@@ -32,7 +32,7 @@ import org.make.api.userhistory.UserEventWrapper
 import org.make.core.AvroSerializers
 import org.scalatest.Assertion
 
-class AvroCompatibilityTest extends MakeUnitTest with AvroSerializers with StrictLogging {
+class AvroCompatibilityTest extends MakeUnitTest with AvroSerializers with Logging {
 
   Feature("avro schemas") {
 

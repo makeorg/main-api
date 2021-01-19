@@ -21,7 +21,7 @@ package org.make.api.operation
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import eu.timepit.refined.types.numeric.NonNegInt
 import io.circe.generic.semiauto._
 import io.circe.refined._
@@ -78,7 +78,7 @@ trait AdminOperationOfQuestionApiComponent {
 trait DefaultAdminOperationOfQuestionApiComponent
     extends AdminOperationOfQuestionApiComponent
     with MakeAuthenticationDirectives
-    with StrictLogging
+    with Logging
     with ParameterExtractors {
 
   this: MakeDataHandlerComponent

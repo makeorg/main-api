@@ -21,14 +21,14 @@ package org.make.api.technical.elasticsearch
 
 import akka.actor.Extension
 import com.typesafe.config.Config
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.ConfigComponent
 import org.make.api.extensions.ConfigurationSupport
 
 class ElasticsearchConfiguration(override protected val configuration: Config)
     extends Extension
     with ConfigurationSupport
-    with StrictLogging {
+    with Logging {
 
   lazy val connectionString: String = configuration.getString("connection-string")
   lazy val indexName: String = configuration.getString("index-name")

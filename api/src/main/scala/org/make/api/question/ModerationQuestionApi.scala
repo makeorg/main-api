@@ -22,7 +22,7 @@ package org.make.api.question
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
@@ -232,7 +232,7 @@ object CreateInitialProposalRequest {
 trait DefaultModerationQuestionComponent
     extends ModerationQuestionComponent
     with MakeAuthenticationDirectives
-    with StrictLogging
+    with Logging
     with ParameterExtractors {
 
   this: QuestionServiceComponent

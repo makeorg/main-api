@@ -35,7 +35,7 @@ import akka.stream.alpakka.file.scaladsl.LogRotatorSink
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.{ByteString, Timeout}
 import akka.{Done, NotUsed}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import enumeratum.values.{StringEnum, StringEnumEntry}
 import eu.timepit.refined.auto._
@@ -87,7 +87,7 @@ trait CrmServiceComponent {
   def crmService: CrmService
 }
 
-trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging with ErrorAccumulatingCirceSupport {
+trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with ErrorAccumulatingCirceSupport {
   self: MailJetConfigurationComponent
     with ActorSystemTypedComponent
     with OperationServiceComponent

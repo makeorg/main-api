@@ -22,7 +22,7 @@ package org.make.api.migrations.db
 import java.sql.Connection
 import java.util.concurrent.Executors
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.crmTemplates.{
   DefaultCrmTemplatesServiceComponent,
   DefaultPersistentCrmLanguageTemplateServiceComponent,
@@ -48,7 +48,7 @@ class V98__Split_CRM_templates_by_language_and_question
     with DefaultIdGeneratorComponent
     with MakeDBExecutionContextComponent
     with ShortenedNames
-    with StrictLogging {
+    with Logging {
 
   private implicit val ec: EC = Executors.newFixedThreadPool(8).toExecutionContext
   override val readExecutionContext: EC = ec

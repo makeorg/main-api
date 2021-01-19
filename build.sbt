@@ -49,7 +49,7 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     Dependencies.logger,
     Dependencies.loggerBridge,
-    Dependencies.scalaLogging,
+    Dependencies.grizzledSlf4j,
     Dependencies.scalaTest,
     Dependencies.scalaTestScalaCheck,
     Dependencies.mockito,

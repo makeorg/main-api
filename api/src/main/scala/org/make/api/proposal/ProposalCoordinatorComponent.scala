@@ -22,7 +22,7 @@ package org.make.api.proposal
 import akka.actor.ActorRef
 import akka.pattern.{ask, AskTimeoutException}
 import akka.util.Timeout
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.technical.{ActorTimeoutException, TimeSettings}
 import org.make.core.proposal._
 import org.make.core.user.UserId
@@ -72,7 +72,7 @@ trait ProposalCoordinatorServiceComponent {
   def proposalCoordinatorService: ProposalCoordinatorService
 }
 
-trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServiceComponent with StrictLogging {
+trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServiceComponent with Logging {
   self: ProposalCoordinatorComponent =>
 
   override lazy val proposalCoordinatorService: ProposalCoordinatorService = new DefaultProposalCoordinatorService

@@ -20,11 +20,11 @@
 package org.make.api.technical
 
 import com.sksamuel.elastic4s.http.{ElasticClient, Handler}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 
 import scala.concurrent.{ExecutionContext, Future}
 
-package object elasticsearch extends StrictLogging {
+package object elasticsearch extends Logging {
   implicit class RichHttpClient(val self: ElasticClient) extends AnyVal {
     def executeAsFuture[T, U](
       request: T

@@ -23,7 +23,7 @@ import akka.actor.typed.{ActorRef, Behavior, Scheduler}
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.technical.ActorProtocol
 import org.make.api.technical.job.JobReportingActor.Protocol.{Command, Response}
 import org.make.core.job.Job.{JobId, Progress}
@@ -33,7 +33,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
-object JobReportingActor extends StrictLogging {
+object JobReportingActor extends Logging {
 
   final class JobReportingActorFacade private (actor: ActorRef[Command]) {
     def apply(progress: Progress)(implicit timeout: Timeout, scheduler: Scheduler): Future[Unit] =

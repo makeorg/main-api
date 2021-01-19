@@ -26,7 +26,7 @@ import akka.util.Timeout
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.index.CreateIndexResponse
 import com.sksamuel.elastic4s.http.index.admin.AliasActionResponse
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import eu.timepit.refined.auto._
 import org.make.api.ActorSystemTypedComponent
 import org.make.api.idea._
@@ -84,7 +84,7 @@ trait DefaultIndexationComponent
   this: ActorSystemTypedComponent
     with ElasticsearchConfigurationComponent
     with ElasticsearchClientComponent
-    with StrictLogging
+    with Logging
     with JobCoordinatorServiceComponent
     with ReadJournalComponent
     with PersistentOperationOfQuestionServiceComponent
@@ -295,9 +295,11 @@ trait DefaultIndexationComponent
 
       result.onComplete {
         case Success(_) =>
-          logger.info("Proposal indexation success in {} ms", System.currentTimeMillis() - start)
+          val time = System.currentTimeMillis() - start
+          logger.info(s"Proposal indexation success in $time ms")
         case Failure(e) =>
-          logger.error(s"Proposal indexation failed in ${System.currentTimeMillis() - start} ms", e)
+          val time = System.currentTimeMillis() - start
+          logger.error(s"Proposal indexation failed in $time ms", e)
       }
 
       result
@@ -316,8 +318,12 @@ trait DefaultIndexationComponent
         }
 
       result.onComplete {
-        case Success(_) => logger.info("Idea indexation success in {} ms", System.currentTimeMillis() - start)
-        case Failure(e) => logger.error(s"Idea indexation failed in ${System.currentTimeMillis() - start} ms", e)
+        case Success(_) =>
+          val time = System.currentTimeMillis() - start
+          logger.info(s"Idea indexation success in $time ms")
+        case Failure(e) =>
+          val time = System.currentTimeMillis() - start
+          logger.error(s"Idea indexation failed in $time ms", e)
       }
 
       result
@@ -336,9 +342,12 @@ trait DefaultIndexationComponent
         }
 
       result.onComplete {
-        case Success(_) => logger.info("Organisation indexation success in {} ms", System.currentTimeMillis() - start)
+        case Success(_) =>
+          val time = System.currentTimeMillis() - start
+          logger.info(s"Organisation indexation success in $time ms")
         case Failure(e) =>
-          logger.error(s"Organisation indexation failed in ${System.currentTimeMillis() - start} ms", e)
+          val time = System.currentTimeMillis() - start
+          logger.error(s"Organisation indexation failed in $time ms", e)
       }
 
       result
@@ -358,9 +367,11 @@ trait DefaultIndexationComponent
 
       result.onComplete {
         case Success(_) =>
-          logger.info("Operation of questions indexation success in {} ms", System.currentTimeMillis() - start)
+          val time = System.currentTimeMillis() - start
+          logger.info(s"Operation of questions indexation success in $time ms")
         case Failure(e) =>
-          logger.error(s"Operation of questions indexation failed in ${System.currentTimeMillis() - start} ms", e)
+          val time = System.currentTimeMillis() - start
+          logger.error(s"Operation of questions indexation failed in $time ms", e)
       }
 
       result
@@ -380,9 +391,11 @@ trait DefaultIndexationComponent
 
       result.onComplete {
         case Success(_) =>
-          logger.info("Posts indexation success in {} ms", System.currentTimeMillis() - start)
+          val time = System.currentTimeMillis() - start
+          logger.info(s"Posts indexation success in $time ms")
         case Failure(e) =>
-          logger.error(s"Posts indexation failed in ${System.currentTimeMillis() - start} ms", e)
+          val time = System.currentTimeMillis() - start
+          logger.error(s"Posts indexation failed in $time ms", e)
       }
 
       result

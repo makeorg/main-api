@@ -26,7 +26,7 @@ import eu.timepit.refined.W
 import eu.timepit.refined.auto._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.MaxSize
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.operation.DefaultPersistentOperationOfQuestionServiceComponent.PersistentOperationOfQuestion
 import org.make.api.operation.DefaultPersistentOperationOfQuestionServiceComponent.PersistentOperationOfQuestion.resultsLinkBinders
@@ -86,7 +86,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
   class DefaultPersistentOperationOfQuestionService
       extends PersistentOperationOfQuestionService
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     private val operationOfQuestionAlias = PersistentOperationOfQuestion.alias
     private val operationAlias = PersistentOperation.alias
@@ -481,7 +481,7 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
   implicit object PersistentOperationOfQuestion
       extends PersistentCompanion[PersistentOperationOfQuestion, OperationOfQuestion]
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     @SuppressWarnings(Array("org.wartremover.warts.Null"))
     implicit val resultsLinkBinders: Binders[Option[ResultsLink]] =

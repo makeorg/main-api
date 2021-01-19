@@ -23,7 +23,7 @@ import java.time.LocalDate
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
@@ -569,7 +569,7 @@ trait UserApiComponent {
 trait DefaultUserApiComponent
     extends UserApiComponent
     with MakeAuthenticationDirectives
-    with StrictLogging
+    with Logging
     with ParameterExtractors {
 
   this: UserServiceComponent

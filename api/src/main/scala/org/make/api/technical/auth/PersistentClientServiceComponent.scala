@@ -22,7 +22,7 @@ package org.make.api.technical.auth
 import java.time.ZonedDateTime
 
 import cats.data.NonEmptyList
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
@@ -81,7 +81,7 @@ object PersistentClientServiceComponent {
   implicit object PersistentClient
       extends PersistentCompanion[PersistentClient, Client]
       with ShortenedNames
-      with StrictLogging {
+      with Logging {
 
     override val columnNames: Seq[String] =
       Seq(
@@ -143,7 +143,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
 
   override lazy val persistentClientService: DefaultPersistentClientService = new DefaultPersistentClientService
 
-  class DefaultPersistentClientService extends PersistentClientService with ShortenedNames with StrictLogging {
+  class DefaultPersistentClientService extends PersistentClientService with ShortenedNames with Logging {
 
     private val clientAlias = PersistentClient.alias
     private val column = PersistentClient.column

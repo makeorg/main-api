@@ -19,7 +19,7 @@
 
 package org.make.api.sequence
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.proposal._
@@ -51,7 +51,7 @@ class SequenceServiceComponentTest
     with SelectionAlgorithmComponent
     with SecurityConfigurationComponent
     with SegmentServiceComponent
-    with StrictLogging {
+    with Logging {
 
   override val eventBusService: EventBusService = mock[EventBusService]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]

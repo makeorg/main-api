@@ -25,7 +25,7 @@ import java.time.temporal.ChronoUnit
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.stream.scaladsl.{Sink, Source}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations.{Authorization, _}
@@ -112,7 +112,7 @@ trait MigrationApiComponent {
   def migrationApi: MigrationApi
 }
 
-trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthenticationDirectives with StrictLogging {
+trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthenticationDirectives with Logging {
   this: MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent

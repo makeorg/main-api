@@ -24,7 +24,7 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.http.scaladsl.{Http, HttpExt}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import org.make.api.ActorSystemComponent
 import org.make.api.user.social.models.google.{PeopleInfo, UserInfo => GoogleUserInfo}
@@ -46,7 +46,7 @@ trait DefaultGoogleApiComponent extends GoogleApiComponent with ErrorAccumulatin
 
   override lazy val googleApi: GoogleApi = new DefaultGoogleApi
 
-  class DefaultGoogleApi extends GoogleApi with StrictLogging {
+  class DefaultGoogleApi extends GoogleApi with Logging {
     private val http: HttpExt = Http()
 
     def getUserInfo(idToken: String): Future[GoogleUserInfo] = {

@@ -19,7 +19,7 @@
 
 package org.make.api.proposal
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import org.make.api.proposal.DefaultSelectionAlgorithmComponent.Scored
 import org.make.api.proposal.ProposalScorer.{Score, VotesCounter}
@@ -83,7 +83,7 @@ object SoftMinRandom extends RandomProposalChooser {
   }
 }
 
-object UniformRandom extends ProposalChooser with StrictLogging {
+object UniformRandom extends ProposalChooser with Logging {
   def choose(proposals: Seq[IndexedProposal]): IndexedProposal = {
     proposals(MakeRandom.nextInt(proposals.length))
   }
@@ -120,7 +120,7 @@ trait SelectionAlgorithm {
   ): Seq[IndexedProposal]
 }
 
-trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent with StrictLogging {
+trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent with Logging {
 
   override val banditSelectionAlgorithm: BanditSelectionAlgorithm = new BanditSelectionAlgorithm
   override val roundRobinSelectionAlgorithm: RoundRobinSelectionAlgorithm = new RoundRobinSelectionAlgorithm

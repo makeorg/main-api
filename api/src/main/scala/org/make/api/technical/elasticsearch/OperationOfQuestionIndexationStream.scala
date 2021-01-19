@@ -22,7 +22,7 @@ package org.make.api.technical.elasticsearch
 import akka.stream.scaladsl.Flow
 import akka.NotUsed
 import com.sksamuel.elastic4s.IndexAndType
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.operation.{
   OperationOfQuestionSearchEngine,
   OperationOfQuestionSearchEngineComponent,
@@ -42,7 +42,7 @@ trait OperationOfQuestionIndexationStream
     with OperationOfQuestionSearchEngineComponent
     with QuestionServiceComponent
     with OperationServiceComponent
-    with StrictLogging {
+    with Logging {
 
   object OperationOfQuestionStream {
 

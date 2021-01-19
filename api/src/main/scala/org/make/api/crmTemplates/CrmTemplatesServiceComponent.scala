@@ -22,7 +22,7 @@ package org.make.api.crmTemplates
 import cats.instances.future._
 import cats.instances.option._
 import cats.syntax.traverse._
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.technical._
 import org.make.api.technical.RichFutures._
 import org.make.core.crmTemplate.{
@@ -70,7 +70,7 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
 
   override lazy val crmTemplatesService: CrmTemplatesService = new DefaultCrmTemplatesService
 
-  class DefaultCrmTemplatesService extends CrmTemplatesService with StrictLogging {
+  class DefaultCrmTemplatesService extends CrmTemplatesService with Logging {
 
     override def find(
       kind: CrmTemplateKind,

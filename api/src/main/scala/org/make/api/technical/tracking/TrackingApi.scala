@@ -23,7 +23,7 @@ import javax.ws.rs.Path
 import io.swagger.annotations._
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import org.make.api.extensions.MakeSettingsComponent
@@ -104,7 +104,7 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
     with MakeAuthenticationDirectives
     with SessionHistoryCoordinatorServiceComponent
     with MonitoringServiceComponent
-    with StrictLogging =>
+    with Logging =>
 
   override lazy val trackingApi: TrackingApi = new DefaultTrackingApi
 

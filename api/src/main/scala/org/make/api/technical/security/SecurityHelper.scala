@@ -22,12 +22,12 @@ package org.make.api.technical.security
 import java.security.MessageDigest
 import java.util.Base64
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.core.DateHelper
 import org.make.core.proposal.ProposalId
 import org.make.core.session.SessionId
 
-object SecurityHelper extends StrictLogging {
+object SecurityHelper extends Logging {
 
   val HASH_SEPARATOR = "-"
 

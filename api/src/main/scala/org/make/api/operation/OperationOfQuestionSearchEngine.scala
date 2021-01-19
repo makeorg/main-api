@@ -25,7 +25,7 @@ import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.queries.BoolQuery
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.technical.elasticsearch.{ElasticsearchClientComponent, ElasticsearchConfigurationComponent, _}
 import org.make.api.views.HomePageViewResponse.Highlights
 import org.make.core.CirceFormatters
@@ -67,7 +67,7 @@ object OperationOfQuestionSearchEngine {
 trait DefaultOperationOfQuestionSearchEngineComponent
     extends OperationOfQuestionSearchEngineComponent
     with CirceFormatters
-    with StrictLogging {
+    with Logging {
   self: ElasticsearchConfigurationComponent with ElasticsearchClientComponent =>
 
   override lazy val elasticsearchOperationOfQuestionAPI: OperationOfQuestionSearchEngine =

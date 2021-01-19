@@ -19,14 +19,14 @@
 
 package org.make.api.avro
 
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import io.confluent.kafka.schemaregistry.avro.AvroCompatibilityLevel
 import org.apache.avro.Schema
 import org.make.core.AvroSerializers
 
 import scala.util.{Failure, Success, Try}
 
-object AvroCompatibilityChecker extends App with AvroSerializers with StrictLogging {
+object AvroCompatibilityChecker extends App with AvroSerializers with Logging {
 
   def isCompatible(newSchema: Schema, currentSchema: Schema): Boolean = {
     AvroCompatibilityLevel.BACKWARD.compatibilityChecker.isCompatible(newSchema, currentSchema)

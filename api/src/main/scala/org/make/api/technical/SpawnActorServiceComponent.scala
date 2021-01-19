@@ -22,7 +22,7 @@ package org.make.api.technical
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.{ActorRef, Behavior, Props, SpawnProtocol}
 import akka.util.Timeout
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.ActorSystemTypedComponent
 
 import scala.concurrent.Future
@@ -39,7 +39,7 @@ trait SpawnActorRefComponent {
   def spawnActorRef: ActorRef[SpawnProtocol.Command]
 }
 
-trait DefaultSpawnActorServiceComponent extends SpawnActorServiceComponent with StrictLogging {
+trait DefaultSpawnActorServiceComponent extends SpawnActorServiceComponent with Logging {
   this: ActorSystemTypedComponent with SpawnActorRefComponent =>
 
   override val spawnActorService: SpawnActorService = new DefaultSpawnActorService

@@ -26,7 +26,7 @@ import cats.data.{Validated, ValidatedNel}
 import cats.implicits._
 import akka.stream.scaladsl.Sink
 import cats.data.Validated.{Invalid, Valid}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import eu.timepit.refined.auto._
 import org.make.api.ActorSystemComponent
 import org.make.api.technical.StreamUtils
@@ -49,7 +49,7 @@ trait PostServiceComponent {
   def postService: PostService
 }
 
-trait DefaultPostServiceComponent extends PostServiceComponent with StrictLogging {
+trait DefaultPostServiceComponent extends PostServiceComponent with Logging {
   this: PostSearchEngineComponent
     with WebflowClientComponent
     with ActorSystemComponent

@@ -24,7 +24,7 @@ import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.queries.BoolQuery
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
-import com.typesafe.scalalogging.StrictLogging
+import grizzled.slf4j.Logging
 import org.make.api.technical.elasticsearch.{ElasticsearchClientComponent, ElasticsearchConfigurationComponent, _}
 import org.make.core.CirceFormatters
 import org.make.core.elasticsearch.IndexationStatus
@@ -48,7 +48,7 @@ object PostSearchEngine {
   val postIndexName = "post"
 }
 
-trait DefaultPostSearchEngineComponent extends PostSearchEngineComponent with CirceFormatters with StrictLogging {
+trait DefaultPostSearchEngineComponent extends PostSearchEngineComponent with CirceFormatters with Logging {
   self: ElasticsearchConfigurationComponent with ElasticsearchClientComponent =>
 
   override lazy val elasticsearchPostAPI: PostSearchEngine =

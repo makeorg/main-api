@@ -40,11 +40,11 @@ object Dependencies {
   private val zioVersion = "1.0.1"
   private val mockitoVersion = "1.16.15"
 
-  val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.2"
-  val logger: ModuleID = "org.apache.logging.log4j"         % "log4j"            % log4jVersion
-  val loggerBridge: ModuleID = "org.apache.logging.log4j"   % "log4j-slf4j-impl" % log4jVersion
-  val commonsLoggingBridge: ModuleID = "org.slf4j"          % "jcl-over-slf4j"   % "1.7.30"
-  val log4jJul: ModuleID = "org.apache.logging.log4j"       % "log4j-jul"        % log4jVersion
+  val grizzledSlf4j: ModuleID = "org.clapper"             %% "grizzled-slf4j"  % "1.3.4"
+  val logger: ModuleID = "org.apache.logging.log4j"       % "log4j"            % log4jVersion
+  val loggerBridge: ModuleID = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4jVersion
+  val commonsLoggingBridge: ModuleID = "org.slf4j"        % "jcl-over-slf4j"   % "1.7.30"
+  val log4jJul: ModuleID = "org.apache.logging.log4j"     % "log4j-jul"        % log4jVersion
 
   val nettyEpoll: ModuleID = ("io.netty" % "netty-transport-native-epoll" % nettyVersion).classifier("linux-x86_64")
   val nettyEpollMac: ModuleID =
