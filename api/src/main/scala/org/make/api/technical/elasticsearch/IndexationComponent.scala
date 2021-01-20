@@ -33,6 +33,7 @@ import org.make.api.ActorSystemTypedComponent
 import org.make.api.idea._
 import org.make.api.operation.PersistentOperationOfQuestionServiceComponent
 import org.make.api.post.PostServiceComponent
+import org.make.api.technical.RichFutures._
 import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.api.technical.job.JobCoordinatorServiceComponent
 import org.make.api.technical.{ReadJournalComponent, TimeSettings}
@@ -211,7 +212,7 @@ trait DefaultIndexationComponent
 
     def postReindex(updateQuestion: Boolean): Future[Unit] = {
       if (updateQuestion) {
-        executeUpdateOperationOfQuestions().map(_ => ())
+        executeUpdateOperationOfQuestions().toUnit
       } else {
         Future.unit
       }

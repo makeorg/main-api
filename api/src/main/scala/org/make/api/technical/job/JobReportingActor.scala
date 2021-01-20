@@ -25,6 +25,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import grizzled.slf4j.Logging
 import org.make.api.technical.ActorProtocol
+import org.make.api.technical.RichFutures._
 import org.make.api.technical.job.JobReportingActor.Protocol.{Command, Response}
 import org.make.core.job.Job.{JobId, Progress}
 
@@ -37,7 +38,7 @@ object JobReportingActor extends Logging {
 
   final class JobReportingActorFacade private (actor: ActorRef[Command]) {
     def apply(progress: Progress)(implicit timeout: Timeout, scheduler: Scheduler): Future[Unit] =
-      (actor ? (Command.Report(progress, _))).map(_ => ())
+      (actor ? (Command.Report(progress, _))).toUnit
   }
 
   object JobReportingActorFacade {

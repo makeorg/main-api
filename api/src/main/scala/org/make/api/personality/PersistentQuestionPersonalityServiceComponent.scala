@@ -25,6 +25,7 @@ import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.personality.DefaultPersistentQuestionPersonalityServiceComponent.PersistentPersonality
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.RichFutures._
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRoleId}
 import org.make.core.question.QuestionId
@@ -169,7 +170,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
           deleteFrom(PersistentPersonality)
             .where(sqls.eq(PersistentPersonality.column.id, personalityId.value))
         }.execute().apply()
-      }).map(_ => ())
+      }).toUnit
     }
 
   }

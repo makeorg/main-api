@@ -25,6 +25,7 @@ import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.feature.DefaultPersistentFeatureServiceComponent.PersistentFeature
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.RichFutures._
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.feature.{Feature, FeatureId}
 import org.make.core.Order
@@ -127,7 +128,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
             .from(PersistentFeature.as(featureAlias))
             .where(sqls.eq(featureAlias.id, featureId.value))
         }.update().apply()
-      }).map(_ => ())
+      }).toUnit
     }
 
     override def findAll(): Future[Seq[Feature]] = {

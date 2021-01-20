@@ -27,6 +27,10 @@ object RichFutures {
     def withoutFailure(implicit executionContext: ExecutionContext): Future[Either[Throwable, T]] = {
       self.map(Right(_)).recoverWith { case e => Future.successful(Left(e)) }
     }
+
+    def toUnit(implicit executionContext: ExecutionContext): Future[Unit] = {
+      self.map(_ => ())
+    }
   }
 
   implicit class Fallback[T](val f: () => Future[Option[Option[T]]]) extends AnyVal {

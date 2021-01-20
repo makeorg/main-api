@@ -20,10 +20,10 @@
 package org.make.api.user
 
 import java.time.ZonedDateTime
-
 import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.DatabaseTransactions._
+import org.make.api.technical.RichFutures._
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.DefaultPersistentUserToAnonymizeServiceComponent.PersistentUserToAnonymize
 import org.make.core.DateHelper
@@ -66,7 +66,7 @@ trait DefaultPersistentUserToAnonymizeServiceComponent extends PersistentUserToA
             .into(PersistentUserToAnonymize)
             .namedValues(column.email -> email, column.requestDate -> DateHelper.now())
         }.execute().apply()
-      }).map(_ => ()).recoverWith {
+      }).toUnit.recoverWith {
         case e: PSQLException if e.getSQLState == PSQLState.UNIQUE_VIOLATION.getState =>
           Future.unit
         case other => Future.failed(other)

@@ -438,7 +438,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
           }
         }
         .runWith(Sink.ignore)
-        .map(_ => ())
+        .toUnit
     }
 
     override def anonymize(): Future[Unit] = {

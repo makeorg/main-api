@@ -23,6 +23,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.util.Timeout
 import org.make.api.ActorSystemTypedComponent
+import org.make.api.technical.RichFutures._
 import org.make.api.technical.job.JobActor.Protocol.Command._
 import org.make.api.technical.job.JobActor.Protocol.Response._
 import org.make.api.technical.job.JobReportingActor.JobReportingActorFacade
@@ -80,15 +81,15 @@ trait DefaultJobCoordinatorServiceComponent extends JobCoordinatorServiceCompone
     }
 
     override def heartbeat(id: JobId): Future[Unit] = {
-      (jobCoordinator ? (Heartbeat(id, _))).map(_ => ())
+      (jobCoordinator ? (Heartbeat(id, _))).toUnit
     }
 
     override def report(id: JobId, progress: Progress): Future[Unit] = {
-      (jobCoordinator ? (Report(id, progress, _))).map(_ => ())
+      (jobCoordinator ? (Report(id, progress, _))).toUnit
     }
 
     override def finish(id: JobId, outcome: Option[Throwable]): Future[Unit] = {
-      (jobCoordinator ? (Finish(id, outcome, _))).map(_ => ())
+      (jobCoordinator ? (Finish(id, outcome, _))).toUnit
     }
 
     override def get(id: JobId): Future[Option[Job]] = {
