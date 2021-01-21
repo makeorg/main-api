@@ -289,7 +289,7 @@ final case class ExhaustiveSearchRequest(
   status: Option[Seq[ProposalStatus]] = None,
   minVotesCount: Option[Int] = None,
   toEnrich: Option[Boolean] = None,
-  minScore: Option[Float] = None,
+  minScore: Option[Double] = None,
   language: Option[Language] = None,
   country: Option[Country] = None,
   sort: Option[String] = None,
@@ -453,7 +453,7 @@ final case class NextProposalToModerateRequest(
   @(ApiModelProperty @field)(dataType = "int", example = "0")
   minVotesCount: Option[Int],
   @(ApiModelProperty @field)(dataType = "int", example = "0")
-  minScore: Option[Float]
+  minScore: Option[Double]
 ) {
   validate(requirePresent("questionId", questionId, Some("Next proposal needs a question")))
 }

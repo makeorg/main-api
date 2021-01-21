@@ -211,7 +211,7 @@ trait ProposalService {
     requestContext: RequestContext,
     toEnrich: Boolean,
     minVotesCount: Option[Int],
-    minScore: Option[Float]
+    minScore: Option[Double]
   ): Future[Option[ModerationProposalResponse]]
 
   def anonymizeByUserId(userId: UserId): Future[Unit]
@@ -1085,7 +1085,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       questionId: QuestionId,
       toEnrich: Boolean,
       minVotesCount: Option[Int],
-      minScore: Option[Float]
+      minScore: Option[Double]
     ): SearchFilters = {
       if (toEnrich) {
         SearchFilters(
@@ -1109,7 +1109,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       requestContext: RequestContext,
       toEnrich: Boolean,
       minVotesCount: Option[Int],
-      minScore: Option[Float]
+      minScore: Option[Double]
     ): Future[Option[ModerationProposalResponse]] = {
 
       userService.getUser(moderator).flatMap { user =>

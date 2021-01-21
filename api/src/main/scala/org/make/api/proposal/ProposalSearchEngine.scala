@@ -29,6 +29,7 @@ import com.sksamuel.elastic4s.searches.aggs.{
   FilterAggregation,
   GlobalAggregation,
   MaxAggregation,
+  PercentilesAggregation,
   TermsAggregation,
   TopHitsAggregation
 }
@@ -47,7 +48,13 @@ import org.make.core.idea.IdeaId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldName, ProposalsSearchResult}
+import org.make.core.proposal.indexed.{
+  IndexedProposal,
+  ProposalElasticsearchFieldName,
+  ProposalsSearchResult,
+  SequencePool,
+  Zone
+}
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
@@ -100,6 +107,8 @@ trait ProposalSearchEngine {
   def countProposalsByIdea(ideaIds: Seq[IdeaId]): Future[Map[IdeaId, Long]]
 
   def getRandomProposalsByIdeaWithAvatar(ideaIds: Seq[IdeaId], seed: Int): Future[Map[IdeaId, AvatarsAndProposalsCount]]
+
+  def computeTop20ConsensusThreshold(questionIds: Seq[QuestionId]): Future[Map[QuestionId, Double]]
 }
 
 object ProposalSearchEngine {
@@ -474,6 +483,46 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
             proposalsCount = count.toInt
           )
       }
+    }
+
+    override def computeTop20ConsensusThreshold(questionIds: Seq[QuestionId]): Future[Map[QuestionId, Double]] = {
+      val searchFilters = SearchFilters.getSearchFilters(
+        SearchQuery(filters = Some(
+          SearchFilters(
+            question = Some(QuestionSearchFilter(questionIds)),
+            sequencePool = Some(SequencePoolSearchFilter(SequencePool.Tested)),
+            zone = Some(ZoneSearchFilter(Zone.Consensus))
+          )
+        )
+        )
+      )
+
+      val consensusOutlier = PercentilesAggregation(
+        name = "consensus_outlier",
+        field = Some(ProposalElasticsearchFieldName.scoreLowerBound.field),
+        percents = Seq(80d)
+      )
+      val aggByQuestion = TermsAggregation(
+        name = "by_question",
+        field = Some(ProposalElasticsearchFieldName.questionId.field),
+        size = Some(questionIds.size),
+        subaggs = Seq(consensusOutlier)
+      )
+      val request = searchWithType(proposalAlias)
+        .bool(BoolQuery(must = searchFilters))
+        .aggregations(aggByQuestion)
+        .limit(0)
+
+      client.executeAsFuture(request).map { response =>
+        response.aggregations
+          .terms(aggByQuestion.name)
+          .buckets
+          .flatMap { termBucket =>
+            termBucket.percentiles(consensusOutlier.name).values.get("80.0").map(QuestionId(termBucket.key) -> _)
+          }
+          .toMap
+      }
+
     }
   }
 

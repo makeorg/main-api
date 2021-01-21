@@ -130,7 +130,8 @@ final case class IndexedOperationOfQuestion(
   proposalsCount: Int,
   participantsCount: Int,
   actions: Option[String],
-  featured: Boolean
+  featured: Boolean,
+  top20ConsensusThreshold: Option[Double]
 )
 
 object IndexedOperationOfQuestion extends CirceFormatters {
@@ -166,7 +167,8 @@ object IndexedOperationOfQuestion extends CirceFormatters {
       proposalsCount = operationOfQuestion.proposalsCount,
       participantsCount = operationOfQuestion.participantsCount,
       actions = operationOfQuestion.actions,
-      featured = operationOfQuestion.featured
+      featured = operationOfQuestion.featured,
+      top20ConsensusThreshold = None
     )
   }
 }

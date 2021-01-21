@@ -99,7 +99,8 @@ class OperationOfQuestionSearchEngineIT
       participantsCount = 84,
       actions = None,
       featured = false,
-      status = Finished
+      status = Finished,
+      top20ConsensusThreshold = Some(42d)
     ),
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-2"),
@@ -125,7 +126,8 @@ class OperationOfQuestionSearchEngineIT
       participantsCount = 84,
       actions = Some("some actions"),
       featured = true,
-      status = Open
+      status = Open,
+      top20ConsensusThreshold = Some(42d)
     ),
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-3"),
@@ -151,7 +153,8 @@ class OperationOfQuestionSearchEngineIT
       participantsCount = 84,
       actions = None,
       featured = false,
-      status = Finished
+      status = Finished,
+      top20ConsensusThreshold = Some(42d)
     ),
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-4"),
@@ -177,7 +180,8 @@ class OperationOfQuestionSearchEngineIT
       participantsCount = 84,
       actions = None,
       featured = false,
-      status = Open
+      status = Open,
+      top20ConsensusThreshold = None
     ),
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-5"),
@@ -203,7 +207,8 @@ class OperationOfQuestionSearchEngineIT
       participantsCount = 84,
       actions = None,
       featured = true,
-      status = Upcoming
+      status = Upcoming,
+      top20ConsensusThreshold = Some(12d)
     ),
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-french-accent"),
@@ -229,7 +234,8 @@ class OperationOfQuestionSearchEngineIT
       participantsCount = 84,
       actions = None,
       featured = false,
-      status = Finished
+      status = Finished,
+      top20ConsensusThreshold = Some(42d)
     )
   )
 

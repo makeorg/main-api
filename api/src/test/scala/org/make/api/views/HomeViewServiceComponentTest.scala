@@ -97,7 +97,8 @@ class HomeViewServiceComponentTest
     participantsCount = 84,
     actions = None,
     featured = false,
-    status = OperationOfQuestion.Status.Finished
+    status = OperationOfQuestion.Status.Finished,
+    top20ConsensusThreshold = None
   )
 
   val operation1: SimpleOperation =

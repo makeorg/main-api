@@ -35,9 +35,15 @@ import org.make.api.post.PostServiceComponent
 import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.api.technical.job.JobCoordinatorServiceComponent
 import org.make.api.technical.{ReadJournalComponent, TimeSettings}
+import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.idea.Idea
 import org.make.core.job.Job.JobId.{Reindex, ReindexPosts}
-import org.make.core.operation.OperationOfQuestion
+import org.make.core.operation.{
+  OperationOfQuestion,
+  OperationOfQuestionSearchFilters,
+  OperationOfQuestionSearchQuery,
+  StatusSearchFilter
+}
 import org.make.core.proposal.ProposalId
 import org.make.core.user.User
 
@@ -193,9 +199,19 @@ trait DefaultIndexationComponent
           for {
             _ <- futureIdeasIndexation
             _ <- futureProposalsIndexation
-          } yield ()
+          } yield indicesNotUpToDate
+        }.flatMap { toUpdate =>
+          postReindex(toUpdate.contains(IndexProposals) || toUpdate.contains(IndexOperationOfQuestions))
         }
       }
+
+    def postReindex(updateQuestion: Boolean): Future[Unit] = {
+      if (updateQuestion) {
+        executeUpdateOperationOfQuestions().map(_ => ())
+      } else {
+        Future.unit
+      }
+    }
 
     override def reindexPostsData(): Future[JobAcceptance] =
       jobCoordinatorService.start(ReindexPosts) { report =>
@@ -372,6 +388,43 @@ trait DefaultIndexationComponent
         case Failure(e) =>
           val time = System.currentTimeMillis() - start
           logger.error(s"Operation of questions indexation failed in $time ms", e)
+      }
+
+      result
+    }
+
+    private def executeUpdateOperationOfQuestions(): Future[IndexationStatus] = {
+      val start = System.currentTimeMillis()
+
+      val result: Future[IndexationStatus] = elasticsearchOperationOfQuestionAPI
+        .searchOperationOfQuestions(
+          OperationOfQuestionSearchQuery(filters =
+            Some(OperationOfQuestionSearchFilters(status = Some(StatusSearchFilter(OperationOfQuestion.Status.Open))))
+          )
+        )
+        .flatMap { result =>
+          logger.info(s"Operation of questions to update: ${result.results.size}")
+          if (result.results.size != result.total) {
+            logger.warn(
+              s"${result.total - result.results.size} questions won't be updated. You might want to add a limit to override default es limit or paginate and stream it."
+            )
+          }
+          elasticsearchProposalAPI.computeTop20ConsensusThreshold(result.results.map(_.questionId)).flatMap {
+            thresholds =>
+              val questions = result.results.map { question =>
+                question.copy(top20ConsensusThreshold = thresholds.get(question.questionId))
+              }
+              elasticsearchOperationOfQuestionAPI.indexOperationOfQuestions(questions, None)
+          }
+        }
+
+      result.onComplete {
+        case Success(IndexationStatus.Completed) =>
+          logger.info(s"Operation of questions indexation success in ${System.currentTimeMillis() - start} ms")
+        case Success(IndexationStatus.Failed(e)) =>
+          logger.error(s"Operation of questions update failed in ${System.currentTimeMillis() - start} ms", e)
+        case Failure(e) =>
+          logger.error(s"Operation of questions update failed in ${System.currentTimeMillis() - start} ms", e)
       }
 
       result

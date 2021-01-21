@@ -95,6 +95,7 @@ class ProposalSearchEngineIT
     ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
     isOpen = false
   )
+  val otherQuestion = baseQuestion.copy(questionId = QuestionId("other-questionId"))
 
   private val now = DateHelper.now()
   private val decrementer = new AtomicLong()
@@ -225,7 +226,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 287,
       votesSegmentCount = 287,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 42, 42, 0, 0, 84, 0, Consensus),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 42, 42, 0, 0, 84, 60, Consensus),
       segmentScores = IndexedScores(1, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10, 0, Limbo),
       context = italianContext,
       trending = None,
@@ -299,7 +300,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 310,
       votesSegmentCount = 310,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 54, 21, 0, 0, 0, 0, Controversy),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 54, 21, 0, 0, 0, 80, Controversy),
       segmentScores = IndexedScores.empty,
       context = frenchContext,
       trending = None,
@@ -373,7 +374,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 127,
       votesSegmentCount = 127,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 35, 35, 0, 0, 0, 0, Limbo),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 35, 35, 0, 0, 0, 12, Consensus),
       segmentScores = IndexedScores.empty,
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id-2")),
@@ -395,7 +396,7 @@ class ProposalSearchEngineIT
       tags = Seq(tagBeta),
       selectedStakeTag = Some(tagBeta),
       operationId = None,
-      question = Some(baseQuestion),
+      question = Some(otherQuestion),
       sequencePool = SequencePool.Tested,
       sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
@@ -449,7 +450,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 353,
       votesSegmentCount = 353,
       toEnrich = false,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 16, 16, 0, 0, 0, 0, Limbo),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 16, 16, 0, 0, 0, 9.4, Consensus),
       segmentScores = IndexedScores.empty,
       context = frenchContext,
       trending = None,
@@ -471,7 +472,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id-3")),
       operationId = None,
-      question = Some(baseQuestion),
+      question = Some(otherQuestion),
       sequencePool = SequencePool.Tested,
       sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
@@ -545,7 +546,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
-      question = None,
+      question = Some(otherQuestion),
       sequencePool = SequencePool.Tested,
       sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
@@ -599,7 +600,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 305,
       votesSegmentCount = 305,
       toEnrich = false,
-      scores = IndexedScores.empty,
+      scores = IndexedScores.empty.copy(zone = Consensus),
       segmentScores = IndexedScores.empty,
       context = None,
       trending = None,
@@ -621,7 +622,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
-      question = None,
+      question = Some(baseQuestion),
       sequencePool = SequencePool.Tested,
       sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
@@ -673,7 +674,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 286,
       votesSegmentCount = 286,
       toEnrich = false,
-      scores = IndexedScores.empty,
+      scores = IndexedScores.empty.copy(scoreLowerBound = 80, zone = Consensus),
       segmentScores = IndexedScores.empty,
       context = frenchContext,
       trending = None,
@@ -747,7 +748,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 162,
       votesSegmentCount = 162,
       toEnrich = false,
-      scores = IndexedScores.empty,
+      scores = IndexedScores.empty.copy(zone = Consensus),
       segmentScores = IndexedScores.empty,
       context = frenchContext,
       trending = None,
@@ -1569,7 +1570,7 @@ class ProposalSearchEngineIT
         result.total should be(1L)
       }
       whenReady(elasticsearchProposalAPI.searchProposals(queryFalse), Timeout(3.seconds)) { result =>
-        result.total should be(5L)
+        result.total should be(7L)
       }
     }
   }
@@ -1644,7 +1645,7 @@ class ProposalSearchEngineIT
         results =>
           results.size should be(3)
           results.find(_.tagId == tagAlpha.tagId).foreach(_.proposalCount should be(2))
-          results.find(_.tagId == tagBeta.tagId).foreach(_.proposalCount should be(4))
+          results.find(_.tagId == tagBeta.tagId).foreach(_.proposalCount should be(2))
           results.find(_.tagId == tagGamma.tagId).foreach(_.proposalCount should be(1))
           results.exists(_.tagId == tagDelta.tagId) shouldBe false
       }
@@ -1661,22 +1662,22 @@ class ProposalSearchEngineIT
   Feature("get top proposals") {
     Scenario("get top proposals by idea for base question") {
       whenReady(
-        elasticsearchProposalAPI.getTopProposals(baseQuestion.questionId, 10, ProposalElasticsearchFieldName.ideaId),
+        elasticsearchProposalAPI.getTopProposals(otherQuestion.questionId, 10, ProposalElasticsearchFieldName.ideaId),
         Timeout(10.seconds)
       ) { results =>
-        results.take(3).map(_.scores.topScore) should be(Seq(42.0, 35.0, 16.0))
-        results.take(3).flatMap(_.ideaId).map(_.value) should be(Seq("idea-id", "idea-id-2", "idea-id-3"))
+        results.take(3).map(_.scores.topScore) should be(Seq(35.0, 16.0))
+        results.take(3).flatMap(_.ideaId).map(_.value) should be(Seq("idea-id-2", "idea-id-3"))
       }
     }
 
     Scenario("get top proposals by stake tag") {
       whenReady(
         elasticsearchProposalAPI
-          .getTopProposals(baseQuestion.questionId, 10, ProposalElasticsearchFieldName.selectedStakeTagId),
+          .getTopProposals(otherQuestion.questionId, 10, ProposalElasticsearchFieldName.selectedStakeTagId),
         Timeout(10.seconds)
       ) { results =>
-        results.take(3).map(_.scores.topScore) should be(Seq(42.0, 35.0, 16.0))
-        results.take(3).flatMap(_.selectedStakeTag).map(_.label) should be(Seq("gamma", "beta", "delta"))
+        results.take(3).map(_.scores.topScore) should be(Seq(35.0, 16.0))
+        results.take(3).flatMap(_.selectedStakeTag).map(_.label) should be(Seq("beta", "delta"))
       }
     }
   }
@@ -1762,4 +1763,31 @@ class ProposalSearchEngineIT
       }
     }
   }
+
+  Feature("search proposals by min score lower bound") {
+    Scenario("should return a list of proposals") {
+      val query =
+        SearchQuery(filters = Some(SearchFilters(minScoreLowerBound = Some(MinScoreLowerBoundSearchFilter(42)))))
+
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        result.total should be(3L)
+      }
+    }
+  }
+
+  Feature("compute top 20 consensus threshold") {
+    Scenario("should return a list of proposals") {
+      whenReady(
+        elasticsearchProposalAPI.computeTop20ConsensusThreshold(
+          Seq(baseQuestion.questionId, otherQuestion.questionId, QuestionId("fake"))
+        ),
+        Timeout(10.seconds)
+      ) { thresholds =>
+        thresholds.size should be(2)
+        thresholds.get(baseQuestion.questionId) should be(Some(74d))
+        thresholds.get(otherQuestion.questionId) should be(Some(12d))
+      }
+    }
+  }
+
 }

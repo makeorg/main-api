@@ -923,7 +923,7 @@ class ModerationProposalApiTest
           any[RequestContext],
           any[Boolean],
           any[Option[Int]],
-          any[Option[Float]]
+          any[Option[Double]]
         )
       ).thenReturn(Future.successful(None))
 
@@ -955,7 +955,7 @@ class ModerationProposalApiTest
           any[RequestContext],
           any[Boolean],
           any[Option[Int]],
-          any[Option[Float]]
+          any[Option[Double]]
         )
       ).thenReturn(Future.successful(Some(proposalResponse(ProposalId("123456789")))))
 
@@ -986,7 +986,7 @@ class ModerationProposalApiTest
           any[RequestContext],
           any[Boolean],
           any[Option[Int]],
-          any[Option[Float]]
+          any[Option[Double]]
         )
       ).thenReturn(Future.successful(Some(proposalResponse(ProposalId("123456789")))))
 

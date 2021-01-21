@@ -712,6 +712,10 @@
         "status": {
           "type": "keyword",
           "index": true
+        },
+        "top20ConsensusThreshold": {
+          "type": "double",
+          "index": false
         }
       }
     }
