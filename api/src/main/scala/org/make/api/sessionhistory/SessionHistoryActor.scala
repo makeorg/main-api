@@ -374,48 +374,30 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
     case _ => None
   }
 
-  @SuppressWarnings(
-    Array(
-      "org.wartremover.warts.AsInstanceOf",
-      "org.wartremover.warts.IsInstanceOf",
-      "org.wartremover.warts.TraversableOps"
-    )
-  )
+  @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
   private def voteByProposalId(actions: Seq[VoteRelatedAction]): Map[ProposalId, VoteAction] = {
-    actions.filter {
-      case _: GenericVoteAction => true
-      case _                    => false
+    actions.collect {
+      case voteAction: GenericVoteAction => voteAction
     }.groupBy(_.proposalId)
       .map {
         case (proposalId, voteActions) =>
-          proposalId -> voteActions.maxBy(_.date.toString).asInstanceOf[GenericVoteAction]
+          proposalId -> voteActions.maxBy(_.date.toString)
       }
-      .filter {
-        case (_, value) => value.isInstanceOf[VoteAction]
-      }
-      .map {
-        case (k, value) => k -> value.asInstanceOf[VoteAction]
+      .collect {
+        case (k, value: VoteAction) => k -> value
       }
   }
 
-  @SuppressWarnings(
-    Array(
-      "org.wartremover.warts.AsInstanceOf",
-      "org.wartremover.warts.IsInstanceOf",
-      "org.wartremover.warts.TraversableOps"
-    )
-  )
+  @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
   private def qualifications(actions: Seq[VoteRelatedAction]): Map[ProposalId, Map[QualificationKey, VoteTrust]] = {
-    actions.filter {
-      case _: GenericQualificationAction => true
-      case _                             => false
-    }.groupBy { action =>
-      val qualificationAction = action.asInstanceOf[GenericQualificationAction]
-      (qualificationAction.proposalId, qualificationAction.key)
+    actions.collect {
+      case qualificationAction: GenericQualificationAction => qualificationAction
+    }.groupBy { qualificationAction =>
+      qualificationAction.proposalId -> qualificationAction.key
     }.map {
       case (groupKey, qualificationAction) => groupKey -> qualificationAction.maxBy(_.date.toString)
-    }.filter {
-      case (_, v) => v.isInstanceOf[QualificationAction]
+    }.collect {
+      case (k, v: QualificationAction) => k -> v
     }.toList.map {
       case ((proposalId, key), action) => proposalId -> (key -> action.trust)
     }.groupBy {
