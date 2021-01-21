@@ -22,6 +22,7 @@ package org.make.api.sequence
 import cats.syntax.list._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import grizzled.slf4j.Logging
+import org.make.api.operation.OperationOfQuestionSearchEngineComponent
 import org.make.api.proposal._
 import org.make.api.segment.SegmentServiceComponent
 import org.make.api.sessionhistory._
@@ -33,6 +34,7 @@ import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.indexed.{IndexedProposal, SequencePool, Zone}
 import org.make.core.proposal.{
   CreationDateAlgorithm,
+  MinScoreLowerBoundSearchFilter,
   ProposalId,
   ProposalSearchFilter,
   QuestionSearchFilter,
@@ -74,6 +76,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     with SequenceConfigurationComponent
     with SecurityConfigurationComponent
     with SegmentServiceComponent
+    with OperationOfQuestionSearchEngineComponent
     with Logging =>
 
   override lazy val sequenceService: SequenceService = new DefaultSequenceService
@@ -95,12 +98,21 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
         Future.successful(Seq.empty)
       }
 
+      val futureTop20ConsensusThreshold: Future[Option[Double]] = if (zone.contains(Zone.Consensus)) {
+        elasticsearchOperationOfQuestionAPI
+          .findOperationOfQuestionById(questionId)
+          .map(_.flatMap(_.top20ConsensusThreshold))
+      } else {
+        Future.successful(None)
+      }
+
       for {
         _                     <- logStartSequenceUserHistory(Some(questionId), maybeUserId, includedProposals, requestContext)
         proposalsVoted        <- futureVotedProposals(maybeUserId = maybeUserId, requestContext = requestContext)
         sequenceConfiguration <- getSequenceConfiguration(zone, questionId)
         includedProposals     <- futureIncludedProposals // TODO shouldn't they be excluded from searches?
         maybeSegment          <- segmentService.resolveSegment(requestContext)
+        consensusThreshold    <- futureTop20ConsensusThreshold
         searchProposals = (
           maybePool: Option[SequencePool],
           excluded: Seq[ProposalId],
@@ -134,7 +146,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                     question = Some(QuestionSearchFilter(Seq(questionId))),
                     tags = tagsSearch,
                     segment = segmentSearch,
-                    zone = zone.map(ZoneSearchFilter)
+                    zone = zone.map(ZoneSearchFilter),
+                    minScoreLowerBound = consensusThreshold.map(MinScoreLowerBoundSearchFilter)
                   )
                 ),
                 excludes = Some(proposal.SearchFilters(proposal = Some(ProposalSearchFilter(excluded)))),

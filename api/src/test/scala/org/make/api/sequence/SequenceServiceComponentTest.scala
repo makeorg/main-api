@@ -22,6 +22,7 @@ package org.make.api.sequence
 import grizzled.slf4j.Logging
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.operation.{OperationOfQuestionSearchEngine, OperationOfQuestionSearchEngineComponent}
 import org.make.api.proposal._
 import org.make.api.segment.{SegmentService, SegmentServiceComponent}
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
@@ -51,6 +52,7 @@ class SequenceServiceComponentTest
     with SelectionAlgorithmComponent
     with SecurityConfigurationComponent
     with SegmentServiceComponent
+    with OperationOfQuestionSearchEngineComponent
     with Logging {
 
   override val eventBusService: EventBusService = mock[EventBusService]
@@ -70,6 +72,8 @@ class SequenceServiceComponentTest
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
   override val segmentService: SegmentService = mock[SegmentService]
+  override val elasticsearchOperationOfQuestionAPI: OperationOfQuestionSearchEngine =
+    mock[OperationOfQuestionSearchEngine]
 
   val defaultSize = 12
   val proposalIds: Seq[ProposalId] = (1 to defaultSize).map(i => ProposalId(s"proposal$i"))
