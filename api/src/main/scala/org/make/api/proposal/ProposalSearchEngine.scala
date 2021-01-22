@@ -19,6 +19,7 @@
 
 package org.make.api.proposal
 
+import cats.data.NonEmptyList
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.search.{SearchResponse, TermBucket}
@@ -108,7 +109,7 @@ trait ProposalSearchEngine {
 
   def getRandomProposalsByIdeaWithAvatar(ideaIds: Seq[IdeaId], seed: Int): Future[Map[IdeaId, AvatarsAndProposalsCount]]
 
-  def computeTop20ConsensusThreshold(questionIds: Seq[QuestionId]): Future[Map[QuestionId, Double]]
+  def computeTop20ConsensusThreshold(questionIds: NonEmptyList[QuestionId]): Future[Map[QuestionId, Double]]
 }
 
 object ProposalSearchEngine {
@@ -485,11 +486,13 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       }
     }
 
-    override def computeTop20ConsensusThreshold(questionIds: Seq[QuestionId]): Future[Map[QuestionId, Double]] = {
+    override def computeTop20ConsensusThreshold(
+      questionIds: NonEmptyList[QuestionId]
+    ): Future[Map[QuestionId, Double]] = {
       val searchFilters = SearchFilters.getSearchFilters(
         SearchQuery(filters = Some(
           SearchFilters(
-            question = Some(QuestionSearchFilter(questionIds)),
+            question = Some(QuestionSearchFilter(questionIds.toList)),
             sequencePool = Some(SequencePoolSearchFilter(SequencePool.Tested)),
             zone = Some(ZoneSearchFilter(Zone.Consensus))
           )

@@ -23,11 +23,12 @@ import akka.Done
 import akka.actor.typed.scaladsl.AskPattern.schedulerFromActorSystem
 import akka.stream.scaladsl._
 import akka.util.Timeout
+import cats.data.NonEmptyList
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.index.CreateIndexResponse
 import com.sksamuel.elastic4s.http.index.admin.AliasActionResponse
-import grizzled.slf4j.Logging
 import eu.timepit.refined.auto._
+import grizzled.slf4j.Logging
 import org.make.api.ActorSystemTypedComponent
 import org.make.api.idea._
 import org.make.api.operation.PersistentOperationOfQuestionServiceComponent
@@ -38,7 +39,10 @@ import org.make.api.technical.{ReadJournalComponent, TimeSettings}
 import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.idea.Idea
 import org.make.core.job.Job.JobId.{Reindex, ReindexPosts}
+import org.make.core.operation.indexed.OperationOfQuestionSearchResult
 import org.make.core.operation.{
+  OperationKind,
+  OperationKindsSearchFilter,
   OperationOfQuestion,
   OperationOfQuestionSearchFilters,
   OperationOfQuestionSearchQuery,
@@ -396,27 +400,55 @@ trait DefaultIndexationComponent
     private def executeUpdateOperationOfQuestions(): Future[IndexationStatus] = {
       val start = System.currentTimeMillis()
 
-      val result: Future[IndexationStatus] = elasticsearchOperationOfQuestionAPI
-        .searchOperationOfQuestions(
-          OperationOfQuestionSearchQuery(filters =
-            Some(OperationOfQuestionSearchFilters(status = Some(StatusSearchFilter(OperationOfQuestion.Status.Open))))
+      def query(limit: Int) = OperationOfQuestionSearchQuery(
+        filters = Some(
+          OperationOfQuestionSearchFilters(
+            status = Some(StatusSearchFilter(OperationOfQuestion.Status.Open)),
+            operationKinds = Some(OperationKindsSearchFilter(OperationKind.values))
           )
-        )
-        .flatMap { result =>
-          logger.info(s"Operation of questions to update: ${result.results.size}")
-          if (result.results.size != result.total) {
-            logger.warn(
-              s"${result.total - result.results.size} questions won't be updated. You might want to add a limit to override default es limit or paginate and stream it."
+        ),
+        limit = Some(limit)
+      )
+
+      @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+      def countProposals(retries: Int = 3): Future[Int] = {
+        elasticsearchOperationOfQuestionAPI.count(OperationOfQuestionSearchQuery()).flatMap {
+          case 0 if retries > 0 =>
+            // Needed to wait for previous bulk indexation to actually persist in ES
+            Thread.sleep(1000)
+            countProposals(retries - 1)
+          case 0 =>
+            logger.warn("retrying but no retries left")
+            Future.failed(
+              new IllegalStateException(
+                s"ES index ${elasticsearchConfiguration.operationOfQuestionAliasName} does not yet have indexed values."
+              )
             )
-          }
-          elasticsearchProposalAPI.computeTop20ConsensusThreshold(result.results.map(_.questionId)).flatMap {
-            thresholds =>
-              val questions = result.results.map { question =>
-                question.copy(top20ConsensusThreshold = thresholds.get(question.questionId))
-              }
-              elasticsearchOperationOfQuestionAPI.indexOperationOfQuestions(questions, None)
-          }
+          case _ =>
+            elasticsearchOperationOfQuestionAPI.count(query(0)).map(_.toInt)
         }
+      }
+
+      def updateQuestions(result: OperationOfQuestionSearchResult): Future[IndexationStatus] = {
+        logger.info(s"Operation of questions to update: ${result.results.size}")
+        result.results.map(_.questionId) match {
+          case Seq() => Future.successful(IndexationStatus.Completed)
+          case head +: tail =>
+            elasticsearchProposalAPI.computeTop20ConsensusThreshold(NonEmptyList(head, tail.toList)).flatMap {
+              thresholds =>
+                val questions = result.results.map { question =>
+                  question.copy(top20ConsensusThreshold = thresholds.get(question.questionId))
+                }
+                elasticsearchOperationOfQuestionAPI.indexOperationOfQuestions(questions, None)
+            }
+        }
+      }
+
+      val result = for {
+        count  <- countProposals()
+        result <- elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query(count))
+        status <- updateQuestions(result)
+      } yield status
 
       result.onComplete {
         case Success(IndexationStatus.Completed) =>
