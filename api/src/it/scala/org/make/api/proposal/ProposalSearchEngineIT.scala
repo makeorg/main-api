@@ -1779,7 +1779,7 @@ class ProposalSearchEngineIT
     Scenario("should return a list of proposals") {
       whenReady(
         elasticsearchProposalAPI.computeTop20ConsensusThreshold(
-          Seq(baseQuestion.questionId, otherQuestion.questionId, QuestionId("fake"))
+          NonEmptyList(baseQuestion.questionId, List(otherQuestion.questionId, QuestionId("fake")))
         ),
         Timeout(10.seconds)
       ) { thresholds =>
