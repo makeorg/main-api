@@ -29,6 +29,7 @@ import org.make.api.proposal.ProposalScorer.VotesCounter
 import org.make.core.auth.{Client, ClientId}
 import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
 import org.make.core.operation._
+import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.post.indexed.IndexedPost
 import org.make.core.post.{Post, PostId}
 import org.make.core.profile.Profile
@@ -429,6 +430,60 @@ trait TestUtils {
     votesTarget = votesTarget,
     timeline = timeline,
     createdAt = createdAt
+  )
+
+  def indexedOperationOfQuestion(
+    questionId: QuestionId,
+    operationId: OperationId,
+    question: String = "What's the question?",
+    slug: String = "question-slug",
+    questionShortTitle: Option[String] = Some("short title"),
+    startDate: ZonedDateTime = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+    endDate: ZonedDateTime = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
+    status: OperationOfQuestion.Status = OperationOfQuestion.Status.Open,
+    theme: QuestionTheme = QuestionTheme.default,
+    description: String = OperationOfQuestion.defaultDescription,
+    consultationImage: Option[String] = Some("image-url"),
+    consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]] = Some("image alternative"),
+    descriptionImage: Option[String] = None,
+    descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]] = None,
+    countries: NonEmptyList[Country] = NonEmptyList(Country("FR"), List.empty),
+    language: Language = Language("fr"),
+    operationTitle: String = "operation title",
+    operationKind: String = OperationKind.GreatCause.value,
+    aboutUrl: Option[String] = None,
+    resultsLink: Option[String] = None,
+    proposalsCount: Int = 42,
+    participantsCount: Int = 84,
+    actions: Option[String] = None,
+    featured: Boolean = true,
+    top20ConsensusThreshold: Option[Double] = None
+  ) = IndexedOperationOfQuestion(
+    questionId = questionId,
+    question = question,
+    slug = slug,
+    questionShortTitle = questionShortTitle,
+    startDate = startDate,
+    endDate = endDate,
+    status = status,
+    theme = theme,
+    description = description,
+    consultationImage = consultationImage,
+    consultationImageAlt = consultationImageAlt,
+    descriptionImage = descriptionImage,
+    descriptionImageAlt = descriptionImageAlt,
+    countries = countries,
+    language = language,
+    operationId = operationId,
+    operationTitle = operationTitle,
+    operationKind = operationKind,
+    aboutUrl = aboutUrl,
+    resultsLink = resultsLink,
+    proposalsCount = proposalsCount,
+    participantsCount = participantsCount,
+    actions = actions,
+    featured = featured,
+    top20ConsensusThreshold = top20ConsensusThreshold
   )
 
   def postGen(

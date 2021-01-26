@@ -274,12 +274,18 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
     }
 
     override def indexById(questionId: QuestionId): Future[Option[IndexationStatus]] = {
+      val immutableFields = elasticsearchOperationOfQuestionAPI
+        .findOperationOfQuestionById(questionId)
+        .map(_.map(_.immutableFields).getOrElse(IndexedOperationOfQuestion.ImmutableFields.empty))
       val futureIndexedOperationOfQuestion: Future[Option[IndexedOperationOfQuestion]] = (for {
         question            <- OptionT(questionService.getQuestion(questionId))
         operationOfQuestion <- OptionT(findByQuestionId(question.questionId))
         operation           <- OptionT(operationService.findOneSimple(operationOfQuestion.operationId))
       } yield IndexedOperationOfQuestion.createFromOperationOfQuestion(operationOfQuestion, operation, question)).value
-      futureIndexedOperationOfQuestion.flatMap {
+
+      futureIndexedOperationOfQuestion.flatMap { ooq =>
+        immutableFields.map(fields => ooq.map(_.applyImmutableFields(fields)))
+      }.flatMap {
         case None => Future.successful(None)
         case Some(operationOfQuestion) =>
           elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(operationOfQuestion, None).map(Some(_))
