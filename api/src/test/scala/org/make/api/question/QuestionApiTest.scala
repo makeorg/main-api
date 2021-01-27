@@ -54,7 +54,7 @@ import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user._
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
 import org.make.core.{DateHelper, Order, RequestContext, ValidationError}
-import org.make.core.proposal.indexed.Zone
+import org.make.core.proposal.indexed.{SequencePool, Zone}
 
 import java.time.ZonedDateTime
 
@@ -70,6 +70,7 @@ class QuestionApiTest
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with OperationServiceComponent
+    with OperationOfQuestionSearchEngineComponent
     with OperationOfQuestionServiceComponent
     with PartnerServiceComponent
     with MakeSettingsComponent
@@ -89,6 +90,8 @@ class QuestionApiTest
   override val partnerService: PartnerService = mock[PartnerService]
   override val featureService: FeatureService = mock[FeatureService]
   override val activeFeatureService: ActiveFeatureService = mock[ActiveFeatureService]
+  override val elasticsearchOperationOfQuestionAPI: OperationOfQuestionSearchEngine =
+    mock[OperationOfQuestionSearchEngine]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val tagService: TagService = mock[TagService]
   override val proposalService: ProposalService = mock[ProposalService]
@@ -135,11 +138,13 @@ class QuestionApiTest
     baseOperation.createdAt,
     baseOperation.updatedAt
   )
-  val openOperationOfQuestion: IndexedOperationOfQuestion = IndexedOperationOfQuestion.createFromOperationOfQuestion(
-    baseOperationOfQuestion.copy(startDate = now.minusDays(1), endDate = now.plusDays(1)),
-    baseSimpleOperation,
-    baseQuestion
-  )
+  val openOperationOfQuestion: IndexedOperationOfQuestion = IndexedOperationOfQuestion
+    .createFromOperationOfQuestion(
+      baseOperationOfQuestion.copy(startDate = now.minusDays(1), endDate = now.plusDays(1)),
+      baseSimpleOperation,
+      baseQuestion
+    )
+    .copy(top20ConsensusThreshold = Some(0.5))
   val finishedOperationOfQuestion: IndexedOperationOfQuestion =
     IndexedOperationOfQuestion.createFromOperationOfQuestion(
       baseOperationOfQuestion.copy(startDate = now.minusDays(2), endDate = now.minusDays(1)),
@@ -164,12 +169,17 @@ class QuestionApiTest
       Future.successful(OperationOfQuestionSearchResult(result.size, result))
   }
 
+  when(elasticsearchOperationOfQuestionAPI.findOperationOfQuestionById(any)).thenAnswer { _: QuestionId =>
+    Future.successful(Some(openOperationOfQuestion))
+  }
+
   when(elasticsearchProposalAPI.countProposals(any[SearchQuery])).thenAnswer { query: SearchQuery =>
-    Future.successful(query.filters.flatMap(_.zone.map(_.zone)) match {
-      case Some(Zone.Consensus)   => 48
+    Future.successful((query.filters.flatMap(_.zone.map(_.zone)) match {
+      case Some(Zone.Consensus) =>
+        (96 * query.filters.flatMap(_.minScoreLowerBound.map(_.minLowerBound)).getOrElse(0d)).toInt
       case Some(Zone.Controversy) => 24
       case _                      => 0
-    })
+    }) / (if (query.filters.flatMap(_.sequencePool.map(_.sequencePool)).contains(SequencePool.Tested)) 1 else 2))
   }
 
   Feature("start sequence by question id") {

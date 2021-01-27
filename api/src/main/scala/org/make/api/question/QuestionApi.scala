@@ -27,7 +27,12 @@ import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.feature.{ActiveFeatureServiceComponent, FeatureServiceComponent}
 import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
-import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent, ResultsLinkResponse}
+import org.make.api.operation.{
+  OperationOfQuestionSearchEngineComponent,
+  OperationOfQuestionServiceComponent,
+  OperationServiceComponent,
+  ResultsLinkResponse
+}
 import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.PartnerServiceComponent
 import org.make.api.personality.PersonalityRoleServiceComponent
@@ -50,8 +55,16 @@ import org.make.core.operation._
 import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldName, OperationOfQuestionSearchResult}
 import org.make.core.partner.PartnerKind
 import org.make.core.personality.PersonalityRoleId
-import org.make.core.proposal.{ProposalId, QuestionSearchFilter, SearchFilters, SearchQuery, ZoneSearchFilter}
-import org.make.core.proposal.indexed.Zone
+import org.make.core.proposal.{
+  MinScoreLowerBoundSearchFilter,
+  ProposalId,
+  QuestionSearchFilter,
+  SearchFilters,
+  SearchQuery,
+  SequencePoolSearchFilter,
+  ZoneSearchFilter
+}
+import org.make.core.proposal.indexed.{SequencePool, Zone}
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
 import org.make.core.technical.Pagination._
@@ -298,6 +311,7 @@ trait DefaultQuestionApiComponent
     with SessionHistoryCoordinatorServiceComponent
     with MakeSettingsComponent
     with OperationServiceComponent
+    with OperationOfQuestionSearchEngineComponent
     with OperationOfQuestionServiceComponent
     with PartnerServiceComponent
     with FeatureServiceComponent
@@ -325,45 +339,55 @@ trait DefaultQuestionApiComponent
           } { question =>
             provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(question.questionId)) {
               operationOfQuestion =>
-                provideAsyncOrNotFound(operationService.findOne(operationOfQuestion.operationId)) { operation =>
-                  provideAsync(
-                    partnerService.find(
-                      questionId = Some(question.questionId),
-                      organisationId = None,
-                      start = Start.zero,
-                      end = None,
-                      sort = Some("weight"),
-                      order = Some(Order.desc),
-                      partnerKind = None
-                    )
-                  ) { partners =>
-                    provideAsync(findQuestionsOfOperation(operationOfQuestion.operationId)) { questions =>
-                      provideAsync(findActiveFeatureSlugsByQuestionId(question.questionId)) { activeFeatureSlugs =>
-                        def zoneCount(zone: Zone) = elasticsearchProposalAPI.countProposals(
-                          SearchQuery(filters = Some(
-                            SearchFilters(
-                              question = Some(QuestionSearchFilter(Seq(question.questionId))),
-                              zone = Some(ZoneSearchFilter(zone))
-                            )
-                          )
-                          )
-                        )
-                        val futureConsensusCount = zoneCount(Zone.Consensus)
-                        val futureControversyCount = zoneCount(Zone.Controversy)
-                        provideAsync(futureConsensusCount) { consensusCount =>
-                          provideAsync(futureControversyCount) { controversyCount =>
-                            complete(
-                              QuestionDetailsResponse(
-                                question,
-                                operation,
-                                operationOfQuestion,
-                                partners,
-                                questions,
-                                activeFeatureSlugs,
-                                controversyCount,
-                                consensusCount
+                provideAsyncOrNotFound(
+                  elasticsearchOperationOfQuestionAPI.findOperationOfQuestionById(question.questionId)
+                ) { indexedOOQ =>
+                  provideAsyncOrNotFound(operationService.findOne(operationOfQuestion.operationId)) { operation =>
+                    provideAsync(
+                      partnerService.find(
+                        questionId = Some(question.questionId),
+                        organisationId = None,
+                        start = Start.zero,
+                        end = None,
+                        sort = Some("weight"),
+                        order = Some(Order.desc),
+                        partnerKind = None
+                      )
+                    ) { partners =>
+                      provideAsync(findQuestionsOfOperation(operationOfQuestion.operationId)) { questions =>
+                        provideAsync(findActiveFeatureSlugsByQuestionId(question.questionId)) { activeFeatureSlugs =>
+                          def zoneCount(zone: Zone) = elasticsearchProposalAPI.countProposals(
+                            SearchQuery(filters = Some(
+                              SearchFilters(
+                                minScoreLowerBound = Option
+                                  .when(zone == Zone.Consensus)(
+                                    indexedOOQ.top20ConsensusThreshold.map(MinScoreLowerBoundSearchFilter)
+                                  )
+                                  .flatten,
+                                question = Some(QuestionSearchFilter(Seq(question.questionId))),
+                                sequencePool = Some(SequencePoolSearchFilter(SequencePool.Tested)),
+                                zone = Some(ZoneSearchFilter(zone))
                               )
                             )
+                            )
+                          )
+                          val futureConsensusCount = zoneCount(Zone.Consensus)
+                          val futureControversyCount = zoneCount(Zone.Controversy)
+                          provideAsync(futureConsensusCount) { consensusCount =>
+                            provideAsync(futureControversyCount) { controversyCount =>
+                              complete(
+                                QuestionDetailsResponse(
+                                  question,
+                                  operation,
+                                  operationOfQuestion,
+                                  partners,
+                                  questions,
+                                  activeFeatureSlugs,
+                                  controversyCount,
+                                  consensusCount
+                                )
+                              )
+                            }
                           }
                         }
                       }
