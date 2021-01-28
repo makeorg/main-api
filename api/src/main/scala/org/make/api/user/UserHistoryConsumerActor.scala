@@ -23,6 +23,7 @@ import akka.actor.Props
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import grizzled.slf4j.Logging
+import org.make.api.technical.RichFutures._
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory._
 import org.make.core.AvroSerializers
@@ -104,7 +105,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
         )
         userService
           .update(user.copy(lastConnection = event.eventDate), event.requestContext)
-          .map(_ => ())
+          .toUnit
       case None =>
         log.warning("User not found after UserConnectedEvent: ", event)
         Future.unit

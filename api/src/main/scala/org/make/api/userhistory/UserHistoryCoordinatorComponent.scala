@@ -25,6 +25,7 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.util.Timeout
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.technical.RichFutures._
 import org.make.api.technical.{StreamUtils, TimeSettings}
 import org.make.api.userhistory.UserHistoryActor.{
   ReloadState,
@@ -71,7 +72,7 @@ trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinat
     }
 
     override def logTransactionalHistory(command: TransactionalUserHistoryEvent[_]): Future[Unit] = {
-      (userHistoryCoordinator ? UserHistoryEnvelope(command.userId, command)).map(_ => ())
+      (userHistoryCoordinator ? UserHistoryEnvelope(command.userId, command)).toUnit
     }
 
     override def retrieveVoteAndQualifications(

@@ -20,11 +20,11 @@
 package org.make.api.operation
 
 import java.time.ZonedDateTime
-
 import cats.data.NonEmptyList
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
+import org.make.api.technical.RichFutures._
 import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.api.{DatabaseTest, TestUtilsIT}
 import org.make.core.{DateHelper, Order}
@@ -205,7 +205,7 @@ class PersistentOperationServiceIT
           )
         } yield {}
       }
-      .map(_ => ())
+      .toUnit
   }
 
   Feature("An operation can be persisted") {

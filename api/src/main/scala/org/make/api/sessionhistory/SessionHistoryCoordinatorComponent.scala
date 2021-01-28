@@ -26,6 +26,7 @@ import akka.util.Timeout
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryActor.{CurrentSessionId, SessionHistory}
+import org.make.api.technical.RichFutures._
 import org.make.api.technical.{StreamUtils, TimeSettings}
 import org.make.api.userhistory.{VotedProposals, VotesValues}
 import org.make.core.RequestContext
@@ -86,7 +87,7 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
     override def logTransactionalHistory(command: TransactionalSessionHistoryEvent[_]): Future[Unit] = {
       (sessionHistoryCoordinator ? SessionHistoryEnvelope(command.sessionId, command)).flatMap {
         case SessionIsExpired(newSessionId) =>
-          (sessionHistoryCoordinator ? SessionHistoryEnvelope(newSessionId, command)).map(_ => ())
+          (sessionHistoryCoordinator ? SessionHistoryEnvelope(newSessionId, command)).toUnit
         case _ => Future.unit
       }
     }

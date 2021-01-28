@@ -21,7 +21,6 @@ package org.make.api.migrations.db
 
 import java.sql.Connection
 import java.util.concurrent.Executors
-
 import grizzled.slf4j.Logging
 import org.make.api.crmTemplates.{
   DefaultCrmTemplatesServiceComponent,
@@ -33,6 +32,7 @@ import org.make.api.migrations.db.V98__Split_CRM_templates_by_language_and_quest
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.technical.{DefaultIdGeneratorComponent, ShortenedNames}
 import org.make.api.technical.ExecutorServiceHelper._
+import org.make.api.technical.RichFutures._
 import org.make.core.crmTemplate.{CrmTemplateKind, TemplateId}
 import org.make.core.crmTemplate.CrmTemplateKind._
 import org.make.core.reference.Language
@@ -58,9 +58,7 @@ class V98__Split_CRM_templates_by_language_and_question
     languageTemplates
       .foldLeft(Future.unit) {
         case (f, (language, templates)) =>
-          f.flatMap(
-            _ => crmTemplatesService.create(Language(language), templates.andThen(TemplateId.apply)).map(_ => ())
-          )
+          f.flatMap(_ => crmTemplatesService.create(Language(language), templates.andThen(TemplateId.apply)).toUnit)
       }
   }
 

@@ -19,13 +19,13 @@
 
 package org.make.api.technical.auth
 import java.time.ZonedDateTime
-
 import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.ShortenedNames
 import org.make.core.auth.{AuthCode, ClientId}
 import org.make.core.user.UserId
 import org.make.api.technical.DatabaseTransactions._
+import org.make.api.technical.RichFutures._
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -91,7 +91,7 @@ trait DefaultPersistentAuthCodeServiceComponent extends PersistentAuthCodeServic
             .from(PersistentAuthCode.as(alias))
             .where(sqls.eq(alias.authorizationCode, code))
         }.map(PersistentAuthCode.apply()).update().apply()
-      }).map(_ => ())
+      }).toUnit
     }
   }
 }

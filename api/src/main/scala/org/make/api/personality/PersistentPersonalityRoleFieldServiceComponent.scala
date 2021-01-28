@@ -24,6 +24,7 @@ import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.personality.DefaultPersistentPersonalityRoleFieldServiceComponent.PersistentPersonalityRoleField
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.RichFutures._
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.api.technical.ScalikeSupport._
 import org.make.core.personality.{FieldType, PersonalityRoleField, PersonalityRoleFieldId, PersonalityRoleId}
@@ -187,7 +188,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
           deleteFrom(PersistentPersonalityRoleField)
             .where(sqls.eq(column.id, personalityRoleFieldId.value))
         }.execute().apply()
-      }).map(_ => ())
+      }).toUnit
     }
 
   }

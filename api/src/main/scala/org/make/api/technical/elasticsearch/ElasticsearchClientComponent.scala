@@ -19,12 +19,12 @@
 
 package org.make.api.technical.elasticsearch
 import java.time.format.DateTimeFormatter
-
 import com.sksamuel.elastic4s.http.ElasticDsl.{addAlias, aliasExists, aliases, createIndex, getAliases, _}
 import com.sksamuel.elastic4s.http.index.admin.AliasExistsResponse
 import com.sksamuel.elastic4s.http.{ElasticClient, ElasticProperties}
 import grizzled.slf4j.Logging
 import org.make.api.ActorSystemComponent
+import org.make.api.technical.RichFutures._
 import org.make.api.technical.security.SecurityHelper
 import org.make.core.DateHelper
 
@@ -144,7 +144,7 @@ trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent w
               createInitialIndexAndAlias(aliasName)
           }
         }
-        .map(_ => ())
+        .toUnit
     }
   }
 }

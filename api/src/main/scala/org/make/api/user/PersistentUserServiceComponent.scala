@@ -20,13 +20,13 @@
 package org.make.api.user
 
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
-
 import cats.data.NonEmptyList
 import com.github.t3hnar.bcrypt._
 import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.RichFutures._
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.api.technical.ScalikeSupport._
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
@@ -1079,7 +1079,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
 
     override def removeAnonymizedUserFromFollowedUserTable(userId: UserId): Future[Unit] = {
       implicit val cxt: EC = readExecutionContext
-      val futureUserFollowed = Future(NamedDB("WRITE").retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           delete
             .from(FollowedUsers.as(followedUsersAlias))
@@ -1089,9 +1089,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
                 .or(sqls.eq(followedUsersAlias.followedUserId, userId.value))
             )
         }.executeUpdate().apply()
-      })
-
-      futureUserFollowed.map(_ => {})
+      }).toUnit
     }
 
     override def followUser(followedUserId: UserId, userId: UserId): Future[Unit] = {
@@ -1106,8 +1104,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               followedUsersColumn.date -> DateHelper.now()
             )
         }.execute().apply()
-        () // TODO check success
-      })
+      }).toUnit
     }
 
     override def unfollowUser(followedUserId: UserId, userId: UserId): Future[Unit] = {
@@ -1122,8 +1119,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
                 .and(sqls.eq(followedUsersAlias.followedUserId, followedUserId.value))
             )
         }.executeUpdate().apply()
-        () // TODO check success
-      })
+      }).toUnit
     }
 
     override def countOrganisations(organisationName: Option[String]): Future[Int] = {

@@ -20,13 +20,13 @@
 package org.make.api.question
 
 import java.time.ZonedDateTime
-
 import cats.data.NonEmptyList
 import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.question.DefaultPersistentQuestionServiceComponent.{COUNTRY_SEPARATOR, PersistentQuestion}
 import org.make.api.technical.DatabaseTransactions.RichDatabase
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.RichFutures._
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.DateHelper
 import org.make.core.operation.OperationId
@@ -192,7 +192,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
           deleteFrom(PersistentQuestion)
             .where(sqls.eq(PersistentQuestion.column.questionId, questionId.value))
         }.execute().apply()
-      }).map(_ => ())
+      }).toUnit
     }
   }
 }

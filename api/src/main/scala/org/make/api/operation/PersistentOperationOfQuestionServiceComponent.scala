@@ -19,7 +19,6 @@
 
 package org.make.api.operation
 import java.time.{LocalDate, ZonedDateTime}
-
 import cats.Show
 import cats.data.NonEmptyList
 import eu.timepit.refined.W
@@ -34,6 +33,7 @@ import org.make.api.operation.DefaultPersistentOperationServiceComponent.Persist
 import org.make.api.question.DefaultPersistentQuestionServiceComponent.{COUNTRY_SEPARATOR, PersistentQuestion}
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.RichFutures._
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.api.technical.ScalikeSupport._
 import org.make.core.{DateHelper, Order}
@@ -309,7 +309,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
           deleteFrom(PersistentOperationOfQuestion)
             .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, questionId))
         }.execute().apply()
-      }).map(_ => ())
+      }).toUnit
     }
 
     override def count(
