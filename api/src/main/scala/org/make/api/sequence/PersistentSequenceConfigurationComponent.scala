@@ -120,9 +120,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
               column.selectionAlgorithmName -> sequenceConfig.selectionAlgorithmName,
               column.createdAt -> DateHelper.now(),
               column.updatedAt -> DateHelper.now(),
-              column.nonSequenceVotesWeight -> sequenceConfig.nonSequenceVotesWeight,
-              column.scoreAdjustementVotesThreshold -> sequenceConfig.scoreAdjustementVotesThreshold,
-              column.scoreAdjustementFactor -> sequenceConfig.scoreAdjustementFactor
+              column.nonSequenceVotesWeight -> sequenceConfig.nonSequenceVotesWeight
             )
         }.execute().apply()
       })
@@ -151,9 +149,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
               column.sequenceSize -> sequenceConfig.sequenceSize,
               column.selectionAlgorithmName -> sequenceConfig.selectionAlgorithmName,
               column.updatedAt -> DateHelper.now(),
-              column.nonSequenceVotesWeight -> sequenceConfig.nonSequenceVotesWeight,
-              column.scoreAdjustementVotesThreshold -> sequenceConfig.scoreAdjustementVotesThreshold,
-              column.scoreAdjustementFactor -> sequenceConfig.scoreAdjustementFactor
+              column.nonSequenceVotesWeight -> sequenceConfig.nonSequenceVotesWeight
             )
             .where(
               sqls
@@ -206,9 +202,7 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
     selectionAlgorithmName: String,
     createdAt: ZonedDateTime,
     updatedAt: ZonedDateTime,
-    nonSequenceVotesWeight: Double,
-    scoreAdjustementVotesThreshold: Int,
-    scoreAdjustementFactor: Double
+    nonSequenceVotesWeight: Double
   ) {
     def toSequenceConfiguration: SequenceConfiguration =
       SequenceConfiguration(
@@ -230,9 +224,7 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         maxTestedProposalCount = maxTestedProposalCount,
         sequenceSize = sequenceSize,
         selectionAlgorithmName = SelectionAlgorithmName.withValue(selectionAlgorithmName),
-        nonSequenceVotesWeight = nonSequenceVotesWeight,
-        scoreAdjustementVotesThreshold = scoreAdjustementVotesThreshold,
-        scoreAdjustementFactor = scoreAdjustementFactor
+        nonSequenceVotesWeight = nonSequenceVotesWeight
       )
   }
 
@@ -263,9 +255,7 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         "selection_algorithm_name",
         "created_at",
         "updated_at",
-        "non_sequence_votes_weight",
-        "score_adjustement_votes_threshold",
-        "score_adjustement_factor"
+        "non_sequence_votes_weight"
       )
 
     override val tableName: String = "sequence_configuration"
@@ -298,9 +288,7 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         selectionAlgorithmName = resultSet.string(resultName.selectionAlgorithmName),
         createdAt = resultSet.zonedDateTime(resultName.createdAt),
         updatedAt = resultSet.zonedDateTime(resultName.updatedAt),
-        nonSequenceVotesWeight = resultSet.double(resultName.nonSequenceVotesWeight),
-        scoreAdjustementVotesThreshold = resultSet.int(resultName.scoreAdjustementVotesThreshold),
-        scoreAdjustementFactor = resultSet.double(resultName.scoreAdjustementFactor)
+        nonSequenceVotesWeight = resultSet.double(resultName.nonSequenceVotesWeight)
       )
     }
   }
