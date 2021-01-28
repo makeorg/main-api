@@ -26,15 +26,18 @@ import eu.timepit.refined.types.numeric.NonNegInt
 import io.circe.generic.semiauto._
 import io.circe.refined._
 import eu.timepit.refined.auto._
-import io.circe.{Decoder, Encoder}
+import io.circe.Codec
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.keyword.KeywordServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core._
 import org.make.core.auth.UserRights
+import org.make.core.keyword.Keyword
 import org.make.core.question.QuestionId
 import scalaoauth2.provider.AuthInfo
 
@@ -68,7 +71,33 @@ trait AdminOperationOfQuestionApi extends Directives {
   @Path(value = "/{questionId}/highlights")
   def updateHighlights: Route
 
-  def routes: Route = updateHighlights
+  @ApiOperation(
+    value = "update-question-keywords",
+    httpMethod = "PUT",
+    code = HttpCodes.NoContent,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "questionId", paramType = "path", required = true, dataType = "string"),
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        required = true,
+        dataType = "org.make.api.operation.UpdateKeywords"
+      )
+    )
+  )
+  @Path(value = "/{questionId}/keywords")
+  def updateKeywords: Route
+
+  def routes: Route = updateHighlights ~ updateKeywords
 }
 
 trait AdminOperationOfQuestionApiComponent {
@@ -85,7 +114,8 @@ trait DefaultAdminOperationOfQuestionApiComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
     with SessionHistoryCoordinatorServiceComponent
-    with OperationOfQuestionServiceComponent =>
+    with OperationOfQuestionServiceComponent
+    with KeywordServiceComponent =>
 
   val questionId: PathMatcher1[QuestionId] = Segment.map(id => QuestionId(id))
 
@@ -122,6 +152,41 @@ trait DefaultAdminOperationOfQuestionApiComponent
         }
       }
     }
+
+    override def updateKeywords: Route = put {
+      path("admin" / "questions" / questionId / "keywords") { questionId =>
+        makeOperation("UpdateQuestionKeywords") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireAdminRole(auth.user) {
+              decodeRequest {
+                entity(as[UpdateKeywords]) { request =>
+                  provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(questionId)) { _ =>
+                    val duplicateKeys: Set[String] = request.keywords
+                      .groupBy(_.key)
+                      .collect {
+                        case (key, seq) if seq.size > 1 => key
+                      }
+                      .toSet
+                    Validation.validate(
+                      Validation.validateField(
+                        "keywords",
+                        "invalid_value",
+                        duplicateKeys.isEmpty,
+                        s"keywords contain duplicate keys: ${duplicateKeys.mkString(", ")}"
+                      )
+                    )
+                    provideAsync(keywordService.replaceAll(questionId, request.keywords.map(_.toKeyword(questionId)))) {
+                      _ =>
+                        complete(StatusCodes.NoContent)
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 
@@ -129,6 +194,19 @@ trait DefaultAdminOperationOfQuestionApiComponent
 final case class UpdateHighlights(proposalsCount: NonNegInt, participantsCount: NonNegInt, votesCount: NonNegInt)
 
 object UpdateHighlights extends CirceFormatters {
-  implicit val decoder: Decoder[UpdateHighlights] = deriveDecoder[UpdateHighlights]
-  implicit val encoder: Encoder[UpdateHighlights] = deriveEncoder[UpdateHighlights]
+  implicit val codec: Codec[UpdateHighlights] = deriveCodec
+}
+
+final case class UpdateKeywords(keywords: Seq[KeywordRequest])
+
+object UpdateKeywords {
+  implicit val codec: Codec[UpdateKeywords] = deriveCodec
+}
+
+final case class KeywordRequest(key: String, label: String, score: Float, count: NonNegInt) {
+  def toKeyword(questionId: QuestionId): Keyword = Keyword(questionId, key, label, score, count)
+}
+
+object KeywordRequest {
+  implicit val codec: Codec[KeywordRequest] = deriveCodec
 }

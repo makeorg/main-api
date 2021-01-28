@@ -27,6 +27,7 @@ import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.feature.{ActiveFeatureServiceComponent, FeatureServiceComponent}
 import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
+import org.make.api.keyword.KeywordServiceComponent
 import org.make.api.operation.{
   OperationOfQuestionSearchEngineComponent,
   OperationOfQuestionServiceComponent,
@@ -51,6 +52,7 @@ import org.make.api.technical.{EndpointType, IdGeneratorComponent, MakeAuthentic
 import org.make.core.Validation.validateField
 import org.make.core.auth.UserRights
 import org.make.core.idea.TopIdeaId
+import org.make.core.keyword.Keyword
 import org.make.core.operation._
 import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldName, OperationOfQuestionSearchResult}
 import org.make.core.partner.PartnerKind
@@ -293,9 +295,20 @@ trait QuestionApi extends Directives {
   @Path(value = "/{questionId}/featured-proposals")
   def featuredProposals: Route
 
+  @ApiOperation(value = "get-keywords", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer", required = true)
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[Keyword]])))
+  @Path(value = "/{questionId}/keywords")
+  def getKeywords: Route
+
   def routes: Route =
     questionDetails ~ startSequenceByQuestionId ~ searchQuestions ~ getPopularTags ~ getTopProposals ~ getPartners ~
-      getPersonalities ~ getTopIdeas ~ getTopIdea ~ listQuestions ~ featuredProposals
+      getPersonalities ~ getTopIdeas ~ getTopIdea ~ listQuestions ~ featuredProposals ~ getKeywords
 }
 
 trait DefaultQuestionApiComponent
@@ -320,7 +333,8 @@ trait DefaultQuestionApiComponent
     with TagServiceComponent
     with ProposalServiceComponent
     with TopIdeaCommentServiceComponent
-    with PersonalityRoleServiceComponent =>
+    with PersonalityRoleServiceComponent
+    with KeywordServiceComponent =>
 
   override lazy val questionApi: QuestionApi = new DefaultQuestionApi
 
@@ -807,6 +821,20 @@ trait DefaultQuestionApiComponent
                   }
                 }
               }
+          }
+        }
+      }
+    }
+
+    override def getKeywords: Route = get {
+      path("questions" / questionId / "keywords") { questionId =>
+        makeOperation("GetKeywords") { requestContext =>
+          parameters("limit".as[Int]) { (limit: Int) =>
+            provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+              provideAsync(keywordService.findAll(questionId, limit)) { keywords =>
+                complete(keywords)
+              }
+            }
           }
         }
       }
