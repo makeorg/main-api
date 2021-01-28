@@ -132,7 +132,13 @@ final case class IndexedOperationOfQuestion(
   actions: Option[String],
   featured: Boolean,
   top20ConsensusThreshold: Option[Double]
-)
+) {
+  val immutableFields: IndexedOperationOfQuestion.ImmutableFields =
+    IndexedOperationOfQuestion.ImmutableFields(top20ConsensusThreshold = top20ConsensusThreshold)
+
+  def applyImmutableFields(fields: IndexedOperationOfQuestion.ImmutableFields): IndexedOperationOfQuestion =
+    this.copy(top20ConsensusThreshold = fields.top20ConsensusThreshold)
+}
 
 object IndexedOperationOfQuestion extends CirceFormatters {
   implicit val encoder: Encoder[IndexedOperationOfQuestion] = deriveEncoder[IndexedOperationOfQuestion]
@@ -171,6 +177,13 @@ object IndexedOperationOfQuestion extends CirceFormatters {
       top20ConsensusThreshold = None
     )
   }
+
+  final case class ImmutableFields(top20ConsensusThreshold: Option[Double])
+
+  object ImmutableFields {
+    val empty: ImmutableFields = ImmutableFields(top20ConsensusThreshold = None)
+  }
+
 }
 
 final case class OperationOfQuestionSearchResult(total: Long, results: Seq[IndexedOperationOfQuestion])

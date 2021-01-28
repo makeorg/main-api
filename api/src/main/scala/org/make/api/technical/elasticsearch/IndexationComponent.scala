@@ -452,11 +452,17 @@ trait DefaultIndexationComponent
 
       result.onComplete {
         case Success(IndexationStatus.Completed) =>
-          logger.info(s"Operation of questions indexation success in ${System.currentTimeMillis() - start} ms")
+          logger.info(s"Operation of questions post reindex update success in ${System.currentTimeMillis() - start} ms")
         case Success(IndexationStatus.Failed(e)) =>
-          logger.error(s"Operation of questions update failed in ${System.currentTimeMillis() - start} ms", e)
+          logger.error(
+            s"Operation of questions post reindex update failed in ${System.currentTimeMillis() - start} ms",
+            e
+          )
         case Failure(e) =>
-          logger.error(s"Operation of questions update failed in ${System.currentTimeMillis() - start} ms", e)
+          logger.error(
+            s"Operation of questions post reindex update failed in ${System.currentTimeMillis() - start} ms",
+            e
+          )
       }
 
       result

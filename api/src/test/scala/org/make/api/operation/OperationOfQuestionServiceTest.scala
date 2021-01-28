@@ -172,6 +172,8 @@ class OperationOfQuestionServiceTest
       when(persistentOperationOfQuestionService.modify(operationOfQuestion))
         .thenReturn(Future.successful(operationOfQuestion))
 
+      when(elasticsearchOperationOfQuestionAPI.findOperationOfQuestionById(questionId))
+        .thenReturn(Future.successful(Some(TestUtils.indexedOperationOfQuestion(questionId, operationId))))
       when(questionService.getQuestion(questionId))
         .thenReturn(
           Future
@@ -209,6 +211,8 @@ class OperationOfQuestionServiceTest
         .thenReturn(Future.successful(withQuestion))
       when(persistentOperationOfQuestionService.modify(operationOfQuestion))
         .thenReturn(Future.successful(operationOfQuestion))
+      when(elasticsearchOperationOfQuestionAPI.findOperationOfQuestionById(questionId))
+        .thenReturn(Future.successful(Some(TestUtils.indexedOperationOfQuestion(questionId, operationId))))
       when(questionService.getQuestion(questionId))
         .thenReturn(
           Future
@@ -285,6 +289,8 @@ class OperationOfQuestionServiceTest
         .thenReturn(Future.successful(true))
       when(persistentOperationOfQuestionService.persist(any[OperationOfQuestion]))
         .thenReturn(Future.successful(operationOfQuestionCreate))
+      when(elasticsearchOperationOfQuestionAPI.findOperationOfQuestionById(questionId))
+        .thenReturn(Future.successful(Some(TestUtils.indexedOperationOfQuestion(questionId, operationId))))
       when(questionService.getQuestion(questionId))
         .thenReturn(
           Future
@@ -337,6 +343,8 @@ class OperationOfQuestionServiceTest
   Feature("index") {
     Scenario("missing question") {
       val questionId = QuestionId("fake-question")
+      when(elasticsearchOperationOfQuestionAPI.findOperationOfQuestionById(questionId))
+        .thenReturn(Future.successful(None))
       when(questionService.getQuestion(questionId)).thenReturn(Future.successful(None))
       whenReady(operationOfQuestionService.indexById(questionId), Timeout(3.seconds)) {
         _ shouldBe empty
@@ -345,18 +353,20 @@ class OperationOfQuestionServiceTest
 
     Scenario("missing operation") {
       val questionId = QuestionId("missing-operation")
+      val operationId = OperationId("fake-operation")
+
+      when(elasticsearchOperationOfQuestionAPI.findOperationOfQuestionById(questionId))
+        .thenReturn(Future.successful(Some(TestUtils.indexedOperationOfQuestion(questionId, operationId))))
       when(questionService.getQuestion(questionId))
         .thenReturn(
           Future
-            .successful(Some(TestUtils.question(id = questionId, operationId = Some(OperationId("fake-operation")))))
+            .successful(Some(TestUtils.question(id = questionId, operationId = Some(operationId))))
         )
       when(persistentOperationOfQuestionService.getById(questionId))
         .thenReturn(
-          Future.successful(
-            Some(TestUtils.operationOfQuestion(questionId = questionId, operationId = OperationId("fake-operation")))
-          )
+          Future.successful(Some(TestUtils.operationOfQuestion(questionId = questionId, operationId = operationId)))
         )
-      when(operationService.findOneSimple(OperationId("fake-operation"))).thenReturn(Future.successful(None))
+      when(operationService.findOneSimple(operationId)).thenReturn(Future.successful(None))
 
       whenReady(operationOfQuestionService.indexById(questionId), Timeout(3.seconds)) {
         _ shouldBe empty
@@ -370,6 +380,9 @@ class OperationOfQuestionServiceTest
       val question = TestUtils.question(id = questionId, operationId = Some(operationId))
       val operation = TestUtils.simpleOperation(id = operationId)
       val indexed = IndexedOperationOfQuestion.createFromOperationOfQuestion(operationOfQuestion, operation, question)
+
+      when(elasticsearchOperationOfQuestionAPI.findOperationOfQuestionById(questionId))
+        .thenReturn(Future.successful(Some(TestUtils.indexedOperationOfQuestion(questionId, operationId))))
       when(questionService.getQuestion(questionId))
         .thenReturn(
           Future
@@ -395,7 +408,16 @@ class OperationOfQuestionServiceTest
       val operationOfQuestion = TestUtils.operationOfQuestion(questionId = questionId, operationId = operationId)
       val question = TestUtils.question(id = questionId, operationId = Some(operationId))
       val operation = TestUtils.simpleOperation(id = operationId)
-      val indexed = IndexedOperationOfQuestion.createFromOperationOfQuestion(operationOfQuestion, operation, question)
+      val indexed = IndexedOperationOfQuestion
+        .createFromOperationOfQuestion(operationOfQuestion, operation, question)
+        .copy(top20ConsensusThreshold = Some(42d))
+
+      when(elasticsearchOperationOfQuestionAPI.findOperationOfQuestionById(questionId))
+        .thenReturn(
+          Future.successful(
+            Some(TestUtils.indexedOperationOfQuestion(questionId, operationId, top20ConsensusThreshold = Some(42d)))
+          )
+        )
       when(questionService.getQuestion(questionId))
         .thenReturn(
           Future
