@@ -131,7 +131,8 @@ class ProposalSearchEngineTest
     initialProposal = false,
     refusalReason = None,
     operationKind = None,
-    segment = None
+    segment = None,
+    keywords = Nil
   )
 
   val normalProposal: IndexedProposal = proposal(42, 1, 3)

@@ -39,11 +39,14 @@ import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
 import org.make.core.user.{User, UserId}
 import org.make.core.{ApplicationName, DateHelper, RequestContext}
+import org.scalacheck.Arbitrary
+import org.scalacheck.Arbitrary.arbitrary
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class ProposalActorTest extends ShardingActorTest {
+class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyChecks {
 
   class Controller {
     def handle(message: Any, sender: ActorRef): Unit = {
@@ -3355,6 +3358,34 @@ class ProposalActorTest extends ShardingActorTest {
       unqualification.countVerified should be(0)
       unqualification.countSequence should be(0)
       unqualification.countSegment should be(0)
+    }
+  }
+
+  Feature("keywords") {
+    Scenario("add keywords") {
+      val proposalId = ProposalId("keywords")
+
+      coordinator ! ProposeCommand(
+        proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = DateHelper.now(),
+        content = "keywords",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsg(CreatedProposalId(proposalId))
+
+      implicit val arbKeyword: Arbitrary[ProposalKeyword] = Arbitrary(for {
+        key   <- arbitrary[String]
+        label <- arbitrary[String]
+      } yield ProposalKeyword(ProposalKeywordKey(key), label))
+
+      forAll { keywords: Seq[ProposalKeyword] =>
+        coordinator ! SetKeywordsCommand(proposalId, keywords, RequestContext.empty)
+        expectMsgType[UpdatedProposal].proposal.keywords should contain theSameElementsAs keywords
+      }
     }
   }
 }

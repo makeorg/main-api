@@ -21,6 +21,7 @@ package org.make.core.proposal
 
 import java.time.format.DateTimeFormatter
 import java.time.{ZoneOffset, ZonedDateTime}
+
 import com.sksamuel.elastic4s.{ElasticApi, Operator}
 import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.funcscorer.WeightScore
@@ -90,7 +91,8 @@ final case class SearchFilters(
   userTypes: Option[UserTypesSearchFilter] = None,
   zone: Option[ZoneSearchFilter] = None,
   segmentZone: Option[ZoneSearchFilter] = None,
-  minScoreLowerBound: Option[MinScoreLowerBoundSearchFilter] = None
+  minScoreLowerBound: Option[MinScoreLowerBoundSearchFilter] = None,
+  keywords: Option[KeywordsSearchFilter] = None
 )
 
 object SearchFilters extends ElasticDsl {
@@ -123,7 +125,8 @@ object SearchFilters extends ElasticDsl {
     userTypes: Option[UserTypesSearchFilter] = None,
     zone: Option[ZoneSearchFilter] = None,
     segmentZone: Option[ZoneSearchFilter] = None,
-    minScoreLowerBound: Option[MinScoreLowerBoundSearchFilter] = None
+    minScoreLowerBound: Option[MinScoreLowerBoundSearchFilter] = None,
+    keywords: Option[KeywordsSearchFilter] = None
   ): Option[SearchFilters] = {
 
     Seq[Option[Any]](
@@ -153,7 +156,8 @@ object SearchFilters extends ElasticDsl {
       userTypes,
       zone,
       segmentZone,
-      minScoreLowerBound
+      minScoreLowerBound,
+      keywords
     ).flatten match {
       case Seq() => None
       case _ =>
@@ -185,7 +189,8 @@ object SearchFilters extends ElasticDsl {
             userTypes,
             zone,
             segmentZone,
-            minScoreLowerBound
+            minScoreLowerBound,
+            keywords
           )
         )
     }
@@ -228,7 +233,8 @@ object SearchFilters extends ElasticDsl {
       buildUserTypesSearchFilter(searchQuery.filters),
       buildSegmentZoneSearchFilter(searchQuery.filters),
       buildZoneSearchFilter(searchQuery.filters),
-      buildMinScoreLowerBoundSearchFilter(searchQuery.filters)
+      buildMinScoreLowerBoundSearchFilter(searchQuery.filters),
+      buildKeywordsSearchFilter(searchQuery.filters)
     ).flatten
 
   def getExcludeFilters(searchQuery: SearchQuery): Seq[Query] = {
@@ -642,6 +648,18 @@ object SearchFilters extends ElasticDsl {
       }
     }
   }
+
+  def buildKeywordsSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
+      _.keywords match {
+        case Some(KeywordsSearchFilter(Seq(keywordKey))) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.keywordKey.field, keywordKey.value))
+        case Some(KeywordsSearchFilter(keywordsKeys)) =>
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldName.keywordKey.field, keywordsKeys.map(_.value)))
+        case _ => None
+      }
+    }
+  }
 }
 
 final case class ProposalSearchFilter(proposalIds: Seq[ProposalId])
@@ -695,3 +713,4 @@ final case class SegmentSearchFilter(segment: String)
 final case class UserTypesSearchFilter(userTypes: Seq[UserType])
 final case class ZoneSearchFilter(zone: Zone)
 final case class MinScoreLowerBoundSearchFilter(minLowerBound: Double)
+final case class KeywordsSearchFilter(keywordsKeys: Seq[ProposalKeywordKey])

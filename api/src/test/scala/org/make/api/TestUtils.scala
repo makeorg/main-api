@@ -49,7 +49,7 @@ import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagType, TagTypeId}
 import org.make.core.user.Role.RoleCitizen
@@ -153,8 +153,10 @@ trait TestUtils {
     refusalReason: Option[String] = None,
     idea: Option[IdeaId] = None,
     events: List[ProposalAction] = Nil,
+    theme: Option[ThemeId] = None,
     createdAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T10:10:10.000Z")),
-    updatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T15:10:10.000Z"))
+    updatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T15:10:10.000Z")),
+    keywords: Seq[ProposalKeyword] = Nil
   ): Proposal = {
     Proposal(
       proposalId = id,
@@ -163,6 +165,7 @@ trait TestUtils {
       slug = SlugHelper(content),
       author = author,
       labels = Seq.empty,
+      theme = theme,
       status = status,
       refusalReason = refusalReason,
       tags = tags,
@@ -174,7 +177,8 @@ trait TestUtils {
       operation = operationId,
       createdAt = createdAt,
       updatedAt = updatedAt,
-      events = events
+      events = events,
+      keywords = keywords
     )
   }
 
@@ -210,7 +214,9 @@ trait TestUtils {
     initialProposal: Boolean = false,
     createdAt: ZonedDateTime = ZonedDateTime.parse("2019-10-10T10:10:10.000Z"),
     updatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T15:10:10.000Z")),
-    toEnrich: Boolean = false
+    toEnrich: Boolean = false,
+    keywords: Seq[IndexedProposalKeyword] = Nil,
+    tags: Seq[IndexedTag] = Nil
   ): IndexedProposal = {
 
     val regularScore = ProposalScorer(votes, VotesCounter.SequenceVotesCounter, 0.5)
@@ -263,7 +269,7 @@ trait TestUtils {
       labels = Seq.empty,
       author = author,
       organisations = Seq.empty,
-      tags = Seq.empty,
+      tags = tags,
       selectedStakeTag = selectedStakeTag,
       ideaId = ideaId,
       operationId = operationId,
@@ -285,7 +291,8 @@ trait TestUtils {
       initialProposal = initialProposal,
       refusalReason = refusalReason,
       operationKind = None,
-      segment = None
+      segment = None,
+      keywords = keywords
     )
   }
 

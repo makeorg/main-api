@@ -26,13 +26,12 @@ import org.make.api.tagtype.{PersistentTagTypeService, PersistentTagTypeServiceC
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.idea.{Idea, IdeaId, IdeaMapping, IdeaMappingId}
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.Zone.Limbo
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag._
 import org.make.core.technical.IdGenerator
-import org.make.core.user.{UserId, UserType}
+import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -124,48 +123,15 @@ class IdeaMappingServiceTest
     Scenario("migrating proposal") {
 
       def proposal(proposalId: String, ideaId: String, tags: Seq[String]): IndexedProposal =
-        IndexedProposal(
+        indexedProposal(
           id = ProposalId(proposalId),
           userId = UserId("random-user-id"),
           content = "random content",
-          slug = "random-slug",
           status = ProposalStatus.Accepted,
           createdAt = DateHelper.now(),
           updatedAt = Some(DateHelper.now()),
-          votes = Seq.empty,
-          votesCount = 0,
-          votesVerifiedCount = 0,
-          votesSequenceCount = 0,
-          votesSegmentCount = 0,
-          toEnrich = false,
-          scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Limbo),
-          segmentScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Limbo),
-          context = None,
-          trending = None,
-          labels = Seq.empty,
-          author = IndexedAuthor(
-            firstName = None,
-            displayName = None,
-            organisationName = None,
-            organisationSlug = None,
-            postalCode = None,
-            age = None,
-            avatarUrl = None,
-            anonymousParticipation = false,
-            userType = UserType.UserTypeUser
-          ),
-          organisations = Seq.empty,
-          question = None,
           tags = tags.map(tagId => IndexedTag(TagId(tagId), tagId, display = true)),
-          selectedStakeTag = None,
-          ideaId = Some(IdeaId(ideaId)),
-          operationId = None,
-          sequencePool = SequencePool.New,
-          sequenceSegmentPool = SequencePool.New,
-          initialProposal = false,
-          refusalReason = None,
-          operationKind = None,
-          segment = None
+          ideaId = Some(IdeaId(ideaId))
         )
 
       def tag(tagId: String, tagTypeId: String, weight: Float): Tag =

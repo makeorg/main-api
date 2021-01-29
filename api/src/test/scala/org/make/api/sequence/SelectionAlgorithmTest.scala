@@ -170,7 +170,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = segment
+      segment = segment,
+      keywords = Nil
     )
   }
 
@@ -255,7 +256,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = segment
+      segment = segment,
+      keywords = Nil
     )
   }
 

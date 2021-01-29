@@ -252,20 +252,7 @@ class CrmServiceComponentTest
     operationId = Some(OperationId("777-77-77"))
   )
 
-  val proposalFr: Proposal = Proposal(
-    proposalId = ProposalId("proposalId-fr"),
-    slug = "slug",
-    content = "content",
-    author = UserId("author"),
-    labels = Seq.empty,
-    status = ProposalStatus.Accepted,
-    creationContext = RequestContext.empty,
-    createdAt = None,
-    updatedAt = None,
-    events = Nil,
-    votes = Seq.empty,
-    questionId = Some(questionFr.questionId)
-  )
+  val proposalFr: Proposal = proposal(id = ProposalId("proposalId-fr"), questionId = questionFr.questionId)
   val proposalGb: Proposal =
     proposalFr.copy(proposalId = ProposalId("proposalId-gb"), questionId = Some(questionGb.questionId))
   val proposalIt: Proposal =
@@ -914,7 +901,8 @@ class CrmServiceComponentTest
           initialProposal = false,
           refusalReason = None,
           operationKind = None,
-          segment = None
+          segment = None,
+          keywords = Nil
         ),
         IndexedProposal(
           id = ProposalId("proposal-2"),
@@ -969,7 +957,8 @@ class CrmServiceComponentTest
           initialProposal = false,
           refusalReason = None,
           operationKind = None,
-          segment = None
+          segment = None,
+          keywords = Nil
         )
       )
 

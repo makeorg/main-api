@@ -168,7 +168,8 @@ class DefaultAdminProposalApiComponentTest
         creationContext = RequestContext.empty.copy(country = Some(Country("FR")), language = Some(Language("fr"))),
         createdAt = Some(DateHelper.now()),
         updatedAt = Some(DateHelper.now()),
-        events = Nil
+        events = Nil,
+        keywords = Nil
       )
       val hamlet = Question(
         QuestionId("to-be-or-not-to-be"),
@@ -476,6 +477,56 @@ class DefaultAdminProposalApiComponentTest
         status should be(StatusCodes.OK)
       }
     }
+  }
+
+  Feature("add keywords") {
+
+    val request =
+      """
+        |[
+        |  {"proposalId": "123", "keywords": [
+        |    {"key": "a", "label": "à"},
+        |    {"key": "b", "label": "ᴃ"}
+        |  ]},
+        |  {"proposalId": "456", "keywords": []}]""".stripMargin
+
+    when(proposalService.setKeywords(any, any)).thenAnswer {
+      (requests: Seq[ProposalKeywordRequest], _: RequestContext) =>
+        Future.successful(
+          requests.map(
+            request =>
+              ProposalKeywordsResponse(
+                request.proposalId,
+                if (request.keywords.isEmpty) ProposalKeywordsResponseStatus.Error
+                else ProposalKeywordsResponseStatus.Ok,
+                if (request.keywords.isEmpty) Some("warning") else None
+              )
+          )
+        )
+    }
+
+    Scenario("forbidden to non-admins") {
+      for (maybeToken <- Seq(None, Some(tokenCitizen), Some(tokenModerator)))
+        Post("/admin/proposals/keywords")
+          .withHeaders(maybeToken.toList.map(token => Authorization(OAuth2BearerToken(token))))
+          .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+          status shouldBe maybeToken.fold(StatusCodes.Unauthorized)(_ => StatusCodes.Forbidden)
+        }
+    }
+
+    Scenario("it works for admins") {
+      Post("/admin/proposals/keywords")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+        status shouldBe StatusCodes.OK
+        val response = entityAs[Seq[ProposalKeywordsResponse]]
+        response should contain theSameElementsAs Seq(
+          ProposalKeywordsResponse(ProposalId("123"), ProposalKeywordsResponseStatus.Ok, None),
+          ProposalKeywordsResponse(ProposalId("456"), ProposalKeywordsResponseStatus.Error, Some("warning"))
+        )
+      }
+    }
+
   }
 
   private def proposal(id: ProposalId): ModerationProposalResponse = {

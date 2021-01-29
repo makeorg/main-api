@@ -37,11 +37,11 @@ import org.make.api.technical.elasticsearch.{
   RichHttpClient
 }
 import org.make.api.technical.healthcheck.HealthCheckCommands.CheckStatus
-import org.make.api.{ActorSystemComponent, DefaultConfigComponent, ItMakeTest}
-import org.make.core.CirceFormatters
+import org.make.api.{ActorSystemComponent, DefaultConfigComponent, ItMakeTest, TestUtilsIT}
+import org.make.core.{CirceFormatters, RequestContext}
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.indexed._
-import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
+import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{UserId, UserType}
 
@@ -58,7 +58,8 @@ class ElasticSearchHealthCheckActorIT
     with DefaultElasticsearchClientComponent
     with DefaultConfigComponent
     with ActorSystemComponent
-    with DockerElasticsearchService {
+    with DockerElasticsearchService
+    with TestUtilsIT {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -68,11 +69,10 @@ class ElasticSearchHealthCheckActorIT
   override def actorSystem: ActorSystem = system
 
   val proposal =
-    IndexedProposal(
+    indexedProposal(
       id = ProposalId("f4b02e75-8670-4bd0-a1aa-6d91c4de968a"),
       userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content = "Il faut que mon/ma député(e) fasse la promotion de la permaculture",
-      slug = "il-faut-que-mon-ma-depute-fasse-la-promotion-de-la-permaculture",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       votes = Seq(
@@ -107,26 +107,7 @@ class ElasticSearchHealthCheckActorIT
             )
           )
       ),
-      votesCount = 267,
-      votesVerifiedCount = 267,
-      votesSequenceCount = 267,
-      votesSegmentCount = 267,
-      toEnrich = false,
-      scores = IndexedScores.empty,
-      segmentScores = IndexedScores.empty,
-      context = Some(
-        IndexedContext(
-          source = None,
-          operation = None,
-          location = None,
-          question = None,
-          country = Some(Country("FR")),
-          language = Some(Language("fr")),
-          getParameters = Seq.empty
-        )
-      ),
-      trending = None,
-      labels = Seq(),
+      requestContext = Some(RequestContext.empty.copy(country = Some(Country("FR")), language = Some(Language("fr")))),
       author = IndexedAuthor(
         firstName = Some("Craig"),
         displayName = Some("Craig"),
@@ -138,19 +119,7 @@ class ElasticSearchHealthCheckActorIT
         anonymousParticipation = false,
         userType = UserType.UserTypeUser
       ),
-      organisations = Seq.empty,
-      tags = Seq.empty,
-      selectedStakeTag = None,
-      status = ProposalStatus.Accepted,
-      ideaId = Some(IdeaId("idea-id")),
-      operationId = None,
-      question = None,
-      sequencePool = SequencePool.Tested,
-      sequenceSegmentPool = SequencePool.Tested,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None
+      ideaId = Some(IdeaId("idea-id"))
     )
 
   private def initializeElasticsearch(): Unit = {

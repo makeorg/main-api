@@ -48,6 +48,7 @@ import org.make.core.operation.{OperationOfQuestion, SimpleOperation}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{
   IndexedAuthor,
+  IndexedProposalKeyword,
   IndexedOrganisationInfo,
   IndexedProposal,
   IndexedProposalQuestion,
@@ -350,7 +351,8 @@ trait ProposalIndexationStream
       initialProposal = proposal.initialProposal,
       refusalReason = proposal.refusalReason,
       operationKind = Option(operation.operationKind),
-      segment = segment
+      segment = segment,
+      keywords = proposal.keywords.map(IndexedProposalKeyword.apply)
     )
   }
 

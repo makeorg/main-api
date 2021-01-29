@@ -165,7 +165,8 @@ class ProposalSearchEngineIT
     initialProposal = false,
     refusalReason = None,
     operationKind = None,
-    segment = None
+    segment = None,
+    keywords = Nil
   )
   private def newTag(label: String, display: Boolean = true) =
     IndexedTag(TagId(UUID.randomUUID().toString), label, display)
@@ -254,7 +255,8 @@ class ProposalSearchEngineIT
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = None
+      segment = None,
+      keywords = Seq(IndexedProposalKeyword(ProposalKeywordKey("culture"), "permaculture"))
     ),
     IndexedProposal(
       id = ProposalId("9c468c22-1d1a-474b-9081-d79f1079f5e5"),
@@ -328,7 +330,8 @@ class ProposalSearchEngineIT
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = None
+      segment = None,
+      keywords = Seq(IndexedProposalKeyword(ProposalKeywordKey("culture"), "cultures"))
     ),
     IndexedProposal(
       id = ProposalId("ed8d8b66-579a-48bd-9f61-b7f6cf679e95"),
@@ -402,7 +405,8 @@ class ProposalSearchEngineIT
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = Some("ubik")
+      segment = Some("ubik"),
+      keywords = Nil
     ),
     IndexedProposal(
       id = ProposalId("c700b4c0-1b49-4373-a993-23c2437e857a"),
@@ -478,7 +482,8 @@ class ProposalSearchEngineIT
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = None
+      segment = None,
+      keywords = Nil
     ),
     IndexedProposal(
       id = ProposalId("eac55aab-021e-495e-9664-bea941b8c51c"),
@@ -552,7 +557,8 @@ class ProposalSearchEngineIT
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = None
+      segment = None,
+      keywords = Nil
     ),
     IndexedProposal(
       id = ProposalId("5725e8fc-54a1-4b77-9246-d1de60a245c5"),
@@ -628,7 +634,8 @@ class ProposalSearchEngineIT
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = None
+      segment = None,
+      keywords = Nil
     ),
     IndexedProposal(
       id = ProposalId("d38244bc-3d39-44a2-bfa9-a30158a297a3"),
@@ -702,7 +709,8 @@ class ProposalSearchEngineIT
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = None
+      segment = None,
+      keywords = Nil
     ),
     IndexedProposal(
       id = ProposalId("ddba011d-5950-4237-bdf1-8bf25473f366"),
@@ -776,7 +784,8 @@ class ProposalSearchEngineIT
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = None
+      segment = None,
+      keywords = Nil
     )
   )
 
@@ -855,7 +864,8 @@ class ProposalSearchEngineIT
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = None
+      segment = None,
+      keywords = Nil
     ),
     IndexedProposal(
       id = ProposalId("3bd7ae66-d2b4-42c2-96dd-46dbdb477797"),
@@ -931,7 +941,8 @@ class ProposalSearchEngineIT
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = None
+      segment = None,
+      keywords = Seq(IndexedProposalKeyword(ProposalKeywordKey("maladie"), "maladies"))
     ),
     IndexedProposal(
       id = ProposalId("bd44db77-3096-4e3b-b539-a4038307d85e"),
@@ -1007,7 +1018,8 @@ class ProposalSearchEngineIT
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = None
+      segment = None,
+      keywords = Nil
     ),
     IndexedProposal(
       id = ProposalId("f2153c81-c031-41f0-8b02-c6ed556d62aa"),
@@ -1083,7 +1095,8 @@ class ProposalSearchEngineIT
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = None
+      segment = None,
+      keywords = Nil
     ),
     IndexedProposal(
       id = ProposalId("13b16b9c-9293-4d33-9b82-415264820639"),
@@ -1157,7 +1170,8 @@ class ProposalSearchEngineIT
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = None
+      segment = None,
+      keywords = Nil
     ),
     IndexedProposal(
       id = ProposalId("b3198ad3-ff48-49f2-842c-2aefc3d0df5d"),
@@ -1231,7 +1245,8 @@ class ProposalSearchEngineIT
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = None
+      segment = None,
+      keywords = Nil
     ),
     IndexedProposal(
       id = ProposalId("cf940085-010d-46de-8bfd-dee7e8adc8b6"),
@@ -1306,7 +1321,8 @@ class ProposalSearchEngineIT
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
-      segment = None
+      segment = None,
+      keywords = Nil
     )
   )
 
@@ -1771,6 +1787,19 @@ class ProposalSearchEngineIT
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be(3L)
+      }
+    }
+  }
+
+  Feature("search proposals by keyword") {
+    Scenario("should return a list of proposals") {
+      val query =
+        SearchQuery(filters =
+          Some(SearchFilters(keywords = Some(KeywordsSearchFilter(Seq(ProposalKeywordKey("culture"))))))
+        )
+
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        result.total should be(2L)
       }
     }
   }

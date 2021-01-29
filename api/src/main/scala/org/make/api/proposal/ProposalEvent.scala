@@ -522,4 +522,19 @@ object PublishedProposalEvent {
       DefaultJsonProtocol.jsonFormat3(ProposalAnonymized.apply)
   }
 
+  @AvroSortPriority(1)
+  final case class ProposalKeywordsSet(
+    id: ProposalId,
+    eventDate: ZonedDateTime,
+    keywords: Seq[ProposalKeyword],
+    requestContext: RequestContext
+  ) extends PublishedProposalEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
+
+  object ProposalKeywordsSet {
+    implicit val formatter: RootJsonFormat[ProposalKeywordsSet] =
+      DefaultJsonProtocol.jsonFormat4(ProposalKeywordsSet.apply)
+  }
+
 }

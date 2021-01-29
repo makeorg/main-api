@@ -982,21 +982,7 @@ class ProposalServiceTest
       tagTypeId = TagTypeId("tag-type-id"),
       weight = 1.0f,
       operationId = None,
-      questionId = Some(QuestionId("question-id"))
-    )
-    def proposal(questionId: Option[QuestionId], tags: Seq[TagId]): Proposal = Proposal(
-      proposalId = ProposalId("proposal-id"),
-      slug = "proposal",
-      content = "proposal",
-      author = UserId("author"),
-      labels = Seq.empty,
-      tags = tags,
-      votes = Seq.empty,
-      questionId = questionId,
-      creationContext = RequestContext.empty,
-      createdAt = None,
-      updatedAt = None,
-      events = List.empty
+      questionId = Some(QuestionId("question"))
     )
 
     Scenario("proposal without tags") {
@@ -1013,7 +999,7 @@ class ProposalServiceTest
         )
 
       val result: Future[TagsForProposalResponse] =
-        proposalService.getTagsForProposal(proposal(Some(QuestionId("question-id")), Seq.empty))
+        proposalService.getTagsForProposal(proposal(id = ProposalId("proposal-id")))
       whenReady(result, Timeout(5.seconds)) { tagsWithModel =>
         val tagsForProposal = tagsWithModel.tags
         tagsForProposal.size should be(3)
@@ -1039,7 +1025,7 @@ class ProposalServiceTest
         .thenReturn(Future.successful(Seq(tag("id-1"), tag("id-2"), tag("id-3"))))
 
       val result: Future[TagsForProposalResponse] =
-        proposalService.getTagsForProposal(proposal(Some(QuestionId("question-id")), Seq(TagId("id-2"))))
+        proposalService.getTagsForProposal(proposal(id = ProposalId("proposal-id"), tags = Seq(TagId("id-2"))))
       whenReady(result, Timeout(5.seconds)) { tagsWithModel =>
         val tagsForProposal = tagsWithModel.tags
         tagsForProposal.size should be(3)
@@ -1064,7 +1050,7 @@ class ProposalServiceTest
     }
     Scenario("proposal without question") {
       val result: Future[TagsForProposalResponse] =
-        proposalService.getTagsForProposal(proposal(None, Seq.empty))
+        proposalService.getTagsForProposal(proposal(id = ProposalId("proposal-id")).copy(questionId = None))
       whenReady(result, Timeout(5.seconds)) { tagsForProposal =>
         tagsForProposal.tags.isEmpty shouldBe true
       }
@@ -1076,7 +1062,7 @@ class ProposalServiceTest
         .thenReturn(Future.successful(GetPredictedTagsResponse.none))
 
       val result: Future[TagsForProposalResponse] =
-        proposalService.getTagsForProposal(proposal(Some(QuestionId("question-id")), Seq(TagId("id-2"))))
+        proposalService.getTagsForProposal(proposal(id = ProposalId("proposal-id"), tags = Seq(TagId("id-2"))))
       whenReady(result, Timeout(5.seconds)) { tagsForProposal =>
         tagsForProposal.tags.isEmpty shouldBe true
       }
@@ -1088,7 +1074,7 @@ class ProposalServiceTest
         .thenReturn(Future.failed(new RuntimeException("This is an expected exception.")))
 
       val result: Future[TagsForProposalResponse] =
-        proposalService.getTagsForProposal(proposal(Some(QuestionId("question-id")), Seq.empty))
+        proposalService.getTagsForProposal(proposal(id = ProposalId("proposal-id")))
       whenReady(result, Timeout(5.seconds)) { tagsWithModel =>
         val tagsForProposal = tagsWithModel.tags
         tagsForProposal.size should be(3)
@@ -2817,6 +2803,36 @@ class ProposalServiceTest
       }
     }
 
+  }
+
+  Feature("proposal keywords") {
+    Scenario("add keywords") {
+      when(proposalCoordinatorService.setKeywords(any)).thenAnswer { command: SetKeywordsCommand =>
+        Future.successful(Option.when(command.keywords.nonEmpty)(proposal(command.proposalId)))
+      }
+      whenReady(
+        proposalService.setKeywords(
+          Seq(
+            ProposalKeywordRequest(
+              ProposalId("123"),
+              Seq(ProposalKeyword(ProposalKeywordKey("a"), "à"), ProposalKeyword(ProposalKeywordKey("b"), "ᴃ"))
+            ),
+            ProposalKeywordRequest(ProposalId("456"), Nil)
+          ),
+          RequestContext.empty
+        ),
+        Timeout(5.seconds)
+      ) { result =>
+        result should contain theSameElementsAs Seq(
+          ProposalKeywordsResponse(ProposalId("123"), ProposalKeywordsResponseStatus.Ok, None),
+          ProposalKeywordsResponse(
+            ProposalId("456"),
+            ProposalKeywordsResponseStatus.Error,
+            Some("Proposal 456 not found")
+          )
+        )
+      }
+    }
   }
 
 }
