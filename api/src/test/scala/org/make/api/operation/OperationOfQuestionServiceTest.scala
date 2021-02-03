@@ -317,7 +317,8 @@ class OperationOfQuestionServiceTest
         consultationImageAlt = operationOfQuestionCreate.consultationImageAlt,
         descriptionImage = operationOfQuestionCreate.descriptionImage,
         descriptionImageAlt = operationOfQuestionCreate.descriptionImageAlt,
-        actions = operationOfQuestionCreate.actions
+        actions = operationOfQuestionCreate.actions,
+        featured = true
       )
       whenReady(operationOfQuestionService.create(createParameters), Timeout(3.seconds)) { ooq =>
         ooq.questionId shouldBe questionId

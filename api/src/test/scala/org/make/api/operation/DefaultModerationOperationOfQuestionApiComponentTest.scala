@@ -29,11 +29,11 @@ import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.IdGeneratorComponent
+import org.make.core.operation.OperationKind.GreatCause
 import org.make.core.{Order, ValidationError}
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.sequence.SequenceId
 
 import scala.concurrent.Future
 import org.make.core.technical.Pagination.{End, Start}
@@ -44,10 +44,12 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     with IdGeneratorComponent
     with MakeSettingsComponent
     with OperationOfQuestionServiceComponent
-    with QuestionServiceComponent {
+    with QuestionServiceComponent
+    with OperationServiceComponent {
 
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
   override val questionService: QuestionService = mock[QuestionService]
+  override val operationService: OperationService = mock[OperationService]
 
   when(operationOfQuestionService.create(any[CreateOperationOfQuestion])).thenAnswer {
     request: CreateOperationOfQuestion =>
@@ -58,72 +60,13 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           startDate = request.startDate,
           endDate = request.endDate,
           operationTitle = request.operationTitle,
-          landingSequenceId = SequenceId("some-sequence"),
-          sequenceCardsConfiguration = SequenceCardsConfiguration(
-            introCard = IntroCard(enabled = true, title = None, description = None),
-            pushProposalCard = PushProposalCard(enabled = true),
-            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-            finalCard = FinalCard(
-              enabled = true,
-              sharingEnabled = false,
-              title = None,
-              shareDescription = None,
-              learnMoreTitle = None,
-              learnMoreTextButton = None,
-              linkUrl = None
-            )
-          ),
-          aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None),
-          theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription,
-          consultationImage = None,
-          consultationImageAlt = None,
-          descriptionImage = None,
-          descriptionImageAlt = None,
-          resultsLink = None,
-          actions = None
+          featured = request.featured
         )
       )
   }
 
   when(operationOfQuestionService.findByQuestionId(any[QuestionId])).thenAnswer { questionId: QuestionId =>
-    Future.successful(
-      Some(
-        operationOfQuestion(
-          questionId = questionId,
-          operationId = OperationId("some-operation"),
-          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
-          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
-          operationTitle = "some title",
-          landingSequenceId = SequenceId("some-sequence"),
-          sequenceCardsConfiguration = SequenceCardsConfiguration(
-            introCard = IntroCard(enabled = true, title = None, description = None),
-            pushProposalCard = PushProposalCard(enabled = true),
-            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-            finalCard = FinalCard(
-              enabled = true,
-              sharingEnabled = false,
-              title = None,
-              shareDescription = None,
-              learnMoreTitle = None,
-              learnMoreTextButton = None,
-              linkUrl = None
-            )
-          ),
-          aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None),
-          theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription,
-          consultationImage = None,
-          consultationImageAlt = None,
-          descriptionImage = None,
-          descriptionImageAlt = None,
-          resultsLink = None,
-          actions = None
-        )
-      )
-    )
+    Future.successful(Some(operationOfQuestion(questionId = questionId, operationId = OperationId("some-operation"))))
   }
 
   when(operationOfQuestionService.updateWithQuestion(any[OperationOfQuestion], any[Question])).thenAnswer {
@@ -134,14 +77,11 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   when(questionService.getQuestion(any[QuestionId])).thenAnswer { questionId: QuestionId =>
     Future.successful(
       Some(
-        Question(
-          questionId = questionId,
+        question(
+          id = questionId,
           slug = "some-question",
           countries = NonEmptyList.of(Country("BE"), Country("FR")),
-          language = Language("fr"),
-          question = "what's that?",
-          shortTitle = None,
-          operationId = None
+          language = Language("fr")
         )
       )
     )
@@ -155,66 +95,12 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         operationOfQuestion(
           questionId = QuestionId("question-1"),
           operationId = operationId,
-          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
-          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
-          operationTitle = "opération en Français",
-          landingSequenceId = SequenceId("landing-1"),
-          sequenceCardsConfiguration = SequenceCardsConfiguration(
-            introCard = IntroCard(enabled = true, title = None, description = None),
-            pushProposalCard = PushProposalCard(enabled = true),
-            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-            finalCard = FinalCard(
-              enabled = true,
-              sharingEnabled = false,
-              title = None,
-              shareDescription = None,
-              learnMoreTitle = None,
-              learnMoreTextButton = None,
-              linkUrl = None
-            )
-          ),
-          aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None),
-          theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription,
-          consultationImage = None,
-          consultationImageAlt = None,
-          descriptionImage = None,
-          descriptionImageAlt = None,
-          resultsLink = None,
-          actions = None
+          operationTitle = "opération en Français"
         ),
         operationOfQuestion(
           questionId = QuestionId("question-2"),
           operationId = operationId,
-          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
-          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
-          operationTitle = "Operation in English",
-          landingSequenceId = SequenceId("landing-2"),
-          sequenceCardsConfiguration = SequenceCardsConfiguration(
-            introCard = IntroCard(enabled = true, title = None, description = None),
-            pushProposalCard = PushProposalCard(enabled = true),
-            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-            finalCard = FinalCard(
-              enabled = true,
-              sharingEnabled = false,
-              title = None,
-              shareDescription = None,
-              learnMoreTitle = None,
-              learnMoreTextButton = None,
-              linkUrl = None
-            )
-          ),
-          aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None),
-          theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription,
-          consultationImage = None,
-          consultationImageAlt = None,
-          descriptionImage = None,
-          descriptionImageAlt = None,
-          resultsLink = None,
-          actions = None
+          operationTitle = "Operation in English"
         )
       )
     )
@@ -223,22 +109,18 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   when(questionService.searchQuestion(any[SearchQuestionRequest])).thenAnswer { request: SearchQuestionRequest =>
     Future.successful(
       Seq(
-        Question(
-          questionId = QuestionId("question-1"),
+        question(
+          id = QuestionId("question-1"),
           countries = NonEmptyList.of(Country("FR")),
           language = Language("fr"),
           slug = "question-1",
-          question = "Est-ce que ?",
-          shortTitle = None,
           operationId = request.maybeOperationIds.flatMap(_.headOption)
         ),
-        Question(
-          questionId = QuestionId("question-2"),
+        question(
+          id = QuestionId("question-2"),
           countries = NonEmptyList.of(Country("IE")),
           language = Language("en"),
           slug = "question-2",
-          question = "Is it?",
-          shortTitle = None,
           operationId = request.maybeOperationIds.flatMap(_.headOption)
         )
       )
@@ -247,14 +129,11 @@ class DefaultModerationOperationOfQuestionApiComponentTest
 
   when(questionService.getQuestions(any[Seq[QuestionId]])).thenAnswer { ids: Seq[QuestionId] =>
     Future.successful(ids.map { questionId =>
-      Question(
-        questionId = questionId,
+      question(
+        id = questionId,
         slug = questionId.value,
         countries = NonEmptyList.of(Country("FR")),
-        language = Language("fr"),
-        question = questionId.value,
-        shortTitle = None,
-        operationId = None
+        language = Language("fr")
       )
     })
   }
@@ -265,70 +144,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   ).thenReturn(
     Future.successful(
       Seq(
-        operationOfQuestion(
-          questionId = QuestionId("question-1"),
-          operationId = OperationId("operation-1"),
-          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
-          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
-          operationTitle = "some title",
-          landingSequenceId = SequenceId("sequence-1"),
-          sequenceCardsConfiguration = SequenceCardsConfiguration(
-            introCard = IntroCard(enabled = true, title = None, description = None),
-            pushProposalCard = PushProposalCard(enabled = true),
-            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-            finalCard = FinalCard(
-              enabled = true,
-              sharingEnabled = false,
-              title = None,
-              shareDescription = None,
-              learnMoreTitle = None,
-              learnMoreTextButton = None,
-              linkUrl = None
-            )
-          ),
-          aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None),
-          theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription,
-          consultationImage = None,
-          consultationImageAlt = None,
-          descriptionImage = None,
-          descriptionImageAlt = None,
-          resultsLink = None,
-          actions = None
-        ),
-        operationOfQuestion(
-          questionId = QuestionId("question-2"),
-          operationId = OperationId("operation-2"),
-          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
-          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
-          operationTitle = "some title",
-          landingSequenceId = SequenceId("sequence-2"),
-          sequenceCardsConfiguration = SequenceCardsConfiguration(
-            introCard = IntroCard(enabled = true, title = None, description = None),
-            pushProposalCard = PushProposalCard(enabled = true),
-            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-            finalCard = FinalCard(
-              enabled = true,
-              sharingEnabled = false,
-              title = None,
-              shareDescription = None,
-              learnMoreTitle = None,
-              learnMoreTextButton = None,
-              linkUrl = None
-            )
-          ),
-          aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None),
-          theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription,
-          consultationImage = None,
-          consultationImageAlt = None,
-          descriptionImage = None,
-          descriptionImageAlt = None,
-          resultsLink = None,
-          actions = None
-        )
+        operationOfQuestion(questionId = QuestionId("question-1"), operationId = OperationId("operation-1")),
+        operationOfQuestion(questionId = QuestionId("question-2"), operationId = OperationId("operation-2"))
       )
     )
   )
@@ -449,8 +266,15 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   }
 
   Feature("create operationOfQuestion") {
-    Scenario("create as moderator") {
+    when(operationService.findOneSimple(eqTo(OperationId("some-operation"))))
+      .thenReturn(Future.successful(Some(simpleOperation(OperationId("some-operation"), operationKind = GreatCause))))
+    val existingQuestion = operationOfQuestion(
+      questionId = QuestionId("existing-question"),
+      operationId = OperationId("operation"),
+      operationTitle = "opération en Français"
+    )
 
+    Scenario("create as moderator") {
       when(operationOfQuestionService.findByQuestionSlug("make-the-world-great-again"))
         .thenReturn(Future.successful(None))
 
@@ -479,48 +303,13 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         status should be(StatusCodes.Created)
         val operationOfQuestion = entityAs[OperationOfQuestionResponse]
         operationOfQuestion.canPropose shouldBe true
+        operationOfQuestion.featured shouldBe true
       }
     }
 
     Scenario("slug already exists") {
-      when(operationOfQuestionService.findByQuestionSlug("existing-question")).thenReturn(
-        Future.successful(
-          Some(
-            operationOfQuestion(
-              questionId = QuestionId("existing-question"),
-              operationId = OperationId("operation"),
-              startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
-              endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
-              operationTitle = "opération en Français",
-              landingSequenceId = SequenceId("landing-1"),
-              sequenceCardsConfiguration = SequenceCardsConfiguration(
-                introCard = IntroCard(enabled = true, title = None, description = None),
-                pushProposalCard = PushProposalCard(enabled = true),
-                signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-                finalCard = FinalCard(
-                  enabled = true,
-                  sharingEnabled = false,
-                  title = None,
-                  shareDescription = None,
-                  learnMoreTitle = None,
-                  learnMoreTextButton = None,
-                  linkUrl = None
-                )
-              ),
-              aboutUrl = None,
-              metas = Metas(title = None, description = None, picture = None),
-              theme = QuestionTheme.default,
-              description = OperationOfQuestion.defaultDescription,
-              consultationImage = None,
-              consultationImageAlt = None,
-              descriptionImage = None,
-              descriptionImageAlt = None,
-              resultsLink = None,
-              actions = None
-            )
-          )
-        )
-      )
+      when(operationOfQuestionService.findByQuestionSlug("existing-question"))
+        .thenReturn(Future.successful(Some(existingQuestion)))
       Post("/moderation/operations-of-questions")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(
@@ -569,6 +358,38 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         status should be(StatusCodes.BadRequest)
       }
     }
+
+    Scenario("operation does no exist") {
+      when(operationService.findOneSimple(eqTo(OperationId("fake")))).thenReturn(Future.successful(None))
+      when(operationOfQuestionService.findByQuestionSlug("whatever-question"))
+        .thenReturn(Future.successful(None))
+      Post("/moderation/operations-of-questions")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(
+          ContentTypes.`application/json`,
+          CreateOperationOfQuestionRequest(
+            operationId = OperationId("fake"),
+            startDate = ZonedDateTime.parse("2018-12-01T10:15:30+00:00"),
+            endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
+            operationTitle = "my-operation",
+            countries = NonEmptyList.of(Country("FR")),
+            language = Language("fr"),
+            question = "how to save the world?",
+            shortTitle = None,
+            questionSlug = "whatever-question",
+            consultationImage = Some("https://example.com/image"),
+            consultationImageAlt = Some("image alternative"),
+            descriptionImage = Some("https://example.com/image-desc"),
+            descriptionImageAlt = Some("image-desc alternative"),
+            actions = None
+          ).asJson.toString()
+        ) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size should be(1)
+        errors.head.field shouldBe "operationId"
+      }
+    }
   }
 
   Feature("update operationOfQuestion") {
@@ -581,20 +402,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       operationTitle = "new title",
       countries = NonEmptyList.of(Country("BE"), Country("FR")),
       shortTitle = None,
-      sequenceCardsConfiguration = SequenceCardsConfiguration(
-        introCard = IntroCard(enabled = true, title = None, description = None),
-        pushProposalCard = PushProposalCard(enabled = true),
-        signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-        finalCard = FinalCard(
-          enabled = true,
-          sharingEnabled = false,
-          title = None,
-          shareDescription = None,
-          learnMoreTitle = None,
-          learnMoreTextButton = None,
-          linkUrl = None
-        )
-      ),
+      sequenceCardsConfiguration = SequenceCardsConfiguration.default,
       aboutUrl = None,
       metas = Metas(title = None, description = None, picture = None),
       theme = QuestionTheme.default,
@@ -637,20 +445,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             operationTitle = "new title",
             countries = updateRequest.countries :+ Country("DE"),
             shortTitle = None,
-            sequenceCardsConfiguration = SequenceCardsConfiguration(
-              introCard = IntroCard(enabled = true, title = None, description = None),
-              pushProposalCard = PushProposalCard(enabled = true),
-              signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-              finalCard = FinalCard(
-                enabled = true,
-                sharingEnabled = false,
-                title = None,
-                shareDescription = None,
-                learnMoreTitle = None,
-                learnMoreTextButton = None,
-                linkUrl = None
-              )
-            ),
+            sequenceCardsConfiguration = SequenceCardsConfiguration.default,
             aboutUrl = None,
             metas = Metas(title = None, description = None, picture = None),
             theme = QuestionTheme.default,
@@ -725,7 +520,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             |   "signUpCard": { "enabled": true },
             |   "finalCard": {
             |     "enabled": true,
-            |     "sharingEnabled": false
+            |     "sharingEnabled": true
             |   }
             | },
             | "metas": { "title": "metas" },
@@ -787,7 +582,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
            |   "signUpCard": { "enabled": true },
            |   "finalCard": {
            |     "enabled": true,
-           |     "sharingEnabled": false
+           |     "sharingEnabled": true
            |   }
            | },
            | "metas": { "title": "metas" },
@@ -840,7 +635,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
                                                        |   "signUpCard": { "enabled": true },
                                                        |   "finalCard": {
                                                        |     "enabled": true,
-                                                       |     "sharingEnabled": false
+                                                       |     "sharingEnabled": true
                                                        |   }
                                                        | },
                                                        | "metas": { "title": "metas" },
@@ -895,7 +690,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             |   "signUpCard": { "enabled": true },
             |   "finalCard": {
             |     "enabled": true,
-            |     "sharingEnabled": false
+            |     "sharingEnabled": true
             |   }
             | },
             | "metas": { "title": "metas" },
