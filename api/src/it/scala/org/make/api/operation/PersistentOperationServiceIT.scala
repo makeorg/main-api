@@ -19,6 +19,8 @@
 
 package org.make.api.operation
 
+import akka.actor.ActorSystem
+
 import java.time.ZonedDateTime
 import cats.data.NonEmptyList
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
@@ -26,7 +28,7 @@ import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.technical.RichFutures._
 import org.make.api.user.DefaultPersistentUserServiceComponent
-import org.make.api.{DatabaseTest, TestUtilsIT}
+import org.make.api.{ActorSystemComponent, DatabaseTest, TestUtilsIT}
 import org.make.core.{DateHelper, Order}
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
@@ -48,9 +50,11 @@ class PersistentOperationServiceIT
     with DefaultPersistentQuestionServiceComponent
     with DefaultPersistentOperationOfQuestionServiceComponent
     with DefaultIdGeneratorComponent
-    with DefaultOperationServiceComponent {
+    with ActorSystemComponent {
 
   override protected val cockroachExposedPort: Int = 40008
+
+  override val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   val userId: UserId = idGenerator.nextUserId()
   val johnDoe: User = TestUtilsIT.user(

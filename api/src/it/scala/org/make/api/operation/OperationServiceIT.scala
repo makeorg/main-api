@@ -19,22 +19,24 @@
 
 package org.make.api.operation
 
-import java.time.ZonedDateTime
-import java.util.UUID
-
+import akka.actor.ActorSystem
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.user.DefaultPersistentUserServiceComponent
-import org.make.api.{DatabaseTest, TestUtilsIT}
+import org.make.api.{ActorSystemComponent, DatabaseTest, TestUtilsIT}
 import org.make.core.DateHelper
-import org.make.core.operation._
+import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation.OperationActionType._
+import org.make.core.operation._
+import org.make.core.question.QuestionId
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagType}
 import org.make.core.user.{Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import java.time.ZonedDateTime
+import java.util.UUID
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
@@ -45,9 +47,17 @@ class OperationServiceIT
     with DefaultPersistentUserServiceComponent
     with DefaultPersistentTagServiceComponent
     with DefaultIdGeneratorComponent
-    with DefaultPersistentQuestionServiceComponent {
+    with DefaultPersistentQuestionServiceComponent
+    with OperationOfQuestionServiceComponent
+    with ActorSystemComponent {
 
   override protected val cockroachExposedPort: Int = 40007
+
+  override val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
+  override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
+
+  when(operationOfQuestionService.indexById(any[QuestionId]))
+    .thenReturn(Future.successful(Some(IndexationStatus.Completed)))
 
   val userId: UserId = UserId(UUID.randomUUID().toString)
 
@@ -77,7 +87,7 @@ class OperationServiceIT
     questionId = None
   )
 
-  val simpleOperation = SimpleOperation(
+  val simpleOperation: SimpleOperation = SimpleOperation(
     operationId = operationId,
     createdAt = None,
     updatedAt = None,

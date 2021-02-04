@@ -384,6 +384,26 @@ trait TestUtils {
       updatedAt = updatedAt
     )
 
+  def operation(
+    operationId: OperationId,
+    status: OperationStatus = OperationStatus.Active,
+    slug: String = "operation-slug",
+    events: List[OperationAction] = List.empty,
+    questions: Seq[QuestionWithDetails] = Seq.empty,
+    operationKind: OperationKind = OperationKind.BusinessConsultation,
+    createdAt: Option[ZonedDateTime] = None,
+    updatedAt: Option[ZonedDateTime] = None
+  ): Operation = Operation(
+    operationId = operationId,
+    status = status,
+    slug = slug,
+    operationKind = operationKind,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+    events = events,
+    questions = questions
+  )
+
   val defaultMetas: Metas = Metas(title = Some("Metas title"), description = Some("Meta description"), picture = None)
   def operationOfQuestion(
     questionId: QuestionId,

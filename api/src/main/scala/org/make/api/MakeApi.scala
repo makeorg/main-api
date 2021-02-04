@@ -241,7 +241,7 @@ trait MakeApi
     with DefaultProposalSearchEngineComponent
     with DefaultProposalServiceComponent
     with DefaultQuestionApiComponent
-    with DefaultQuestionService
+    with DefaultQuestionServiceComponent
     with DefaultReadJournalComponent
     with DefaultSecurityApiComponent
     with DefaultSecurityConfigurationComponent

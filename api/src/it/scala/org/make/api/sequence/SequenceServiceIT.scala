@@ -62,7 +62,7 @@ import org.make.api.personality.{
 import org.make.api.post.{PostSearchEngine, PostService, PostServiceComponent}
 import org.make.api.proposal._
 import org.make.api.proposal.ProposalScorer.VotesCounter
-import org.make.api.question.{DefaultPersistentQuestionServiceComponent, DefaultQuestionService}
+import org.make.api.question.{DefaultPersistentQuestionServiceComponent, DefaultQuestionServiceComponent}
 import org.make.api.segment.DefaultSegmentServiceComponent
 import org.make.api.semantic.{SemanticComponent, SemanticService}
 import org.make.api.sessionhistory.{
@@ -167,7 +167,7 @@ class SequenceServiceIT
     with DefaultProposalSearchEngineComponent
     with DefaultProposalServiceComponent
     with DefaultQuestionPersonalityServiceComponent
-    with DefaultQuestionService
+    with DefaultQuestionServiceComponent
     with DefaultSecurityConfigurationComponent
     with DefaultSegmentServiceComponent
     with DefaultSelectionAlgorithmComponent
