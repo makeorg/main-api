@@ -346,6 +346,7 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
     )
 
     persisters.generateTestsFor(
+      sample(proposal),
       sample(proposalProposed),
       sample(proposalViewed),
       sample(proposalUpdated),
