@@ -373,8 +373,8 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val proposalKeywordsSetSerializer: JsonPersister[ProposalKeywordsSet, V1] =
     persister[ProposalKeywordsSet]("proposal-keywords-set")
 
-  private val proposalSerializer: JsonPersister[Proposal, V1] =
-    persister[Proposal]("proposal-entity")
+  private val proposalSerializer: JsonPersister[Proposal, V2] =
+    persister[Proposal, V2]("proposal-entity", from[V1].to[V2](_.update("keywords", Seq.empty[ProposalKeyword])))
 
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(
