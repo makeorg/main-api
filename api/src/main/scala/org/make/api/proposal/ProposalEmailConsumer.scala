@@ -57,6 +57,7 @@ class ProposalEmailConsumer(sendMailPublisherService: SendMailPublisherService)
       case event: ProposalAddedToOperation     => doNothing(event)
       case event: ProposalRemovedFromOperation => doNothing(event)
       case event: ProposalAnonymized           => doNothing(event)
+      case event: ProposalKeywordsSet          => doNothing(event)
     }
   }
 

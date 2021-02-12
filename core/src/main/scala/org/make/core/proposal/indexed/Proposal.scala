@@ -23,7 +23,7 @@ import cats.data.NonEmptyList
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import enumeratum.{Circe, Enum, EnumEntry}
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder}
+import io.circe.{Codec, Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{OperationId, OperationKind}
@@ -154,6 +154,7 @@ object ProposalElasticsearchFieldName extends StringEnum[ProposalElasticsearchFi
   case object votesCount extends Simple("votesCount")
   case object zone extends Simple("scores.zone")
   case object segmentZone extends Simple("segmentScores.zone")
+  case object keywordKey extends Simple("keywords.key")
 
   override def values: IndexedSeq[ProposalElasticsearchFieldName] = findValues
 }
@@ -199,7 +200,8 @@ final case class IndexedProposal(
   refusalReason: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "GREAT_CAUSE")
   operationKind: Option[OperationKind],
-  segment: Option[String]
+  segment: Option[String],
+  keywords: Seq[IndexedProposalKeyword]
 )
 
 object IndexedProposal extends CirceFormatters {
@@ -420,4 +422,14 @@ object SequencePool extends StringEnum[SequencePool] with StringCirceEnum[Sequen
 
   override def values: IndexedSeq[SequencePool] = findValues
 
+}
+
+final case class IndexedProposalKeyword(key: ProposalKeywordKey, label: String)
+
+object IndexedProposalKeyword {
+  implicit val codec: Codec[IndexedProposalKeyword] = deriveCodec[IndexedProposalKeyword]
+
+  def apply(keyword: ProposalKeyword): IndexedProposalKeyword = {
+    IndexedProposalKeyword(keyword.key, keyword.label)
+  }
 }

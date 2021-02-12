@@ -48,20 +48,14 @@ import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.profile.Profile
 import org.make.core.proposal.VoteKey.{Agree, Disagree}
-import org.make.core.proposal.indexed.{
-  IndexedAuthor,
-  IndexedProposal,
-  IndexedScores,
-  ProposalsSearchResult,
-  SequencePool
-}
-import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
+import org.make.core.proposal.indexed.ProposalsSearchResult
+import org.make.core.proposal.{ProposalId, SearchQuery}
 import org.make.core.reference.{Country, Language}
 import org.make.core.technical.IdGenerator
 import org.make.core.user.Role.RoleActor
 import org.make.core.user._
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
-import org.make.core.{DateHelper, RequestContext}
+import org.make.core.RequestContext
 import org.mockito.Mockito.clearInvocations
 import org.scalatest.RecoverMethods
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -389,52 +383,6 @@ class OrganisationServiceTest
 
   Feature("get proposals voted") {
     Scenario("successfully get proposals voted") {
-
-      def indexedProposal(id: ProposalId): IndexedProposal = {
-        IndexedProposal(
-          id = id,
-          userId = UserId(s"user-${id.value}"),
-          content = s"proposal with id ${id.value}",
-          slug = s"proposal-with-id-${id.value}",
-          status = ProposalStatus.Pending,
-          createdAt = DateHelper.now(),
-          updatedAt = None,
-          votes = Seq.empty,
-          votesCount = 0,
-          votesVerifiedCount = 0,
-          votesSequenceCount = 0,
-          votesSegmentCount = 0,
-          toEnrich = false,
-          scores = IndexedScores.empty,
-          segmentScores = IndexedScores.empty,
-          context = None,
-          trending = None,
-          labels = Seq.empty,
-          author = IndexedAuthor(
-            firstName = Some(id.value),
-            displayName = Some(id.value),
-            organisationName = None,
-            organisationSlug = None,
-            postalCode = None,
-            age = None,
-            avatarUrl = None,
-            anonymousParticipation = false,
-            userType = UserType.UserTypeUser
-          ),
-          organisations = Seq.empty,
-          tags = Seq.empty,
-          selectedStakeTag = None,
-          ideaId = None,
-          operationId = None,
-          question = None,
-          sequencePool = SequencePool.New,
-          sequenceSegmentPool = SequencePool.New,
-          initialProposal = false,
-          refusalReason = None,
-          operationKind = None,
-          segment = None
-        )
-      }
 
       when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
         .thenReturn(Future.successful(Seq(ProposalId("proposal1"), ProposalId("proposal2"))))

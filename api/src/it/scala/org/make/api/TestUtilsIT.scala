@@ -24,6 +24,8 @@ import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.MaxSize
+import org.make.api.proposal.ProposalScorer
+import org.make.api.proposal.ProposalScorer.VotesCounter
 import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
 import org.make.core.operation._
 import org.make.core.post.indexed.IndexedPost
@@ -50,6 +52,18 @@ import org.make.core.tag.{Tag, TagDisplay, TagId, TagType, TagTypeId}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext, SlugHelper}
+import org.make.core.proposal.indexed.{
+  IndexedAuthor,
+  IndexedContext,
+  IndexedProposal,
+  IndexedProposalKeyword,
+  IndexedProposalQuestion,
+  IndexedQualification,
+  IndexedScores,
+  IndexedTag,
+  IndexedVote,
+  SequencePool
+}
 
 import java.net.URL
 import java.time.ZonedDateTime
@@ -95,6 +109,45 @@ trait TestUtilsIT {
     )
   )
 
+  private val defaultIndexedVotes: Seq[IndexedVote] = Seq(
+    IndexedVote(
+      key = Agree,
+      count = 0,
+      countVerified = 0,
+      countSegment = 0,
+      countSequence = 0,
+      qualifications = Seq(
+        IndexedQualification(key = LikeIt, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+        IndexedQualification(key = Doable, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+        IndexedQualification(key = PlatitudeAgree, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
+      )
+    ),
+    IndexedVote(
+      key = Disagree,
+      count = 0,
+      countVerified = 0,
+      countSegment = 0,
+      countSequence = 0,
+      qualifications = Seq(
+        IndexedQualification(key = NoWay, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+        IndexedQualification(key = Impossible, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+        IndexedQualification(key = PlatitudeDisagree, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
+      )
+    ),
+    IndexedVote(
+      key = Neutral,
+      count = 0,
+      countVerified = 0,
+      countSegment = 0,
+      countSequence = 0,
+      qualifications = Seq(
+        IndexedQualification(key = DoNotUnderstand, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+        IndexedQualification(key = NoOpinion, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+        IndexedQualification(key = DoNotCare, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
+      )
+    )
+  )
+
   def proposal(
     id: ProposalId,
     votes: Seq[Vote] = defaultVotes,
@@ -106,11 +159,13 @@ trait TestUtilsIT {
     requestContext: RequestContext = RequestContext.empty,
     content: String = "Il faut tester l'indexation des propositions",
     status: ProposalStatus = Accepted,
+    refusalReason: Option[String] = None,
     idea: Option[IdeaId] = None,
     events: List[ProposalAction] = Nil,
     theme: Option[ThemeId] = None,
     createdAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T10:10:10.000Z")),
-    updatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T15:10:10.000Z"))
+    updatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T15:10:10.000Z")),
+    keywords: Seq[ProposalKeyword] = Nil
   ): Proposal = {
     Proposal(
       proposalId = id,
@@ -121,7 +176,7 @@ trait TestUtilsIT {
       labels = Seq.empty,
       theme = theme,
       status = status,
-      refusalReason = None,
+      refusalReason = refusalReason,
       tags = tags,
       organisations = organisations,
       organisationIds = organisations.map(_.organisationId),
@@ -131,7 +186,122 @@ trait TestUtilsIT {
       operation = operationId,
       createdAt = createdAt,
       updatedAt = updatedAt,
-      events = events
+      events = events,
+      keywords = keywords
+    )
+  }
+
+  private val defaultAuthor: IndexedAuthor = IndexedAuthor(
+    firstName = Some("firstname"),
+    displayName = Some("firstname"),
+    organisationName = None,
+    organisationSlug = None,
+    postalCode = Some("12345"),
+    age = Some(25),
+    avatarUrl = Some("http://some-url"),
+    anonymousParticipation = false,
+    userType = UserType.UserTypeUser
+  )
+
+  def indexedProposal(
+    id: ProposalId,
+    votes: Seq[IndexedVote] = defaultIndexedVotes,
+    userId: UserId = UserId("author"),
+    author: IndexedAuthor = defaultAuthor,
+    questionId: QuestionId = QuestionId("question-id"),
+    operationId: Option[OperationId] = Some(OperationId("operation-id")),
+    startDate: ZonedDateTime = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+    endDate: ZonedDateTime = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
+    requestContext: Option[RequestContext] = None,
+    content: String = "Il faut tester l'indexation des propositions",
+    countries: NonEmptyList[Country] = NonEmptyList.of(Country("FR")),
+    language: Language = Language("fr"),
+    status: ProposalStatus = Accepted,
+    refusalReason: Option[String] = None,
+    ideaId: Option[IdeaId] = None,
+    selectedStakeTag: Option[IndexedTag] = None,
+    initialProposal: Boolean = false,
+    createdAt: ZonedDateTime = ZonedDateTime.parse("2019-10-10T10:10:10.000Z"),
+    updatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T15:10:10.000Z")),
+    toEnrich: Boolean = false,
+    keywords: Seq[IndexedProposalKeyword] = Nil,
+    tags: Seq[IndexedTag] = Nil
+  ): IndexedProposal = {
+
+    val regularScore = ProposalScorer(votes, VotesCounter.SequenceVotesCounter, 0.5)
+    val segmentScore = ProposalScorer(votes, VotesCounter.SegmentVotesCounter, 0.5)
+
+    IndexedProposal(
+      id = id,
+      userId = userId,
+      content = content,
+      slug = SlugHelper(content),
+      status = status,
+      createdAt = createdAt,
+      updatedAt = updatedAt,
+      votes = votes,
+      votesCount = votes.map(_.count).sum,
+      votesVerifiedCount = votes.map(_.countVerified).sum,
+      votesSequenceCount = votes.map(_.countSequence).sum,
+      votesSegmentCount = votes.map(_.countSegment).sum,
+      toEnrich = toEnrich,
+      scores = IndexedScores(
+        engagement = regularScore.engagement.lowerBound,
+        agreement = regularScore.adhesion.lowerBound,
+        adhesion = regularScore.adhesion.lowerBound,
+        realistic = regularScore.realistic.lowerBound,
+        platitude = regularScore.platitude.lowerBound,
+        topScore = regularScore.topScore.score,
+        topScoreAjustedWithVotes = regularScore.topScore.score,
+        controversy = regularScore.controversy.lowerBound,
+        rejection = regularScore.rejection.lowerBound,
+        scoreUpperBound = regularScore.topScore.upperBound,
+        scoreLowerBound = regularScore.topScore.lowerBound,
+        zone = regularScore.zone
+      ),
+      segmentScores = IndexedScores(
+        engagement = segmentScore.engagement.lowerBound,
+        agreement = segmentScore.adhesion.lowerBound,
+        adhesion = segmentScore.adhesion.lowerBound,
+        realistic = segmentScore.realistic.lowerBound,
+        platitude = segmentScore.platitude.lowerBound,
+        topScore = segmentScore.topScore.score,
+        topScoreAjustedWithVotes = segmentScore.topScore.score,
+        controversy = segmentScore.controversy.lowerBound,
+        rejection = segmentScore.rejection.lowerBound,
+        scoreUpperBound = segmentScore.topScore.upperBound,
+        scoreLowerBound = segmentScore.topScore.lowerBound,
+        zone = segmentScore.zone
+      ),
+      context = requestContext.map(IndexedContext.apply(_, false)),
+      trending = None,
+      labels = Seq.empty,
+      author = author,
+      organisations = Seq.empty,
+      tags = tags,
+      selectedStakeTag = selectedStakeTag,
+      ideaId = ideaId,
+      operationId = operationId,
+      question = Some(
+        IndexedProposalQuestion(
+          questionId = questionId,
+          slug = questionId.value,
+          title = questionId.value,
+          question = questionId.value,
+          countries = countries,
+          language = language,
+          startDate = startDate,
+          endDate = endDate,
+          isOpen = true
+        )
+      ),
+      sequencePool = SequencePool.New,
+      sequenceSegmentPool = SequencePool.New,
+      initialProposal = initialProposal,
+      refusalReason = refusalReason,
+      operationKind = None,
+      segment = None,
+      keywords = keywords
     )
   }
 

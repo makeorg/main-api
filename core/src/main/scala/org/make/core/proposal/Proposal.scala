@@ -60,13 +60,14 @@ final case class Proposal(
   override val createdAt: Option[ZonedDateTime],
   override val updatedAt: Option[ZonedDateTime],
   events: List[ProposalAction],
-  initialProposal: Boolean = false
+  initialProposal: Boolean = false,
+  keywords: Seq[ProposalKeyword] = Nil
 ) extends Timestamped
     with MakeSerializable
 
 object Proposal {
   implicit val proposalFormatter: RootJsonFormat[Proposal] =
-    DefaultJsonProtocol.jsonFormat20(Proposal.apply)
+    DefaultJsonProtocol.jsonFormat21(Proposal.apply)
 
   def needsEnrichment(status: ProposalStatus, tagTypes: Seq[TagType], proposalTagTypes: Seq[TagTypeId]): Boolean = {
     val proposalTypesSet = proposalTagTypes.toSet
@@ -228,5 +229,25 @@ object ProposalStatus extends StringEnum[ProposalStatus] with StringCirceEnum[Pr
   case object Archived extends ProposalStatus("Archived")
 
   override def values: IndexedSeq[ProposalStatus] = findValues
+
+}
+
+final case class ProposalKeyword(key: ProposalKeywordKey, label: String)
+
+object ProposalKeyword {
+  implicit val codec: Codec[ProposalKeyword] = deriveCodec[ProposalKeyword]
+
+  implicit val formatter: RootJsonFormat[ProposalKeyword] =
+    DefaultJsonProtocol.jsonFormat2(ProposalKeyword.apply)
+}
+
+final case class ProposalKeywordKey(value: String) extends StringValue
+
+object ProposalKeywordKey {
+
+  implicit val codec: Codec[ProposalKeywordKey] =
+    Codec.from(Decoder[String].map(ProposalKeywordKey.apply), Encoder[String].contramap(_.value))
+
+  implicit val formatter: JsonFormat[ProposalKeywordKey] = SprayJsonFormatters.forStringValue(ProposalKeywordKey.apply)
 
 }

@@ -1152,6 +1152,19 @@
           "type": "keyword",
           "index": true
         },
+        "keywords": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "keyword",
+              "index": true
+            },
+            "label": {
+              "type": "text",
+              "index": false
+            }
+          }
+        },
         "author": {
           "type": "object",
           "properties": {

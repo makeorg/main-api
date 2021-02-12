@@ -32,7 +32,7 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
-import org.make.core.{CirceFormatters, DateHelper}
+import org.make.core.CirceFormatters
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable.Seq
@@ -67,71 +67,25 @@ class SortAlgorithmIT
     initializeElasticsearch(_.id)
   }
 
-  private val now = DateHelper.now()
-  private def newEmptyProposal(proposalId: String) = IndexedProposal(
-    id = ProposalId(proposalId),
-    userId = UserId("user-id"),
-    content = "This is a test proposal",
-    slug = "this-is-a-test-proposal",
-    createdAt = now,
-    updatedAt = Some(now),
-    votes =
-      Seq(IndexedVote.empty(VoteKey.Agree), IndexedVote.empty(VoteKey.Disagree), IndexedVote.empty(VoteKey.Neutral)),
-    votesCount = 3,
-    votesVerifiedCount = 3,
-    votesSequenceCount = 3,
-    votesSegmentCount = 3,
-    toEnrich = false,
-    scores = IndexedScores.empty,
-    segmentScores = IndexedScores.empty,
-    context = None,
-    author = IndexedAuthor(
-      firstName = None,
-      displayName = None,
-      organisationName = None,
-      organisationSlug = None,
-      postalCode = None,
-      age = None,
-      avatarUrl = None,
-      anonymousParticipation = false,
-      userType = UserType.UserTypeUser
-    ),
-    organisations = Seq.empty,
-    tags = Seq.empty,
-    selectedStakeTag = None,
-    trending = None,
-    labels = Seq.empty,
-    status = ProposalStatus.Accepted,
-    ideaId = None,
-    operationId = None,
-    question = None,
-    sequencePool = SequencePool.New,
-    sequenceSegmentPool = SequencePool.New,
-    initialProposal = false,
-    refusalReason = None,
-    operationKind = None,
-    segment = None
-  )
-
   private def newEmptyOrganisationProposal(proposalId: String): IndexedProposal = {
-    val indexedProposal = newEmptyProposal(proposalId)
-    indexedProposal.copy(author = indexedProposal.author.copy(userType = UserType.UserTypeOrganisation))
+    val proposal = indexedProposal(ProposalId(proposalId))
+    proposal.copy(author = proposal.author.copy(userType = UserType.UserTypeOrganisation))
   }
 
   private def newEmptyPersonalityProposal(proposalId: String): IndexedProposal = {
-    val indexedProposal = newEmptyProposal(proposalId)
-    indexedProposal.copy(author = indexedProposal.author.copy(userType = UserType.UserTypePersonality))
+    val proposal = indexedProposal(ProposalId(proposalId))
+    proposal.copy(author = proposal.author.copy(userType = UserType.UserTypePersonality))
   }
 
   private val proposals: Seq[IndexedProposal] = Seq(
-    newEmptyProposal("random-1"),
-    newEmptyProposal("random-2"),
-    newEmptyProposal("random-3"),
-    newEmptyProposal("random-4"),
-    newEmptyProposal("random-5"),
-    newEmptyProposal("actor-1")
+    indexedProposal(ProposalId("random-1")),
+    indexedProposal(ProposalId("random-2")),
+    indexedProposal(ProposalId("random-3")),
+    indexedProposal(ProposalId("random-4")),
+    indexedProposal(ProposalId("random-5")),
+    indexedProposal(ProposalId("actor-1"))
       .copy(organisations = Seq(IndexedOrganisationInfo(UserId("1"), Some("1"), Some("1")))),
-    newEmptyProposal("actor-2")
+    indexedProposal(ProposalId("actor-2"))
       .copy(
         organisations = Seq(
           IndexedOrganisationInfo(UserId("1"), Some("1"), Some("1")),
@@ -140,14 +94,14 @@ class SortAlgorithmIT
         tags =
           Seq(IndexedTag(TagId("tag-1"), "tag1", display = true), IndexedTag(TagId("tag-2"), "tag2", display = true))
       ),
-    newEmptyProposal("actor-3")
+    indexedProposal(ProposalId("actor-3"))
       .copy(organisations = Seq(
         IndexedOrganisationInfo(UserId("1"), Some("1"), Some("1")),
         IndexedOrganisationInfo(UserId("2"), Some("2"), Some("2")),
         IndexedOrganisationInfo(UserId("3"), Some("3"), Some("3"))
       )
       ),
-    newEmptyProposal("actor-4")
+    indexedProposal(ProposalId("actor-4"))
       .copy(
         organisations = Seq(
           IndexedOrganisationInfo(UserId("1"), Some("1"), Some("1")),
@@ -158,19 +112,35 @@ class SortAlgorithmIT
         tags =
           Seq(IndexedTag(TagId("tag-1"), "tag1", display = true), IndexedTag(TagId("tag-2"), "tag2", display = true))
       ),
-    newEmptyProposal("controversy-1").copy(scores = IndexedScores.empty.copy(controversy = 0.15)),
-    newEmptyProposal("controversy-2").copy(scores = IndexedScores.empty.copy(controversy = 0.95)),
-    newEmptyProposal("controversy-3")
-      .copy(scores = IndexedScores.empty.copy(controversy = 0.21), operationId = Some(OperationId("ope-controversy"))),
-    newEmptyProposal("controversy-4").copy(scores = IndexedScores.empty.copy(controversy = 0.14), votesCount = 15),
-    newEmptyProposal("realistic-1").copy(scores = IndexedScores.empty.copy(realistic = 0.15)),
-    newEmptyProposal("realistic-2").copy(scores = IndexedScores.empty.copy(realistic = 0.95)),
-    newEmptyProposal("realistic-3")
-      .copy(scores = IndexedScores.empty.copy(realistic = 0.21), operationId = Some(OperationId("ope-realistic"))),
-    newEmptyProposal("realistic-4").copy(scores = IndexedScores.empty.copy(realistic = 0.25), votesCount = 15),
-    newEmptyProposal("popular-1").copy(votesCount = 254, scores = IndexedScores.empty.copy(scoreLowerBound = 1.4)),
-    newEmptyProposal("popular-2").copy(votesCount = 204, scores = IndexedScores.empty.copy(scoreLowerBound = 0.1)),
-    newEmptyProposal("popular-3")
+    indexedProposal(ProposalId("controversy-1"))
+      .copy(scores = IndexedScores.empty.copy(controversy = 0.15), votesCount = 3),
+    indexedProposal(ProposalId("controversy-2"))
+      .copy(scores = IndexedScores.empty.copy(controversy = 0.95), votesCount = 3),
+    indexedProposal(ProposalId("controversy-3"))
+      .copy(
+        scores = IndexedScores.empty.copy(controversy = 0.21),
+        operationId = Some(OperationId("ope-controversy")),
+        votesCount = 3
+      ),
+    indexedProposal(ProposalId("controversy-4"))
+      .copy(scores = IndexedScores.empty.copy(controversy = 0.14), votesCount = 15),
+    indexedProposal(ProposalId("realistic-1"))
+      .copy(scores = IndexedScores.empty.copy(realistic = 0.15), votesCount = 3),
+    indexedProposal(ProposalId("realistic-2"))
+      .copy(scores = IndexedScores.empty.copy(realistic = 0.95), votesCount = 3),
+    indexedProposal(ProposalId("realistic-3"))
+      .copy(
+        scores = IndexedScores.empty.copy(realistic = 0.21),
+        operationId = Some(OperationId("ope-realistic")),
+        votesCount = 3
+      ),
+    indexedProposal(ProposalId("realistic-4"))
+      .copy(scores = IndexedScores.empty.copy(realistic = 0.25), votesCount = 15),
+    indexedProposal(ProposalId("popular-1"))
+      .copy(votesCount = 254, scores = IndexedScores.empty.copy(scoreLowerBound = 1.4)),
+    indexedProposal(ProposalId("popular-2"))
+      .copy(votesCount = 204, scores = IndexedScores.empty.copy(scoreLowerBound = 0.1)),
+    indexedProposal(ProposalId("popular-3"))
       .copy(
         votesCount = 540,
         scores = IndexedScores.empty.copy(scoreLowerBound = 4.2),

@@ -384,7 +384,8 @@ final case class PatchProposalRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
   operation: Option[OperationId] = None,
   @(ApiModelProperty @field)(dataType = "boolean")
-  initialProposal: Option[Boolean] = None
+  initialProposal: Option[Boolean] = None,
+  keywords: Option[Seq[ProposalKeyword]] = None
 )
 
 object PatchProposalRequest {
@@ -460,5 +461,10 @@ final case class NextProposalToModerateRequest(
 
 object NextProposalToModerateRequest {
   implicit val decoder: Decoder[NextProposalToModerateRequest] = deriveDecoder[NextProposalToModerateRequest]
+}
 
+final case class ProposalKeywordRequest(proposalId: ProposalId, keywords: Seq[ProposalKeyword])
+
+object ProposalKeywordRequest {
+  implicit val decoder: Decoder[ProposalKeywordRequest] = deriveDecoder[ProposalKeywordRequest]
 }

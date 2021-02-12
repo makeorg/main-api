@@ -154,6 +154,12 @@ final case class PatchProposalCommand(
 final case class AnonymizeProposalCommand(proposalId: ProposalId, requestContext: RequestContext = RequestContext.empty)
     extends ProposalCommand
 
+final case class SetKeywordsCommand(
+  proposalId: ProposalId,
+  keywords: Seq[ProposalKeyword],
+  requestContext: RequestContext
+) extends ProposalCommand
+
 final case class SnapshotProposal(proposalId: ProposalId, requestContext: RequestContext) extends ProposalCommand
 
 // Responses

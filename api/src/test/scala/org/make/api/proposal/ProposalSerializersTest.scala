@@ -46,7 +46,7 @@ import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.scalatest.wordspec.AnyWordSpec
 import stamina.testkit.StaminaTestKit
-import stamina.{Persisters, V3, V8}
+import stamina.{Persisters, V3, V7, V8, V9}
 
 class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
 
@@ -316,7 +316,8 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
           actionType = "qualification",
           arguments = Map("argument" -> "value")
         )
-      )
+      ),
+      keywords = Nil
     )
     val proposalFromGermany = proposal.copy(creationContext = requestContextFromGermany)
 
@@ -324,10 +325,24 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       ProposalPatched(id = proposalId, eventDate = eventDate, requestContext = requestContext, proposal = proposal)
     val proposalPatchedFromGermany =
       proposalPatched.copy(requestContext = requestContextFromGermany, proposal = proposalFromGermany)
+    val proposalPatchedWithKeywords =
+      proposalPatched.copy(proposal = proposalPatched.proposal
+        .copy(keywords = Seq(ProposalKeyword(ProposalKeywordKey("keyword-key"), "keyword-label")))
+      )
 
     val proposalState = ProposalState(
       proposal = proposal,
       lock = Some(Lock(moderatorId = userId, moderatorName = "moderator name", expirationDate = eventDate))
+    )
+    val proposalStateWithKeywords = proposalState.copy(proposal =
+      proposalState.proposal.copy(keywords = Seq(ProposalKeyword(ProposalKeywordKey("keyword-key"), "keyword-label")))
+    )
+
+    val proposalKeywordsSet = ProposalKeywordsSet(
+      id = proposalId,
+      eventDate = eventDate,
+      keywords = Seq(ProposalKeyword(ProposalKeywordKey("a"), "à"), ProposalKeyword(ProposalKeywordKey("b"), "ᴃ")),
+      requestContext = requestContext
     )
 
     persisters.generateTestsFor(
@@ -350,9 +365,12 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       sample(proposalAddedToOperation),
       sample(proposalRemovedFromOperation),
       sample(proposalPatched),
-      PersistableSample[V8]("with-locale", proposalPatchedFromGermany, Some("with locale")),
+      PersistableSample[V7]("with-locale", proposalPatchedFromGermany, Some("with locale")),
+      PersistableSample[V8]("with-keywords", proposalPatchedWithKeywords, Some("with keywords")),
       sample(proposalVotesUpdated),
-      sample(proposalState)
+      sample(proposalState),
+      PersistableSample[V9]("with-keywords", proposalStateWithKeywords, Some("with keywords")),
+      sample(proposalKeywordsSet)
     )
 
   }

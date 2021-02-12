@@ -219,81 +219,23 @@ class ModerationProposalApiTest
       .lockProposal(eqTo(ProposalId("123456")), eqTo(tyrion.userId), any[RequestContext])
   ).thenReturn(Future.successful(Some(tyrion.userId)))
 
-  val proposalSim123: Proposal = Proposal(
-    proposalId = ProposalId("sim-123"),
-    slug = "a-song-of-fire-and-ice",
+  val proposalSim123: Proposal = proposal(
+    id = ProposalId("sim-123"),
     content = "A song of fire and ice",
     author = UserId("Georges RR Martin"),
-    labels = Seq.empty,
-    votes = Seq(
-      Vote(
-        key = VoteKey.Agree,
-        qualifications = Seq.empty,
-        count = 0,
-        countVerified = 0,
-        countSequence = 0,
-        countSegment = 0
-      ),
-      Vote(
-        key = VoteKey.Disagree,
-        qualifications = Seq.empty,
-        count = 0,
-        countVerified = 0,
-        countSequence = 0,
-        countSegment = 0
-      ),
-      Vote(
-        key = VoteKey.Neutral,
-        qualifications = Seq.empty,
-        count = 0,
-        countVerified = 0,
-        countSequence = 0,
-        countSegment = 0
-      )
-    ),
-    creationContext = RequestContext.empty.copy(country = Some(Country("FR")), language = Some(Language("fr"))),
+    requestContext = RequestContext.empty.copy(country = Some(Country("FR")), language = Some(Language("fr"))),
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now()),
-    events = Nil,
-    questionId = Some(QuestionId("question-fire-and-ice"))
+    questionId = QuestionId("question-fire-and-ice")
   )
 
-  val proposalSim124: Proposal = Proposal(
-    proposalId = ProposalId("sim-124"),
-    slug = "a-song-of-fire-and-ice-2",
+  val proposalSim124: Proposal = proposal(
+    id = ProposalId("sim-124"),
     content = "A song of fire and ice 2",
     author = UserId("Georges RR Martin"),
-    labels = Seq.empty,
-    votes = Seq(
-      Vote(
-        key = VoteKey.Agree,
-        qualifications = Seq.empty,
-        count = 0,
-        countVerified = 0,
-        countSequence = 0,
-        countSegment = 0
-      ),
-      Vote(
-        key = VoteKey.Disagree,
-        qualifications = Seq.empty,
-        count = 0,
-        countVerified = 0,
-        countSequence = 0,
-        countSegment = 0
-      ),
-      Vote(
-        key = VoteKey.Neutral,
-        qualifications = Seq.empty,
-        count = 0,
-        countVerified = 0,
-        countSequence = 0,
-        countSegment = 0
-      )
-    ),
-    creationContext = RequestContext.empty.copy(country = Some(Country("FR")), language = Some(Language("fr"))),
+    requestContext = RequestContext.empty.copy(country = Some(Country("FR")), language = Some(Language("fr"))),
     createdAt = Some(DateHelper.now()),
-    updatedAt = Some(DateHelper.now()),
-    events = Nil
+    updatedAt = Some(DateHelper.now())
   )
 
   when(

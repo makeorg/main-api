@@ -79,6 +79,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     case command: LockProposalCommand        => onLockProposalCommand(command)
     case command: PatchProposalCommand       => onPatchProposalCommand(command)
     case command: AnonymizeProposalCommand   => onAnonymizeProposalCommand(command)
+    case command: SetKeywordsCommand         => onSetKeywordsCommand(command)
     case Snapshot                            => saveSnapshot()
     case _: SnapshotProposal                 => saveSnapshot()
     case _: KillProposalShard                => self ! PoisonPill
@@ -154,7 +155,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
           idea = changes.ideaId.orElse(proposal.idea),
           operation = changes.operation.orElse(proposal.operation),
           updatedAt = Some(DateHelper.now()),
-          initialProposal = changes.initialProposal.getOrElse(proposal.initialProposal)
+          initialProposal = changes.initialProposal.getOrElse(proposal.initialProposal),
+          keywords = changes.keywords.getOrElse(proposal.keywords)
         )
 
       persistAndPublishEvent(
@@ -696,6 +698,19 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     )(_ => ())
   }
 
+  private def onSetKeywordsCommand(command: SetKeywordsCommand): Unit = {
+    persistAndPublishEvent(
+      ProposalKeywordsSet(
+        command.proposalId,
+        eventDate = DateHelper.now(),
+        keywords = command.keywords,
+        requestContext = command.requestContext
+      )
+    ) { _ =>
+      getStateOrSendProposalNotFound()(sender() ! UpdatedProposal(_))
+    }
+  }
+
   override def persistenceId: String = proposalId.value
 
   override val applyEvent: PartialFunction[ProposalEvent, Option[Proposal]] = {
@@ -765,7 +780,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
               arguments = Map("content" -> e.content)
             )
           ),
-          initialProposal = e.initialProposal
+          initialProposal = e.initialProposal,
+          keywords = Seq.empty
         )
       )
     case e: ProposalUpdated              => state.map(applyProposalUpdated(_, e))
@@ -780,6 +796,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     case e: ProposalUnqualified          => state.map(applyProposalUnqualified(_, e))
     case e: ProposalLocked               => state.map(applyProposalLocked(_, e))
     case e: ProposalPatched              => Some(e.proposal)
+    case e: ProposalKeywordsSet          => state.map(applyProposalKeywordsSet(_, e))
     case _: DeprecatedEvent              => state
     case _: ProposalAnonymized =>
       state.map(
@@ -1055,6 +1072,10 @@ object ProposalActor {
     val action =
       ProposalAction(date = event.eventDate, user = event.moderatorId, actionType = "lock", arguments = arguments)
     state.copy(events = action :: state.events, updatedAt = Some(event.eventDate))
+  }
+
+  def applyProposalKeywordsSet(state: Proposal, event: ProposalKeywordsSet): Proposal = {
+    state.copy(keywords = event.keywords, updatedAt = Some(event.eventDate))
   }
 
 }

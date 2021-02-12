@@ -20,8 +20,9 @@
 package org.make.api.proposal
 
 import java.time.ZonedDateTime
+
 import akka.Done
-import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.{Sink, Source}
 import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
@@ -251,6 +252,11 @@ trait ProposalService {
     maybeUserId: Option[UserId],
     requestContext: RequestContext
   ): Future[ProposalsResultSeededResponse]
+
+  def setKeywords(
+    proposalKeywordsList: Seq[ProposalKeywordRequest],
+    requestContext: RequestContext
+  ): Future[Seq[ProposalKeywordsResponse]]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with Logging {
@@ -1425,6 +1431,34 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         Some(randomSeed)
       )
 
+    }
+
+    private def setProposalKeywords(
+      proposalId: ProposalId,
+      keywords: Seq[ProposalKeyword],
+      requestContext: RequestContext
+    ): Future[ProposalKeywordsResponse] = {
+      proposalCoordinatorService.setKeywords(SetKeywordsCommand(proposalId, keywords, requestContext)).map {
+        case Some(proposal) =>
+          ProposalKeywordsResponse(proposal.proposalId, status = ProposalKeywordsResponseStatus.Ok, message = None)
+        case None =>
+          ProposalKeywordsResponse(
+            proposalId,
+            status = ProposalKeywordsResponseStatus.Error,
+            message = Some(s"Proposal ${proposalId.value} not found")
+          )
+      }
+    }
+
+    override def setKeywords(
+      proposalKeywordsList: Seq[ProposalKeywordRequest],
+      requestContext: RequestContext
+    ): Future[Seq[ProposalKeywordsResponse]] = {
+      Source(proposalKeywordsList)
+        .mapAsync(3) { proposalKeywords =>
+          setProposalKeywords(proposalKeywords.proposalId, proposalKeywords.keywords, requestContext)
+        }
+        .runWith(Sink.seq)
     }
 
   }

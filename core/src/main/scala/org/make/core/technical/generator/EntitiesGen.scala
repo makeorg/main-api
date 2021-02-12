@@ -324,7 +324,8 @@ trait EntitiesGen extends DateGenerators {
       createdAt = date,
       updatedAt = date,
       events = List.empty,
-      initialProposal = initialProposal
+      initialProposal = initialProposal,
+      keywords = Seq.empty
     )
   }
 

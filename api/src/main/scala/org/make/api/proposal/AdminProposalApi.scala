@@ -111,7 +111,30 @@ trait AdminProposalApi extends Directives {
   @Path(value = "/{proposalId}")
   def patchProposal: Route
 
-  def routes: Route = patchProposal ~ updateProposalVotes ~ resetVotes
+  @ApiOperation(
+    value = "add-keywords",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[ProposalKeywordsResponse]]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "body", paramType = "body", dataType = "list[org.make.api.proposal.KeywordRequest]")
+    )
+  )
+  @Path(value = "/keywords")
+  def setProposalKeywords: Route
+
+  def routes: Route = patchProposal ~ updateProposalVotes ~ resetVotes ~ setProposalKeywords
 }
 
 trait AdminProposalApiComponent {
@@ -271,5 +294,24 @@ trait DefaultAdminProposalApiComponent
       }
     }
 
+    override def setProposalKeywords: Route = post {
+      path("admin" / "proposals" / "keywords") {
+        makeOperation("SetProposalKeywords") { requestContext =>
+          makeOAuth2 { userAuth =>
+            requireAdminRole(userAuth.user) {
+              decodeRequest {
+                entity(as[Seq[ProposalKeywordRequest]]) { request =>
+                  provideAsync(proposalService.setKeywords(request, requestContext)) { response =>
+                    complete(response)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
   }
+
 }

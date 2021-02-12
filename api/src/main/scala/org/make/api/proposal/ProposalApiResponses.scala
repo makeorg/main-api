@@ -22,8 +22,9 @@ package org.make.api.proposal
 import java.time.{LocalDate, ZonedDateTime}
 import java.time.temporal.ChronoUnit
 
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
+import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
+import io.circe.{Codec, Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.question.{SimpleQuestionResponse, SimpleQuestionWordingResponse}
 import org.make.api.user.UserResponse
@@ -519,4 +520,27 @@ object TagsForProposalResponse {
   implicit val decoder: Decoder[TagsForProposalResponse] = deriveDecoder[TagsForProposalResponse]
 
   val empty: TagsForProposalResponse = TagsForProposalResponse(tags = Seq.empty, modelName = "")
+}
+
+sealed abstract class ProposalKeywordsResponseStatus(val value: String) extends StringEnumEntry
+
+object ProposalKeywordsResponseStatus
+    extends StringEnum[ProposalKeywordsResponseStatus]
+    with StringCirceEnum[ProposalKeywordsResponseStatus] {
+
+  case object Ok extends ProposalKeywordsResponseStatus("Ok")
+  case object Error extends ProposalKeywordsResponseStatus("Error")
+
+  override def values: IndexedSeq[ProposalKeywordsResponseStatus] = findValues
+
+}
+
+final case class ProposalKeywordsResponse(
+  proposalId: ProposalId,
+  status: ProposalKeywordsResponseStatus,
+  message: Option[String]
+)
+
+object ProposalKeywordsResponse {
+  implicit val codec: Codec[ProposalKeywordsResponse] = deriveCodec[ProposalKeywordsResponse]
 }

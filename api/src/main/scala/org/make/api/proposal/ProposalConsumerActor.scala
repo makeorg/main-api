@@ -61,6 +61,7 @@ class ProposalConsumerActor(proposalIndexerService: ProposalIndexerService)
       case event: ProposalLocked               => doNothing(event)
       case event: ProposalAnonymized           => onCreateOrUpdate(event)
       case event: SimilarProposalsAdded        => doNothing(event)
+      case event: ProposalKeywordsSet          => onCreateOrUpdate(event)
     }
 
   }
