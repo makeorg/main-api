@@ -652,7 +652,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                 idea = proposal.idea,
                 ideaProposals = Seq.empty,
                 operationId = proposal.operation,
-                questionId = proposal.questionId
+                questionId = proposal.questionId,
+                keywords = proposal.keywords
               )
             )
           }

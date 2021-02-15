@@ -35,7 +35,7 @@ import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
-import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, SortAlgorithmConfiguration}
+import org.make.core.proposal.{ProposalId, ProposalStatus, SortAlgorithmConfiguration}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
@@ -172,12 +172,9 @@ class ProposalApiTest
     idea = None,
     operationId = None,
     question = None,
-    proposalKey = "pr0p0541k3y"
+    proposalKey = "pr0p0541k3y",
+    keywords = Nil
   )
-  when(
-    proposalService
-      .searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext])
-  ).thenReturn(Future.successful(ProposalsResultSeededResponse(1, Seq(proposalResult), Some(42))))
 
   when(ideaService.fetchOne(any[IdeaId]))
     .thenReturn(

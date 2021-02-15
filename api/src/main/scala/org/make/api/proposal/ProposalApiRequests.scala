@@ -233,7 +233,8 @@ final case class SearchRequest(
   sortAlgorithm: Option[String] = None,
   operationKinds: Option[Seq[OperationKind]] = None,
   userTypes: Option[Seq[UserType]] = None,
-  ideaIds: Option[Seq[IdeaId]] = None
+  ideaIds: Option[Seq[IdeaId]] = None,
+  keywords: Option[Seq[ProposalKeywordKey]] = None
 ) {
 
   def toSearchQuery(
@@ -255,7 +256,8 @@ final case class SearchRequest(
         country = country.map(CountrySearchFilter.apply),
         operationKinds = operationKinds.map(OperationKindsSearchFilter.apply),
         userTypes = userTypes.map(UserTypesSearchFilter.apply),
-        idea = ideaIds.map(IdeaSearchFilter.apply)
+        idea = ideaIds.map(IdeaSearchFilter.apply),
+        keywords = keywords.map(KeywordsSearchFilter)
       )
 
     val randomSeed: Int = seed.getOrElse(MakeRandom.nextInt())
@@ -297,7 +299,8 @@ final case class ExhaustiveSearchRequest(
   limit: Option[Int] = None,
   skip: Option[Int] = None,
   createdBefore: Option[ZonedDateTime] = None,
-  userTypes: Option[Seq[UserType]] = None
+  userTypes: Option[Seq[UserType]] = None,
+  keywords: Option[Seq[ProposalKeywordKey]] = None
 ) {
   def toSearchQuery(requestContext: RequestContext): SearchQuery = {
     val filters: Option[SearchFilters] =

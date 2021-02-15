@@ -216,7 +216,8 @@ class ModerationQuestionApiTest
               idea = None,
               ideaProposals = Seq.empty,
               operationId = None,
-              questionId = Some(QuestionId("my-question"))
+              questionId = Some(QuestionId("my-question")),
+              keywords = Nil
             )
           )
         )

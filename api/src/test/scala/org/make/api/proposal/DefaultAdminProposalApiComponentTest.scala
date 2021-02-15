@@ -368,7 +368,8 @@ class DefaultAdminProposalApiComponentTest
       author = Some(authorId),
       tags = Some(tags),
       operation = Some(operationId),
-      questionId = Some(questionId)
+      questionId = Some(questionId),
+      keywords = Some(Seq(ProposalKeyword(ProposalKeywordKey("key"), "label")))
     )
 
     Scenario("unauthorized user") {
@@ -582,7 +583,8 @@ class DefaultAdminProposalApiComponentTest
       idea = None,
       ideaProposals = Seq.empty,
       operationId = None,
-      questionId = Some(QuestionId("my-question"))
+      questionId = Some(QuestionId("my-question")),
+      keywords = Nil
     )
   }
 }
