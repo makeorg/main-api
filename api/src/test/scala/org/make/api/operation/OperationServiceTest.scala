@@ -19,23 +19,22 @@
 
 package org.make.api.operation
 
-import cats.data.NonEmptyList
-import org.make.api.MakeUnitTest
+import akka.actor.ActorSystem
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.question.{PersistentQuestionService, PersistentQuestionServiceComponent}
 import org.make.api.tag.{PersistentTagService, PersistentTagServiceComponent}
 import org.make.api.technical.IdGeneratorComponent
+import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.make.core.DateHelper
+import org.make.core.elasticsearch.IndexationStatus
+import org.make.core.operation.OperationActionType.{OperationCreateAction, OperationUpdateAction}
 import org.make.core.operation._
-import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference._
-import org.make.core.sequence.SequenceId
+import org.make.core.question.QuestionId
 import org.make.core.technical.IdGenerator
 import org.make.core.user.UserId
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import java.time.{LocalDate, ZonedDateTime}
-import java.util.UUID
+import java.time.ZonedDateTime
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -46,89 +45,66 @@ class OperationServiceTest
     with PersistentQuestionServiceComponent
     with IdGeneratorComponent
     with MakeDBExecutionContextComponent
-    with PersistentOperationServiceComponent {
+    with PersistentOperationServiceComponent
+    with OperationOfQuestionServiceComponent
+    with ActorSystemComponent {
+
+  override val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentOperationService: PersistentOperationService = mock[PersistentOperationService]
   override lazy val persistentTagService: PersistentTagService = mock[PersistentTagService]
   override val persistentQuestionService: PersistentQuestionService = mock[PersistentQuestionService]
+  override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
 
   override def writeExecutionContext: ExecutionContext = mock[ExecutionContext]
   override def readExecutionContext: ExecutionContext = mock[ExecutionContext]
 
-  val userId: UserId = UserId(UUID.randomUUID().toString)
   val now: ZonedDateTime = DateHelper.now()
 
-  val fooOperation: Operation = Operation(
-    status = OperationStatus.Pending,
-    operationId = OperationId("foo"),
-    slug = "first-operation",
-    operationKind = OperationKind.BusinessConsultation,
-    events = List(
-      OperationAction(
-        date = now,
-        makeUserId = userId,
-        actionType = OperationActionType.OperationCreateAction.value,
-        arguments = Map("arg1" -> "valueArg1")
+  Feature("create operation") {
+    Scenario("create") {
+      val op =
+        simpleOperation(id = OperationId("create"), slug = "create", operationKind = OperationKind.BusinessConsultation)
+      val userId = UserId("creator")
+      when(idGenerator.nextOperationId()).thenReturn(op.operationId)
+      when(persistentOperationService.persist(any[SimpleOperation])).thenReturn(Future.successful(op))
+      when(persistentOperationService.addActionToOperation(argThat[OperationAction] { action =>
+        action.makeUserId == userId && action.actionType == OperationCreateAction.value
+      }, eqTo(op.operationId))).thenReturn(Future.successful(true))
+
+      whenReady(operationService.create(userId, op.slug, op.operationKind), Timeout(2.seconds)) {
+        _ shouldBe op.operationId
+      }
+    }
+  }
+
+  Feature("update operation") {
+    Scenario("update") {
+      val opId = OperationId("update")
+      val questions = Seq(
+        QuestionWithDetails(question(QuestionId("q-id-1")), operationOfQuestion(QuestionId("q-id-1"), opId)),
+        QuestionWithDetails(question(QuestionId("q-id-2")), operationOfQuestion(QuestionId("q-id-2"), opId)),
+        QuestionWithDetails(question(QuestionId("q-id-3")), operationOfQuestion(QuestionId("q-id-3"), opId))
       )
-    ),
-    createdAt = Some(DateHelper.now()),
-    updatedAt = Some(DateHelper.now()),
-    questions = Seq(
-      QuestionWithDetails(
-        question = Question(
-          questionId = QuestionId("foo1"),
-          countries = NonEmptyList.of(Country("BR")),
-          language = Language("fr"),
-          slug = "foo-BR",
-          question = "foo BR?",
-          shortTitle = None,
-          operationId = Some(OperationId("foo"))
-        ),
-        details = operationOfQuestion(
-          questionId = QuestionId("foo1"),
-          operationId = OperationId("foo"),
-          operationTitle = "première operation",
-          landingSequenceId = SequenceId("first-sequence-id-BR")
-        )
-      ),
-      QuestionWithDetails(
-        question = Question(
-          questionId = QuestionId("foo2"),
-          countries = NonEmptyList.of(Country("GB")),
-          language = Language("en"),
-          slug = "foo-GB",
-          question = "foo GB?",
-          shortTitle = None,
-          operationId = Some(OperationId("foo"))
-        ),
-        details = operationOfQuestion(
-          questionId = QuestionId("foo2"),
-          operationId = OperationId("foo"),
-          operationTitle = "first operation",
-          landingSequenceId = SequenceId("first-sequence-id-GB"),
-          resultsLink = Some(ResultsLink.Internal.TopIdeas)
-        )
-      )
-    )
-  )
+      val op = operation(operationId = opId, slug = "update", questions = questions)
+      val simple = SimpleOperation(opId, op.status, op.slug, op.operationKind, op.createdAt, op.updatedAt)
+      val userId = UserId("updator")
+      when(idGenerator.nextOperationId()).thenReturn(op.operationId)
+      when(persistentOperationService.getById(op.operationId)).thenReturn(Future.successful(Some(op)))
+      when(persistentOperationService.modify(simple)).thenReturn(Future.successful(simple))
 
-  Feature("find operations") {
-    Scenario("find operations and get the right tags") {
-      Given("a list of operations")
-      When("fetch this list")
-      Then("tags are fetched from persistent service")
+      when(persistentOperationService.addActionToOperation(argThat[OperationAction] { action =>
+        action.makeUserId == userId && action.actionType == OperationUpdateAction.value
+      }, eqTo(op.operationId))).thenReturn(Future.successful(true))
 
-      when(persistentOperationService.find(any[Option[String]], any[Option[Country]], any[Option[LocalDate]]))
-        .thenReturn(Future.successful(Seq(fooOperation)))
+      questions.foreach { q =>
+        when(operationOfQuestionService.indexById(eqTo(q.question.questionId)))
+          .thenReturn(Future.successful(Some(IndexationStatus.Completed)))
+      }
 
-      val futureOperations: Future[Seq[Operation]] =
-        operationService.find(slug = None, country = None, maybeSource = None, openAt = None)
-
-      whenReady(futureOperations, Timeout(3.seconds)) { operations =>
-        logger.debug(operations.map(_.toString).mkString(", "))
-//        val fooOperation: Operation = operations.filter(operation => operation.operationId.value == "foo").head
-//        fooOperation.questions.filter(cc => cc.question.country == Country("GB")).head.tagIds.size shouldBe 1
+      whenReady(operationService.update(opId, userId, Some(op.slug)), Timeout(2.seconds)) {
+        _ shouldBe Some(op.operationId)
       }
     }
 

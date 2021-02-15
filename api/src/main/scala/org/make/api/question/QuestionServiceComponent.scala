@@ -102,7 +102,7 @@ trait QuestionServiceComponent {
   def questionService: QuestionService
 }
 
-trait DefaultQuestionService extends QuestionServiceComponent {
+trait DefaultQuestionServiceComponent extends QuestionServiceComponent {
   this: PersistentQuestionServiceComponent
     with ActorSystemComponent
     with IdGeneratorComponent

@@ -258,6 +258,7 @@ object OperationStatus
 
 final case class SimpleOperation(
   operationId: OperationId,
+  //TODO: remove this unused field
   status: OperationStatus,
   slug: String,
   operationKind: OperationKind,

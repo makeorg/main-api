@@ -49,7 +49,7 @@ import org.make.core.technical.Pagination.Start
 
 class QuestionServiceTest
     extends MakeUnitTest
-    with DefaultQuestionService
+    with DefaultQuestionServiceComponent
     with PersistentQuestionServiceComponent
     with ActorSystemComponent
     with IdGeneratorComponent

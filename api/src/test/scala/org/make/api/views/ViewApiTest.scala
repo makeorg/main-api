@@ -39,9 +39,9 @@ import org.make.core.operation.{
   OperationKind,
   OperationOfQuestionSearchFilters,
   OperationOfQuestionSearchQuery,
-  QuestionContentSearchFilter
+  QuestionContentSearchFilter,
+  OperationKindsSearchFilter => OpKindsSearchFilter
 }
-import org.make.core.operation
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.proposal.{ContentSearchFilter, OperationKindsSearchFilter, SearchFilters, SearchQuery}
 import org.make.core.reference.Country
@@ -104,7 +104,7 @@ class ViewApiTest
               filters = Some(
                 OperationOfQuestionSearchFilters(
                   question = Some(QuestionContentSearchFilter("toto", fuzzy = Some(Fuzziness.Auto))),
-                  operationKinds = Some(operation.OperationKindsSearchFilter(OperationKind.publicKinds))
+                  operationKinds = Some(OpKindsSearchFilter(OperationKind.publicKinds))
                 )
               ),
               limit = None
@@ -161,7 +161,7 @@ class ViewApiTest
               filters = Some(
                 OperationOfQuestionSearchFilters(
                   question = Some(QuestionContentSearchFilter("lownoresults", fuzzy = Some(Fuzziness.Auto))),
-                  operationKinds = Some(operation.OperationKindsSearchFilter(OperationKind.publicKinds))
+                  operationKinds = Some(OpKindsSearchFilter(OperationKind.publicKinds))
                 )
               ),
               limit = None

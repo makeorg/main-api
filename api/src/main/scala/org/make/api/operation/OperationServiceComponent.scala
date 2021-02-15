@@ -19,9 +19,12 @@
 
 package org.make.api.operation
 
-import java.time.LocalDate
+import akka.Done
+import akka.stream.scaladsl.{Sink, Source}
 
+import java.time.LocalDate
 import io.circe.syntax._
+import org.make.api.ActorSystemComponent
 import org.make.api.question.PersistentQuestionServiceComponent
 import org.make.api.tag.PersistentTagServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
@@ -63,7 +66,7 @@ trait OperationService extends ShortenedNames {
     userId: UserId,
     slug: Option[String] = None,
     status: Option[OperationStatus] = None,
-    operationKind: Option[OperationKind]
+    operationKind: Option[OperationKind] = None
   ): Future[Option[OperationId]]
   def count(slug: Option[String], operationKinds: Option[Seq[OperationKind]]): Future[Int]
 }
@@ -72,7 +75,9 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
   this: PersistentOperationServiceComponent
     with IdGeneratorComponent
     with PersistentTagServiceComponent
-    with PersistentQuestionServiceComponent =>
+    with PersistentQuestionServiceComponent
+    with OperationOfQuestionServiceComponent
+    with ActorSystemComponent =>
 
   override lazy val operationService: OperationService = new DefaultOperationService
 
@@ -122,27 +127,32 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
     override def create(userId: UserId, slug: String, operationKind: OperationKind): Future[OperationId] = {
       val now = DateHelper.now()
 
-      val operation: SimpleOperation = SimpleOperation(
-        operationId = idGenerator.nextOperationId(),
-        status = OperationStatus.Pending,
-        slug = slug,
-        operationKind = operationKind,
-        createdAt = Some(now),
-        updatedAt = Some(now)
+      val persist: Future[SimpleOperation] = persistentOperationService.persist(
+        SimpleOperation(
+          operationId = idGenerator.nextOperationId(),
+          status = OperationStatus.Pending,
+          slug = slug,
+          operationKind = operationKind,
+          createdAt = Some(now),
+          updatedAt = Some(now)
+        )
       )
 
-      persistentOperationService.persist(operation).flatMap { persisted =>
+      def addAction(persisted: SimpleOperation): Future[Boolean] =
         persistentOperationService
           .addActionToOperation(
             OperationAction(
               makeUserId = userId,
               actionType = OperationCreateAction.value,
-              arguments = Map("operation" -> operationToString(operation))
+              arguments = Map("operation" -> operationToString(persisted))
             ),
             persisted.operationId
           )
-          .map(_ => persisted.operationId)
-      }
+
+      for {
+        persisted <- persist
+        _         <- addAction(persisted)
+      } yield persisted.operationId
     }
 
     override def update(
@@ -150,7 +160,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
       userId: UserId,
       slug: Option[String] = None,
       status: Option[OperationStatus] = None,
-      operationKind: Option[OperationKind]
+      operationKind: Option[OperationKind] = None
     ): Future[Option[OperationId]] = {
 
       persistentOperationService
@@ -158,26 +168,40 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
         .flatMap {
           case None => Future.successful(None)
           case Some(operation) =>
-            val modifiedOperation = SimpleOperation(
-              operationId = operationId,
-              status = status.getOrElse(operation.status),
-              slug = slug.getOrElse(operation.slug),
-              operationKind = operationKind.getOrElse(operation.operationKind),
-              createdAt = operation.createdAt,
-              updatedAt = operation.updatedAt
+            val modify = persistentOperationService.modify(
+              SimpleOperation(
+                operationId = operationId,
+                status = status.getOrElse(operation.status),
+                slug = slug.getOrElse(operation.slug),
+                operationKind = operationKind.getOrElse(operation.operationKind),
+                createdAt = operation.createdAt,
+                updatedAt = operation.updatedAt
+              )
             )
-            persistentOperationService.modify(modifiedOperation).flatMap { operationUpdated =>
+
+            def addAction(updated: SimpleOperation): Future[Boolean] =
               persistentOperationService
                 .addActionToOperation(
                   OperationAction(
                     makeUserId = userId,
                     actionType = OperationUpdateAction.value,
-                    arguments = Map("operation" -> operationToString(operationUpdated))
+                    arguments = Map("operation" -> operationToString(updated))
                   ),
-                  operationUpdated.operationId
+                  updated.operationId
                 )
-                .map(_ => Some(operationUpdated.operationId))
-            }
+
+            def updateQuestions(updated: SimpleOperation): Future[Done] =
+              Source(operation.questions)
+                .mapAsync(5) { question =>
+                  operationOfQuestionService.indexById(question.question.questionId)
+                }
+                .runWith(Sink.ignore)
+
+            for {
+              updated <- modify
+              _       <- addAction(updated)
+              _       <- updateQuestions(updated)
+            } yield Some(updated.operationId)
         }
     }
 
