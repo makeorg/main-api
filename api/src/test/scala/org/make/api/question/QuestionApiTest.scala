@@ -22,6 +22,7 @@ package org.make.api.question
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import cats.data.NonEmptyList
+import eu.timepit.refined.auto._
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.feature.{
@@ -31,6 +32,7 @@ import org.make.api.feature.{
   FeatureServiceComponent
 }
 import org.make.api.idea.topIdeaComments.{TopIdeaCommentService, TopIdeaCommentServiceComponent}
+import org.make.api.keyword.{KeywordService, KeywordServiceComponent}
 import org.make.api.operation._
 import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.{PartnerService, PartnerServiceComponent}
@@ -42,6 +44,7 @@ import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId, Feature => Feat}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
+import org.make.core.keyword.Keyword
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.operation.{OperationId, _}
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
@@ -57,7 +60,6 @@ import org.make.core.{DateHelper, Order, RequestContext, ValidationError}
 import org.make.core.proposal.indexed.{SequencePool, Zone}
 
 import java.time.ZonedDateTime
-
 import org.make.core.technical.Pagination.{End, Start}
 
 import scala.collection.immutable.Seq
@@ -81,7 +83,8 @@ class QuestionApiTest
     with TagServiceComponent
     with ProposalServiceComponent
     with TopIdeaCommentServiceComponent
-    with PersonalityRoleServiceComponent {
+    with PersonalityRoleServiceComponent
+    with KeywordServiceComponent {
 
   override val questionService: QuestionService = mock[QuestionService]
   override val sequenceService: SequenceService = mock[SequenceService]
@@ -97,6 +100,7 @@ class QuestionApiTest
   override val proposalService: ProposalService = mock[ProposalService]
   override val topIdeaCommentService: TopIdeaCommentService = mock[TopIdeaCommentService]
   override val personalityRoleService: PersonalityRoleService = mock[PersonalityRoleService]
+  override val keywordService: KeywordService = mock[KeywordService]
 
   val routes: Route = sealRoute(questionApi.routes)
 
@@ -693,6 +697,30 @@ class QuestionApiTest
         val errors = entityAs[Seq[ValidationError]]
         errors.size shouldBe 3
         errors.map(_.field).toSet shouldBe Set("maxPartnerProposals", "limit")
+      }
+    }
+  }
+
+  Feature("keywords") {
+    Scenario("fake question") {
+      when(questionService.getQuestion(eqTo(QuestionId("fake")))).thenReturn(Future.successful(None))
+      Get("/questions/fake/keywords") ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+
+    Scenario("get keywords") {
+      val qId = QuestionId("question-id")
+      when(questionService.getQuestion(eqTo(qId)))
+        .thenReturn(Future.successful(Some(baseQuestion)))
+
+      when(keywordService.findAll(eqTo(qId), eqTo(5)))
+        .thenReturn(
+          Future.successful(Seq(Keyword(qId, "key", "label", 4.2f, 14), Keyword(qId, "key-2", "label-2", -4.2f, 21)))
+        )
+
+      Get("/questions/question-id/keywords?limit=5") ~> routes ~> check {
+        status should be(StatusCodes.OK)
       }
     }
   }

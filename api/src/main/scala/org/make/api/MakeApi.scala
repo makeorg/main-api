@@ -49,6 +49,7 @@ import org.make.api.idea.topIdeaComments.{
   DefaultPersistentTopIdeaCommentServiceComponent,
   DefaultTopIdeaCommentServiceComponent
 }
+import org.make.api.keyword.{DefaultKeywordServiceComponent, DefaultPersistentKeywordServiceComponent}
 import org.make.api.operation._
 import org.make.api.organisation._
 import org.make.api.partner.{
@@ -182,6 +183,7 @@ trait MakeApi
     with DefaultIndexationComponent
     with DefaultJobApiComponent
     with DefaultJobCoordinatorServiceComponent
+    with DefaultKeywordServiceComponent
     with DefaultMailJetConfigurationComponent
     with DefaultMailJetTemplateConfigurationComponent
     with DefaultMakeDataHandlerComponent
@@ -214,6 +216,7 @@ trait MakeApi
     with DefaultPersistentFeatureServiceComponent
     with DefaultPersistentIdeaMappingServiceComponent
     with DefaultPersistentIdeaServiceComponent
+    with DefaultPersistentKeywordServiceComponent
     with DefaultPersistentOperationOfQuestionServiceComponent
     with DefaultPersistentOperationServiceComponent
     with DefaultPersistentPartnerServiceComponent

@@ -24,9 +24,11 @@ import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.MaxSize
+import eu.timepit.refined.types.all.NonNegInt
 import org.make.api.proposal.ProposalScorer
 import org.make.api.proposal.ProposalScorer.VotesCounter
 import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
+import org.make.core.keyword.Keyword
 import org.make.core.operation._
 import org.make.core.post.indexed.IndexedPost
 import org.make.core.post.{Post, PostId}
@@ -45,25 +47,14 @@ import org.make.core.proposal.QualificationKey.{
 }
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
+import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.sequence.SequenceId
-import org.make.core.tag.{Tag, TagDisplay, TagId, TagType, TagTypeId}
+import org.make.core.tag._
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext, SlugHelper}
-import org.make.core.proposal.indexed.{
-  IndexedAuthor,
-  IndexedContext,
-  IndexedProposal,
-  IndexedProposalKeyword,
-  IndexedProposalQuestion,
-  IndexedQualification,
-  IndexedScores,
-  IndexedTag,
-  IndexedVote,
-  SequencePool
-}
 
 import java.net.URL
 import java.time.ZonedDateTime
@@ -550,6 +541,15 @@ trait TestUtilsIT {
     operationId = operationId,
     questionId = questionId
   )
+
+  def keyword(
+    questionId: QuestionId,
+    key: String,
+    label: String = "label",
+    score: Float = 0.42f,
+    count: NonNegInt = 14
+  ): Keyword =
+    Keyword(questionId = questionId, key = key, label = label, score = score, count = count)
 
 }
 

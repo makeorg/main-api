@@ -26,8 +26,10 @@ import eu.timepit.refined.auto._
 import io.circe.syntax._
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.keyword.{KeywordService, KeywordServiceComponent}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.ValidationError
+import org.make.core.keyword.Keyword
 import org.make.core.operation._
 import org.make.core.question.QuestionId
 
@@ -38,21 +40,23 @@ class DefaultAdminOperationOfQuestionApiComponentTest
     with DefaultAdminOperationOfQuestionApiComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
-    with OperationOfQuestionServiceComponent {
+    with OperationOfQuestionServiceComponent
+    with KeywordServiceComponent {
 
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
+  override val keywordService: KeywordService = mock[KeywordService]
 
   when(operationOfQuestionService.findByQuestionId(any[QuestionId])).thenAnswer { questionId: QuestionId =>
     Future.successful(Some(operationOfQuestion(questionId = questionId, operationId = OperationId("some-operation"))))
   }
 
-  when(operationOfQuestionService.update(any[OperationOfQuestion])).thenAnswer { ooq: OperationOfQuestion =>
-    Future.successful(ooq)
-  }
-
   val routes: Route = sealRoute(adminOperationOfQuestionApi.routes)
 
   Feature("update highlights") {
+    when(operationOfQuestionService.update(any[OperationOfQuestion])).thenAnswer { ooq: OperationOfQuestion =>
+      Future.successful(ooq)
+    }
+
     Scenario("unauthenticated user") {
       Put("/admin/questions/some-question/highlights") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
@@ -105,6 +109,71 @@ class DefaultAdminOperationOfQuestionApiComponentTest
         val errors = entityAs[Seq[ValidationError]]
         errors.size should be(1)
         errors.head.field shouldBe "proposalsCount"
+      }
+    }
+  }
+
+  Feature("keywords") {
+    when(keywordService.replaceAll(any[QuestionId], any[Seq[Keyword]])).thenAnswer {
+      (_: QuestionId, keywords: Seq[Keyword]) =>
+        Future.successful(keywords)
+    }
+
+    Scenario("unauthenticated user") {
+      Put("/admin/questions/some-question/keywords") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    Scenario("invalid token") {
+      Put("/admin/questions/some-question/keywords")
+        .withHeaders(Authorization(OAuth2BearerToken("invalid-token"))) ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    Scenario("citizen user") {
+      Put("/admin/questions/some-question/keywords")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("moderator user") {
+      Put("/admin/questions/some-question/keywords")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("update keywords as admin") {
+      Put("/admin/questions/some-question/keywords")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(
+          ContentTypes.`application/json`,
+          UpdateKeywords(Seq(KeywordRequest("key", "label", 0.42f, 14))).asJson.toString()
+        ) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+      }
+    }
+
+    Scenario("duplicate keywords") {
+      Put("/admin/questions/some-question/keywords")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(
+          ContentTypes.`application/json`,
+          UpdateKeywords(
+            Seq(
+              KeywordRequest("key", "label1", 0.42f, 14),
+              KeywordRequest("key", "label2", 0.2f, 4),
+              KeywordRequest("other-key", "label3", 0.2f, 4)
+            )
+          ).asJson.toString()
+        ) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size should be(1)
+        errors.head.message shouldBe Some("keywords contain duplicate keys: key")
       }
     }
   }
