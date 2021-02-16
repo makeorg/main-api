@@ -162,7 +162,7 @@ class OrganisationServiceTest
       }
 
       verify(eventBusService, times(1)).publish(argMatching[AnyRef]({
-        case OrganisationRegisteredEvent(_, _, returnedOrganisation.userId, _, _, _) =>
+        case OrganisationRegisteredEvent(_, _, returnedOrganisation.userId, _, _, _, _) =>
       }))
     }
 
@@ -186,7 +186,7 @@ class OrganisationServiceTest
       RecoverMethods.recoverToSucceededIf[EmailAlreadyRegisteredException](futureOrganisation)
 
       verify(eventBusService, times(0)).publish(argMatching[AnyRef]({
-        case OrganisationRegisteredEvent(_, _, returnedOrganisation.userId, _, _, _) =>
+        case OrganisationRegisteredEvent(_, _, returnedOrganisation.userId, _, _, _, _) =>
       }))
     }
   }

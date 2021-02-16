@@ -22,15 +22,21 @@ package org.make.api.proposal
 import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorService
+import org.make.core.technical.IdGenerator
 
 import scala.concurrent.duration.FiniteDuration
 
 object ProposalCoordinator {
-  def props(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService, lockDuration: FiniteDuration): Props =
+  def props(
+    sessionHistoryCoordinatorService: SessionHistoryCoordinatorService,
+    lockDuration: FiniteDuration,
+    idGenerator: IdGenerator
+  ): Props =
     Props(
       new ProposalCoordinator(
         sessionHistoryCoordinatorService = sessionHistoryCoordinatorService,
-        lockDuration = lockDuration
+        lockDuration = lockDuration,
+        idGenerator = idGenerator
       )
     )
   val name: String = "proposal-coordinator"
@@ -38,12 +44,17 @@ object ProposalCoordinator {
 
 class ProposalCoordinator(
   sessionHistoryCoordinatorService: SessionHistoryCoordinatorService,
-  lockDuration: FiniteDuration
+  lockDuration: FiniteDuration,
+  idGenerator: IdGenerator
 ) extends Actor {
   ClusterSharding(context.system).start(
     ShardedProposal.shardName,
     ShardedProposal
-      .props(sessionHistoryCoordinatorService = sessionHistoryCoordinatorService, lockDuration = lockDuration),
+      .props(
+        sessionHistoryCoordinatorService = sessionHistoryCoordinatorService,
+        lockDuration = lockDuration,
+        idGenerator = idGenerator
+      ),
     ClusterShardingSettings(context.system),
     ShardedProposal.extractEntityId,
     ShardedProposal.extractShardId

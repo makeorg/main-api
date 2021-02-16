@@ -20,7 +20,6 @@
 package org.make.api.user
 
 import java.time.ZonedDateTime
-
 import akka.actor.{ActorRef, ActorSystem, PoisonPill}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
@@ -30,7 +29,7 @@ import org.make.api.userhistory._
 import org.make.api.{KafkaConsumerTest, KafkaTestConsumerActor, TestUtilsIT}
 import org.make.core.reference.Country
 import org.make.core.user.{User, UserId, UserType}
-import org.make.core.{DateHelper, MakeSerializable, RequestContext}
+import org.make.core.{DateHelper, EventId, MakeSerializable, RequestContext}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
@@ -95,8 +94,9 @@ class UserEmailConsumerActorIT
         Future.unit
       }
 
-      val event: ResetPasswordEvent = ResetPasswordEvent(None, user, country, RequestContext.empty)
-      val wrappedEvent = UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResetPasswordEvent", event)
+      val event: ResetPasswordEvent =
+        ResetPasswordEvent(None, user, country, RequestContext.empty, EventId("consume ResetPasswordEvent"))
+      val wrappedEvent = UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResetPasswordEvent", event, None)
 
       send(wrappedEvent)
 
@@ -112,8 +112,9 @@ class UserEmailConsumerActorIT
         Future.unit
       }
       val event: ResetPasswordEvent =
-        ResetPasswordEvent(None, organisation, country, RequestContext.empty)
-      val wrappedEvent = UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResetPasswordEvent", event)
+        ResetPasswordEvent(None, organisation, country, RequestContext.empty, EventId("organisation reset password"))
+      val wrappedEvent =
+        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResetPasswordEvent", event, event.eventId)
 
       send(wrappedEvent)
 
@@ -130,9 +131,16 @@ class UserEmailConsumerActorIT
       }
 
       val eventPerso: ResetPasswordEvent =
-        ResetPasswordEvent(None, personality1, country, RequestContext.empty)
+        ResetPasswordEvent(None, personality1, country, RequestContext.empty, EventId("perso reset password"))
       val wrappedEventPerso =
-        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResetPasswordEvent", eventPerso)
+        UserEventWrapper(
+          MakeSerializable.V1,
+          "some-event",
+          dateNow,
+          "ResetPasswordEvent",
+          eventPerso,
+          eventPerso.eventId
+        )
 
       send(wrappedEventPerso)
 
@@ -162,11 +170,19 @@ class UserEmailConsumerActorIT
         profession = None,
         dateOfBirth = None,
         postalCode = None,
-        country = country
+        country = country,
+        eventId = Some(EventId("user register"))
       )
 
       val wrappedEventUser =
-        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "UserRegisteredEvent", eventUser)
+        UserEventWrapper(
+          MakeSerializable.V1,
+          "some-event",
+          dateNow,
+          "UserRegisteredEvent",
+          eventUser,
+          eventUser.eventId
+        )
 
       send(wrappedEventUser)
 
@@ -190,10 +206,18 @@ class UserEmailConsumerActorIT
         userId = organisation.userId,
         requestContext = RequestContext.empty,
         email = "some@mail.com",
-        country = country
+        country = country,
+        eventId = Some(EventId("organisation register"))
       )
       val wrappedEventOrganisation =
-        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "OrganisationRegisteredEvent", eventOrganisation)
+        UserEventWrapper(
+          MakeSerializable.V1,
+          "some-event",
+          dateNow,
+          "OrganisationRegisteredEvent",
+          eventOrganisation,
+          eventOrganisation.eventId
+        )
 
       send(wrappedEventOrganisation)
 
@@ -215,10 +239,11 @@ class UserEmailConsumerActorIT
         userId = personality1.userId,
         requestContext = RequestContext.empty,
         email = "some@mail.com",
-        country = country
+        country = country,
+        eventId = Some(EventId("personality register"))
       )
       val wrappedEvent =
-        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "PersonalityRegisteredEvent", event)
+        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "PersonalityRegisteredEvent", event, event.eventId)
 
       send(wrappedEvent)
 
@@ -240,11 +265,12 @@ class UserEmailConsumerActorIT
         eventDate = dateNow,
         userId = user.userId,
         requestContext = RequestContext.empty,
-        country = country
+        country = country,
+        eventId = Some(EventId("user validate"))
       )
 
       val wrappedEvent =
-        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "UserValidatedAccountEvent", event)
+        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "UserValidatedAccountEvent", event, event.eventId)
 
       send(wrappedEvent)
 
@@ -258,27 +284,29 @@ class UserEmailConsumerActorIT
         eventDate = dateNow,
         userId = organisation.userId,
         requestContext = RequestContext.empty,
-        country = country
+        country = country,
+        eventId = Some(EventId("organisation validate"))
       )
       val wrappedEvent =
-        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "UserValidatedAccountEvent", event)
+        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "UserValidatedAccountEvent", event, event.eventId)
 
       send(wrappedEvent)
 
       orgaProbe.expectNoMessage()
     }
 
-    Scenario("personality valaidate") {
+    Scenario("personality validate") {
       val persoProbe: TestProbe = TestProbe()
       val event: UserValidatedAccountEvent = UserValidatedAccountEvent(
         connectedUserId = None,
         eventDate = dateNow,
         userId = personality1.userId,
         requestContext = RequestContext.empty,
-        country = country
+        country = country,
+        eventId = Some(EventId("personality validate"))
       )
       val wrappedEvent =
-        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "UserValidatedAccountEvent", event)
+        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "UserValidatedAccountEvent", event, event.eventId)
 
       send(wrappedEvent)
 
@@ -299,9 +327,16 @@ class UserEmailConsumerActorIT
       }
 
       val event: ResendValidationEmailEvent =
-        ResendValidationEmailEvent(None, dateNow, user.userId, country, RequestContext.empty)
+        ResendValidationEmailEvent(
+          None,
+          dateNow,
+          user.userId,
+          country,
+          RequestContext.empty,
+          Some(EventId("user resend"))
+        )
       val wrappedEvent =
-        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResendValidationEmailEvent", event)
+        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResendValidationEmailEvent", event, event.eventId)
 
       send(wrappedEvent)
 
@@ -318,9 +353,16 @@ class UserEmailConsumerActorIT
       }
 
       val event: ResendValidationEmailEvent =
-        ResendValidationEmailEvent(None, dateNow, organisation.userId, country, RequestContext.empty)
+        ResendValidationEmailEvent(
+          None,
+          dateNow,
+          organisation.userId,
+          country,
+          RequestContext.empty,
+          Some(EventId("organisation resend"))
+        )
       val wrappedEvent =
-        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResendValidationEmailEvent", event)
+        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResendValidationEmailEvent", event, event.eventId)
 
       send(wrappedEvent)
 
@@ -337,9 +379,16 @@ class UserEmailConsumerActorIT
       }
 
       val event: ResendValidationEmailEvent =
-        ResendValidationEmailEvent(None, dateNow, personality1.userId, country, RequestContext.empty)
+        ResendValidationEmailEvent(
+          None,
+          dateNow,
+          personality1.userId,
+          country,
+          RequestContext.empty,
+          Some(EventId("personality resend"))
+        )
       val wrappedEvent =
-        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResendValidationEmailEvent", event)
+        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResendValidationEmailEvent", event, event.eventId)
 
       send(wrappedEvent)
 

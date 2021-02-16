@@ -49,7 +49,10 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
       context.watch(context.actorOf(UserHistoryCoordinator.props, UserHistoryCoordinator.name))
 
     context.watch(
-      context.actorOf(SessionHistoryCoordinator.props(userHistoryCoordinator), SessionHistoryCoordinator.name)
+      context.actorOf(
+        SessionHistoryCoordinator.props(userHistoryCoordinator, makeApi.idGenerator),
+        SessionHistoryCoordinator.name
+      )
     )
 
     context.watch(

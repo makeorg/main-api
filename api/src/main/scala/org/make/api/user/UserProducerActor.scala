@@ -36,7 +36,8 @@ class UserProducerActor extends BasicProducerActor[UserEventWrapper, UserEvent] 
       id = event.userId.value,
       date = event.eventDate,
       eventType = event.getClass.getSimpleName,
-      event = event
+      event = event,
+      eventId = event.eventId
     )
   }
 }

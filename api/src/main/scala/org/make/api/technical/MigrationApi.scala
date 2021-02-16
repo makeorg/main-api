@@ -282,7 +282,8 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                     country = user.country,
                     requestContext = requestContext,
                     avatarUrl = largeAvatarUrl,
-                    eventDate = DateHelper.now()
+                    eventDate = DateHelper.now(),
+                    eventId = Some(idGenerator.nextEventId())
                   )
                 }
                 .runForeach(eventBusService.publish)

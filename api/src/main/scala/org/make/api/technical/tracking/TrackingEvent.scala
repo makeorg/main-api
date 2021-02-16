@@ -20,7 +20,6 @@
 package org.make.api.technical.tracking
 
 import java.time.ZonedDateTime
-
 import com.sksamuel.avro4s
 import com.sksamuel.avro4s.{DefaultFieldMapper, RecordFormat, SchemaFor}
 import org.make.core.{AvroSerializers, DateHelper, EventWrapper, RequestContext}

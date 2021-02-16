@@ -22,7 +22,7 @@ package org.make.api.proposal
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.make.api.proposal.ProposalSupervisor.ProposalSupervisorDependencies
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.technical.crm.SendMailPublisherServiceComponent
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
@@ -42,7 +42,8 @@ class ProposalSupervisor(dependencies: ProposalSupervisorDependencies, lockDurat
         ProposalCoordinator
           .props(
             sessionHistoryCoordinatorService = dependencies.sessionHistoryCoordinatorService,
-            lockDuration = lockDuration
+            lockDuration = lockDuration,
+            idGenerator = dependencies.idGenerator
           ),
         ProposalCoordinator.name
       )
@@ -99,6 +100,7 @@ object ProposalSupervisor {
       with SendMailPublisherServiceComponent
       with UserHistoryCoordinatorServiceComponent
       with SessionHistoryCoordinatorServiceComponent
+      with IdGeneratorComponent
 
   val name: String = "proposal"
   def props(dependencies: ProposalSupervisorDependencies, lockDuration: FiniteDuration): Props =

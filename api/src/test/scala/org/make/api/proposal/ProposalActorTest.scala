@@ -24,6 +24,7 @@ import akka.actor.{Actor, ActorRef}
 import akka.testkit.TestKit
 import cats.data.NonEmptyList
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, TransactionalSessionHistoryEvent}
+import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.{ShardingActorTest, TestUtils}
 import org.make.core.history.HistoryActions._
 import org.make.core.history.HistoryActions.VoteTrust._
@@ -46,7 +47,7 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyChecks {
+class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyChecks with DefaultIdGeneratorComponent {
 
   class Controller {
     def handle(message: Any, sender: ActorRef): Unit = {
@@ -124,7 +125,7 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
   val coordinator: ActorRef =
     system.actorOf(
       ProposalCoordinator
-        .props(sessionHistoryCoordinatorService, LOCK_DURATION_MILLISECONDS),
+        .props(sessionHistoryCoordinatorService, LOCK_DURATION_MILLISECONDS, idGenerator),
       ProposalCoordinator.name
     )
 

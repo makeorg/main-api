@@ -247,7 +247,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
             requestContext = requestContext,
             email = user.email,
             country = user.country,
-            eventDate = DateHelper.now()
+            eventDate = DateHelper.now(),
+            eventId = Some(idGenerator.nextEventId())
           )
         )
         user
@@ -273,7 +274,14 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
             result.results.foreach(
               proposalWithVote =>
                 eventBusService
-                  .publish(ReindexProposal(proposalWithVote.proposal.id, DateHelper.now(), requestContext))
+                  .publish(
+                    ReindexProposal(
+                      proposalWithVote.proposal.id,
+                      DateHelper.now(),
+                      requestContext,
+                      Some(idGenerator.nextEventId())
+                    )
+                  )
             )
         )
         _ <- elasticsearchProposalAPI
@@ -290,7 +298,9 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
               result.results.foreach(
                 proposal =>
                   eventBusService
-                    .publish(ReindexProposal(proposal.id, DateHelper.now(), requestContext))
+                    .publish(
+                      ReindexProposal(proposal.id, DateHelper.now(), requestContext, Some(idGenerator.nextEventId()))
+                    )
               )
           )
       } yield {}
@@ -314,7 +324,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
                 country = organisation.country,
                 eventDate = DateHelper.now(),
                 oldEmail = oldEmail,
-                newEmail = email
+                newEmail = email,
+                eventId = Some(idGenerator.nextEventId())
               )
             )
           }
@@ -347,7 +358,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
                     userId = orga.userId,
                     requestContext = requestContext,
                     country = orga.country,
-                    eventDate = DateHelper.now()
+                    eventDate = DateHelper.now(),
+                    eventId = Some(idGenerator.nextEventId())
                   )
                 )
                 Future.successful(orga.userId)

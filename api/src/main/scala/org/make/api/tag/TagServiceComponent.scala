@@ -190,7 +190,9 @@ trait DefaultTagServiceComponent
             _ <- elasticsearchProposalAPI
               .searchProposals(SearchQuery(filters = Some(SearchFilters(tags = Some(TagsSearchFilter(Seq(tagId)))))))
               .map(_.results.foreach { proposal =>
-                eventBusService.publish(ReindexProposal(proposal.id, DateHelper.now(), requestContext))
+                eventBusService.publish(
+                  ReindexProposal(proposal.id, DateHelper.now(), requestContext, Some(idGenerator.nextEventId()))
+                )
               })
           } yield updateTag
         case None => Future.successful(None)

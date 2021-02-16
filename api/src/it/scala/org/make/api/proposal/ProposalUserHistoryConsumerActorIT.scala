@@ -106,14 +106,16 @@ class ProposalUserHistoryConsumerActorIT
         theme = None,
         language = None,
         country = None,
-        question = None
+        question = None,
+        eventId = None
       )
       val wrappedProposalProposed = ProposalEventWrapper(
         version = MakeSerializable.V3,
         id = "some-proposed-event",
         date = now,
         event = eventProposed,
-        eventType = eventProposed.getClass.getSimpleName
+        eventType = eventProposed.getClass.getSimpleName,
+        eventId = None
       )
 
       send(wrappedProposalProposed)
@@ -139,14 +141,16 @@ class ProposalUserHistoryConsumerActorIT
         idea = None,
         theme = None,
         operation = None,
-        question = None
+        question = None,
+        eventId = None
       )
       val wrappedProposalAccepted = ProposalEventWrapper(
         version = MakeSerializable.V3,
         id = "some-accepted-event",
         date = now,
         event = eventAccepted,
-        eventType = eventAccepted.getClass.getSimpleName
+        eventType = eventAccepted.getClass.getSimpleName,
+        eventId = None
       )
 
       when(
@@ -180,14 +184,16 @@ class ProposalUserHistoryConsumerActorIT
         moderator = UserId("moderator-id"),
         sendRefuseEmail = false,
         refusalReason = None,
-        operation = None
+        operation = None,
+        eventId = None
       )
       val wrappedProposalRefused = ProposalEventWrapper(
         version = MakeSerializable.V3,
         id = "some-refused-event",
         date = now,
         event = eventRefused,
-        eventType = eventRefused.getClass.getSimpleName
+        eventType = eventRefused.getClass.getSimpleName,
+        eventId = None
       )
 
       when(
@@ -218,14 +224,16 @@ class ProposalUserHistoryConsumerActorIT
         id = ProposalId("proposal-id"),
         eventDate = now,
         requestContext = RequestContext.empty,
-        moderator = UserId("moderator-id")
+        moderator = UserId("moderator-id"),
+        eventId = None
       )
       val wrappedProposalPostponed = ProposalEventWrapper(
         version = MakeSerializable.V3,
         id = "some-postponed-event",
         date = now,
         event = eventPostponed,
-        eventType = eventPostponed.getClass.getSimpleName
+        eventType = eventPostponed.getClass.getSimpleName,
+        eventId = None
       )
 
       when(
@@ -257,14 +265,16 @@ class ProposalUserHistoryConsumerActorIT
         eventDate = now,
         requestContext = RequestContext.empty,
         moderatorId = UserId("moderator-id"),
-        moderatorName = None
+        moderatorName = None,
+        eventId = None
       )
       val wrappedProposalLocked = ProposalEventWrapper(
         version = MakeSerializable.V3,
         id = "some-accepted-event",
         date = now,
         event = eventLocked,
-        eventType = eventLocked.getClass.getSimpleName
+        eventType = eventLocked.getClass.getSimpleName,
+        eventId = None
       )
 
       when(

@@ -21,13 +21,18 @@ package org.make.api.sessionhistory
 
 import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
+import org.make.core.technical.IdGenerator
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class SessionHistoryCoordinator(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration) extends Actor {
+class SessionHistoryCoordinator(
+  userHistoryCoordinator: ActorRef,
+  lockDuration: FiniteDuration,
+  idGenerator: IdGenerator
+) extends Actor {
   ClusterSharding(context.system).start(
     ShardedSessionHistory.shardName,
-    ShardedSessionHistory.props(userHistoryCoordinator, lockDuration),
+    ShardedSessionHistory.props(userHistoryCoordinator, lockDuration, idGenerator),
     ClusterShardingSettings(context.system),
     ShardedSessionHistory.extractEntityId,
     ShardedSessionHistory.extractShardId
@@ -43,7 +48,11 @@ class SessionHistoryCoordinator(userHistoryCoordinator: ActorRef, lockDuration: 
 }
 
 object SessionHistoryCoordinator {
-  def props(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration = 7.seconds): Props =
-    Props(new SessionHistoryCoordinator(userHistoryCoordinator, lockDuration))
+  def props(
+    userHistoryCoordinator: ActorRef,
+    idGenerator: IdGenerator,
+    lockDuration: FiniteDuration = 7.seconds
+  ): Props =
+    Props(new SessionHistoryCoordinator(userHistoryCoordinator, lockDuration, idGenerator))
   val name: String = "session-history-coordinator"
 }

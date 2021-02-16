@@ -72,10 +72,12 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       operation = Some(OperationId("my-operation")),
       theme = Some(ThemeId("theme-id")),
       language = Some(Language("fr")),
-      country = Some(Country("FR"))
+      country = Some(Country("FR")),
+      eventId = None
     )
 
-    val proposalViewed = ProposalViewed(id = proposalId, eventDate = eventDate, requestContext = requestContext)
+    val proposalViewed =
+      ProposalViewed(id = proposalId, eventDate = eventDate, requestContext = requestContext, eventId = None)
 
     val proposalUpdated = ProposalUpdated(
       id = proposalId,
@@ -90,7 +92,8 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       tags = Seq(TagId("tag-1"), TagId("tag-2")),
       idea = Some(IdeaId("idea-id")),
       operation = Some(OperationId("operation-id")),
-      similarProposals = Seq(ProposalId("proposal-1"), ProposalId("proposal-2"))
+      similarProposals = Seq(ProposalId("proposal-1"), ProposalId("proposal-2")),
+      eventId = None
     )
 
     val proposalAccepted = ProposalAccepted(
@@ -105,7 +108,8 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       tags = Seq(TagId("tag-1"), TagId("tag-2")),
       similarProposals = Seq(ProposalId("proposal-1"), ProposalId("proposal-2")),
       idea = Some(IdeaId("idea-id")),
-      operation = Some(OperationId("operation-id"))
+      operation = Some(OperationId("operation-id")),
+      eventId = None
     )
 
     val proposalRefused = ProposalRefused(
@@ -115,11 +119,18 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       moderator = userId,
       sendRefuseEmail = true,
       refusalReason = Some("because"),
-      operation = Some(OperationId("operation-id"))
+      operation = Some(OperationId("operation-id")),
+      eventId = None
     )
 
     val proposalPostponed =
-      ProposalPostponed(id = proposalId, eventDate = eventDate, requestContext = requestContext, moderator = userId)
+      ProposalPostponed(
+        id = proposalId,
+        eventDate = eventDate,
+        requestContext = requestContext,
+        moderator = userId,
+        eventId = None
+      )
 
     val proposalVoted = ProposalVoted(
       id = proposalId,
@@ -129,7 +140,8 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       requestContext = requestContext,
       maybeUserId = Some(userId),
       voteKey = VoteKey.Disagree,
-      voteTrust = Trusted
+      voteTrust = Trusted,
+      eventId = None
     )
 
     val proposalVotedOrganisations = ProposalVoted(
@@ -140,7 +152,8 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       requestContext = requestContext,
       maybeUserId = Some(userId),
       voteKey = VoteKey.Disagree,
-      voteTrust = Trusted
+      voteTrust = Trusted,
+      eventId = None
     )
 
     val proposalUnvoted = ProposalUnvoted(
@@ -152,7 +165,8 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       maybeUserId = Some(userId),
       voteKey = VoteKey.Agree,
       selectedQualifications = Seq(QualificationKey.LikeIt),
-      voteTrust = Trusted
+      voteTrust = Trusted,
+      eventId = None
     )
 
     val proposalUnvotedOrganisations = ProposalUnvoted(
@@ -164,7 +178,8 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       maybeUserId = Some(userId),
       voteKey = VoteKey.Agree,
       selectedQualifications = Seq(QualificationKey.LikeIt),
-      voteTrust = Trusted
+      voteTrust = Trusted,
+      eventId = None
     )
 
     val proposalQualified = ProposalQualified(
@@ -174,7 +189,8 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       maybeUserId = Some(userId),
       voteKey = VoteKey.Agree,
       qualificationKey = QualificationKey.Doable,
-      voteTrust = Trusted
+      voteTrust = Trusted,
+      eventId = None
     )
 
     val proposalUnqualified = ProposalUnqualified(
@@ -184,7 +200,8 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       maybeUserId = Some(userId),
       voteKey = VoteKey.Neutral,
       qualificationKey = QualificationKey.NoOpinion,
-      voteTrust = Trusted
+      voteTrust = Trusted,
+      eventId = None
     )
 
     val proposalLocked = ProposalLocked(
@@ -192,14 +209,16 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       moderatorId = userId,
       moderatorName = Some("moderator name"),
       eventDate = eventDate,
-      requestContext = requestContext
+      requestContext = requestContext,
+      eventId = None
     )
 
     val similarProposalsAdded = SimilarProposalsAdded(
       id = proposalId,
       eventDate = eventDate,
       requestContext = requestContext,
-      similarProposals = Set(ProposalId("similar-id"))
+      similarProposals = Set(ProposalId("similar-id")),
+      eventId = None
     )
 
     val similarProposalRemoved = SimilarProposalRemoved(
@@ -218,7 +237,8 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
         eventDate = eventDate,
         requestContext = requestContext,
         operationId = OperationId("operation-id"),
-        moderatorId = userId
+        moderatorId = userId,
+        eventId = None
       )
 
     val proposalRemovedFromOperation =
@@ -227,7 +247,8 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
         eventDate = eventDate,
         requestContext = requestContext,
         operationId = OperationId("operation-id"),
-        moderatorId = userId
+        moderatorId = userId,
+        eventId = None
       )
 
     val proposalVotesUpdated = ProposalVotesUpdated(
@@ -273,7 +294,8 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
             Qualification(DoNotCare, 321, 322, 323, 324)
           )
         )
-      )
+      ),
+      eventId = None
     )
 
     val proposal = Proposal(
@@ -322,7 +344,13 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
     val proposalFromGermany = proposal.copy(creationContext = requestContextFromGermany)
 
     val proposalPatched =
-      ProposalPatched(id = proposalId, eventDate = eventDate, requestContext = requestContext, proposal = proposal)
+      ProposalPatched(
+        id = proposalId,
+        eventDate = eventDate,
+        requestContext = requestContext,
+        proposal = proposal,
+        eventId = None
+      )
     val proposalPatchedFromGermany =
       proposalPatched.copy(requestContext = requestContextFromGermany, proposal = proposalFromGermany)
     val proposalPatchedWithKeywords =
@@ -342,7 +370,8 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       id = proposalId,
       eventDate = eventDate,
       keywords = Seq(ProposalKeyword(ProposalKeywordKey("a"), "à"), ProposalKeyword(ProposalKeywordKey("b"), "ᴃ")),
-      requestContext = requestContext
+      requestContext = requestContext,
+      eventId = None
     )
 
     persisters.generateTestsFor(

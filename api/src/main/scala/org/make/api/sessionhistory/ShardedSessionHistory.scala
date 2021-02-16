@@ -25,11 +25,12 @@ import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
 import org.make.api.extensions.MakeSettingsExtension
 import org.make.api.technical.MakePersistentActor.StartShard
+import org.make.core.technical.IdGenerator
 
 import scala.concurrent.duration.FiniteDuration
 
-class ShardedSessionHistory(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration)
-    extends SessionHistoryActor(userHistoryCoordinator, lockDuration)
+class ShardedSessionHistory(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration, idGenerator: IdGenerator)
+    extends SessionHistoryActor(userHistoryCoordinator, lockDuration, idGenerator)
     with ActorLogging
     with MakeSettingsExtension {
 
@@ -51,8 +52,8 @@ object ShardedSessionHistory {
   val snapshotStore: String = "make-api.event-sourcing.sessions.snapshot-store"
   val queryJournal: String = "make-api.event-sourcing.sessions.query-journal"
 
-  def props(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration): Props =
-    Props(new ShardedSessionHistory(userHistoryCoordinator, lockDuration))
+  def props(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration, idGenerator: IdGenerator): Props =
+    Props(new ShardedSessionHistory(userHistoryCoordinator, lockDuration, idGenerator))
   val shardName: String = "session-history"
 
   def extractEntityId: ShardRegion.ExtractEntityId = {

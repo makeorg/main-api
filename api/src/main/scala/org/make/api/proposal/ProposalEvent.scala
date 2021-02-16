@@ -20,7 +20,6 @@
 package org.make.api.proposal
 
 import java.time.ZonedDateTime
-
 import com.sksamuel.avro4s
 import com.sksamuel.avro4s.{AvroDefault, AvroSortPriority, DefaultFieldMapper, RecordFormat, SchemaFor}
 import org.make.api.proposal.ProposalEvent.DeprecatedEvent
@@ -34,7 +33,7 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
-import org.make.core.{AvroSerializers, EventWrapper, MakeSerializable, RequestContext}
+import org.make.core.{AvroSerializers, EventId, EventWrapper, MakeSerializable, RequestContext, WithEventId}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
@@ -82,6 +81,7 @@ object ProposalEvent {
 
 sealed trait PublishedProposalEvent extends ProposalEvent {
   def version(): Int
+  def eventId: Option[EventId]
 }
 
 object PublishedProposalEvent {
@@ -93,8 +93,10 @@ object PublishedProposalEvent {
     id: String,
     date: ZonedDateTime,
     eventType: String,
-    event: PublishedProposalEvent
+    event: PublishedProposalEvent,
+    eventId: Option[EventId] = None
   ) extends EventWrapper[PublishedProposalEvent]
+      with WithEventId
 
   object ProposalEventWrapper extends AvroSerializers {
     lazy val schemaFor: SchemaFor[ProposalEventWrapper] = SchemaFor.gen[ProposalEventWrapper]
@@ -109,7 +111,8 @@ object PublishedProposalEvent {
     id: ProposalId,
     @AvroDefault("2017-11-01T09:00Z") eventDate: ZonedDateTime = defaultDate,
     requestContext: RequestContext,
-    proposal: Proposal
+    proposal: Proposal,
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
     override def version(): Int = MakeSerializable.V4
   }
@@ -117,7 +120,7 @@ object PublishedProposalEvent {
   object ProposalPatched {
 
     implicit val formatter: RootJsonFormat[ProposalPatched] =
-      DefaultJsonProtocol.jsonFormat4(ProposalPatched.apply)
+      DefaultJsonProtocol.jsonFormat5(ProposalPatched.apply)
   }
 
   @AvroSortPriority(20)
@@ -134,7 +137,8 @@ object PublishedProposalEvent {
     language: Option[Language] = None,
     country: Option[Country] = None,
     question: Option[QuestionId] = None,
-    initialProposal: Boolean = false
+    initialProposal: Boolean = false,
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V3
@@ -143,7 +147,7 @@ object PublishedProposalEvent {
   object ProposalProposed {
 
     implicit val formatter: RootJsonFormat[ProposalProposed] =
-      DefaultJsonProtocol.jsonFormat13(ProposalProposed.apply)
+      DefaultJsonProtocol.jsonFormat14(ProposalProposed.apply)
 
   }
 
@@ -163,8 +167,12 @@ object PublishedProposalEvent {
   }
 
   @AvroSortPriority(16)
-  final case class ProposalViewed(id: ProposalId, eventDate: ZonedDateTime, requestContext: RequestContext)
-      extends PublishedProposalEvent {
+  final case class ProposalViewed(
+    id: ProposalId,
+    eventDate: ZonedDateTime,
+    requestContext: RequestContext,
+    eventId: Option[EventId] = None
+  ) extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V1
   }
@@ -172,7 +180,7 @@ object PublishedProposalEvent {
   object ProposalViewed {
 
     implicit val formatter: RootJsonFormat[ProposalViewed] =
-      DefaultJsonProtocol.jsonFormat3(ProposalViewed.apply)
+      DefaultJsonProtocol.jsonFormat4(ProposalViewed.apply)
 
   }
 
@@ -192,7 +200,8 @@ object PublishedProposalEvent {
     similarProposals: Seq[ProposalId] = Seq.empty,
     idea: Option[IdeaId] = None,
     operation: Option[OperationId] = None,
-    question: Option[QuestionId] = None
+    question: Option[QuestionId] = None,
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V1
@@ -203,7 +212,7 @@ object PublishedProposalEvent {
     val actionType: String = "proposal-updated"
 
     implicit val formatter: RootJsonFormat[ProposalUpdated] =
-      DefaultJsonProtocol.jsonFormat14(ProposalUpdated.apply)
+      DefaultJsonProtocol.jsonFormat15(ProposalUpdated.apply)
 
   }
 
@@ -215,7 +224,8 @@ object PublishedProposalEvent {
     updatedAt: ZonedDateTime,
     moderator: Option[UserId] = None,
     question: Option[QuestionId] = None,
-    votesVerified: Seq[Vote]
+    votesVerified: Seq[Vote],
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V1
@@ -226,7 +236,7 @@ object PublishedProposalEvent {
     val actionType: String = "proposal-votes-verified-updated"
 
     implicit val formatter: RootJsonFormat[ProposalVotesVerifiedUpdated] =
-      DefaultJsonProtocol.jsonFormat7(ProposalVotesVerifiedUpdated.apply)
+      DefaultJsonProtocol.jsonFormat8(ProposalVotesVerifiedUpdated.apply)
 
   }
 
@@ -237,7 +247,8 @@ object PublishedProposalEvent {
     requestContext: RequestContext,
     updatedAt: ZonedDateTime,
     moderator: Option[UserId] = None,
-    newVotes: Seq[Vote]
+    newVotes: Seq[Vote],
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V1
@@ -248,12 +259,16 @@ object PublishedProposalEvent {
     val actionType: String = "proposal-votes-updated"
 
     implicit val formatter: RootJsonFormat[ProposalVotesUpdated] =
-      DefaultJsonProtocol.jsonFormat6(ProposalVotesUpdated.apply)
+      DefaultJsonProtocol.jsonFormat7(ProposalVotesUpdated.apply)
   }
 
   @AvroSortPriority(13)
-  final case class ReindexProposal(id: ProposalId, eventDate: ZonedDateTime, requestContext: RequestContext)
-      extends PublishedProposalEvent {
+  final case class ReindexProposal(
+    id: ProposalId,
+    eventDate: ZonedDateTime,
+    requestContext: RequestContext,
+    eventId: Option[EventId] = None
+  ) extends PublishedProposalEvent {
     override def version(): Int = MakeSerializable.V1
   }
 
@@ -262,7 +277,7 @@ object PublishedProposalEvent {
     val actionType: String = "proposals-tags-updated"
 
     implicit val formatter: RootJsonFormat[ReindexProposal] =
-      DefaultJsonProtocol.jsonFormat3(ReindexProposal.apply)
+      DefaultJsonProtocol.jsonFormat4(ReindexProposal.apply)
   }
 
   @AvroSortPriority(19)
@@ -279,7 +294,8 @@ object PublishedProposalEvent {
     similarProposals: Seq[ProposalId],
     idea: Option[IdeaId] = None,
     operation: Option[OperationId] = None,
-    question: Option[QuestionId] = None
+    question: Option[QuestionId] = None,
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V1
@@ -290,7 +306,7 @@ object PublishedProposalEvent {
     val actionType: String = "proposal-accepted"
 
     implicit val formatter: RootJsonFormat[ProposalAccepted] =
-      DefaultJsonProtocol.jsonFormat13(ProposalAccepted.apply)
+      DefaultJsonProtocol.jsonFormat14(ProposalAccepted.apply)
 
   }
 
@@ -302,7 +318,8 @@ object PublishedProposalEvent {
     moderator: UserId,
     sendRefuseEmail: Boolean,
     refusalReason: Option[String],
-    operation: Option[OperationId] = None
+    operation: Option[OperationId] = None,
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V1
@@ -313,7 +330,7 @@ object PublishedProposalEvent {
     val actionType: String = "proposal-refused"
 
     implicit val formatter: RootJsonFormat[ProposalRefused] =
-      DefaultJsonProtocol.jsonFormat7(ProposalRefused.apply)
+      DefaultJsonProtocol.jsonFormat8(ProposalRefused.apply)
 
   }
 
@@ -322,7 +339,8 @@ object PublishedProposalEvent {
     id: ProposalId,
     @AvroDefault("2017-11-01T09:00Z") eventDate: ZonedDateTime = defaultDate,
     requestContext: RequestContext,
-    moderator: UserId
+    moderator: UserId,
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V1
@@ -333,7 +351,7 @@ object PublishedProposalEvent {
     val actionType: String = "proposal-postponed"
 
     implicit val formatter: RootJsonFormat[ProposalPostponed] =
-      DefaultJsonProtocol.jsonFormat4(ProposalPostponed.apply)
+      DefaultJsonProtocol.jsonFormat5(ProposalPostponed.apply)
 
   }
 
@@ -347,7 +365,8 @@ object PublishedProposalEvent {
     maybeOrganisationId: Option[UserId],
     requestContext: RequestContext,
     voteKey: VoteKey,
-    @AvroDefault("trusted") voteTrust: VoteTrust = Trusted
+    @AvroDefault("trusted") voteTrust: VoteTrust = Trusted,
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V4
@@ -356,7 +375,7 @@ object PublishedProposalEvent {
   object ProposalVoted {
 
     implicit val formatter: RootJsonFormat[ProposalVoted] =
-      DefaultJsonProtocol.jsonFormat8(ProposalVoted.apply)
+      DefaultJsonProtocol.jsonFormat9(ProposalVoted.apply)
 
   }
 
@@ -371,7 +390,8 @@ object PublishedProposalEvent {
     requestContext: RequestContext,
     voteKey: VoteKey,
     selectedQualifications: Seq[QualificationKey],
-    @AvroDefault("trusted") voteTrust: VoteTrust = Trusted
+    @AvroDefault("trusted") voteTrust: VoteTrust = Trusted,
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V4
@@ -380,7 +400,7 @@ object PublishedProposalEvent {
   object ProposalUnvoted {
 
     implicit val formatter: RootJsonFormat[ProposalUnvoted] =
-      DefaultJsonProtocol.jsonFormat9(ProposalUnvoted.apply)
+      DefaultJsonProtocol.jsonFormat10(ProposalUnvoted.apply)
   }
 
   @AvroSortPriority(10)
@@ -391,7 +411,8 @@ object PublishedProposalEvent {
     requestContext: RequestContext,
     voteKey: VoteKey,
     qualificationKey: QualificationKey,
-    @AvroDefault("trusted") voteTrust: VoteTrust = Trusted
+    @AvroDefault("trusted") voteTrust: VoteTrust = Trusted,
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V2
@@ -400,7 +421,7 @@ object PublishedProposalEvent {
   object ProposalQualified {
 
     implicit val formatter: RootJsonFormat[ProposalQualified] =
-      DefaultJsonProtocol.jsonFormat7(ProposalQualified.apply)
+      DefaultJsonProtocol.jsonFormat8(ProposalQualified.apply)
 
   }
 
@@ -412,7 +433,8 @@ object PublishedProposalEvent {
     requestContext: RequestContext,
     voteKey: VoteKey,
     qualificationKey: QualificationKey,
-    @AvroDefault("trusted") voteTrust: VoteTrust = Trusted
+    @AvroDefault("trusted") voteTrust: VoteTrust = Trusted,
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V2
@@ -421,7 +443,7 @@ object PublishedProposalEvent {
   object ProposalUnqualified {
 
     implicit val formatter: RootJsonFormat[ProposalUnqualified] =
-      DefaultJsonProtocol.jsonFormat7(ProposalUnqualified.apply)
+      DefaultJsonProtocol.jsonFormat8(ProposalUnqualified.apply)
 
   }
 
@@ -438,7 +460,8 @@ object PublishedProposalEvent {
     id: ProposalId,
     similarProposals: Set[ProposalId],
     requestContext: RequestContext,
-    eventDate: ZonedDateTime
+    eventDate: ZonedDateTime,
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent
       with DeprecatedEvent {
 
@@ -448,7 +471,7 @@ object PublishedProposalEvent {
   object SimilarProposalsAdded {
 
     implicit val formatter: RootJsonFormat[SimilarProposalsAdded] =
-      DefaultJsonProtocol.jsonFormat4(SimilarProposalsAdded.apply)
+      DefaultJsonProtocol.jsonFormat5(SimilarProposalsAdded.apply)
   }
 
   @AvroSortPriority(7)
@@ -457,7 +480,8 @@ object PublishedProposalEvent {
     moderatorId: UserId,
     moderatorName: Option[String] = None,
     @AvroDefault("2017-11-01T09:00Z") eventDate: ZonedDateTime = defaultDate,
-    requestContext: RequestContext
+    requestContext: RequestContext,
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V1
@@ -468,7 +492,7 @@ object PublishedProposalEvent {
     val actionType: String = "proposal-locked"
 
     implicit val formatter: RootJsonFormat[ProposalLocked] =
-      DefaultJsonProtocol.jsonFormat5(ProposalLocked.apply)
+      DefaultJsonProtocol.jsonFormat6(ProposalLocked.apply)
 
   }
 
@@ -478,7 +502,8 @@ object PublishedProposalEvent {
     operationId: OperationId,
     moderatorId: UserId,
     @AvroDefault("2017-11-01T09:00Z") eventDate: ZonedDateTime = defaultDate,
-    requestContext: RequestContext
+    requestContext: RequestContext,
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V1
@@ -487,7 +512,7 @@ object PublishedProposalEvent {
   object ProposalAddedToOperation {
 
     implicit val formatter: RootJsonFormat[ProposalAddedToOperation] =
-      DefaultJsonProtocol.jsonFormat5(ProposalAddedToOperation.apply)
+      DefaultJsonProtocol.jsonFormat6(ProposalAddedToOperation.apply)
   }
 
   @AvroSortPriority(4)
@@ -496,7 +521,8 @@ object PublishedProposalEvent {
     operationId: OperationId,
     moderatorId: UserId,
     @AvroDefault("2017-11-01T09:00Z") eventDate: ZonedDateTime = defaultDate,
-    requestContext: RequestContext
+    requestContext: RequestContext,
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V1
@@ -504,14 +530,15 @@ object PublishedProposalEvent {
   object ProposalRemovedFromOperation {
 
     implicit val formatter: RootJsonFormat[ProposalRemovedFromOperation] =
-      DefaultJsonProtocol.jsonFormat5(ProposalRemovedFromOperation.apply)
+      DefaultJsonProtocol.jsonFormat6(ProposalRemovedFromOperation.apply)
   }
 
   @AvroSortPriority(3)
   final case class ProposalAnonymized(
     id: ProposalId,
     @AvroDefault("2017-11-01T09:00Z") eventDate: ZonedDateTime = defaultDate,
-    requestContext: RequestContext
+    requestContext: RequestContext,
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
     override def version(): Int = MakeSerializable.V1
   }
@@ -519,7 +546,7 @@ object PublishedProposalEvent {
   object ProposalAnonymized {
 
     implicit val formatter: RootJsonFormat[ProposalAnonymized] =
-      DefaultJsonProtocol.jsonFormat3(ProposalAnonymized.apply)
+      DefaultJsonProtocol.jsonFormat4(ProposalAnonymized.apply)
   }
 
   @AvroSortPriority(1)
@@ -527,14 +554,15 @@ object PublishedProposalEvent {
     id: ProposalId,
     eventDate: ZonedDateTime,
     keywords: Seq[ProposalKeyword],
-    requestContext: RequestContext
+    requestContext: RequestContext,
+    eventId: Option[EventId] = None
   ) extends PublishedProposalEvent {
     override def version(): Int = MakeSerializable.V1
   }
 
   object ProposalKeywordsSet {
     implicit val formatter: RootJsonFormat[ProposalKeywordsSet] =
-      DefaultJsonProtocol.jsonFormat4(ProposalKeywordsSet.apply)
+      DefaultJsonProtocol.jsonFormat5(ProposalKeywordsSet.apply)
   }
 
 }

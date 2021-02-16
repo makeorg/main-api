@@ -27,7 +27,7 @@ import com.typesafe.config.ConfigFactory
 import org.make.api.docker.DockerCassandraService
 import org.make.api.proposal.{CreatedProposalId, ProposalCoordinator, ProposeCommand}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorService
-import org.make.api.technical.TimeSettings
+import org.make.api.technical.{DefaultIdGeneratorComponent, TimeSettings}
 import org.make.api.technical.healthcheck.HealthCheckCommands.CheckStatus
 import org.make.api.{ItMakeTest, TestUtilsIT}
 import org.make.core.proposal.ProposalId
@@ -41,6 +41,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class CassandraHealthCheckActorIT
     extends TestKit(CassandraHealthCheckActorIT.actorSystem)
+    with DefaultIdGeneratorComponent
     with ItMakeTest
     with ImplicitSender
     with DockerCassandraService {
@@ -60,7 +61,7 @@ class CassandraHealthCheckActorIT
   val coordinator: ActorRef =
     system.actorOf(
       ProposalCoordinator
-        .props(sessionHistoryCoordinatorService, LOCK_DURATION_MILLISECONDS),
+        .props(sessionHistoryCoordinatorService, LOCK_DURATION_MILLISECONDS, idGenerator),
       ProposalCoordinator.name
     )
 

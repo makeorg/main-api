@@ -20,11 +20,11 @@
 package org.make.api.sessionhistory
 
 import java.time.temporal.ChronoUnit
-
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
 import org.make.api.ShardingActorTest
 import org.make.api.sessionhistory.SessionHistoryActor.{CurrentSessionId, SessionHistory, SessionVotesValues}
+import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.userhistory.UserHistoryActor.{InjectSessionEvents, LogAcknowledged, SessionEventsInjected}
 import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.api.userhistory.{StartSequenceParameters, UserHistoryEnvelope}
@@ -36,13 +36,13 @@ import org.make.core.{DateHelper, RequestContext}
 
 import scala.concurrent.duration.DurationInt
 
-class SessionHistoryActorTest extends ShardingActorTest {
+class SessionHistoryActorTest extends ShardingActorTest with DefaultIdGeneratorComponent {
 
   val userCoordinatorProbe: TestProbe = TestProbe()(system)
 
   val coordinator: ActorRef =
     system.actorOf(
-      SessionHistoryCoordinator.props(userCoordinatorProbe.ref, 500.milliseconds),
+      SessionHistoryCoordinator.props(userCoordinatorProbe.ref, idGenerator, 500.milliseconds),
       SessionHistoryCoordinator.name
     )
 

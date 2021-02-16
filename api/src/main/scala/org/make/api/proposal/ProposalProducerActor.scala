@@ -37,7 +37,8 @@ class ProposalProducerActor extends BasicProducerActor[ProposalEventWrapper, Pub
       id = event.id.value,
       date = DateHelper.now(),
       eventType = event.getClass.getSimpleName,
-      event = event
+      event = event,
+      eventId = event.eventId
     )
   }
 }

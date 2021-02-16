@@ -19,7 +19,6 @@
 
 package org.make.api.semantic
 import java.time.ZonedDateTime
-
 import com.sksamuel.avro4s._
 import org.make.core.proposal.ProposalId
 import org.make.core.tag.TagId

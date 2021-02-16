@@ -114,7 +114,8 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
           tags = Seq(TagId("police"), TagId("justice")),
           similarProposals = Seq(ProposalId("proposal1"), ProposalId("proposal2")),
           idea = Some(IdeaId("my-idea")),
-          operation = Some(OperationId("my-operation"))
+          operation = Some(OperationId("my-operation")),
+          eventId = None
         )
       )
     )
@@ -143,7 +144,8 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
           id = ProposalId("proposal-id"),
           eventDate = eventDate,
           requestContext = requestContext,
-          moderator = userId
+          moderator = userId,
+          eventId = None
         )
       )
     )
@@ -207,7 +209,8 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
           moderator = userId,
           sendRefuseEmail = false,
           refusalReason = Some("because"),
-          operation = Some(OperationId("operation-id"))
+          operation = Some(OperationId("operation-id")),
+          eventId = None
         )
       )
     )
@@ -321,7 +324,8 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
           moderatorId = userId,
           moderatorName = Some("moderator name"),
           eventDate = eventDate,
-          requestContext = requestContext
+          requestContext = requestContext,
+          eventId = None
         )
       )
     )
