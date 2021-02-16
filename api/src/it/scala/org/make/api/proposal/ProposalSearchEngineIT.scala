@@ -24,6 +24,7 @@ import java.time.temporal.ChronoUnit
 import java.util.UUID
 import akka.actor.ActorSystem
 import cats.data.NonEmptyList
+import cats.syntax.list._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import eu.timepit.refined.auto._
 import eu.timepit.refined.scalacheck.numeric._
@@ -45,6 +46,7 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
 import org.make.core.{CirceFormatters, DateHelper, RequestContext}
+import org.make.core.DateHelper.zonedDateTimeOrder
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
@@ -1800,6 +1802,23 @@ class ProposalSearchEngineIT
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be(2L)
+      }
+    }
+  }
+
+  Feature("get featured proposals") {
+    Scenario("should be deduplicated") {
+      whenReady(elasticsearchProposalAPI.getFeaturedProposals(SearchQuery(limit = Some(3))), Timeout(10.seconds)) {
+        results =>
+          val proposals = results.results
+          val expected = acceptedProposals.toList
+            .groupByNel(_.userId)
+            .map(_._2.sortBy(_.createdAt).last)
+            .toList
+            .sortBy(_.createdAt)
+            .reverse
+            .take(3)
+          proposals should contain theSameElementsAs expected
       }
     }
   }

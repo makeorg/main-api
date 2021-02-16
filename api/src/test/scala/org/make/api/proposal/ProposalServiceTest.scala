@@ -2602,11 +2602,10 @@ class ProposalServiceTest
             userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeUser)))
           )
         ),
-        limit = Some(1),
-        sort = Some(Sort(Some(ProposalElasticsearchFieldName.createdAt.field), Some(SortOrder.DESC)))
+        limit = Some(1)
       )
 
-      when(elasticsearchProposalAPI.searchProposals(searchQuery))
+      when(elasticsearchProposalAPI.getFeaturedProposals(searchQuery))
         .thenReturn(
           Future.successful(ProposalsSearchResult(total = 1, results = Seq(indexedProposal(ProposalId("a-result")))))
         )
@@ -2659,11 +2658,10 @@ class ProposalServiceTest
             userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeUser)))
           )
         ),
-        limit = Some(2),
-        sort = Some(Sort(Some(ProposalElasticsearchFieldName.createdAt.field), Some(SortOrder.DESC)))
+        limit = Some(2)
       )
 
-      when(elasticsearchProposalAPI.searchProposals(searchQuery))
+      when(elasticsearchProposalAPI.getFeaturedProposals(searchQuery))
         .thenReturn(
           Future.successful(ProposalsSearchResult(total = 1, results = Seq(indexedProposal(ProposalId("a-result")))))
         )
@@ -2768,11 +2766,10 @@ class ProposalServiceTest
             userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeUser)))
           )
         ),
-        limit = Some(2),
-        sort = Some(Sort(Some(ProposalElasticsearchFieldName.createdAt.field), Some(SortOrder.DESC)))
+        limit = Some(2)
       )
 
-      when(elasticsearchProposalAPI.searchProposals(searchQuery))
+      when(elasticsearchProposalAPI.getFeaturedProposals(searchQuery))
         .thenReturn(
           Future.successful(ProposalsSearchResult(total = 1, results = Seq(indexedProposal(ProposalId("a-result")))))
         )

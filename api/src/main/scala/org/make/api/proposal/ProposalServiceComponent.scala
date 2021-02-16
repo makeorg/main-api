@@ -422,37 +422,12 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    private def mergeVoteResults(
+    private def enrich(
+      search: (Option[UserId], RequestContext) => Future[ProposalsSearchResult],
       maybeUserId: Option[UserId],
-      searchResult: ProposalsSearchResult,
-      votes: Map[ProposalId, VoteAndQualifications],
       requestContext: RequestContext
-    ): ProposalsResultResponse = {
-      val proposals = searchResult.results.map { indexedProposal =>
-        val proposalKey =
-          SecurityHelper.generateProposalKeyHash(
-            indexedProposal.id,
-            requestContext.sessionId,
-            requestContext.location,
-            securityConfiguration.secureVoteSalt
-          )
-        ProposalResponse.apply(
-          indexedProposal,
-          myProposal = maybeUserId.contains(indexedProposal.userId),
-          votes.get(indexedProposal.id),
-          proposalKey
-        )
-      }
-      ProposalsResultResponse(searchResult.total, proposals)
-    }
-
-    override def searchForUser(
-      maybeUserId: Option[UserId],
-      query: SearchQuery,
-      requestContext: RequestContext
-    ): Future[ProposalsResultSeededResponse] = {
-
-      search(maybeUserId, query, requestContext).flatMap { searchResult =>
+    ): Future[ProposalsResultResponse] = {
+      search(maybeUserId, requestContext).flatMap { searchResult =>
         maybeUserId.map { userId =>
           userHistoryCoordinatorService.retrieveVoteAndQualifications(
             RequestVoteValues(userId = userId, searchResult.results.map(_.id))
@@ -462,10 +437,36 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             .retrieveVoteAndQualifications(
               RequestSessionVoteValues(sessionId = requestContext.sessionId, searchResult.results.map(_.id))
             )
-        }.map(votes => mergeVoteResults(maybeUserId, searchResult, votes, requestContext))
-      }.map { proposalResultResponse =>
-        ProposalsResultSeededResponse(proposalResultResponse.total, proposalResultResponse.results, query.getSeed)
+        }.map { votes =>
+          val proposals = searchResult.results.map { indexedProposal =>
+            val proposalKey =
+              SecurityHelper.generateProposalKeyHash(
+                indexedProposal.id,
+                requestContext.sessionId,
+                requestContext.location,
+                securityConfiguration.secureVoteSalt
+              )
+            ProposalResponse.apply(
+              indexedProposal,
+              myProposal = maybeUserId.contains(indexedProposal.userId),
+              votes.get(indexedProposal.id),
+              proposalKey
+            )
+          }
+          ProposalsResultResponse(searchResult.total, proposals)
+        }
       }
+    }
+
+    override def searchForUser(
+      maybeUserId: Option[UserId],
+      query: SearchQuery,
+      requestContext: RequestContext
+    ): Future[ProposalsResultSeededResponse] = {
+      enrich(search(_, query, _), maybeUserId, requestContext).map(
+        proposalResultResponse =>
+          ProposalsResultSeededResponse(proposalResultResponse.total, proposalResultResponse.results, query.getSeed)
+      )
     }
 
     override def getTopProposals(
@@ -481,20 +482,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         case _ =>
           elasticsearchProposalAPI.getTopProposals(questionId, size, ProposalElasticsearchFieldName.selectedStakeTagId)
       }
-      search.flatMap { results =>
-        val searchResult = ProposalsSearchResult(results.size, results)
-        maybeUserId.map { userId =>
-          userHistoryCoordinatorService
-            .retrieveVoteAndQualifications(RequestVoteValues(userId = userId, searchResult.results.map(_.id)))
-        }.getOrElse {
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(
-              RequestSessionVoteValues(sessionId = requestContext.sessionId, searchResult.results.map(_.id))
-            )
-        }.map(votes => mergeVoteResults(maybeUserId, searchResult, votes, requestContext))
-      }.map { proposalResultResponse =>
-        ProposalsResultResponse(proposalResultResponse.total, proposalResultResponse.results)
-      }
+      enrich((_, _) => search.map(results => ProposalsSearchResult(results.size, results)), maybeUserId, requestContext)
+        .map(
+          proposalResultResponse =>
+            ProposalsResultResponse(proposalResultResponse.total, proposalResultResponse.results)
+        )
     }
 
     override def propose(
@@ -1408,21 +1400,24 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               }
             }
       }
-      val futureProposalsRest: Future[ProposalsResultSeededResponse] =
-        searchForUser(
-          maybeUserId = maybeUserId,
-          query = SearchQuery(
-            filters = Some(
-              SearchFilters(
-                question = Some(QuestionSearchFilter(Seq(questionId))),
-                userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeUser)))
+      val futureProposalsRest: Future[ProposalsResultSeededResponse] = {
+        enrich(
+          (_, _) =>
+            elasticsearchProposalAPI.getFeaturedProposals(
+              SearchQuery(
+                filters = Some(
+                  SearchFilters(
+                    question = Some(QuestionSearchFilter(Seq(questionId))),
+                    userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeUser)))
+                  )
+                ),
+                limit = Some(limit)
               )
             ),
-            limit = Some(limit),
-            sort = Some(Sort(Some(ProposalElasticsearchFieldName.createdAt.field), Some(SortOrder.DESC)))
-          ),
-          requestContext = requestContext
-        )
+          maybeUserId,
+          requestContext
+        ).map(r => ProposalsResultSeededResponse(r.total, r.results, None))
+      }
       for {
         partnerProposals <- futurePartnerProposals
         rest             <- futureProposalsRest
