@@ -28,7 +28,7 @@ import enumeratum.{Enum, EnumEntry}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.personality.PersonalityRoleId
-import org.make.core.proposal.ProposalId
+import org.make.core.proposal.{ProposalId, ProposalKeywordKey}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.tag.{TagId, TagTypeId}
@@ -52,6 +52,9 @@ trait ParameterExtractors {
         }
     }
   }
+
+  implicit val proposalKeywordKeyFromStringUnmarshaller: Unmarshaller[String, ProposalKeywordKey] =
+    Unmarshaller.strict[String, ProposalKeywordKey](ProposalKeywordKey.apply)
 
   implicit val localDateFromStringUnmarshaller: Unmarshaller[String, LocalDate] =
     Unmarshaller.strict[String, LocalDate] { string =>
