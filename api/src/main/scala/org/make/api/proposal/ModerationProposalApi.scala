@@ -43,7 +43,7 @@ import org.make.core.auth.UserRights
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalsSearchResult
-import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
+import org.make.core.proposal.{ProposalId, ProposalKeywordKey, ProposalStatus, SearchQuery}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
@@ -142,7 +142,8 @@ trait ModerationProposalApi extends Directives {
         dataType = "string",
         allowableValues = "USER,ORGANISATION,PERSONALITY",
         allowMultiple = true
-      )
+      ),
+      new ApiImplicitParam(name = "keywords", paramType = "query", dataType = "string")
     )
   )
   def searchAllProposals: Route
@@ -449,11 +450,8 @@ trait DefaultModerationProposalApiComponent
                   "minScore".as[Double].?,
                   "language".as[Language].?,
                   "country".as[Country].?,
-                  "limit".as[Int].?,
-                  "skip".as[Int].?,
-                  "sort".?,
-                  "order".as[Order].?,
-                  "userType".csv[UserType]
+                  "userType".csv[UserType],
+                  "keywords".as[Seq[ProposalKeywordKey]].?
                 ) {
                   (
                     proposalIds: Option[Seq[ProposalId]],
@@ -473,85 +471,86 @@ trait DefaultModerationProposalApiComponent
                     minScore: Option[Double],
                     language: Option[Language],
                     country: Option[Country],
-                    limit: Option[Int],
-                    skip: Option[Int],
-                    sort: Option[String],
-                    order: Option[Order],
-                    userTypes: Option[Seq[UserType]]
+                    userTypes: Option[Seq[UserType]],
+                    keywords: Option[Seq[ProposalKeywordKey]]
                   ) =>
-                    Validation.validate(Seq(country.map { countryValue =>
-                      Validation.validChoices(
-                        fieldName = "country",
-                        message = Some(
-                          s"Invalid country. Expected one of ${BusinessConfig.supportedCountries.map(_.countryCode)}"
-                        ),
-                        Seq(countryValue),
-                        BusinessConfig.supportedCountries.map(_.countryCode)
-                      )
-                    }, sort.map { sortValue =>
-                      val choices =
-                        Seq(
-                          "content",
-                          "slug",
-                          "status",
-                          "createdAt",
-                          "updatedAt",
-                          "trending",
-                          "labels",
-                          "country",
-                          "language"
+                    parameters("limit".as[Int].?, "skip".as[Int].?, "sort".?, "order".as[Order].?) {
+                      (limit: Option[Int], skip: Option[Int], sort: Option[String], order: Option[Order]) =>
+                        Validation.validate(Seq(country.map { countryValue =>
+                          Validation.validChoices(
+                            fieldName = "country",
+                            message = Some(
+                              s"Invalid country. Expected one of ${BusinessConfig.supportedCountries.map(_.countryCode)}"
+                            ),
+                            Seq(countryValue),
+                            BusinessConfig.supportedCountries.map(_.countryCode)
+                          )
+                        }, sort.map { sortValue =>
+                          val choices =
+                            Seq(
+                              "content",
+                              "slug",
+                              "status",
+                              "createdAt",
+                              "updatedAt",
+                              "trending",
+                              "labels",
+                              "country",
+                              "language"
+                            )
+                          Validation.validChoices(
+                            fieldName = "sort",
+                            message = Some(
+                              s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
+                            ),
+                            Seq(sortValue),
+                            choices
+                          )
+                        }).flatten: _*)
+
+                        val resolvedQuestions: Option[Seq[QuestionId]] = {
+                          if (userAuth.user.roles.contains(RoleAdmin)) {
+                            questionIds
+                          } else {
+                            questionIds.map { questions =>
+                              questions.filter(id => userAuth.user.availableQuestions.contains(id))
+                            }.orElse(Some(userAuth.user.availableQuestions))
+                          }
+                        }
+
+                        val contextFilterRequest: Option[ContextFilterRequest] =
+                          ContextFilterRequest.parse(operationId, source, location, question)
+
+                        val exhaustiveSearchRequest: ExhaustiveSearchRequest = ExhaustiveSearchRequest(
+                          proposalIds = proposalIds,
+                          initialProposal = initialProposal,
+                          tagsIds = tagsIds,
+                          operationId = operationId,
+                          questionIds = resolvedQuestions,
+                          ideaIds = ideaId,
+                          content = content,
+                          context = contextFilterRequest,
+                          status = status,
+                          minVotesCount = minVotesCount,
+                          toEnrich = toEnrich,
+                          minScore = minScore,
+                          language = language,
+                          country = country,
+                          sort = sort,
+                          order = order,
+                          limit = limit,
+                          skip = skip,
+                          createdBefore = createdBefore,
+                          userTypes = userTypes,
+                          keywords = keywords
                         )
-                      Validation.validChoices(
-                        fieldName = "sort",
-                        message = Some(
-                          s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
-                        ),
-                        Seq(sortValue),
-                        choices
-                      )
-                    }).flatten: _*)
-
-                    val resolvedQuestions: Option[Seq[QuestionId]] = {
-                      if (userAuth.user.roles.contains(RoleAdmin)) {
-                        questionIds
-                      } else {
-                        questionIds.map { questions =>
-                          questions.filter(id => userAuth.user.availableQuestions.contains(id))
-                        }.orElse(Some(userAuth.user.availableQuestions))
-                      }
-                    }
-
-                    val contextFilterRequest: Option[ContextFilterRequest] =
-                      ContextFilterRequest.parse(operationId, source, location, question)
-
-                    val exhaustiveSearchRequest: ExhaustiveSearchRequest = ExhaustiveSearchRequest(
-                      proposalIds = proposalIds,
-                      initialProposal = initialProposal,
-                      tagsIds = tagsIds,
-                      operationId = operationId,
-                      questionIds = resolvedQuestions,
-                      ideaIds = ideaId,
-                      content = content,
-                      context = contextFilterRequest,
-                      status = status,
-                      minVotesCount = minVotesCount,
-                      toEnrich = toEnrich,
-                      minScore = minScore,
-                      language = language,
-                      country = country,
-                      sort = sort,
-                      order = order,
-                      limit = limit,
-                      skip = skip,
-                      createdBefore = createdBefore,
-                      userTypes = userTypes
-                    )
-                    val query: SearchQuery = exhaustiveSearchRequest.toSearchQuery(requestContext)
-                    provideAsync(
-                      proposalService
-                        .search(userId = Some(userAuth.user.userId), query = query, requestContext = requestContext)
-                    ) { proposals =>
-                      complete(proposals)
+                        val query: SearchQuery = exhaustiveSearchRequest.toSearchQuery(requestContext)
+                        provideAsync(
+                          proposalService
+                            .search(userId = Some(userAuth.user.userId), query = query, requestContext = requestContext)
+                        ) { proposals =>
+                          complete(proposals)
+                        }
                     }
                 }
               }

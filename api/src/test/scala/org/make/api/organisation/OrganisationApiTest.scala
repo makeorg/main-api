@@ -138,7 +138,8 @@ class OrganisationApiTest
         operationId = Some(OperationId("operation1")),
         myProposal = false,
         question = None,
-        proposalKey = "pr0p0541k3y"
+        proposalKey = "pr0p0541k3y",
+        keywords = Nil
       ),
       ProposalResponse(
         id = ProposalId("proposal-2"),
@@ -179,7 +180,8 @@ class OrganisationApiTest
         operationId = Some(OperationId("operation1")),
         myProposal = false,
         question = None,
-        proposalKey = "pr0p0541k3y"
+        proposalKey = "pr0p0541k3y",
+        keywords = Nil
       ),
       ProposalResponse(
         id = ProposalId("proposal-3"),
@@ -220,7 +222,8 @@ class OrganisationApiTest
         operationId = Some(OperationId("operation2")),
         myProposal = false,
         question = None,
-        proposalKey = "pr0p0541k3y"
+        proposalKey = "pr0p0541k3y",
+        keywords = Nil
       ),
       ProposalResponse(
         id = ProposalId("proposal-4"),
@@ -261,7 +264,8 @@ class OrganisationApiTest
         operationId = None,
         myProposal = false,
         question = None,
-        proposalKey = "pr0p0541k3y"
+        proposalKey = "pr0p0541k3y",
+        keywords = Nil
       )
     ),
     None

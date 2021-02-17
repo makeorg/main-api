@@ -122,7 +122,8 @@ final case class ModerationProposalResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
   questionId: Option[QuestionId],
   @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
-  operationId: Option[OperationId]
+  operationId: Option[OperationId],
+  keywords: Seq[ProposalKeyword]
 )
 
 object ModerationProposalResponse extends CirceFormatters {
@@ -291,7 +292,8 @@ final case class ProposalResponse(
   question: Option[SimpleQuestionResponse],
   @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
   operationId: Option[OperationId],
-  proposalKey: String
+  proposalKey: String,
+  keywords: Seq[IndexedProposalKeyword]
 )
 
 object ProposalResponse extends CirceFormatters {
@@ -340,7 +342,8 @@ object ProposalResponse extends CirceFormatters {
         )
       },
       operationId = indexedProposal.operationId,
-      proposalKey = proposalKey
+      proposalKey = proposalKey,
+      keywords = indexedProposal.keywords
     )
 }
 

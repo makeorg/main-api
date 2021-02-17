@@ -271,7 +271,8 @@ class ModerationProposalApiTest
           idea = None,
           ideaProposals = Seq.empty,
           operationId = None,
-          questionId = Some(QuestionId("question-fire-and-ice"))
+          questionId = Some(QuestionId("question-fire-and-ice")),
+          keywords = Nil
         )
       )
     )
@@ -310,7 +311,8 @@ class ModerationProposalApiTest
           idea = None,
           ideaProposals = Seq.empty,
           operationId = None,
-          questionId = None
+          questionId = None,
+          keywords = Nil
         )
       )
     )
@@ -358,7 +360,8 @@ class ModerationProposalApiTest
     idea = None,
     operationId = None,
     question = None,
-    proposalKey = "pr0p0541k3y"
+    proposalKey = "pr0p0541k3y",
+    keywords = Nil
   )
 
   when(
@@ -419,7 +422,8 @@ class ModerationProposalApiTest
       idea = None,
       ideaProposals = Seq.empty,
       operationId = None,
-      questionId = Some(QuestionId("question"))
+      questionId = Some(QuestionId("question")),
+      keywords = Nil
     )
   }
 

@@ -115,7 +115,8 @@ trait ProposalApi extends Directives {
         dataType = "string",
         allowableValues = "USER,ORGANISATION,PERSONALITY"
       ),
-      new ApiImplicitParam(name = "ideaIds", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "ideaIds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "keywords", paramType = "query", dataType = "string")
     )
   )
   def search: Route
@@ -299,7 +300,8 @@ trait DefaultProposalApiComponent
                 "operationKinds".csv[OperationKind],
                 "isOrganisation".as[Boolean].?,
                 "userType".as[Seq[UserType]].?,
-                "ideaIds".as[Seq[IdeaId]].?
+                "ideaIds".as[Seq[IdeaId]].?,
+                "keywords".as[Seq[ProposalKeywordKey]].?
               ) {
                 (
                   proposalIds: Option[Seq[ProposalId]],
@@ -322,7 +324,8 @@ trait DefaultProposalApiComponent
                   operationKinds: Option[Seq[OperationKind]],
                   isOrganisation: Option[Boolean],
                   userType: Option[Seq[UserType]],
-                  ideaIds: Option[Seq[IdeaId]]
+                  ideaIds: Option[Seq[IdeaId]],
+                  keywords: Option[Seq[ProposalKeywordKey]]
                 ) =>
                   Validation.validate(Seq(country.map { countryValue =>
                     Validation.validChoices(
@@ -384,7 +387,8 @@ trait DefaultProposalApiComponent
                         None
                       }
                     }),
-                    ideaIds = ideaIds
+                    ideaIds = ideaIds,
+                    keywords = keywords
                   )
                   provideAsync(
                     proposalService
