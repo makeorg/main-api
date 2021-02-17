@@ -42,8 +42,8 @@ import org.make.core.technical.generator.{
   EntitiesGen => CoreEntitiesGen
 }
 import org.make.core.user.User
+import org.scalacheck.Gen
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck.{Arbitrary, Gen}
 
 trait EntitiesGen extends CoreEntitiesGen with DateGenerators { self: IdGeneratorComponent =>
 
@@ -65,6 +65,7 @@ trait EntitiesGen extends CoreEntitiesGen with DateGenerators { self: IdGenerato
       consultationImageAlt <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(130))
       descriptionImage     <- CustomGenerators.ImageUrl.gen(width = 300, height = 100)
       descriptionImageAlt  <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(130))
+      featured             <- arbitrary[Boolean]
     } yield CreateOperationOfQuestion(
       operationId = operationId,
       startDate = startDate,
@@ -79,7 +80,8 @@ trait EntitiesGen extends CoreEntitiesGen with DateGenerators { self: IdGenerato
       consultationImageAlt = Some(refineV[MaxSize[W.`130`.T]](consultationImageAlt).getOrElse("")),
       descriptionImage = Some(descriptionImage),
       descriptionImageAlt = Some(refineV[MaxSize[W.`130`.T]](descriptionImageAlt).getOrElse("")),
-      actions = None
+      actions = None,
+      featured = featured
     )
   }
 
@@ -93,11 +95,11 @@ trait EntitiesGen extends CoreEntitiesGen with DateGenerators { self: IdGenerato
       gender                    <- arbitrary[Option[Gender]]
       socioProfessionalCategory <- arbitrary[Option[SocioProfessionalCategory]]
       (country, _)              <- genCountryLanguage
-      optIn                     <- Arbitrary.arbitrary[Option[Boolean]]
-      optInPartner              <- Arbitrary.arbitrary[Option[Boolean]]
+      optIn                     <- arbitrary[Option[Boolean]]
+      optInPartner              <- arbitrary[Option[Boolean]]
       roles                     <- genRoles
       politicalParty            <- CustomGenerators.LoremIpsumGen.word.asOption
-      publicProfile             <- Arbitrary.arbitrary[Boolean]
+      publicProfile             <- arbitrary[Boolean]
     } yield UserRegisterData(
       email = email,
       firstName = firstName,

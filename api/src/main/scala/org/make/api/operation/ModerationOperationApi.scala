@@ -198,7 +198,7 @@ trait DefaultModerationOperationApiComponent
                             allowedSameSlugValidation(request.slug, operation.operationId.value, operationId.value)
                           )
                         }
-                        onSuccess(
+                        provideAsyncOrNotFound(
                           operationService.update(
                             operationId = operationId,
                             userId = auth.user.userId,
@@ -206,9 +206,8 @@ trait DefaultModerationOperationApiComponent
                             status = request.status,
                             operationKind = Some(request.operationKind)
                           )
-                        ) {
-                          case Some(id) => complete(StatusCodes.OK -> OperationIdResponse(id))
-                          case None     => complete(StatusCodes.NotFound)
+                        ) { id =>
+                          complete(OperationIdResponse(id))
                         }
                       }
                     }

@@ -51,6 +51,7 @@ import org.make.core.Validation.{
 }
 import org.make.core._
 import org.make.core.auth.UserRights
+import org.make.core.operation.OperationKind.GreatCause
 import org.make.core.operation.OperationOfQuestion.{Status => QuestionStatus}
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
@@ -236,7 +237,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
     with MakeSettingsComponent
     with SessionHistoryCoordinatorServiceComponent
     with OperationOfQuestionServiceComponent
-    with QuestionServiceComponent =>
+    with QuestionServiceComponent
+    with OperationServiceComponent =>
 
   val moderationQuestionId: PathMatcher1[QuestionId] = Segment.map(id   => QuestionId(id))
   val moderationOperationId: PathMatcher1[OperationId] = Segment.map(id => OperationId(id))
@@ -460,33 +462,47 @@ trait DefaultModerationOperationOfQuestionApiComponent
             requireAdminRole(auth.user) {
               decodeRequest {
                 entity(as[CreateOperationOfQuestionRequest]) { body =>
-                  provideAsync(operationOfQuestionService.findByQuestionSlug(body.questionSlug)) { maybeQuestion =>
-                    Validation.validate(
-                      Validation
-                        .requireNotPresent("slug", maybeQuestion, Some(s"Slug '${body.questionSlug}' already exists"))
-                    )
-                    provideAsync(
-                      operationOfQuestionService.create(
-                        CreateOperationOfQuestion(
-                          operationId = body.operationId,
-                          startDate = body.startDate,
-                          endDate = body.endDate,
-                          operationTitle = body.operationTitle,
-                          slug = body.questionSlug,
-                          countries = body.countries,
-                          language = body.language,
-                          question = body.question,
-                          shortTitle = body.shortTitle.map(_.value),
-                          consultationImage = body.consultationImage.map(_.value),
-                          consultationImageAlt = body.consultationImageAlt,
-                          descriptionImage = body.descriptionImage.map(_.value),
-                          descriptionImageAlt = body.descriptionImageAlt,
-                          actions = body.actions
-                        )
+                  provideAsync(operationService.findOneSimple(body.operationId)) { maybeOperation =>
+                    provideAsync(operationOfQuestionService.findByQuestionSlug(body.questionSlug)) { maybeQuestion =>
+                      Validation.validate(
+                        Validation
+                          .requireNotPresent(
+                            "slug",
+                            maybeQuestion,
+                            Some(s"Slug '${body.questionSlug}' already exists")
+                          ),
+                        Validation
+                          .requirePresent(
+                            "operationId",
+                            maybeOperation,
+                            Some(s"Operation '${body.operationId}' does not exist")
+                          )
                       )
-                    ) { operationOfQuestion =>
-                      provideAsyncOrNotFound(questionService.getQuestion(operationOfQuestion.questionId)) { question =>
-                        complete(StatusCodes.Created -> OperationOfQuestionResponse(operationOfQuestion, question))
+                      provideAsync(
+                        operationOfQuestionService.create(
+                          CreateOperationOfQuestion(
+                            operationId = body.operationId,
+                            startDate = body.startDate,
+                            endDate = body.endDate,
+                            operationTitle = body.operationTitle,
+                            slug = body.questionSlug,
+                            countries = body.countries,
+                            language = body.language,
+                            question = body.question,
+                            shortTitle = body.shortTitle.map(_.value),
+                            consultationImage = body.consultationImage.map(_.value),
+                            consultationImageAlt = body.consultationImageAlt,
+                            descriptionImage = body.descriptionImage.map(_.value),
+                            descriptionImageAlt = body.descriptionImageAlt,
+                            actions = body.actions,
+                            featured = maybeOperation.exists(_.operationKind == GreatCause)
+                          )
+                        )
+                      ) { operationOfQuestion =>
+                        provideAsyncOrNotFound(questionService.getQuestion(operationOfQuestion.questionId)) {
+                          question =>
+                            complete(StatusCodes.Created -> OperationOfQuestionResponse(operationOfQuestion, question))
+                        }
                       }
                     }
                   }

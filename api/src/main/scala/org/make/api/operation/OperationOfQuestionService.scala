@@ -94,7 +94,8 @@ final case class CreateOperationOfQuestion(
   consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   descriptionImage: Option[String],
   descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
-  actions: Option[String]
+  actions: Option[String],
+  featured: Boolean
 )
 
 final case class SearchOperationsOfQuestions(
@@ -245,7 +246,7 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         proposalsCount = 0,
         participantsCount = 0,
         actions = parameters.actions,
-        featured = false,
+        featured = parameters.featured,
         votesCount = 0,
         votesTarget = 100_000,
         timeline = OperationOfQuestionTimeline(None, None, None),

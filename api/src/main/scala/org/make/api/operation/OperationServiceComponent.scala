@@ -31,6 +31,7 @@ import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.core.{DateHelper, Order}
 import org.make.core.operation._
 import org.make.core.operation.OperationActionType._
+import org.make.core.operation.OperationKind.GreatCause
 import org.make.core.reference.Country
 import org.make.core.user.UserId
 
@@ -193,7 +194,9 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
             def updateQuestions(updated: SimpleOperation): Future[Done] =
               Source(operation.questions)
                 .mapAsync(5) { question =>
-                  operationOfQuestionService.indexById(question.question.questionId)
+                  operationOfQuestionService.update(
+                    question.details.copy(featured = question.details.featured || updated.operationKind == GreatCause)
+                  )
                 }
                 .runWith(Sink.ignore)
 

@@ -426,7 +426,7 @@ trait TestUtils {
     proposalsCount: Int = 42,
     participantsCount: Int = 84,
     actions: Option[String] = None,
-    featured: Boolean = true,
+    featured: Boolean = false,
     votesCount: Int = 0,
     votesTarget: Int = 100_000,
     timeline: OperationOfQuestionTimeline = OperationOfQuestionTimeline(None, None, None),
