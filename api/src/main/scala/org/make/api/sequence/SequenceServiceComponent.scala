@@ -107,12 +107,13 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       }
 
       for {
-        _                     <- logStartSequenceUserHistory(Some(questionId), maybeUserId, includedProposals, requestContext)
-        proposalsVoted        <- futureVotedProposals(maybeUserId = maybeUserId, requestContext = requestContext)
-        sequenceConfiguration <- getSequenceConfiguration(zone, questionId)
-        includedProposals     <- futureIncludedProposals // TODO shouldn't they be excluded from searches?
-        maybeSegment          <- segmentService.resolveSegment(requestContext)
-        consensusThreshold    <- futureTop20ConsensusThreshold
+        _                             <- logStartSequenceUserHistory(Some(questionId), maybeUserId, includedProposals, requestContext)
+        proposalsVoted                <- futureVotedProposals(maybeUserId = maybeUserId, requestContext = requestContext)
+        sequenceConfiguration         <- getSequenceConfiguration(zone, questionId)
+        specificSequenceConfiguration <- Future.successful(sequenceConfiguration.mainSequence) // TODO get the specific configuration according to the parameter coming from the front
+        includedProposals             <- futureIncludedProposals // TODO shouldn't they be excluded from searches?
+        maybeSegment                  <- segmentService.resolveSegment(requestContext)
+        consensusThreshold            <- futureTop20ConsensusThreshold
         searchProposals = (
           maybePool: Option[SequencePool],
           excluded: Seq[ProposalId],
@@ -161,14 +162,14 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
           searchProposals(
             Some(SequencePool.New),
             proposalsVoted,
-            sequenceConfiguration.sequenceSize * 3,
+            specificSequenceConfiguration.sequenceSize * 3,
             CreationDateAlgorithm(SortOrder.Asc)
           )
         else Future.successful(Nil)
         allTestedProposals <- searchProposals(
           Some(SequencePool.Tested),
           proposalsVoted,
-          sequenceConfiguration.maxTestedProposalCount,
+          specificSequenceConfiguration.maxTestedProposalCount,
           RandomAlgorithm(MakeRandom.nextInt())
         )
 
@@ -179,7 +180,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
           id => newProposals.map(_.id).contains(id) || testedProposals.map(_.id).contains(id)
         )
 
-        (selectionAlgorithm, newCandidates, testedCandidates) = sequenceConfiguration.selectionAlgorithmName match {
+        (selectionAlgorithm, newCandidates, testedCandidates) = specificSequenceConfiguration.selectionAlgorithmName match {
           case SelectionAlgorithmName.Bandit =>
             (banditSelectionAlgorithm, newProposals, testedProposals)
           case SelectionAlgorithmName.RoundRobin =>
@@ -189,17 +190,16 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
         }
 
         selectedProposals = selectionAlgorithm.selectProposalsForSequence(
-          sequenceConfiguration = sequenceConfiguration,
+          sequenceConfiguration = specificSequenceConfiguration,
+          nonSequenceVotesWeight = sequenceConfiguration.nonSequenceVotesWeight,
           includedProposals = includedProposals,
           newProposals = newCandidates,
           testedProposals = testedCandidates,
           votedProposals = votes,
           userSegment = maybeSegment
         )
-        fallbackProposals <- if (zone.isEmpty && selectedProposals.size < sequenceConfiguration.sequenceSize) {
-          logger.warn(
-            s"Sequence fallback for user ${requestContext.sessionId.value} and question ${sequenceConfiguration.questionId.value}"
-          )
+        fallbackProposals <- if (zone.isEmpty && selectedProposals.size < specificSequenceConfiguration.sequenceSize) {
+          logger.warn(s"Sequence fallback for user ${requestContext.sessionId.value} and question ${questionId.value}")
           val sortAlgorithm: SortAlgorithm = maybeSegment
             .map[SortAlgorithm](SegmentFirstAlgorithm)
             .getOrElse[SortAlgorithm](CreationDateAlgorithm(SortOrder.Desc))
@@ -207,7 +207,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
           searchProposals(
             None,
             proposalsVoted ++ selectedProposals.map(_.id),
-            sequenceConfiguration.sequenceSize - selectedProposals.size,
+            specificSequenceConfiguration.sequenceSize - selectedProposals.size,
             sortAlgorithm
           )
         } else {
@@ -300,7 +300,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
           config =>
             zone match {
               case Some(Zone.Consensus | Zone.Controversy) =>
-                config.copy(selectionAlgorithmName = SelectionAlgorithmName.Random)
+                config
+                  .copy(mainSequence = config.mainSequence.copy(selectionAlgorithmName = SelectionAlgorithmName.Random))
               case _ => config
             }
         )

@@ -27,7 +27,11 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.MaxSize
 import grizzled.slf4j.Logging
 import org.make.api.question.{PersistentQuestionServiceComponent, QuestionServiceComponent, SearchQuestionRequest}
-import org.make.api.sequence.{PersistentSequenceConfigurationComponent, SequenceConfiguration}
+import org.make.api.sequence.{
+  PersistentSequenceConfigurationComponent,
+  SequenceConfiguration,
+  SpecificSequenceConfiguration
+}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation._
@@ -254,7 +258,14 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
       )
 
       val sequenceConfiguration =
-        SequenceConfiguration(sequenceId = sequenceId, questionId = questionId)
+        SequenceConfiguration(
+          sequenceId = sequenceId,
+          questionId = questionId,
+          mainSequence = SpecificSequenceConfiguration(),
+          controversial = SpecificSequenceConfiguration(),
+          popular = SpecificSequenceConfiguration(),
+          keyword = SpecificSequenceConfiguration()
+        )
 
       for {
         _         <- persistentQuestionService.persist(question)
