@@ -70,13 +70,7 @@ object SequenceActionResponse extends CirceFormatters {
   implicit val encoder: Encoder[SequenceActionResponse] = deriveEncoder[SequenceActionResponse]
 }
 
-final case class SequenceResult(
-  @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
-  id: SequenceId,
-  title: String,
-  slug: String,
-  proposals: Seq[ProposalResponse]
-)
+final case class SequenceResult(proposals: Seq[ProposalResponse])
 
 object SequenceResult {
   implicit val encoder: Encoder[SequenceResult] = deriveEncoder[SequenceResult]

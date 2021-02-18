@@ -30,9 +30,17 @@ import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigura
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
-import org.make.core.proposal._
+import org.make.core.RequestContext
+import org.make.core.proposal.ProposalKeywordKey
+import org.make.core.proposal.indexed.Zone
+import org.make.core.question.QuestionId
+import org.make.core.tag.TagId
 import org.make.core.technical.IdGenerator
 import org.scalatest.PrivateMethodTester
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class SequenceServiceComponentTest
     extends MakeUnitTest
@@ -75,8 +83,67 @@ class SequenceServiceComponentTest
   override val elasticsearchOperationOfQuestionAPI: OperationOfQuestionSearchEngine =
     mock[OperationOfQuestionSearchEngine]
 
-  val defaultSize = 12
-  val proposalIds: Seq[ProposalId] = (1 to defaultSize).map(i => ProposalId(s"proposal$i"))
+  Feature("resolve behaviour") {
+    val questionId = QuestionId("question-id")
+    val requestContext = RequestContext.empty
+    when(segmentService.resolveSegment(eqTo(requestContext))).thenReturn(Future.successful(None))
+    when(sequenceConfigurationService.getSequenceConfigurationByQuestionId(eqTo(questionId)))
+      .thenReturn(Future.successful(sequenceConfiguration(questionId)))
 
-  Feature("Starting a sequence") {}
+    Scenario("Standard") {
+      whenReady(sequenceService.resolveBehaviour(questionId, requestContext, None, None, None), Timeout(3.seconds)) {
+        behaviour =>
+          behaviour shouldBe a[SequenceBehaviour.Standard]
+      }
+    }
+    Scenario("Keyword") {
+      whenReady(
+        sequenceService
+          .resolveBehaviour(questionId, requestContext, None, Some(ProposalKeywordKey("keyword")), None),
+        Timeout(3.seconds)
+      ) { behaviour =>
+        behaviour shouldBe a[SequenceBehaviour.Keyword]
+      }
+    }
+    Scenario("Tags") {
+      whenReady(
+        sequenceService.resolveBehaviour(questionId, requestContext, None, None, Some(Seq(TagId("tag-id")))),
+        Timeout(3.seconds)
+      ) { behaviour =>
+        behaviour shouldBe a[SequenceBehaviour.Tags]
+      }
+    }
+    Scenario("Consensus") {
+      when(elasticsearchOperationOfQuestionAPI.findOperationOfQuestionById(questionId))
+        .thenReturn(Future.successful(None))
+      whenReady(
+        sequenceService.resolveBehaviour(questionId, requestContext, Some(Zone.Consensus), None, None),
+        Timeout(3.seconds)
+      ) { behaviour =>
+        behaviour shouldBe a[SequenceBehaviour.Consensus]
+      }
+    }
+    Scenario("ZoneDefault") {
+      whenReady(
+        sequenceService.resolveBehaviour(questionId, requestContext, Some(Zone.Controversy), None, None),
+        Timeout(3.seconds)
+      ) { behaviour =>
+        behaviour shouldBe a[SequenceBehaviour.ZoneDefault]
+      }
+    }
+    Scenario("precedence") {
+      whenReady(
+        sequenceService.resolveBehaviour(
+          questionId,
+          requestContext,
+          Some(Zone.Controversy),
+          Some(ProposalKeywordKey("keyword")),
+          Some(Seq(TagId("tag-id")))
+        ),
+        Timeout(3.seconds)
+      ) { behaviour =>
+        behaviour shouldBe a[SequenceBehaviour.Keyword]
+      }
+    }
+  }
 }
