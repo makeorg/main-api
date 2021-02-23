@@ -69,14 +69,16 @@ class ModerationSequenceApiTest
   val sequenceConfiguration: SequenceConfiguration = SequenceConfiguration(
     sequenceId = SequenceId("mySequence"),
     questionId = QuestionId("myQuestion"),
-    newProposalsRatio = 0.5,
+    mainSequence = SpecificSequenceConfiguration(
+      intraIdeaEnabled = true,
+      intraIdeaMinCount = 3,
+      intraIdeaProposalsRatio = .3,
+      newProposalsRatio = 0.5
+    ),
     newProposalsVoteThreshold = 100,
     testedProposalsEngagementThreshold = Some(0.8),
     testedProposalsScoreThreshold = Some(0.0),
-    testedProposalsControversyThreshold = Some(0.0),
-    intraIdeaEnabled = true,
-    intraIdeaMinCount = 3,
-    intraIdeaProposalsRatio = .3
+    testedProposalsControversyThreshold = Some(0.0)
   )
 
   when(sequenceConfigurationService.getPersistentSequenceConfiguration(eqTo(SequenceId("myQuestion"))))

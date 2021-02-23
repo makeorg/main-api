@@ -23,7 +23,7 @@ import grizzled.slf4j.Logging
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import org.make.api.proposal.DefaultSelectionAlgorithmComponent.Scored
 import org.make.api.proposal.ProposalScorer.{Score, VotesCounter}
-import org.make.api.sequence.SequenceConfiguration
+import org.make.api.sequence.SpecificSequenceConfiguration
 import org.make.api.technical.MakeRandom
 import org.make.core.DateHelper._
 import org.make.core.idea.IdeaId
@@ -111,7 +111,8 @@ trait SelectionAlgorithm {
   def name: SelectionAlgorithmName
 
   def selectProposalsForSequence(
-    sequenceConfiguration: SequenceConfiguration,
+    sequenceConfiguration: SpecificSequenceConfiguration,
+    nonSequenceVotesWeight: Double,
     includedProposals: Seq[IndexedProposal],
     newProposals: Seq[IndexedProposal],
     testedProposals: Seq[IndexedProposal],
@@ -153,7 +154,8 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
     - the non imposed proposals are ordered randomly
      */
     def selectProposalsForSequence(
-      sequenceConfiguration: SequenceConfiguration,
+      sequenceConfiguration: SpecificSequenceConfiguration,
+      nonSequenceVotesWeight: Double,
       includedProposals: Seq[IndexedProposal],
       newProposals: Seq[IndexedProposal],
       testedProposals: Seq[IndexedProposal],
@@ -222,7 +224,13 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       // chooses tested proposals
       val testedIncludedProposals: Seq[IndexedProposal] =
         includeProposalToSequence(
-          chooseTestedProposals(sequenceConfiguration, filterDistinct(testedProposals), testedSize, userSegment)
+          chooseTestedProposals(
+            sequenceConfiguration,
+            nonSequenceVotesWeight,
+            filterDistinct(testedProposals),
+            testedSize,
+            userSegment
+          )
         )
 
       buildSequence(
@@ -230,7 +238,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         newIncludedProposals,
         testedIncludedProposals,
         userSegment,
-        sequenceConfiguration
+        nonSequenceVotesWeight
       )
     }
 
@@ -247,7 +255,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       newIncludedProposals: Seq[IndexedProposal],
       testedIncludedProposals: Seq[IndexedProposal],
       maybeUserSegment: Option[String],
-      sequenceConfiguration: SequenceConfiguration
+      nonSequenceVotesWeight: Double
     ): Seq[IndexedProposal] = {
 
       // build sequence
@@ -255,7 +263,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         // pick most engaging
         val sortedTestedProposal: Seq[IndexedProposal] =
           testedIncludedProposals.sortBy { proposal =>
-            val scorer = computeProposalScores(maybeUserSegment, proposal, sequenceConfiguration.nonSequenceVotesWeight)
+            val scorer = computeProposalScores(maybeUserSegment, proposal, nonSequenceVotesWeight)
             -1 * scorer.engagement.lowerBound
           }
         Seq(sortedTestedProposal.head) ++ MakeRandom.shuffleSeq(newIncludedProposals ++ sortedTestedProposal.tail)
@@ -292,16 +300,17 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
      * Then keep the top quartile
      */
     def chooseProposalBandit(
-      sequenceConfiguration: SequenceConfiguration,
+      sequenceConfiguration: SpecificSequenceConfiguration,
+      nonSequenceVotesWeight: Double,
       proposals: Seq[IndexedProposal],
       maybeUserSegment: Option[String]
     ): IndexedProposal = {
 
       val proposalsScored: Seq[Scored[IndexedProposal]] =
         proposals.map { proposal =>
-          val scorer = computeProposalScores(maybeUserSegment, proposal, sequenceConfiguration.nonSequenceVotesWeight)
+          val scorer = computeProposalScores(maybeUserSegment, proposal, nonSequenceVotesWeight)
 
-          Scored(proposal, scorer.topScore.sample(sequenceConfiguration.nonSequenceVotesWeight))
+          Scored(proposal, scorer.topScore.sample(nonSequenceVotesWeight))
         }
 
       val shortList = if (proposals.length < sequenceConfiguration.intraIdeaMinCount) {
@@ -318,38 +327,39 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
     }
 
     def chooseChampion(
-      sequenceConfiguration: SequenceConfiguration,
+      nonSequenceVotesWeight: Double,
       proposals: Seq[IndexedProposal],
       maybeUserSegment: Option[String]
     ): IndexedProposal = {
-      chooseChampion(_.topScore)(sequenceConfiguration, proposals, maybeUserSegment)
+      chooseChampion(_.topScore)(nonSequenceVotesWeight, proposals, maybeUserSegment)
     }
 
     def chooseControversyChampion(
-      sequenceConfiguration: SequenceConfiguration,
+      nonSequenceVotesWeight: Double,
       proposals: Seq[IndexedProposal],
       maybeUserSegment: Option[String]
     ): IndexedProposal = {
-      chooseChampion(_.controversy)(sequenceConfiguration, proposals, maybeUserSegment)
+      chooseChampion(_.controversy)(nonSequenceVotesWeight, proposals, maybeUserSegment)
     }
 
     private def chooseChampion(
       score: ProposalScorer => Score
-    ): (SequenceConfiguration, Seq[IndexedProposal], Option[String]) => IndexedProposal = {
-      (sequenceConfiguration, proposals, maybeUserSegment) =>
+    ): (Double, Seq[IndexedProposal], Option[String]) => IndexedProposal = {
+      (nonSequenceVotesWeight, proposals, maybeUserSegment) =>
         proposals.maxBy { proposal =>
-          val scorer = computeProposalScores(maybeUserSegment, proposal, sequenceConfiguration.nonSequenceVotesWeight)
+          val scorer = computeProposalScores(maybeUserSegment, proposal, nonSequenceVotesWeight)
           score(scorer).lowerBound
         }
     }
 
     def selectIdeasWithChampions(
-      sequenceConfiguration: SequenceConfiguration,
+      sequenceConfiguration: SpecificSequenceConfiguration,
+      nonSequenceVotesWeight: Double,
       champions: Map[IdeaId, IndexedProposal],
       maybeUserSegment: Option[String]
     ): Seq[IdeaId] = {
-      chooseIdea(_.topScore.sample(sequenceConfiguration.nonSequenceVotesWeight))(
-        sequenceConfiguration,
+      chooseIdea(_.topScore.sample(nonSequenceVotesWeight))(
+        nonSequenceVotesWeight,
         maybeUserSegment,
         sequenceConfiguration.interIdeaCompetitionTargetCount,
         champions
@@ -357,12 +367,13 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
     }
 
     def selectControversialIdeasWithChampions(
-      sequenceConfiguration: SequenceConfiguration,
+      sequenceConfiguration: SpecificSequenceConfiguration,
+      nonSequenceVotesWeight: Double,
       champions: Map[IdeaId, IndexedProposal],
       maybeUserSegment: Option[String]
     ): Seq[IdeaId] = {
-      chooseIdea(_.controversy.sample(sequenceConfiguration.nonSequenceVotesWeight))(
-        sequenceConfiguration,
+      chooseIdea(_.controversy.sample(nonSequenceVotesWeight))(
+        nonSequenceVotesWeight,
         maybeUserSegment,
         sequenceConfiguration.interIdeaCompetitionControversialCount,
         champions
@@ -370,21 +381,22 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
     }
 
     private def chooseIdea(scoringFunction: ProposalScorer => Double)(
-      sequenceConfiguration: SequenceConfiguration,
+      nonSequenceVotesWeight: Double,
       maybeUserSegment: Option[String],
       ideaCount: Int,
       champions: Map[IdeaId, IndexedProposal]
     ): Seq[IdeaId] = {
       champions.toSeq.map {
         case (idea, proposal) =>
-          val scorer = computeProposalScores(maybeUserSegment, proposal, sequenceConfiguration.nonSequenceVotesWeight)
+          val scorer = computeProposalScores(maybeUserSegment, proposal, nonSequenceVotesWeight)
           val score = scoringFunction(scorer)
           Scored(idea, score)
       }.sortBy(-1 * _.score).take(ideaCount).map(_.item)
     }
 
     def chooseTestedProposals(
-      sequenceConfiguration: SequenceConfiguration,
+      sequenceConfiguration: SpecificSequenceConfiguration,
+      nonSequenceVotesWeight: Double,
       testedProposalsByIdea: Map[IdeaId, Seq[IndexedProposal]],
       testedProposalCount: Int,
       maybeUserSegment: Option[String]
@@ -393,17 +405,22 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       val selectedIdeas: Seq[IdeaId] = if (sequenceConfiguration.interIdeaCompetitionEnabled) {
         val champions: Map[IdeaId, IndexedProposal] =
           testedProposalsByIdea.map {
-            case (idea, proposal) => idea -> chooseChampion(sequenceConfiguration, proposal, maybeUserSegment)
+            case (idea, proposal) => idea -> chooseChampion(nonSequenceVotesWeight, proposal, maybeUserSegment)
           }
         val topIdeas: Seq[IdeaId] =
-          selectIdeasWithChampions(sequenceConfiguration, champions, maybeUserSegment)
+          selectIdeasWithChampions(sequenceConfiguration, nonSequenceVotesWeight, champions, maybeUserSegment)
         val controversyChampions: Map[IdeaId, IndexedProposal] =
           testedProposalsByIdea.map {
             case (idea, proposal) =>
-              idea -> chooseControversyChampion(sequenceConfiguration, proposal, maybeUserSegment)
+              idea -> chooseControversyChampion(nonSequenceVotesWeight, proposal, maybeUserSegment)
           }
         val topControversial: Seq[IdeaId] =
-          selectControversialIdeasWithChampions(sequenceConfiguration, controversyChampions, maybeUserSegment)
+          selectControversialIdeasWithChampions(
+            sequenceConfiguration,
+            nonSequenceVotesWeight,
+            controversyChampions,
+            maybeUserSegment
+          )
         topIdeas ++ topControversial
       } else {
         testedProposalsByIdea.keys.toSeq
@@ -415,7 +432,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       }.map {
         case (key, proposals) =>
           if (sequenceConfiguration.intraIdeaEnabled) {
-            key -> chooseProposalBandit(sequenceConfiguration, proposals, maybeUserSegment)
+            key -> chooseProposalBandit(sequenceConfiguration, nonSequenceVotesWeight, proposals, maybeUserSegment)
           } else {
             key -> chooseProposals(proposals, 1, SoftMinRandom).head
           }
@@ -452,7 +469,8 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
     - the non imposed proposals are ordered randomly
      */
     def selectProposalsForSequence(
-      sequenceConfiguration: SequenceConfiguration,
+      sequenceConfiguration: SpecificSequenceConfiguration,
+      nonSequenceVotesWeight: Double,
       includedProposals: Seq[IndexedProposal],
       newProposals: Seq[IndexedProposal],
       testedProposals: Seq[IndexedProposal],
@@ -515,7 +533,8 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
     override def name: SelectionAlgorithmName = SelectionAlgorithmName.Random
 
     override def selectProposalsForSequence(
-      sequenceConfiguration: SequenceConfiguration,
+      sequenceConfiguration: SpecificSequenceConfiguration,
+      nonSequenceVotesWeight: Double,
       includedProposals: Seq[IndexedProposal],
       newProposals: Seq[IndexedProposal],
       testedProposals: Seq[IndexedProposal],

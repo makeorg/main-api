@@ -78,8 +78,10 @@ final case class SequenceConfiguration(
   sequenceId: SequenceId,
   @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
   questionId: QuestionId,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.5")
-  newProposalsRatio: Double = 0.3,
+  mainSequence: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
+  controversial: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
+  popular: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
+  keyword: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
   @(ApiModelProperty @field)(dataType = "int", example = "100")
   newProposalsVoteThreshold: Int = 10,
   @(ApiModelProperty @field)(dataType = "double", example = "0.8")
@@ -90,26 +92,6 @@ final case class SequenceConfiguration(
   testedProposalsControversyThreshold: Option[Double] = None,
   @(ApiModelProperty @field)(dataType = "int", example = "1500")
   testedProposalsMaxVotesThreshold: Option[Int] = None,
-  @(ApiModelProperty @field)(dataType = "boolean", example = "false")
-  intraIdeaEnabled: Boolean = true,
-  @(ApiModelProperty @field)(dataType = "int", example = "1")
-  intraIdeaMinCount: Int = 1,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  intraIdeaProposalsRatio: Double = 0.0,
-  @(ApiModelProperty @field)(dataType = "boolean", example = "false")
-  interIdeaCompetitionEnabled: Boolean = true,
-  @(ApiModelProperty @field)(dataType = "int", example = "50")
-  interIdeaCompetitionTargetCount: Int = 20,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  interIdeaCompetitionControversialRatio: Double = 0.0,
-  @(ApiModelProperty @field)(dataType = "int", example = "0")
-  interIdeaCompetitionControversialCount: Int = 2,
-  @(ApiModelProperty @field)(dataType = "int", example = "1000")
-  maxTestedProposalCount: Int = 1000,
-  @(ApiModelProperty @field)(dataType = "int", example = "12")
-  sequenceSize: Int = 12,
-  @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
-  selectionAlgorithmName: SelectionAlgorithmName = SelectionAlgorithmName.Bandit,
   @(ApiModelProperty @field)(dataType = "double", example = "0.5")
   nonSequenceVotesWeight: Double = 0.5
 )
@@ -121,25 +103,62 @@ object SequenceConfiguration {
   val default: SequenceConfiguration = SequenceConfiguration(
     sequenceId = SequenceId("default-sequence"),
     questionId = QuestionId("default-question"),
-    newProposalsRatio = 0.5,
-    newProposalsVoteThreshold = 100,
+    mainSequence = SpecificSequenceConfiguration.default,
+    controversial = SpecificSequenceConfiguration.default,
+    popular = SpecificSequenceConfiguration.default,
+    keyword = SpecificSequenceConfiguration.default,
+    newProposalsVoteThreshold = 10,
     testedProposalsEngagementThreshold = Some(0.8),
     testedProposalsScoreThreshold = None,
     testedProposalsControversyThreshold = None,
     testedProposalsMaxVotesThreshold = Some(1500),
+    nonSequenceVotesWeight = 0.5
+  )
+
+}
+
+final case class SpecificSequenceConfiguration(
+  @(ApiModelProperty @field)(dataType = "int", example = "12")
+  sequenceSize: Int = 12,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.5")
+  newProposalsRatio: Double = 0.5,
+  @(ApiModelProperty @field)(dataType = "int", example = "1000")
+  maxTestedProposalCount: Int = 1000,
+  @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
+  selectionAlgorithmName: SelectionAlgorithmName = SelectionAlgorithmName.Bandit,
+  @(ApiModelProperty @field)(dataType = "boolean", example = "false")
+  intraIdeaEnabled: Boolean = true,
+  @(ApiModelProperty @field)(dataType = "int", example = "1")
+  intraIdeaMinCount: Int = 1,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
+  intraIdeaProposalsRatio: Double = 0.0,
+  @(ApiModelProperty @field)(dataType = "boolean", example = "false")
+  interIdeaCompetitionEnabled: Boolean = true,
+  @(ApiModelProperty @field)(dataType = "int", example = "50")
+  interIdeaCompetitionTargetCount: Int = 50,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
+  interIdeaCompetitionControversialRatio: Double = 0.0,
+  @(ApiModelProperty @field)(dataType = "int", example = "0")
+  interIdeaCompetitionControversialCount: Int = 0
+)
+
+object SpecificSequenceConfiguration {
+  implicit val decoder: Decoder[SpecificSequenceConfiguration] = deriveDecoder[SpecificSequenceConfiguration]
+  implicit val encoder: Encoder[SpecificSequenceConfiguration] = deriveEncoder[SpecificSequenceConfiguration]
+
+  val default: SpecificSequenceConfiguration = SpecificSequenceConfiguration(
+    sequenceSize = 12,
+    newProposalsRatio = 0.5,
+    maxTestedProposalCount = 1000,
+    selectionAlgorithmName = SelectionAlgorithmName.Bandit,
     intraIdeaEnabled = true,
     intraIdeaMinCount = 1,
     intraIdeaProposalsRatio = 0.0,
     interIdeaCompetitionEnabled = false,
     interIdeaCompetitionTargetCount = 50,
     interIdeaCompetitionControversialRatio = 0.0,
-    interIdeaCompetitionControversialCount = 0,
-    maxTestedProposalCount = 1000,
-    sequenceSize = 12,
-    selectionAlgorithmName = SelectionAlgorithmName.Bandit,
-    nonSequenceVotesWeight = 0.5
+    interIdeaCompetitionControversialCount = 0
   )
-
 }
 
 trait SequenceConfigurationService {

@@ -102,22 +102,22 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
             .namedValues(
               column.sequenceId -> sequenceConfig.sequenceId.value,
               column.questionId -> sequenceConfig.questionId.value,
-              column.newProposalsRatio -> sequenceConfig.newProposalsRatio,
+              column.newProposalsRatio -> sequenceConfig.mainSequence.newProposalsRatio,
               column.newProposalsVoteThreshold -> sequenceConfig.newProposalsVoteThreshold,
               column.testedProposalsEngagementThreshold -> sequenceConfig.testedProposalsEngagementThreshold,
               column.testedProposalsScoreThreshold -> sequenceConfig.testedProposalsScoreThreshold,
               column.testedProposalsControversyThreshold -> sequenceConfig.testedProposalsControversyThreshold,
               column.testedProposalsMaxVotesThreshold -> sequenceConfig.testedProposalsMaxVotesThreshold,
-              column.intraIdeaEnabled -> sequenceConfig.intraIdeaEnabled,
-              column.intraIdeaMinCount -> sequenceConfig.intraIdeaMinCount,
-              column.intraIdeaProposalsRatio -> sequenceConfig.intraIdeaProposalsRatio,
-              column.interIdeaCompetitionEnabled -> sequenceConfig.interIdeaCompetitionEnabled,
-              column.interIdeaCompetitionTargetCount -> sequenceConfig.interIdeaCompetitionTargetCount,
-              column.interIdeaCompetitionControversialRatio -> sequenceConfig.interIdeaCompetitionControversialRatio,
-              column.interIdeaCompetitionControversialCount -> sequenceConfig.interIdeaCompetitionControversialCount,
-              column.maxTestedProposalCount -> sequenceConfig.maxTestedProposalCount,
-              column.sequenceSize -> sequenceConfig.sequenceSize,
-              column.selectionAlgorithmName -> sequenceConfig.selectionAlgorithmName,
+              column.intraIdeaEnabled -> sequenceConfig.mainSequence.intraIdeaEnabled,
+              column.intraIdeaMinCount -> sequenceConfig.mainSequence.intraIdeaMinCount,
+              column.intraIdeaProposalsRatio -> sequenceConfig.mainSequence.intraIdeaProposalsRatio,
+              column.interIdeaCompetitionEnabled -> sequenceConfig.mainSequence.interIdeaCompetitionEnabled,
+              column.interIdeaCompetitionTargetCount -> sequenceConfig.mainSequence.interIdeaCompetitionTargetCount,
+              column.interIdeaCompetitionControversialRatio -> sequenceConfig.mainSequence.interIdeaCompetitionControversialRatio,
+              column.interIdeaCompetitionControversialCount -> sequenceConfig.mainSequence.interIdeaCompetitionControversialCount,
+              column.maxTestedProposalCount -> sequenceConfig.mainSequence.maxTestedProposalCount,
+              column.sequenceSize -> sequenceConfig.mainSequence.sequenceSize,
+              column.selectionAlgorithmName -> sequenceConfig.mainSequence.selectionAlgorithmName,
               column.createdAt -> DateHelper.now(),
               column.updatedAt -> DateHelper.now(),
               column.nonSequenceVotesWeight -> sequenceConfig.nonSequenceVotesWeight
@@ -132,22 +132,22 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
         withSQL {
           update(PersistentSequenceConfiguration)
             .set(
-              column.newProposalsRatio -> sequenceConfig.newProposalsRatio,
+              column.newProposalsRatio -> sequenceConfig.mainSequence.newProposalsRatio,
               column.newProposalsVoteThreshold -> sequenceConfig.newProposalsVoteThreshold,
               column.testedProposalsEngagementThreshold -> sequenceConfig.testedProposalsEngagementThreshold,
               column.testedProposalsScoreThreshold -> sequenceConfig.testedProposalsScoreThreshold,
               column.testedProposalsControversyThreshold -> sequenceConfig.testedProposalsControversyThreshold,
               column.testedProposalsMaxVotesThreshold -> sequenceConfig.testedProposalsMaxVotesThreshold,
-              column.intraIdeaEnabled -> sequenceConfig.intraIdeaEnabled,
-              column.intraIdeaMinCount -> sequenceConfig.intraIdeaMinCount,
-              column.intraIdeaProposalsRatio -> sequenceConfig.intraIdeaProposalsRatio,
-              column.interIdeaCompetitionEnabled -> sequenceConfig.interIdeaCompetitionEnabled,
-              column.interIdeaCompetitionTargetCount -> sequenceConfig.interIdeaCompetitionTargetCount,
-              column.interIdeaCompetitionControversialRatio -> sequenceConfig.interIdeaCompetitionControversialRatio,
-              column.interIdeaCompetitionControversialCount -> sequenceConfig.interIdeaCompetitionControversialCount,
-              column.maxTestedProposalCount -> sequenceConfig.maxTestedProposalCount,
-              column.sequenceSize -> sequenceConfig.sequenceSize,
-              column.selectionAlgorithmName -> sequenceConfig.selectionAlgorithmName,
+              column.intraIdeaEnabled -> sequenceConfig.mainSequence.intraIdeaEnabled,
+              column.intraIdeaMinCount -> sequenceConfig.mainSequence.intraIdeaMinCount,
+              column.intraIdeaProposalsRatio -> sequenceConfig.mainSequence.intraIdeaProposalsRatio,
+              column.interIdeaCompetitionEnabled -> sequenceConfig.mainSequence.interIdeaCompetitionEnabled,
+              column.interIdeaCompetitionTargetCount -> sequenceConfig.mainSequence.interIdeaCompetitionTargetCount,
+              column.interIdeaCompetitionControversialRatio -> sequenceConfig.mainSequence.interIdeaCompetitionControversialRatio,
+              column.interIdeaCompetitionControversialCount -> sequenceConfig.mainSequence.interIdeaCompetitionControversialCount,
+              column.maxTestedProposalCount -> sequenceConfig.mainSequence.maxTestedProposalCount,
+              column.sequenceSize -> sequenceConfig.mainSequence.sequenceSize,
+              column.selectionAlgorithmName -> sequenceConfig.mainSequence.selectionAlgorithmName,
               column.updatedAt -> DateHelper.now(),
               column.nonSequenceVotesWeight -> sequenceConfig.nonSequenceVotesWeight
             )
@@ -204,28 +204,35 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
     updatedAt: ZonedDateTime,
     nonSequenceVotesWeight: Double
   ) {
-    def toSequenceConfiguration: SequenceConfiguration =
-      SequenceConfiguration(
-        sequenceId = SequenceId(sequenceId),
-        questionId = QuestionId(questionId),
+    def toSequenceConfiguration: SequenceConfiguration = {
+      val specificSequenceConfiguration: SpecificSequenceConfiguration = SpecificSequenceConfiguration(
+        sequenceSize = sequenceSize,
         newProposalsRatio = newProposalsRatio,
-        newProposalsVoteThreshold = newProposalsVoteThreshold,
-        testedProposalsEngagementThreshold = testedProposalsEngagementThreshold,
-        testedProposalsScoreThreshold = testedProposalsScoreThreshold,
-        testedProposalsControversyThreshold = testedProposalsControversyThreshold,
-        testedProposalsMaxVotesThreshold = testedProposalsMaxVotesThreshold,
+        maxTestedProposalCount = maxTestedProposalCount,
+        selectionAlgorithmName = SelectionAlgorithmName.withValue(selectionAlgorithmName),
         intraIdeaEnabled = intraIdeaEnabled,
         intraIdeaMinCount = intraIdeaMinCount,
         intraIdeaProposalsRatio = intraIdeaProposalsRatio,
         interIdeaCompetitionEnabled = interIdeaCompetitionEnabled,
         interIdeaCompetitionTargetCount = interIdeaCompetitionTargetCount,
         interIdeaCompetitionControversialRatio = interIdeaCompetitionControversialRatio,
-        interIdeaCompetitionControversialCount = interIdeaCompetitionControversialCount,
-        maxTestedProposalCount = maxTestedProposalCount,
-        sequenceSize = sequenceSize,
-        selectionAlgorithmName = SelectionAlgorithmName.withValue(selectionAlgorithmName),
+        interIdeaCompetitionControversialCount = interIdeaCompetitionControversialCount
+      )
+      SequenceConfiguration(
+        sequenceId = SequenceId(sequenceId),
+        questionId = QuestionId(questionId),
+        mainSequence = specificSequenceConfiguration,
+        controversial = specificSequenceConfiguration,
+        popular = specificSequenceConfiguration,
+        keyword = specificSequenceConfiguration,
+        newProposalsVoteThreshold = newProposalsVoteThreshold,
+        testedProposalsEngagementThreshold = testedProposalsEngagementThreshold,
+        testedProposalsScoreThreshold = testedProposalsScoreThreshold,
+        testedProposalsControversyThreshold = testedProposalsControversyThreshold,
+        testedProposalsMaxVotesThreshold = testedProposalsMaxVotesThreshold,
         nonSequenceVotesWeight = nonSequenceVotesWeight
       )
+    }
   }
 
   object PersistentSequenceConfiguration

@@ -69,25 +69,31 @@ final case class SequenceConfigurationRequest(
 ) {
 
   def toSequenceConfiguration(sequenceId: SequenceId, questionId: QuestionId): SequenceConfiguration = {
-    SequenceConfiguration(
-      sequenceId = sequenceId,
-      questionId = questionId,
+    val specificSequenceConfiguration: SpecificSequenceConfiguration = SpecificSequenceConfiguration(
+      sequenceSize = sequenceSize,
       newProposalsRatio = newProposalsRatio,
-      newProposalsVoteThreshold = newProposalsVoteThreshold,
-      testedProposalsEngagementThreshold = testedProposalsEngagementThreshold,
-      testedProposalsScoreThreshold = testedProposalsScoreThreshold,
-      testedProposalsControversyThreshold = testedProposalsControversyThreshold,
-      testedProposalsMaxVotesThreshold = testedProposalsMaxVotesThreshold,
+      maxTestedProposalCount = maxTestedProposalCount,
+      selectionAlgorithmName = selectionAlgorithmName,
       intraIdeaEnabled = intraIdeaEnabled,
       intraIdeaMinCount = intraIdeaMinCount,
       intraIdeaProposalsRatio = intraIdeaProposalsRatio,
       interIdeaCompetitionEnabled = interIdeaCompetitionEnabled,
       interIdeaCompetitionTargetCount = interIdeaCompetitionTargetCount,
       interIdeaCompetitionControversialRatio = interIdeaCompetitionControversialRatio,
-      interIdeaCompetitionControversialCount = interIdeaCompetitionControversialCount,
-      maxTestedProposalCount = maxTestedProposalCount,
-      sequenceSize = sequenceSize,
-      selectionAlgorithmName = selectionAlgorithmName,
+      interIdeaCompetitionControversialCount = interIdeaCompetitionControversialCount
+    )
+    SequenceConfiguration(
+      sequenceId = sequenceId,
+      questionId = questionId,
+      mainSequence = specificSequenceConfiguration,
+      controversial = specificSequenceConfiguration,
+      popular = specificSequenceConfiguration,
+      keyword = specificSequenceConfiguration,
+      newProposalsVoteThreshold = newProposalsVoteThreshold,
+      testedProposalsEngagementThreshold = testedProposalsEngagementThreshold,
+      testedProposalsScoreThreshold = testedProposalsScoreThreshold,
+      testedProposalsControversyThreshold = testedProposalsControversyThreshold,
+      testedProposalsMaxVotesThreshold = testedProposalsMaxVotesThreshold,
       nonSequenceVotesWeight = nonSequenceVotesWeight
     )
   }
