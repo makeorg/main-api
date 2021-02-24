@@ -113,14 +113,8 @@ class SocialServiceComponentTest
       when(googleApi.getUserInfo(eqTo("googleToken-a user logged via google")))
         .thenReturn(Future.successful(googleData))
 
-      when(
-        userService.createOrUpdateUserFromSocial(
-          any[UserInfo],
-          any[Option[String]],
-          any[Option[QuestionId]],
-          any[RequestContext]
-        )
-      ).thenReturn(Future.successful((userFromGoogle, true)))
+      when(userService.createOrUpdateUserFromSocial(any[UserInfo], any[Option[QuestionId]], any[RequestContext]))
+        .thenReturn(Future.successful((userFromGoogle, true)))
 
       when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
         .thenReturn(Future.successful(accessToken))
@@ -131,7 +125,6 @@ class SocialServiceComponentTest
           Google,
           "googleToken-a user logged via google",
           Country("FR"),
-          None,
           None,
           RequestContext.empty,
           ClientId("client")
@@ -151,12 +144,7 @@ class SocialServiceComponentTest
             dateOfBirth = None
           )
 
-        verify(userService).createOrUpdateUserFromSocial(
-          eqTo(userInfoFromGoogle),
-          eqTo(None),
-          eqTo(None),
-          any[RequestContext]
-        )
+        verify(userService).createOrUpdateUserFromSocial(eqTo(userInfoFromGoogle), eqTo(None), any[RequestContext])
       }
     }
 
@@ -197,14 +185,8 @@ class SocialServiceComponentTest
       when(googleApi.getUserInfo(eqTo("googleToken-a user logged via google")))
         .thenReturn(Future.successful(googleData))
 
-      when(
-        userService.createOrUpdateUserFromSocial(
-          any[UserInfo],
-          any[Option[String]],
-          any[Option[QuestionId]],
-          any[RequestContext]
-        )
-      ).thenReturn(Future.successful((userFromGoogle, true)))
+      when(userService.createOrUpdateUserFromSocial(any[UserInfo], any[Option[QuestionId]], any[RequestContext]))
+        .thenReturn(Future.successful((userFromGoogle, true)))
 
       when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
         .thenReturn(Future.successful(accessToken))
@@ -215,7 +197,6 @@ class SocialServiceComponentTest
           Google,
           "googleToken-a user logged via google",
           Country("FR"),
-          None,
           None,
           RequestContext.empty,
           ClientId("client")
@@ -235,12 +216,7 @@ class SocialServiceComponentTest
             dateOfBirth = None
           )
 
-        verify(userService).createOrUpdateUserFromSocial(
-          eqTo(userInfoFromGoogle),
-          eqTo(None),
-          eqTo(None),
-          any[RequestContext]
-        )
+        verify(userService).createOrUpdateUserFromSocial(eqTo(userInfoFromGoogle), eqTo(None), any[RequestContext])
       }
     }
 
@@ -282,21 +258,15 @@ class SocialServiceComponentTest
       when(googleApi.getUserInfo(any[String]))
         .thenReturn(Future.successful(googleData))
 
-      when(
-        userService.createOrUpdateUserFromSocial(
-          any[UserInfo],
-          any[Option[String]],
-          any[Option[QuestionId]],
-          any[RequestContext]
-        )
-      ).thenReturn(Future.successful((userFromGoogle, false)))
+      when(userService.createOrUpdateUserFromSocial(any[UserInfo], any[Option[QuestionId]], any[RequestContext]))
+        .thenReturn(Future.successful((userFromGoogle, false)))
 
       when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
         .thenReturn(Future.successful(accessToken))
 
       When("login user from google")
       val futureTokenResposnse =
-        socialService.login(Google, "token", Country("FR"), None, None, RequestContext.empty, ClientId("client"))
+        socialService.login(Google, "token", Country("FR"), None, RequestContext.empty, ClientId("client"))
 
       Then("my program should return a token response")
       whenReady(futureTokenResposnse, Timeout(2.seconds)) {
@@ -317,7 +287,7 @@ class SocialServiceComponentTest
 
       When("login user from google")
       val futureTokenResposnse =
-        socialService.login(Google, "token", Country("FR"), None, None, RequestContext.empty, ClientId("client"))
+        socialService.login(Google, "token", Country("FR"), None, RequestContext.empty, ClientId("client"))
 
       whenReady(futureTokenResposnse.failed, Timeout(3.seconds)) { exception =>
         exception.getMessage should be("invalid token from google")
@@ -372,7 +342,6 @@ class SocialServiceComponentTest
         userService.createOrUpdateUserFromSocial(
           argThat[UserInfo](_.email.contains(email)),
           eqTo(None),
-          eqTo(None),
           eqTo(RequestContext.empty)
         )
       ).thenReturn(Future.successful((user(id = userId1, email = email), false)))
@@ -381,7 +350,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(AccessToken("token", None, None, None, new Date())))
 
       whenReady(
-        socialService.login(GooglePeople, token, Country("FR"), None, None, RequestContext.empty, ClientId("default")),
+        socialService.login(GooglePeople, token, Country("FR"), None, RequestContext.empty, ClientId("default")),
         Timeout(3.seconds)
       ) {
         case (userId, response) =>
@@ -393,7 +362,7 @@ class SocialServiceComponentTest
             userInfo.domain.contains("example.com") &&
             userInfo.googleId.contains(googleId) &&
             userInfo.picture.contains("https://example.com/avatar")
-          }, eqTo(None), eqTo(None), eqTo(RequestContext.empty))
+          }, eqTo(None), eqTo(RequestContext.empty))
       }
 
     }
@@ -444,7 +413,6 @@ class SocialServiceComponentTest
         userService.createOrUpdateUserFromSocial(
           argThat[UserInfo](_.email.contains(email)),
           eqTo(None),
-          eqTo(None),
           eqTo(RequestContext.empty)
         )
       ).thenReturn(Future.successful((user(id = userId1, email = email), false)))
@@ -453,7 +421,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(AccessToken("token", None, None, None, new Date())))
 
       whenReady(
-        socialService.login(GooglePeople, token, Country("FR"), None, None, RequestContext.empty, ClientId("default")),
+        socialService.login(GooglePeople, token, Country("FR"), None, RequestContext.empty, ClientId("default")),
         Timeout(3.seconds)
       ) {
         case (userId, response) =>
@@ -465,7 +433,7 @@ class SocialServiceComponentTest
             userInfo.domain.contains("example.com") &&
             userInfo.googleId.contains(googleId) &&
             userInfo.picture.contains("https://example.com/avatar")
-          }, eqTo(None), eqTo(None), eqTo(RequestContext.empty))
+          }, eqTo(None), eqTo(RequestContext.empty))
       }
 
     }
@@ -526,7 +494,6 @@ class SocialServiceComponentTest
         userService.createOrUpdateUserFromSocial(
           argThat[UserInfo](_.email.contains(email)),
           eqTo(None),
-          eqTo(None),
           eqTo(RequestContext.empty)
         )
       ).thenReturn(Future.successful((user(id = userId1, email = email), false)))
@@ -535,7 +502,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(AccessToken("token", None, None, None, new Date())))
 
       whenReady(
-        socialService.login(GooglePeople, token, Country("FR"), None, None, RequestContext.empty, ClientId("default")),
+        socialService.login(GooglePeople, token, Country("FR"), None, RequestContext.empty, ClientId("default")),
         Timeout(3.seconds)
       ) {
         case (userId, response) =>
@@ -547,7 +514,7 @@ class SocialServiceComponentTest
             userInfo.domain.contains("example.com") &&
             userInfo.googleId.contains(googleId) &&
             userInfo.picture.contains("https://example.com/avatar")
-          }, eqTo(None), eqTo(None), eqTo(RequestContext.empty))
+          }, eqTo(None), eqTo(RequestContext.empty))
       }
 
     }
@@ -589,7 +556,7 @@ class SocialServiceComponentTest
       when(facebookApi.getUserInfo(eqTo("facebookToken-444444")))
         .thenReturn(Future.successful(facebookData))
 
-      when(userService.createOrUpdateUserFromSocial(eqTo(info), eqTo(None), eqTo(None), any[RequestContext]))
+      when(userService.createOrUpdateUserFromSocial(eqTo(info), eqTo(None), any[RequestContext]))
         .thenReturn(Future.successful((userFromFacebook, true)))
 
       when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
@@ -601,7 +568,6 @@ class SocialServiceComponentTest
           Facebook,
           "facebookToken-444444",
           Country("FR"),
-          None,
           None,
           RequestContext.empty,
           ClientId("client")
@@ -621,12 +587,7 @@ class SocialServiceComponentTest
             dateOfBirth = None
           )
 
-        verify(userService).createOrUpdateUserFromSocial(
-          eqTo(userInfoFromFacebook),
-          eqTo(None),
-          eqTo(None),
-          any[RequestContext]
-        )
+        verify(userService).createOrUpdateUserFromSocial(eqTo(userInfoFromFacebook), eqTo(None), any[RequestContext])
       }
 
     }
@@ -663,7 +624,7 @@ class SocialServiceComponentTest
 
       when(
         userService
-          .createOrUpdateUserFromSocial(eqTo(info), eqTo(None), any[Option[QuestionId]], any[RequestContext])
+          .createOrUpdateUserFromSocial(eqTo(info), any[Option[QuestionId]], any[RequestContext])
       ).thenReturn(Future.successful((userFromFacebook, true)))
 
       when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
@@ -675,7 +636,6 @@ class SocialServiceComponentTest
           Facebook,
           "facebookToken-444444",
           Country("FR"),
-          None,
           None,
           RequestContext.empty,
           ClientId("client")
@@ -695,12 +655,7 @@ class SocialServiceComponentTest
             dateOfBirth = None
           )
 
-        verify(userService).createOrUpdateUserFromSocial(
-          eqTo(userInfoFromFacebook),
-          eqTo(None),
-          eqTo(None),
-          any[RequestContext]
-        )
+        verify(userService).createOrUpdateUserFromSocial(eqTo(userInfoFromFacebook), eqTo(None), any[RequestContext])
       }
 
     }
@@ -730,14 +685,8 @@ class SocialServiceComponentTest
       when(facebookApi.getUserInfo(eqTo("facebookToken2")))
         .thenReturn(Future.successful(facebookData))
 
-      when(
-        userService.createOrUpdateUserFromSocial(
-          any[UserInfo],
-          any[Option[String]],
-          any[Option[QuestionId]],
-          any[RequestContext]
-        )
-      ).thenReturn(Future.successful((userFromFacebook, false)))
+      when(userService.createOrUpdateUserFromSocial(any[UserInfo], any[Option[QuestionId]], any[RequestContext]))
+        .thenReturn(Future.successful((userFromFacebook, false)))
 
       when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
         .thenReturn(Future.successful(accessToken))
@@ -748,7 +697,6 @@ class SocialServiceComponentTest
           Facebook,
           "facebookToken2",
           Country("FR"),
-          None,
           None,
           RequestContext.empty,
           ClientId("fake-client")
@@ -773,15 +721,7 @@ class SocialServiceComponentTest
 
       When("login user from google")
       val futureTokenResposnse =
-        socialService.login(
-          Facebook,
-          "facebookToken3",
-          Country("FR"),
-          None,
-          None,
-          RequestContext.empty,
-          ClientId("client")
-        )
+        socialService.login(Facebook, "facebookToken3", Country("FR"), None, RequestContext.empty, ClientId("client"))
 
       whenReady(futureTokenResposnse.failed, Timeout(3.seconds)) { exception =>
         exception.getMessage should be("invalid token from facebook")

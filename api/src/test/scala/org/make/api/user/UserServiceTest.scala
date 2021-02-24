@@ -292,12 +292,8 @@ class UserServiceTest
 
       clearInvocations(persistentUserService)
 
-      val futureUser = userService.createOrUpdateUserFromSocial(
-        info,
-        Some("127.0.0.1"),
-        Some(QuestionId("question")),
-        RequestContext.empty
-      )
+      val futureUser =
+        userService.createOrUpdateUserFromSocial(info, Some(QuestionId("question")), RequestContext.empty)
 
       whenReady(futureUser, Timeout(2.seconds)) {
         case (user, accountCreation) =>
@@ -356,7 +352,7 @@ class UserServiceTest
         .thenReturn(Future.successful(returnedUserWithGender))
 
       val futureUserWithGender =
-        userService.createOrUpdateUserFromSocial(infoWithGender, Some("127.0.0.1"), None, RequestContext.empty)
+        userService.createOrUpdateUserFromSocial(infoWithGender, None, RequestContext.empty)
 
       whenReady(futureUserWithGender, Timeout(2.seconds)) {
         case (user, accountCreation) =>
@@ -411,7 +407,11 @@ class UserServiceTest
 
       when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
       when(persistentUserService.updateSocialUser(any[User])).thenReturn(Future.successful(true))
-      val futureUser = userService.createOrUpdateUserFromSocial(info, Some("NEW 127.0.0.1"), None, RequestContext.empty)
+      val futureUser = userService.createOrUpdateUserFromSocial(
+        info,
+        None,
+        RequestContext.empty.copy(ipAddress = Some("NEW 127.0.0.1"))
+      )
 
       whenReady(futureUser, Timeout(2.seconds)) {
         case (user, accountCreation) =>
@@ -444,7 +444,7 @@ class UserServiceTest
 
       when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUserNoDoB)))
       when(persistentUserService.updateSocialUser(any[User])).thenReturn(Future.successful(true))
-      val futureUserNoDoB = userService.createOrUpdateUserFromSocial(info, None, None, RequestContext.empty)
+      val futureUserNoDoB = userService.createOrUpdateUserFromSocial(info, None, RequestContext.empty)
 
       whenReady(futureUserNoDoB, Timeout(2.seconds)) {
         case (user, _) =>
@@ -473,7 +473,7 @@ class UserServiceTest
 
       when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
       when(persistentUserService.updateSocialUser(any[User])).thenReturn(Future.successful(true))
-      val futureUser = userService.createOrUpdateUserFromSocial(info, None, None, RequestContext.empty)
+      val futureUser = userService.createOrUpdateUserFromSocial(info, None, RequestContext.empty)
 
       whenReady(futureUser, Timeout(2.seconds)) {
         case (user, _) =>
@@ -522,7 +522,8 @@ class UserServiceTest
       when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
       when(persistentUserService.updateSocialUser(any[User])).thenReturn(Future.successful(true))
 
-      val futureUser = userService.createOrUpdateUserFromSocial(info, returnedUser.lastIp, None, RequestContext.empty)
+      val futureUser =
+        userService.createOrUpdateUserFromSocial(info, None, RequestContext.empty.copy(ipAddress = returnedUser.lastIp))
 
       whenReady(futureUser, Timeout(2.seconds)) {
         case (user, accountCreation) =>
@@ -576,7 +577,7 @@ class UserServiceTest
         dateOfBirth = None
       )
 
-      whenReady(userService.createOrUpdateUserFromSocial(info, None, None, RequestContext.empty), Timeout(3.seconds)) {
+      whenReady(userService.createOrUpdateUserFromSocial(info, None, RequestContext.empty), Timeout(3.seconds)) {
         case (user, accountCreation) =>
           user.emailVerified shouldBe true
           user.hashedPassword shouldBe Some("hashedPassword")
@@ -615,7 +616,7 @@ class UserServiceTest
         dateOfBirth = None
       )
 
-      whenReady(userService.createOrUpdateUserFromSocial(info, None, None, RequestContext.empty), Timeout(3.seconds)) {
+      whenReady(userService.createOrUpdateUserFromSocial(info, None, RequestContext.empty), Timeout(3.seconds)) {
         case (user, accountCreation) =>
           user.emailVerified shouldBe true
           user.hashedPassword shouldBe None

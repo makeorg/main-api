@@ -45,7 +45,6 @@ trait SocialService {
     provider: SocialProvider,
     token: String,
     country: Country,
-    clientIp: Option[String],
     questionId: Option[QuestionId],
     requestContext: RequestContext,
     validatedClientId: ClientId
@@ -59,11 +58,10 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
 
   class DefaultSocialService extends SocialService {
 
-    def login(
+    override def login(
       provider: SocialProvider,
       token: String,
       country: Country,
-      clientIp: Option[String],
       questionId: Option[QuestionId],
       requestContext: RequestContext,
       validatedClientId: ClientId
@@ -76,13 +74,8 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
       }
 
       for {
-        userInfo <- futureUserInfo
-        (user, accountCreation) <- userService.createOrUpdateUserFromSocial(
-          userInfo,
-          clientIp,
-          questionId,
-          requestContext
-        )
+        userInfo                <- futureUserInfo
+        (user, accountCreation) <- userService.createOrUpdateUserFromSocial(userInfo, questionId, requestContext)
         accessToken <- oauth2DataHandler.createAccessToken(authInfo = AuthInfo(
           user = UserRights(user.userId, user.roles, user.availableQuestions, user.emailVerified),
           clientId = Some(validatedClientId.value),
