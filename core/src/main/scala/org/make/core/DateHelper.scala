@@ -83,6 +83,8 @@ object DateHelper extends DefaultDateHelper {
     override def compare(x: ZonedDateTime, y: ZonedDateTime): Int = x.compareTo(y)
   }
 
+  implicit val zonedDateTimeOrder: cats.Order[ZonedDateTime] = cats.Order.fromOrdering
+
   implicit class RichJavaTime(val self: ZonedDateTime) extends AnyVal {
     def toUTC: ZonedDateTime = {
       self.withZoneSameInstant(ZoneOffset.UTC)

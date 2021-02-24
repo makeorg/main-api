@@ -22,7 +22,7 @@ package org.make.api.proposal
 import cats.data.NonEmptyList
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.http.search.{SearchResponse, TermBucket}
+import com.sksamuel.elastic4s.http.search.{SearchResponse, TermBucket, TopHit}
 import com.sksamuel.elastic4s.script.Script
 import com.sksamuel.elastic4s.searches.aggs.pipeline.BucketSortPipelineAgg
 import com.sksamuel.elastic4s.searches.aggs.{
@@ -110,6 +110,8 @@ trait ProposalSearchEngine {
   def getRandomProposalsByIdeaWithAvatar(ideaIds: Seq[IdeaId], seed: Int): Future[Map[IdeaId, AvatarsAndProposalsCount]]
 
   def computeTop20ConsensusThreshold(questionIds: NonEmptyList[QuestionId]): Future[Map[QuestionId, Double]]
+
+  def getFeaturedProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult]
 }
 
 object ProposalSearchEngine {
@@ -153,7 +155,40 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       }
     }
 
-    override def searchProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult] = {
+    override def searchProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult] =
+      search(searchQuery, identity)
+
+    override def getFeaturedProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult] =
+      search(
+        searchQuery.copy(sortAlgorithm = Some(Featured)),
+        _.aggregations
+          .terms(Featured.authorsAgg)
+          .buckets
+          .flatMap(_.tophits(Featured.deduplicateAgg).hits.headOption)
+      )
+
+    trait ToProposalsSearchResult[T] extends (T => ProposalsSearchResult) {
+      def apply(t: T): ProposalsSearchResult
+    }
+
+    object ToProposalsSearchResult {
+
+      def apply[T: ToProposalsSearchResult]: ToProposalsSearchResult[T] = implicitly[ToProposalsSearchResult[T]]
+
+      implicit val searchResponseToProposalsSearchResult: ToProposalsSearchResult[SearchResponse] = { response =>
+        ProposalsSearchResult(total = response.totalHits, results = response.to[IndexedProposal])
+      }
+
+      implicit val topHitsToProposalsSearchResult: ToProposalsSearchResult[Seq[TopHit]] = { results =>
+        ProposalsSearchResult(total = results.size, results = results.map(_.to[IndexedProposal]))
+      }
+
+    }
+
+    private def search[T: ToProposalsSearchResult](
+      searchQuery: SearchQuery,
+      f: SearchResponse => T
+    ): Future[ProposalsSearchResult] = {
       // parse json string to build search query
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
       val excludesFilters = SearchFilters.getExcludeFilters(searchQuery)
@@ -168,9 +203,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         request = sortAlgorithm.sortDefinition(request)
       }
 
-      client.executeAsFuture(request).map { response =>
-        ProposalsSearchResult(total = response.totalHits, results = response.to[IndexedProposal])
-      }
+      client.executeAsFuture(request).map(f.andThen(ToProposalsSearchResult[T]))
 
     }
 
