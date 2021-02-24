@@ -24,7 +24,8 @@ import com.sksamuel.elastic4s.ElasticApi._
 import com.sksamuel.elastic4s.http.ElasticDsl.{functionScoreQuery, scriptScore}
 import com.sksamuel.elastic4s.script.Script
 import com.sksamuel.elastic4s.searches.SearchRequest
-import com.sksamuel.elastic4s.searches.aggs.{TermsAggregation, TopHitsAggregation}
+import com.sksamuel.elastic4s.searches.collapse.CollapseRequest
+import com.sksamuel.elastic4s.searches.queries.InnerHit
 import com.sksamuel.elastic4s.searches.queries.funcscorer.{CombineFunction, WeightScore}
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, ScoreSort, SortOrder}
 import enumeratum.values.{StringEnum, StringEnumEntry}
@@ -222,22 +223,13 @@ final case class SegmentFirstAlgorithm(segment: String) extends SortAlgorithm {
 }
 
 case object Featured extends SortAlgorithm {
-
-  val authorsAgg: String = "authors"
-  val deduplicateAgg: String = "deduplicate"
-
   override def sortDefinition(request: SearchRequest): SearchRequest = {
-    val size = request.windowing.size
-    val authors = TermsAggregation(authorsAgg)
-      .field(ProposalElasticsearchFieldName.userId.field)
-      .subAggregations(
-        TopHitsAggregation(deduplicateAgg)
-          .size(1)
-          .sortBy(FieldSort(field = ProposalElasticsearchFieldName.createdAt.field, order = SortOrder.Desc))
-      )
+    val sort = FieldSort(field = ProposalElasticsearchFieldName.createdAt.field, order = SortOrder.Desc)
     request
-      .size(0)
-      .aggregations(size.fold(authors)(authors.size(_)))
+      .collapse(
+        CollapseRequest(ProposalElasticsearchFieldName.userId.field).inner(InnerHit("last").sortBy(sort).size(1))
+      )
+      .sortBy(sort)
   }
 }
 
