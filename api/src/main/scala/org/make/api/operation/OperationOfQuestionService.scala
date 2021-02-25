@@ -215,6 +215,7 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
     override def create(parameters: CreateOperationOfQuestion): Future[OperationOfQuestion] = {
       val questionId = idGenerator.nextQuestionId()
       val sequenceId = idGenerator.nextSequenceId()
+      def specificSequenceConfigurationId() = idGenerator.nextSpecificSequenceConfigurationId()
 
       val question = Question(
         questionId = questionId,
@@ -254,14 +255,19 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         createdAt = DateHelper.now()
       )
 
+      val mainSequence = SpecificSequenceConfiguration.mainSequenceDefault(specificSequenceConfigurationId())
+      val controversialSequence = SpecificSequenceConfiguration.otherSequenceDefault(specificSequenceConfigurationId())
+      val popularSequence = SpecificSequenceConfiguration.otherSequenceDefault(specificSequenceConfigurationId())
+      val keywordSequence = SpecificSequenceConfiguration.otherSequenceDefault(specificSequenceConfigurationId())
+
       val sequenceConfiguration =
-        SequenceConfiguration(
+        SequenceConfiguration.default.copy(
           sequenceId = sequenceId,
           questionId = questionId,
-          mainSequence = SpecificSequenceConfiguration(),
-          controversial = SpecificSequenceConfiguration(),
-          popular = SpecificSequenceConfiguration(),
-          keyword = SpecificSequenceConfiguration()
+          mainSequence = mainSequence,
+          controversial = controversialSequence,
+          popular = popularSequence,
+          keyword = keywordSequence
         )
 
       for {

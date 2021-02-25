@@ -24,13 +24,22 @@ import java.time.ZonedDateTime
 import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.ScalikeSupport._
-import org.make.api.sequence.DefaultPersistentSequenceConfigurationServiceComponent.PersistentSequenceConfiguration
+import org.make.api.sequence.DefaultPersistentSequenceConfigurationServiceComponent.{
+  PersistentSequenceConfiguration,
+  PersistentSpecificSequenceConfiguration
+}
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.Futures._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
 import org.make.core.question.QuestionId
-import org.make.core.sequence.{SelectionAlgorithmName, SequenceConfiguration, SequenceId, SpecificSequenceConfiguration}
+import org.make.core.sequence.{
+  SelectionAlgorithmName,
+  SequenceConfiguration,
+  SequenceId,
+  SpecificSequenceConfiguration,
+  SpecificSequenceConfigurationId
+}
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -59,16 +68,43 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
       with Logging {
 
     private val alias = PersistentSequenceConfiguration.alias
+    private val mainSequenceAlias = PersistentSpecificSequenceConfiguration.syntax("main_sequence_configuration")
+    private val controversialSequenceAlias =
+      PersistentSpecificSequenceConfiguration.syntax("controversial_sequence_configuration")
+    private val popularSequenceAlias = PersistentSpecificSequenceConfiguration.syntax("popular_sequence_configuration")
+    private val keywordSequenceAlias = PersistentSpecificSequenceConfiguration.syntax("keyword_sequence_configuration")
     private val column = PersistentSequenceConfiguration.column
+    private val specificColumn = PersistentSpecificSequenceConfiguration.column
+
+    private def selectSequenceConfiguration[T]: scalikejdbc.SelectSQLBuilder[T] =
+      select
+        .from(PersistentSequenceConfiguration.as(alias))
+        .leftJoin(PersistentSpecificSequenceConfiguration.as(mainSequenceAlias))
+        .on(alias.main, mainSequenceAlias.id)
+        .leftJoin(PersistentSpecificSequenceConfiguration.as(controversialSequenceAlias))
+        .on(alias.controversial, controversialSequenceAlias.id)
+        .leftJoin(PersistentSpecificSequenceConfiguration.as(popularSequenceAlias))
+        .on(alias.popular, popularSequenceAlias.id)
+        .leftJoin(PersistentSpecificSequenceConfiguration.as(keywordSequenceAlias))
+        .on(alias.keyword, keywordSequenceAlias.id)
 
     private def findOne[A: ParameterBinderFactory](name: SQLSyntax, value: A) = {
       implicit val context: EC = readExecutionContext
       val futurePersistentTag = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
-          select
-            .from(PersistentSequenceConfiguration.as(alias))
-            .where(sqls.eq(name, value))
-        }.map(PersistentSequenceConfiguration.apply()).single().apply()
+          selectSequenceConfiguration.where(sqls.eq(name, value))
+        }.map(
+            PersistentSequenceConfiguration
+              .apply(
+                alias.resultName,
+                mainSequenceAlias.resultName,
+                controversialSequenceAlias.resultName,
+                popularSequenceAlias.resultName,
+                keywordSequenceAlias.resultName
+              )
+          )
+          .single()
+          .apply()
       })
 
       futurePersistentTag.map(_.map(_.toSequenceConfiguration))
@@ -85,15 +121,24 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
 
       val futurePersistentSequenceConfig = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
-          select
-            .from(PersistentSequenceConfiguration.as(alias))
-        }.map(PersistentSequenceConfiguration.apply()).list().apply()
+          selectSequenceConfiguration
+        }.map(
+            PersistentSequenceConfiguration.apply(
+              alias.resultName,
+              mainSequenceAlias.resultName,
+              controversialSequenceAlias.resultName,
+              popularSequenceAlias.resultName,
+              keywordSequenceAlias.resultName
+            )
+          )
+          .list()
+          .apply()
       })
 
       futurePersistentSequenceConfig.map(_.map(_.toSequenceConfiguration))
     }
 
-    def insertConfig(sequenceConfig: SequenceConfiguration): Future[Boolean] = {
+    private def insertConfig(sequenceConfig: SequenceConfiguration): Future[Boolean] = {
       implicit val context: EC = writeExecutionContext
       Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
@@ -102,22 +147,15 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
             .namedValues(
               column.sequenceId -> sequenceConfig.sequenceId.value,
               column.questionId -> sequenceConfig.questionId.value,
-              column.newProposalsRatio -> sequenceConfig.mainSequence.newProposalsRatio,
+              column.main -> sequenceConfig.mainSequence.specificSequenceConfigurationId.value,
+              column.controversial -> sequenceConfig.controversial.specificSequenceConfigurationId.value,
+              column.popular -> sequenceConfig.popular.specificSequenceConfigurationId.value,
+              column.keyword -> sequenceConfig.keyword.specificSequenceConfigurationId.value,
               column.newProposalsVoteThreshold -> sequenceConfig.newProposalsVoteThreshold,
               column.testedProposalsEngagementThreshold -> sequenceConfig.testedProposalsEngagementThreshold,
               column.testedProposalsScoreThreshold -> sequenceConfig.testedProposalsScoreThreshold,
               column.testedProposalsControversyThreshold -> sequenceConfig.testedProposalsControversyThreshold,
               column.testedProposalsMaxVotesThreshold -> sequenceConfig.testedProposalsMaxVotesThreshold,
-              column.intraIdeaEnabled -> sequenceConfig.mainSequence.intraIdeaEnabled,
-              column.intraIdeaMinCount -> sequenceConfig.mainSequence.intraIdeaMinCount,
-              column.intraIdeaProposalsRatio -> sequenceConfig.mainSequence.intraIdeaProposalsRatio,
-              column.interIdeaCompetitionEnabled -> sequenceConfig.mainSequence.interIdeaCompetitionEnabled,
-              column.interIdeaCompetitionTargetCount -> sequenceConfig.mainSequence.interIdeaCompetitionTargetCount,
-              column.interIdeaCompetitionControversialRatio -> sequenceConfig.mainSequence.interIdeaCompetitionControversialRatio,
-              column.interIdeaCompetitionControversialCount -> sequenceConfig.mainSequence.interIdeaCompetitionControversialCount,
-              column.maxTestedProposalCount -> sequenceConfig.mainSequence.maxTestedProposalCount,
-              column.sequenceSize -> sequenceConfig.mainSequence.sequenceSize,
-              column.selectionAlgorithmName -> sequenceConfig.mainSequence.selectionAlgorithmName,
               column.createdAt -> DateHelper.now(),
               column.updatedAt -> DateHelper.now(),
               column.nonSequenceVotesWeight -> sequenceConfig.nonSequenceVotesWeight
@@ -126,28 +164,45 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
       })
     }
 
-    def updateConfig(sequenceConfig: SequenceConfiguration): Future[Int] = {
+    private def insertSpecificConfig(specificSequenceConfig: SpecificSequenceConfiguration): Future[Boolean] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
+        withSQL {
+          insert
+            .into(PersistentSpecificSequenceConfiguration)
+            .namedValues(
+              specificColumn.id -> specificSequenceConfig.specificSequenceConfigurationId.value,
+              specificColumn.sequenceSize -> specificSequenceConfig.sequenceSize,
+              specificColumn.newProposalsRatio -> specificSequenceConfig.newProposalsRatio,
+              specificColumn.maxTestedProposalCount -> specificSequenceConfig.maxTestedProposalCount,
+              specificColumn.selectionAlgorithmName -> specificSequenceConfig.selectionAlgorithmName.value,
+              specificColumn.intraIdeaEnabled -> specificSequenceConfig.intraIdeaEnabled,
+              specificColumn.intraIdeaMinCount -> specificSequenceConfig.intraIdeaMinCount,
+              specificColumn.intraIdeaProposalsRatio -> specificSequenceConfig.intraIdeaProposalsRatio,
+              specificColumn.interIdeaCompetitionEnabled -> specificSequenceConfig.interIdeaCompetitionEnabled,
+              specificColumn.interIdeaCompetitionTargetCount -> specificSequenceConfig.interIdeaCompetitionTargetCount,
+              specificColumn.interIdeaCompetitionControversialRatio -> specificSequenceConfig.interIdeaCompetitionControversialRatio,
+              specificColumn.interIdeaCompetitionControversialCount -> specificSequenceConfig.interIdeaCompetitionControversialCount
+            )
+        }.execute().apply()
+      })
+    }
+
+    private def updateConfig(sequenceConfig: SequenceConfiguration): Future[Int] = {
       implicit val context: EC = writeExecutionContext
       Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentSequenceConfiguration)
             .set(
-              column.newProposalsRatio -> sequenceConfig.mainSequence.newProposalsRatio,
+              column.main -> sequenceConfig.mainSequence.specificSequenceConfigurationId.value,
+              column.controversial -> sequenceConfig.controversial.specificSequenceConfigurationId.value,
+              column.popular -> sequenceConfig.popular.specificSequenceConfigurationId.value,
+              column.keyword -> sequenceConfig.keyword.specificSequenceConfigurationId.value,
               column.newProposalsVoteThreshold -> sequenceConfig.newProposalsVoteThreshold,
               column.testedProposalsEngagementThreshold -> sequenceConfig.testedProposalsEngagementThreshold,
               column.testedProposalsScoreThreshold -> sequenceConfig.testedProposalsScoreThreshold,
               column.testedProposalsControversyThreshold -> sequenceConfig.testedProposalsControversyThreshold,
               column.testedProposalsMaxVotesThreshold -> sequenceConfig.testedProposalsMaxVotesThreshold,
-              column.intraIdeaEnabled -> sequenceConfig.mainSequence.intraIdeaEnabled,
-              column.intraIdeaMinCount -> sequenceConfig.mainSequence.intraIdeaMinCount,
-              column.intraIdeaProposalsRatio -> sequenceConfig.mainSequence.intraIdeaProposalsRatio,
-              column.interIdeaCompetitionEnabled -> sequenceConfig.mainSequence.interIdeaCompetitionEnabled,
-              column.interIdeaCompetitionTargetCount -> sequenceConfig.mainSequence.interIdeaCompetitionTargetCount,
-              column.interIdeaCompetitionControversialRatio -> sequenceConfig.mainSequence.interIdeaCompetitionControversialRatio,
-              column.interIdeaCompetitionControversialCount -> sequenceConfig.mainSequence.interIdeaCompetitionControversialCount,
-              column.maxTestedProposalCount -> sequenceConfig.mainSequence.maxTestedProposalCount,
-              column.sequenceSize -> sequenceConfig.mainSequence.sequenceSize,
-              column.selectionAlgorithmName -> sequenceConfig.mainSequence.selectionAlgorithmName,
               column.updatedAt -> DateHelper.now(),
               column.nonSequenceVotesWeight -> sequenceConfig.nonSequenceVotesWeight
             )
@@ -160,14 +215,33 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
       })
     }
 
-    override def persist(sequenceConfig: SequenceConfiguration): Future[Boolean] = {
-      implicit val context: EC = readExecutionContext
-      findOne(sequenceConfig.sequenceId).flatMap {
-        case Some(_) => updateConfig(sequenceConfig).map(_ == 1)
-        case None    => insertConfig(sequenceConfig)
-      }
+    private def updateSpecificConfig(specificSequenceConfig: SpecificSequenceConfiguration): Future[Int] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
+        withSQL {
+          update(PersistentSpecificSequenceConfiguration)
+            .set(
+              specificColumn.sequenceSize -> specificSequenceConfig.sequenceSize,
+              specificColumn.newProposalsRatio -> specificSequenceConfig.newProposalsRatio,
+              specificColumn.maxTestedProposalCount -> specificSequenceConfig.maxTestedProposalCount,
+              specificColumn.selectionAlgorithmName -> specificSequenceConfig.selectionAlgorithmName.value,
+              specificColumn.intraIdeaEnabled -> specificSequenceConfig.intraIdeaEnabled,
+              specificColumn.intraIdeaMinCount -> specificSequenceConfig.intraIdeaMinCount,
+              specificColumn.intraIdeaProposalsRatio -> specificSequenceConfig.intraIdeaProposalsRatio,
+              specificColumn.interIdeaCompetitionEnabled -> specificSequenceConfig.interIdeaCompetitionEnabled,
+              specificColumn.interIdeaCompetitionTargetCount -> specificSequenceConfig.interIdeaCompetitionTargetCount,
+              specificColumn.interIdeaCompetitionControversialRatio -> specificSequenceConfig.interIdeaCompetitionControversialRatio,
+              specificColumn.interIdeaCompetitionControversialCount -> specificSequenceConfig.interIdeaCompetitionControversialCount
+            )
+            .where(
+              sqls
+                .eq(specificColumn.id, specificSequenceConfig.specificSequenceConfigurationId.value)
+            )
+        }.update().apply()
+      })
     }
-    override def delete(questionId: QuestionId): Future[Unit] = {
+
+    private def deleteConfig(questionId: QuestionId): Future[Unit] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
@@ -175,6 +249,65 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
             .where(sqls.eq(PersistentSequenceConfiguration.column.questionId, questionId.value))
         }.execute().apply()
       }).toUnit
+    }
+
+    private def deleteSpecificConfig(specificSequenceConfigurationId: SpecificSequenceConfigurationId): Future[Unit] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
+        withSQL {
+          deleteFrom(PersistentSpecificSequenceConfiguration)
+            .where(sqls.eq(PersistentSpecificSequenceConfiguration.column.id, specificSequenceConfigurationId.value))
+        }.execute().apply()
+      }).toUnit
+    }
+
+    private def insertAllConfig(sequenceConfiguration: SequenceConfiguration): Future[Boolean] = {
+      implicit val context: EC = writeExecutionContext
+      for {
+        _      <- insertSpecificConfig(sequenceConfiguration.mainSequence)
+        _      <- insertSpecificConfig(sequenceConfiguration.controversial)
+        _      <- insertSpecificConfig(sequenceConfiguration.popular)
+        _      <- insertSpecificConfig(sequenceConfiguration.keyword)
+        result <- insertConfig(sequenceConfiguration)
+      } yield result
+    }
+
+    private def updateAllConfig(sequenceConfiguration: SequenceConfiguration): Future[Int] = {
+      implicit val context: EC = writeExecutionContext
+      for {
+        _      <- updateSpecificConfig(sequenceConfiguration.mainSequence)
+        _      <- updateSpecificConfig(sequenceConfiguration.controversial)
+        _      <- updateSpecificConfig(sequenceConfiguration.popular)
+        _      <- updateSpecificConfig(sequenceConfiguration.keyword)
+        result <- updateConfig(sequenceConfiguration)
+      } yield result
+    }
+
+    private def deleteAllConfig(sequenceConfiguration: SequenceConfiguration): Future[Unit] = {
+      implicit val context: EC = writeExecutionContext
+      for {
+        _ <- deleteSpecificConfig(sequenceConfiguration.mainSequence.specificSequenceConfigurationId)
+        _ <- deleteSpecificConfig(sequenceConfiguration.controversial.specificSequenceConfigurationId)
+        _ <- deleteSpecificConfig(sequenceConfiguration.popular.specificSequenceConfigurationId)
+        _ <- deleteSpecificConfig(sequenceConfiguration.keyword.specificSequenceConfigurationId)
+        _ <- deleteConfig(sequenceConfiguration.questionId)
+      } yield {}
+    }
+
+    override def persist(sequenceConfig: SequenceConfiguration): Future[Boolean] = {
+      implicit val context: EC = writeExecutionContext
+      findOne(sequenceConfig.sequenceId).flatMap {
+        case Some(_) => updateAllConfig(sequenceConfig).map(_ == 1)
+        case None    => insertAllConfig(sequenceConfig)
+      }
+    }
+
+    override def delete(questionId: QuestionId): Future[Unit] = {
+      implicit val context: EC = writeExecutionContext
+      findOne(questionId).flatMap {
+        case Some(sequenceConfig) => deleteAllConfig(sequenceConfig)
+        case None                 => Future.successful({})
+      }
     }
   }
 }
@@ -184,47 +317,27 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
   final case class PersistentSequenceConfiguration(
     sequenceId: String,
     questionId: String,
-    newProposalsRatio: Double,
+    main: PersistentSpecificSequenceConfiguration,
+    controversial: PersistentSpecificSequenceConfiguration,
+    popular: PersistentSpecificSequenceConfiguration,
+    keyword: PersistentSpecificSequenceConfiguration,
     newProposalsVoteThreshold: Int,
     testedProposalsEngagementThreshold: Option[Double],
     testedProposalsScoreThreshold: Option[Double],
     testedProposalsControversyThreshold: Option[Double],
     testedProposalsMaxVotesThreshold: Option[Int],
-    intraIdeaEnabled: Boolean,
-    intraIdeaMinCount: Int,
-    intraIdeaProposalsRatio: Double,
-    interIdeaCompetitionEnabled: Boolean,
-    interIdeaCompetitionTargetCount: Int,
-    interIdeaCompetitionControversialRatio: Double,
-    interIdeaCompetitionControversialCount: Int,
-    maxTestedProposalCount: Int,
-    sequenceSize: Int,
-    selectionAlgorithmName: String,
     createdAt: ZonedDateTime,
     updatedAt: ZonedDateTime,
     nonSequenceVotesWeight: Double
   ) {
     def toSequenceConfiguration: SequenceConfiguration = {
-      val specificSequenceConfiguration: SpecificSequenceConfiguration = SpecificSequenceConfiguration(
-        sequenceSize = sequenceSize,
-        newProposalsRatio = newProposalsRatio,
-        maxTestedProposalCount = maxTestedProposalCount,
-        selectionAlgorithmName = SelectionAlgorithmName.withValue(selectionAlgorithmName),
-        intraIdeaEnabled = intraIdeaEnabled,
-        intraIdeaMinCount = intraIdeaMinCount,
-        intraIdeaProposalsRatio = intraIdeaProposalsRatio,
-        interIdeaCompetitionEnabled = interIdeaCompetitionEnabled,
-        interIdeaCompetitionTargetCount = interIdeaCompetitionTargetCount,
-        interIdeaCompetitionControversialRatio = interIdeaCompetitionControversialRatio,
-        interIdeaCompetitionControversialCount = interIdeaCompetitionControversialCount
-      )
       SequenceConfiguration(
         sequenceId = SequenceId(sequenceId),
         questionId = QuestionId(questionId),
-        mainSequence = specificSequenceConfiguration,
-        controversial = specificSequenceConfiguration,
-        popular = specificSequenceConfiguration,
-        keyword = specificSequenceConfiguration,
+        mainSequence = main.toSpecificSequenceConfiguration,
+        controversial = controversial.toSpecificSequenceConfiguration,
+        popular = popular.toSpecificSequenceConfiguration,
+        keyword = keyword.toSpecificSequenceConfiguration,
         newProposalsVoteThreshold = newProposalsVoteThreshold,
         testedProposalsEngagementThreshold = testedProposalsEngagementThreshold,
         testedProposalsScoreThreshold = testedProposalsScoreThreshold,
@@ -244,22 +357,15 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
       Seq(
         "sequence_id",
         "question_id",
-        "new_proposals_ratio",
+        "main",
+        "controversial",
+        "popular",
+        "keyword",
         "new_proposals_vote_threshold",
         "tested_proposals_engagement_threshold",
         "tested_proposals_score_threshold",
         "tested_proposals_controversy_threshold",
         "tested_proposals_max_votes_threshold",
-        "intra_idea_enabled",
-        "intra_idea_min_count",
-        "intra_idea_proposals_ratio",
-        "inter_idea_competition_enabled",
-        "inter_idea_competition_target_count",
-        "inter_idea_competition_controversial_ratio",
-        "inter_idea_competition_controversial_count",
-        "max_tested_proposal_count",
-        "sequence_size",
-        "selection_algorithm_name",
         "created_at",
         "updated_at",
         "non_sequence_votes_weight"
@@ -271,31 +377,114 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
       : QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentSequenceConfiguration], PersistentSequenceConfiguration] =
       syntax("sequence_configuration")
 
+    val specificSequenceConfigurationResultName: ResultName[PersistentSpecificSequenceConfiguration] =
+      PersistentSpecificSequenceConfiguration.alias.resultName
+
     def apply(
-      resultName: ResultName[PersistentSequenceConfiguration] = alias.resultName
+      resultName: ResultName[PersistentSequenceConfiguration] = alias.resultName,
+      mainSequenceResultName: ResultName[PersistentSpecificSequenceConfiguration] =
+        specificSequenceConfigurationResultName,
+      controversialSequenceResultName: ResultName[PersistentSpecificSequenceConfiguration] =
+        specificSequenceConfigurationResultName,
+      popularSequenceResultName: ResultName[PersistentSpecificSequenceConfiguration] =
+        specificSequenceConfigurationResultName,
+      keywordSequenceResultName: ResultName[PersistentSpecificSequenceConfiguration] =
+        specificSequenceConfigurationResultName
     )(resultSet: WrappedResultSet): PersistentSequenceConfiguration = {
       PersistentSequenceConfiguration.apply(
         sequenceId = resultSet.string(resultName.sequenceId),
         questionId = resultSet.string(resultName.questionId),
-        newProposalsRatio = resultSet.double(resultName.newProposalsRatio),
+        main = PersistentSpecificSequenceConfiguration(mainSequenceResultName)(resultSet),
+        controversial = PersistentSpecificSequenceConfiguration(controversialSequenceResultName)(resultSet),
+        popular = PersistentSpecificSequenceConfiguration(popularSequenceResultName)(resultSet),
+        keyword = PersistentSpecificSequenceConfiguration(keywordSequenceResultName)(resultSet),
         newProposalsVoteThreshold = resultSet.int(resultName.newProposalsVoteThreshold),
         testedProposalsEngagementThreshold = resultSet.doubleOpt(resultName.testedProposalsEngagementThreshold),
         testedProposalsScoreThreshold = resultSet.doubleOpt(resultName.testedProposalsScoreThreshold),
         testedProposalsControversyThreshold = resultSet.doubleOpt(resultName.testedProposalsControversyThreshold),
         testedProposalsMaxVotesThreshold = resultSet.intOpt(resultName.testedProposalsMaxVotesThreshold),
+        createdAt = resultSet.zonedDateTime(resultName.createdAt),
+        updatedAt = resultSet.zonedDateTime(resultName.updatedAt),
+        nonSequenceVotesWeight = resultSet.double(resultName.nonSequenceVotesWeight)
+      )
+    }
+  }
+
+  final case class PersistentSpecificSequenceConfiguration(
+    id: String,
+    sequenceSize: Int,
+    newProposalsRatio: Double,
+    maxTestedProposalCount: Int,
+    selectionAlgorithmName: String,
+    intraIdeaEnabled: Boolean,
+    intraIdeaMinCount: Int,
+    intraIdeaProposalsRatio: Double,
+    interIdeaCompetitionEnabled: Boolean,
+    interIdeaCompetitionTargetCount: Int,
+    interIdeaCompetitionControversialRatio: Double,
+    interIdeaCompetitionControversialCount: Int
+  ) {
+    def toSpecificSequenceConfiguration: SpecificSequenceConfiguration = {
+      SpecificSequenceConfiguration(
+        specificSequenceConfigurationId = SpecificSequenceConfigurationId(id),
+        sequenceSize = sequenceSize,
+        newProposalsRatio = newProposalsRatio,
+        maxTestedProposalCount = maxTestedProposalCount,
+        selectionAlgorithmName = SelectionAlgorithmName.withValue(selectionAlgorithmName),
+        intraIdeaEnabled = intraIdeaEnabled,
+        intraIdeaMinCount = intraIdeaMinCount,
+        intraIdeaProposalsRatio = intraIdeaProposalsRatio,
+        interIdeaCompetitionEnabled = interIdeaCompetitionEnabled,
+        interIdeaCompetitionTargetCount = interIdeaCompetitionTargetCount,
+        interIdeaCompetitionControversialRatio = interIdeaCompetitionControversialRatio,
+        interIdeaCompetitionControversialCount = interIdeaCompetitionControversialCount
+      )
+    }
+  }
+
+  object PersistentSpecificSequenceConfiguration
+      extends SQLSyntaxSupport[PersistentSpecificSequenceConfiguration]
+      with ShortenedNames
+      with Logging {
+
+    override val columnNames: Seq[String] =
+      Seq(
+        "id",
+        "sequence_size",
+        "new_proposals_ratio",
+        "max_tested_proposal_count",
+        "selection_algorithm_name",
+        "intra_idea_enabled",
+        "intra_idea_min_count",
+        "intra_idea_proposals_ratio",
+        "inter_idea_competition_enabled",
+        "inter_idea_competition_target_count",
+        "inter_idea_competition_controversial_ratio",
+        "inter_idea_competition_controversial_count"
+      )
+
+    override val tableName: String = "specific_sequence_configuration"
+
+    lazy val alias
+      : QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentSpecificSequenceConfiguration], PersistentSpecificSequenceConfiguration] =
+      syntax("specific_sequence_configuration")
+
+    def apply(
+      resultName: ResultName[PersistentSpecificSequenceConfiguration] = alias.resultName
+    )(resultSet: WrappedResultSet): PersistentSpecificSequenceConfiguration = {
+      PersistentSpecificSequenceConfiguration.apply(
+        id = resultSet.string(resultName.id),
+        sequenceSize = resultSet.int(resultName.sequenceSize),
+        newProposalsRatio = resultSet.double(resultName.newProposalsRatio),
+        maxTestedProposalCount = resultSet.int(resultName.maxTestedProposalCount),
+        selectionAlgorithmName = resultSet.string(resultName.selectionAlgorithmName),
         intraIdeaEnabled = resultSet.boolean(resultName.intraIdeaEnabled),
         intraIdeaMinCount = resultSet.int(resultName.intraIdeaMinCount),
         intraIdeaProposalsRatio = resultSet.double(resultName.intraIdeaProposalsRatio),
         interIdeaCompetitionEnabled = resultSet.boolean(resultName.interIdeaCompetitionEnabled),
         interIdeaCompetitionTargetCount = resultSet.int(resultName.interIdeaCompetitionTargetCount),
         interIdeaCompetitionControversialRatio = resultSet.double(resultName.interIdeaCompetitionControversialRatio),
-        interIdeaCompetitionControversialCount = resultSet.int(resultName.interIdeaCompetitionControversialCount),
-        maxTestedProposalCount = resultSet.int(resultName.maxTestedProposalCount),
-        sequenceSize = resultSet.int(resultName.sequenceSize),
-        selectionAlgorithmName = resultSet.string(resultName.selectionAlgorithmName),
-        createdAt = resultSet.zonedDateTime(resultName.createdAt),
-        updatedAt = resultSet.zonedDateTime(resultName.updatedAt),
-        nonSequenceVotesWeight = resultSet.double(resultName.nonSequenceVotesWeight)
+        interIdeaCompetitionControversialCount = resultSet.int(resultName.interIdeaCompetitionControversialCount)
       )
     }
   }

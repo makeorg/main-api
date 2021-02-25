@@ -118,7 +118,12 @@ import org.make.core.job.Job.JobId
 import org.make.core.proposal.indexed.{SequencePool, Zone}
 import org.make.core.proposal.{Proposal, ProposalStatus, SearchFilters, SearchQuery, StatusSearchFilter, VoteKey}
 import org.make.core.question.QuestionId
-import org.make.core.sequence.{SequenceConfiguration, SequenceId}
+import org.make.core.sequence.{
+  SequenceConfiguration,
+  SequenceId,
+  SpecificSequenceConfiguration,
+  SpecificSequenceConfigurationId
+}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
@@ -253,8 +258,19 @@ class SequenceServiceIT
 
   private var questionId: QuestionId = null
   private val requestContext = RequestContext.empty.copy(sessionId = idGenerator.nextSessionId())
+  private def specificSequence =
+    SpecificSequenceConfiguration.mainSequenceDefault(SpecificSequenceConfigurationId(questionId.value))
   private def sequenceConfiguration =
-    SequenceConfiguration(sequenceId = SequenceId(questionId.value), questionId = questionId)
+    SequenceConfiguration.default.copy(
+      sequenceId = SequenceId(questionId.value),
+      questionId = questionId,
+      mainSequence = specificSequence,
+      controversial = specificSequence,
+      popular = specificSequence,
+      keyword = specificSequence,
+      newProposalsVoteThreshold = 10,
+      testedProposalsEngagementThreshold = None
+    )
 
   override def beforeAll(): Unit = {
 
@@ -273,7 +289,7 @@ class SequenceServiceIT
     // initialize ES
     Await.result(elasticsearchClient.initialize(), 10.seconds)
     // generate a question with data (proposals, votes, organisations…)
-    val fixturesResult = whenReady(fixturesService.generate(None, None, Some(300)), Timeout(60.seconds))(identity)
+    val fixturesResult = whenReady(fixturesService.generate(None, None, Some(500)), Timeout(60.seconds))(identity)
     questionId = fixturesResult.questionId
     // index the proposals that we just created, so we can find them
     reindex()
@@ -286,7 +302,7 @@ class SequenceServiceIT
         .map(
           count =>
             elasticsearchProposalAPI
-              .searchProposals(SearchQuery(limit = Some(count.toInt / 3)))
+              .searchProposals(SearchQuery(limit = Some(count.toInt / 10)))
               .flatMap(
                 result =>
                   Future.traverse(result.results)(

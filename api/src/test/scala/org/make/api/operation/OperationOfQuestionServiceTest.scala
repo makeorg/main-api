@@ -269,7 +269,7 @@ class OperationOfQuestionServiceTest
           participantsCount = 0,
           featured = false
         )
-      val sequenceConfiguration = SequenceConfiguration(sequenceId = sequenceId, questionId = questionId)
+      val sequenceConfiguration = SequenceConfiguration.default.copy(sequenceId = sequenceId, questionId = questionId)
       val operationCreate = TestUtils.simpleOperation(id = operationId)
       val indexed = IndexedOperationOfQuestion.createFromOperationOfQuestion(
         operationOfQuestionCreate,
@@ -279,6 +279,13 @@ class OperationOfQuestionServiceTest
 
       when(idGenerator.nextQuestionId()).thenReturn(questionId)
       when(idGenerator.nextSequenceId()).thenReturn(sequenceConfiguration.sequenceId)
+      when(idGenerator.nextSpecificSequenceConfigurationId())
+        .thenReturn(
+          sequenceConfiguration.mainSequence.specificSequenceConfigurationId,
+          sequenceConfiguration.controversial.specificSequenceConfigurationId,
+          sequenceConfiguration.popular.specificSequenceConfigurationId,
+          sequenceConfiguration.keyword.specificSequenceConfigurationId
+        )
       when(persistentQuestionService.persist(eqTo(questionCreate)))
         .thenReturn(Future.successful(questionCreate))
       when(persistentSequenceConfigurationService.persist(eqTo(sequenceConfiguration)))
@@ -287,11 +294,7 @@ class OperationOfQuestionServiceTest
         .thenReturn(Future.successful(operationOfQuestionCreate))
       when(elasticsearchOperationOfQuestionAPI.findOperationOfQuestionById(questionId))
         .thenReturn(Future.successful(Some(TestUtils.indexedOperationOfQuestion(questionId, operationId))))
-      when(questionService.getQuestion(questionId))
-        .thenReturn(
-          Future
-            .successful(Some(questionCreate))
-        )
+      when(questionService.getQuestion(questionId)).thenReturn(Future.successful(Some(questionCreate)))
       when(persistentOperationOfQuestionService.getById(questionId))
         .thenReturn(Future.successful(Some(operationOfQuestionCreate)))
       when(operationService.findOneSimple(operationId))

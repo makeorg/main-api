@@ -67,27 +67,36 @@ final case class SequenceConfigurationRequest(
   @(ApiModelProperty @field)(dataType = "double", example = "0.5") nonSequenceVotesWeight: Double
 ) {
 
-  def toSequenceConfiguration(sequenceId: SequenceId, questionId: QuestionId): SequenceConfiguration = {
-    val specificSequenceConfiguration: SpecificSequenceConfiguration = SpecificSequenceConfiguration(
-      sequenceSize = sequenceSize,
-      newProposalsRatio = newProposalsRatio,
-      maxTestedProposalCount = maxTestedProposalCount,
-      selectionAlgorithmName = selectionAlgorithmName,
-      intraIdeaEnabled = intraIdeaEnabled,
-      intraIdeaMinCount = intraIdeaMinCount,
-      intraIdeaProposalsRatio = intraIdeaProposalsRatio,
-      interIdeaCompetitionEnabled = interIdeaCompetitionEnabled,
-      interIdeaCompetitionTargetCount = interIdeaCompetitionTargetCount,
-      interIdeaCompetitionControversialRatio = interIdeaCompetitionControversialRatio,
-      interIdeaCompetitionControversialCount = interIdeaCompetitionControversialCount
-    )
+  def toSequenceConfiguration(
+    sequenceId: SequenceId,
+    questionId: QuestionId,
+    mainSequenceConfigurationId: SpecificSequenceConfigurationId,
+    controversialSequenceConfigurationId: SpecificSequenceConfigurationId,
+    popularSequenceConfigurationId: SpecificSequenceConfigurationId,
+    keywordSequenceConfigurationId: SpecificSequenceConfigurationId
+  ): SequenceConfiguration = {
+    def specificSequenceConfiguration(id: SpecificSequenceConfigurationId): SpecificSequenceConfiguration =
+      SpecificSequenceConfiguration(
+        specificSequenceConfigurationId = id,
+        sequenceSize = sequenceSize,
+        newProposalsRatio = newProposalsRatio,
+        maxTestedProposalCount = maxTestedProposalCount,
+        selectionAlgorithmName = selectionAlgorithmName,
+        intraIdeaEnabled = intraIdeaEnabled,
+        intraIdeaMinCount = intraIdeaMinCount,
+        intraIdeaProposalsRatio = intraIdeaProposalsRatio,
+        interIdeaCompetitionEnabled = interIdeaCompetitionEnabled,
+        interIdeaCompetitionTargetCount = interIdeaCompetitionTargetCount,
+        interIdeaCompetitionControversialRatio = interIdeaCompetitionControversialRatio,
+        interIdeaCompetitionControversialCount = interIdeaCompetitionControversialCount
+      )
     SequenceConfiguration(
       sequenceId = sequenceId,
       questionId = questionId,
-      mainSequence = specificSequenceConfiguration,
-      controversial = specificSequenceConfiguration,
-      popular = specificSequenceConfiguration,
-      keyword = specificSequenceConfiguration,
+      mainSequence = specificSequenceConfiguration(mainSequenceConfigurationId),
+      controversial = specificSequenceConfiguration(controversialSequenceConfigurationId),
+      popular = specificSequenceConfiguration(popularSequenceConfigurationId),
+      keyword = specificSequenceConfiguration(keywordSequenceConfigurationId),
       newProposalsVoteThreshold = newProposalsVoteThreshold,
       testedProposalsEngagementThreshold = testedProposalsEngagementThreshold,
       testedProposalsScoreThreshold = testedProposalsScoreThreshold,
