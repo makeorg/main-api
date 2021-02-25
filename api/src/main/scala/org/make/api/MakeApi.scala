@@ -195,7 +195,7 @@ trait MakeApi
     with DefaultModerationOrganisationApiComponent
     with DefaultModerationProposalApiComponent
     with DefaultModerationQuestionComponent
-    with DefaultModerationSequenceApiComponent
+    with DefaultAdminSequenceApiComponent
     with DefaultModerationTagApiComponent
     with DefaultModerationTagTypeApiComponent
     with DefaultMonitoringService
@@ -396,7 +396,7 @@ trait MakeApi
       classOf[ModerationOrganisationApi],
       classOf[ModerationProposalApi],
       classOf[ModerationQuestionApi],
-      classOf[ModerationSequenceApi],
+      classOf[AdminSequenceApi],
       classOf[ModerationTagApi],
       classOf[ModerationTagTypeApi],
       classOf[OrganisationApi],
@@ -465,7 +465,7 @@ trait MakeApi
       moderationOrganisationApi.routes ~
       moderationProposalApi.routes ~
       moderationQuestionApi.routes ~
-      moderationSequenceApi.routes ~
+      adminSequenceApi.routes ~
       moderationTagApi.routes ~
       moderationTagTypeApi.routes ~
       organisationApi.routes ~

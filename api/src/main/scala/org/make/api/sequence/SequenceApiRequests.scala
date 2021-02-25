@@ -44,8 +44,10 @@ object ContextFilterRequest {
 }
 
 final case class SequenceConfigurationRequest(
-  @(ApiModelProperty @field)(dataType = "double", example = "0.5")
-  newProposalsRatio: Double,
+  main: SpecificSequenceConfigurationRequest,
+  controversial: SpecificSequenceConfigurationRequest,
+  popular: SpecificSequenceConfigurationRequest,
+  keyword: SpecificSequenceConfigurationRequest,
   @(ApiModelProperty @field)(dataType = "int", example = "100") newProposalsVoteThreshold: Int,
   @(ApiModelProperty @field)(dataType = "double", example = "0.8")
   testedProposalsEngagementThreshold: Option[Double],
@@ -53,50 +55,17 @@ final case class SequenceConfigurationRequest(
   testedProposalsScoreThreshold: Option[Double],
   @(ApiModelProperty @field)(dataType = "double", example = "0.0") testedProposalsControversyThreshold: Option[Double],
   @(ApiModelProperty @field)(dataType = "int", example = "1500") testedProposalsMaxVotesThreshold: Option[Int],
-  @(ApiModelProperty @field)(dataType = "boolean", example = "false") intraIdeaEnabled: Boolean,
-  @(ApiModelProperty @field)(dataType = "int", example = "1") intraIdeaMinCount: Int,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.0") intraIdeaProposalsRatio: Double,
-  @(ApiModelProperty @field)(dataType = "boolean", example = "false") interIdeaCompetitionEnabled: Boolean,
-  @(ApiModelProperty @field)(dataType = "int", example = "50") interIdeaCompetitionTargetCount: Int,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.0") interIdeaCompetitionControversialRatio: Double,
-  @(ApiModelProperty @field)(dataType = "int", example = "0") interIdeaCompetitionControversialCount: Int,
-  @(ApiModelProperty @field)(dataType = "int", example = "1000") maxTestedProposalCount: Int,
-  @(ApiModelProperty @field)(dataType = "int", example = "12") sequenceSize: Int,
-  @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
-  selectionAlgorithmName: SelectionAlgorithmName,
   @(ApiModelProperty @field)(dataType = "double", example = "0.5") nonSequenceVotesWeight: Double
 ) {
 
-  def toSequenceConfiguration(
-    sequenceId: SequenceId,
-    questionId: QuestionId,
-    mainSequenceConfigurationId: SpecificSequenceConfigurationId,
-    controversialSequenceConfigurationId: SpecificSequenceConfigurationId,
-    popularSequenceConfigurationId: SpecificSequenceConfigurationId,
-    keywordSequenceConfigurationId: SpecificSequenceConfigurationId
-  ): SequenceConfiguration = {
-    def specificSequenceConfiguration(id: SpecificSequenceConfigurationId): SpecificSequenceConfiguration =
-      SpecificSequenceConfiguration(
-        specificSequenceConfigurationId = id,
-        sequenceSize = sequenceSize,
-        newProposalsRatio = newProposalsRatio,
-        maxTestedProposalCount = maxTestedProposalCount,
-        selectionAlgorithmName = selectionAlgorithmName,
-        intraIdeaEnabled = intraIdeaEnabled,
-        intraIdeaMinCount = intraIdeaMinCount,
-        intraIdeaProposalsRatio = intraIdeaProposalsRatio,
-        interIdeaCompetitionEnabled = interIdeaCompetitionEnabled,
-        interIdeaCompetitionTargetCount = interIdeaCompetitionTargetCount,
-        interIdeaCompetitionControversialRatio = interIdeaCompetitionControversialRatio,
-        interIdeaCompetitionControversialCount = interIdeaCompetitionControversialCount
-      )
+  def toSequenceConfiguration(sequenceId: SequenceId, questionId: QuestionId): SequenceConfiguration = {
     SequenceConfiguration(
       sequenceId = sequenceId,
       questionId = questionId,
-      mainSequence = specificSequenceConfiguration(mainSequenceConfigurationId),
-      controversial = specificSequenceConfiguration(controversialSequenceConfigurationId),
-      popular = specificSequenceConfiguration(popularSequenceConfigurationId),
-      keyword = specificSequenceConfiguration(keywordSequenceConfigurationId),
+      mainSequence = main.toSpecificSequenceConfiguration,
+      controversial = controversial.toSpecificSequenceConfiguration,
+      popular = popular.toSpecificSequenceConfiguration,
+      keyword = keyword.toSpecificSequenceConfiguration,
       newProposalsVoteThreshold = newProposalsVoteThreshold,
       testedProposalsEngagementThreshold = testedProposalsEngagementThreshold,
       testedProposalsScoreThreshold = testedProposalsScoreThreshold,
@@ -109,4 +78,53 @@ final case class SequenceConfigurationRequest(
 
 object SequenceConfigurationRequest {
   implicit val decoder: Decoder[SequenceConfigurationRequest] = deriveDecoder[SequenceConfigurationRequest]
+}
+
+final case class SpecificSequenceConfigurationRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
+  specificSequenceConfigurationId: SpecificSequenceConfigurationId,
+  @(ApiModelProperty @field)(dataType = "int", example = "12")
+  sequenceSize: Int,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.5")
+  newProposalsRatio: Double,
+  @(ApiModelProperty @field)(dataType = "int", example = "1000")
+  maxTestedProposalCount: Int,
+  @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
+  selectionAlgorithmName: SelectionAlgorithmName,
+  @(ApiModelProperty @field)(dataType = "boolean", example = "false")
+  intraIdeaEnabled: Boolean,
+  @(ApiModelProperty @field)(dataType = "int", example = "1")
+  intraIdeaMinCount: Int,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
+  intraIdeaProposalsRatio: Double,
+  @(ApiModelProperty @field)(dataType = "boolean", example = "true")
+  interIdeaCompetitionEnabled: Boolean,
+  @(ApiModelProperty @field)(dataType = "int", example = "50")
+  interIdeaCompetitionTargetCount: Int,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
+  interIdeaCompetitionControversialRatio: Double,
+  @(ApiModelProperty @field)(dataType = "int", example = "0")
+  interIdeaCompetitionControversialCount: Int
+) {
+  def toSpecificSequenceConfiguration: SpecificSequenceConfiguration = {
+    SpecificSequenceConfiguration(
+      specificSequenceConfigurationId = specificSequenceConfigurationId,
+      sequenceSize = sequenceSize,
+      newProposalsRatio = newProposalsRatio,
+      maxTestedProposalCount = maxTestedProposalCount,
+      selectionAlgorithmName = selectionAlgorithmName,
+      intraIdeaEnabled = intraIdeaEnabled,
+      intraIdeaMinCount = intraIdeaMinCount,
+      intraIdeaProposalsRatio = intraIdeaProposalsRatio,
+      interIdeaCompetitionEnabled = interIdeaCompetitionEnabled,
+      interIdeaCompetitionTargetCount = interIdeaCompetitionTargetCount,
+      interIdeaCompetitionControversialRatio = interIdeaCompetitionControversialRatio,
+      interIdeaCompetitionControversialCount = interIdeaCompetitionControversialCount
+    )
+  }
+}
+
+object SpecificSequenceConfigurationRequest {
+  implicit val decoder: Decoder[SpecificSequenceConfigurationRequest] =
+    deriveDecoder[SpecificSequenceConfigurationRequest]
 }

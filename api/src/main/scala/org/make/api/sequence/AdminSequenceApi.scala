@@ -32,12 +32,12 @@ import org.make.core.question.QuestionId
 import org.make.core.sequence.{SequenceConfiguration, SequenceId}
 import scalaoauth2.provider.AuthInfo
 
-@Api(value = "Moderation Sequence")
-@Path(value = "/moderation/sequences")
-trait ModerationSequenceApi extends Directives {
+@Api(value = "Admin Sequence")
+@Path(value = "/admin/sequences-configuration")
+trait AdminSequenceApi extends Directives {
 
   @ApiOperation(
-    value = "moderation-get-sequence-config",
+    value = "admin-get-sequence-config",
     httpMethod = "GET",
     code = HttpCodes.OK,
     authorizations = Array(
@@ -53,11 +53,11 @@ trait ModerationSequenceApi extends Directives {
   @ApiImplicitParams(
     value = Array(new ApiImplicitParam(name = "questionIdOrSequenceId", paramType = "path", dataType = "string"))
   )
-  @Path(value = "/{questionIdOrSequenceId}/configuration")
-  def getModerationSequenceConfiguration: Route
+  @Path(value = "/{questionIdOrSequenceId}")
+  def getAdminSequenceConfiguration: Route
 
   @ApiOperation(
-    value = "moderation-update-sequence-configuration",
+    value = "admin-update-sequence-configuration",
     httpMethod = "PUT",
     code = HttpCodes.OK,
     notes = "/!\\ You need to reindex proposals to apply these modifications.",
@@ -79,19 +79,19 @@ trait ModerationSequenceApi extends Directives {
       new ApiImplicitParam(name = "questionId", paramType = "path", required = true, value = "", dataType = "string")
     )
   )
-  @Path(value = "/{questionId}/configuration")
+  @Path(value = "/{questionId}")
   def putSequenceConfiguration: Route
 
-  def routes: Route = getModerationSequenceConfiguration ~ putSequenceConfiguration
+  def routes: Route = getAdminSequenceConfiguration ~ putSequenceConfiguration
 
 }
 
-trait ModerationSequenceApiComponent {
-  def moderationSequenceApi: ModerationSequenceApi
+trait AdminSequenceApiComponent {
+  def adminSequenceApi: AdminSequenceApi
 }
 
-trait DefaultModerationSequenceApiComponent
-    extends ModerationSequenceApiComponent
+trait DefaultAdminSequenceApiComponent
+    extends AdminSequenceApiComponent
     with MakeAuthenticationDirectives
     with Logging {
 
@@ -102,17 +102,16 @@ trait DefaultModerationSequenceApiComponent
     with SessionHistoryCoordinatorServiceComponent
     with SequenceConfigurationComponent =>
 
-  override lazy val moderationSequenceApi: ModerationSequenceApi = new DefaultModerationSequenceApi
+  override lazy val adminSequenceApi: AdminSequenceApi = new DefaultAdminSequenceApi
 
-  class DefaultModerationSequenceApi extends ModerationSequenceApi {
+  class DefaultAdminSequenceApi extends AdminSequenceApi {
 
-    val moderationSequenceId: PathMatcher1[SequenceId] = Segment.map(id => SequenceId(id))
-    private val questionId: PathMatcher1[QuestionId] = Segment.map(id   => QuestionId(id))
+    private val questionId: PathMatcher1[QuestionId] = Segment.map(id => QuestionId(id))
 
-    override def getModerationSequenceConfiguration: Route = {
+    override def getAdminSequenceConfiguration: Route = {
       get {
-        path("moderation" / "sequences" / Segment / "configuration") { id =>
-          makeOperation("GetModerationSequenceConfiguration") { _ =>
+        path("admin" / "sequences-configuration" / Segment) { id =>
+          makeOperation("GetAdminSequenceConfiguration") { _ =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireAdminRole(auth.user) {
                 provideAsync(
@@ -136,7 +135,7 @@ trait DefaultModerationSequenceApiComponent
 
     override def putSequenceConfiguration: Route = {
       put {
-        path("moderation" / "sequences" / questionId / "configuration") { questionId =>
+        path("admin" / "sequences-configuration" / questionId) { questionId =>
           makeOperation("PutSequenceConfiguration") { _ =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireAdminRole(auth.user) {
@@ -149,14 +148,7 @@ trait DefaultModerationSequenceApiComponent
                         provideAsync[Boolean](
                           sequenceConfigurationService.setSequenceConfiguration(
                             sequenceConfigurationRequest
-                              .toSequenceConfiguration(
-                                sequenceConfiguration.sequenceId,
-                                questionId,
-                                sequenceConfiguration.mainSequence.specificSequenceConfigurationId,
-                                sequenceConfiguration.controversial.specificSequenceConfigurationId,
-                                sequenceConfiguration.popular.specificSequenceConfigurationId,
-                                sequenceConfiguration.keyword.specificSequenceConfigurationId
-                              )
+                              .toSequenceConfiguration(sequenceConfiguration.sequenceId, questionId)
                           )
                         ) {
                           complete(_)

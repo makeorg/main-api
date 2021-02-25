@@ -21,8 +21,8 @@ package org.make.api.sequence
 
 import java.time.ZonedDateTime
 
-import io.circe.{Decoder, Encoder}
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Codec, Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.proposal.ProposalResponse
 import org.make.api.user.UserResponse
@@ -34,7 +34,9 @@ import org.make.core.sequence.{
   SequenceConfiguration,
   SequenceId,
   SequenceStatus,
-  SequenceTranslation
+  SequenceTranslation,
+  SpecificSequenceConfiguration,
+  SpecificSequenceConfigurationId
 }
 import org.make.core.tag.TagId
 
@@ -77,44 +79,26 @@ object SequenceResult {
 }
 @ApiModel
 final case class SequenceConfigurationResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
+  id: QuestionId,
   @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
   sequenceId: SequenceId,
-  @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
-  questionId: QuestionId,
-  @(ApiModelProperty @field)(dataType = "int", example = "12")
-  sequenceSize: Int = 12,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.5")
-  newProposalsRatio: Double = 0.5,
-  @(ApiModelProperty @field)(dataType = "int", example = "1000")
-  maxTestedProposalCount: Int = 1000,
-  @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
-  selectionAlgorithmName: SelectionAlgorithmName = SelectionAlgorithmName.Bandit,
-  @(ApiModelProperty @field)(dataType = "boolean", example = "false")
-  intraIdeaEnabled: Boolean = true,
-  @(ApiModelProperty @field)(dataType = "int", example = "1")
-  intraIdeaMinCount: Int = 1,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  intraIdeaProposalsRatio: Double = 0.0,
-  @(ApiModelProperty @field)(dataType = "boolean", example = "false")
-  interIdeaCompetitionEnabled: Boolean = true,
-  @(ApiModelProperty @field)(dataType = "int", example = "50")
-  interIdeaCompetitionTargetCount: Int = 50,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  interIdeaCompetitionControversialRatio: Double = 0.0,
-  @(ApiModelProperty @field)(dataType = "int", example = "0")
-  interIdeaCompetitionControversialCount: Int = 0,
+  main: SpecificSequenceConfigurationResponse,
+  controversial: SpecificSequenceConfigurationResponse,
+  popular: SpecificSequenceConfigurationResponse,
+  keyword: SpecificSequenceConfigurationResponse,
   @(ApiModelProperty @field)(dataType = "int", example = "100")
-  newProposalsVoteThreshold: Int = 10,
+  newProposalsVoteThreshold: Int,
   @(ApiModelProperty @field)(dataType = "double", example = "0.8")
-  testedProposalsEngagementThreshold: Option[Double] = None,
+  testedProposalsEngagementThreshold: Option[Double],
   @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  testedProposalsScoreThreshold: Option[Double] = None,
+  testedProposalsScoreThreshold: Option[Double],
   @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  testedProposalsControversyThreshold: Option[Double] = None,
+  testedProposalsControversyThreshold: Option[Double],
   @(ApiModelProperty @field)(dataType = "int", example = "1500")
-  testedProposalsMaxVotesThreshold: Option[Int] = None,
+  testedProposalsMaxVotesThreshold: Option[Int],
   @(ApiModelProperty @field)(dataType = "double", example = "0.5")
-  nonSequenceVotesWeight: Double = 0.5
+  nonSequenceVotesWeight: Double
 )
 
 object SequenceConfigurationResponse {
@@ -123,25 +107,69 @@ object SequenceConfigurationResponse {
 
   def fromSequenceConfiguration(configuration: SequenceConfiguration): SequenceConfigurationResponse = {
     SequenceConfigurationResponse(
+      id = configuration.questionId,
       sequenceId = configuration.sequenceId,
-      questionId = configuration.questionId,
-      sequenceSize = configuration.mainSequence.sequenceSize,
-      newProposalsRatio = configuration.mainSequence.newProposalsRatio,
-      maxTestedProposalCount = configuration.mainSequence.maxTestedProposalCount,
-      selectionAlgorithmName = configuration.mainSequence.selectionAlgorithmName,
-      intraIdeaEnabled = configuration.mainSequence.intraIdeaEnabled,
-      intraIdeaMinCount = configuration.mainSequence.intraIdeaMinCount,
-      intraIdeaProposalsRatio = configuration.mainSequence.intraIdeaProposalsRatio,
-      interIdeaCompetitionEnabled = configuration.mainSequence.interIdeaCompetitionEnabled,
-      interIdeaCompetitionTargetCount = configuration.mainSequence.interIdeaCompetitionTargetCount,
-      interIdeaCompetitionControversialRatio = configuration.mainSequence.interIdeaCompetitionControversialRatio,
-      interIdeaCompetitionControversialCount = configuration.mainSequence.interIdeaCompetitionControversialCount,
+      main = SpecificSequenceConfigurationResponse.fromSpecificSequenceConfiguration(configuration.mainSequence),
+      controversial =
+        SpecificSequenceConfigurationResponse.fromSpecificSequenceConfiguration(configuration.controversial),
+      popular = SpecificSequenceConfigurationResponse.fromSpecificSequenceConfiguration(configuration.popular),
+      keyword = SpecificSequenceConfigurationResponse.fromSpecificSequenceConfiguration(configuration.keyword),
       newProposalsVoteThreshold = configuration.newProposalsVoteThreshold,
       testedProposalsEngagementThreshold = configuration.testedProposalsEngagementThreshold,
       testedProposalsScoreThreshold = configuration.testedProposalsScoreThreshold,
       testedProposalsControversyThreshold = configuration.testedProposalsControversyThreshold,
       testedProposalsMaxVotesThreshold = configuration.testedProposalsMaxVotesThreshold,
       nonSequenceVotesWeight = configuration.nonSequenceVotesWeight
+    )
+  }
+}
+
+final case class SpecificSequenceConfigurationResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
+  specificSequenceConfigurationId: SpecificSequenceConfigurationId,
+  @(ApiModelProperty @field)(dataType = "int", example = "12")
+  sequenceSize: Int,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.5")
+  newProposalsRatio: Double,
+  @(ApiModelProperty @field)(dataType = "int", example = "1000")
+  maxTestedProposalCount: Int,
+  @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
+  selectionAlgorithmName: SelectionAlgorithmName,
+  @(ApiModelProperty @field)(dataType = "boolean", example = "false")
+  intraIdeaEnabled: Boolean,
+  @(ApiModelProperty @field)(dataType = "int", example = "1")
+  intraIdeaMinCount: Int,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
+  intraIdeaProposalsRatio: Double,
+  @(ApiModelProperty @field)(dataType = "boolean", example = "true")
+  interIdeaCompetitionEnabled: Boolean,
+  @(ApiModelProperty @field)(dataType = "int", example = "50")
+  interIdeaCompetitionTargetCount: Int,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
+  interIdeaCompetitionControversialRatio: Double,
+  @(ApiModelProperty @field)(dataType = "int", example = "0")
+  interIdeaCompetitionControversialCount: Int
+)
+
+object SpecificSequenceConfigurationResponse {
+  implicit val decoder: Codec[SpecificSequenceConfigurationResponse] = deriveCodec
+
+  def fromSpecificSequenceConfiguration(
+    configuration: SpecificSequenceConfiguration
+  ): SpecificSequenceConfigurationResponse = {
+    SpecificSequenceConfigurationResponse(
+      specificSequenceConfigurationId = configuration.specificSequenceConfigurationId,
+      sequenceSize = configuration.sequenceSize,
+      newProposalsRatio = configuration.newProposalsRatio,
+      maxTestedProposalCount = configuration.maxTestedProposalCount,
+      selectionAlgorithmName = configuration.selectionAlgorithmName,
+      intraIdeaEnabled = configuration.intraIdeaEnabled,
+      intraIdeaMinCount = configuration.intraIdeaMinCount,
+      intraIdeaProposalsRatio = configuration.intraIdeaProposalsRatio,
+      interIdeaCompetitionEnabled = configuration.interIdeaCompetitionEnabled,
+      interIdeaCompetitionTargetCount = configuration.interIdeaCompetitionTargetCount,
+      interIdeaCompetitionControversialRatio = configuration.interIdeaCompetitionControversialRatio,
+      interIdeaCompetitionControversialCount = configuration.interIdeaCompetitionControversialCount
     )
   }
 }

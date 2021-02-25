@@ -23,7 +23,7 @@ import java.time.ZonedDateTime
 
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json}
 import org.make.core.SprayJsonFormatters._
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
@@ -197,10 +197,8 @@ object SpecificSequenceConfiguration {
 final case class SpecificSequenceConfigurationId(value: String) extends StringValue
 
 object SpecificSequenceConfigurationId {
-  implicit val specificSequenceConfigurationIdEncoder: Encoder[SpecificSequenceConfigurationId] =
-    Encoder.encodeString.contramap(_.value)
-  implicit val specificSequenceConfigurationIdDecoder: Decoder[SpecificSequenceConfigurationId] =
-    Decoder.decodeString.map(SpecificSequenceConfigurationId(_))
+  implicit val specificSequenceConfigurationIdCodec: Codec[SpecificSequenceConfigurationId] =
+    Codec.from(Decoder[String].map(SpecificSequenceConfigurationId.apply), Encoder[String].contramap(_.value))
 
   implicit val specificSequenceConfigurationIdFormatter: JsonFormat[SpecificSequenceConfigurationId] =
     SprayJsonFormatters.forStringValue(SpecificSequenceConfigurationId.apply)

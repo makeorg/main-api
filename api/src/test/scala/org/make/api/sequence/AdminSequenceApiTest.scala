@@ -36,9 +36,9 @@ import org.make.core.sequence.{
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class ModerationSequenceApiTest
+class AdminSequenceApiTest
     extends MakeApiTestBase
-    with DefaultModerationSequenceApiComponent
+    with DefaultAdminSequenceApiComponent
     with SequenceServiceComponent
     with SequenceConfigurationComponent {
 
@@ -48,28 +48,71 @@ class ModerationSequenceApiTest
   implicit val timeout: RouteTestTimeout = RouteTestTimeout(3.seconds.dilated)
 
   val setSequenceConfigurationPayload: String = """{
-                                                  |  "maxAvailableProposals": 1000,
-                                                  |  "newProposalsRatio": 0.5,
+                                                  |  "main": {
+                                                  |    "specificSequenceConfigurationId": "main-id",
+                                                  |    "newProposalsRatio": 0.5,
+                                                  |    "intraIdeaEnabled": true,
+                                                  |    "intraIdeaMinCount": 1,
+                                                  |    "intraIdeaProposalsRatio": 0,
+                                                  |    "interIdeaCompetitionEnabled": false,
+                                                  |    "interIdeaCompetitionTargetCount": 50,
+                                                  |    "interIdeaCompetitionControversialRatio": 0,
+                                                  |    "interIdeaCompetitionControversialCount": 0,
+                                                  |    "maxTestedProposalCount": 1000,
+                                                  |    "sequenceSize": 12,
+                                                  |    "selectionAlgorithmName": "Bandit"
+                                                  |  },
+                                                  |  "controversial": {
+                                                  |    "specificSequenceConfigurationId": "controversial-id",
+                                                  |    "newProposalsRatio": 0.5,
+                                                  |    "intraIdeaEnabled": true,
+                                                  |    "intraIdeaMinCount": 1,
+                                                  |    "intraIdeaProposalsRatio": 0,
+                                                  |    "interIdeaCompetitionEnabled": false,
+                                                  |    "interIdeaCompetitionTargetCount": 50,
+                                                  |    "interIdeaCompetitionControversialRatio": 0,
+                                                  |    "interIdeaCompetitionControversialCount": 0,
+                                                  |    "maxTestedProposalCount": 1000,
+                                                  |    "sequenceSize": 12,
+                                                  |    "selectionAlgorithmName": "Bandit"
+                                                  |  },
+                                                  |  "popular": {
+                                                  |    "specificSequenceConfigurationId": "popular-id",
+                                                  |    "newProposalsRatio": 0.5,
+                                                  |    "intraIdeaEnabled": true,
+                                                  |    "intraIdeaMinCount": 1,
+                                                  |    "intraIdeaProposalsRatio": 0,
+                                                  |    "interIdeaCompetitionEnabled": false,
+                                                  |    "interIdeaCompetitionTargetCount": 50,
+                                                  |    "interIdeaCompetitionControversialRatio": 0,
+                                                  |    "interIdeaCompetitionControversialCount": 0,
+                                                  |    "maxTestedProposalCount": 1000,
+                                                  |    "sequenceSize": 12,
+                                                  |    "selectionAlgorithmName": "Bandit"
+                                                  |  },
+                                                  |  "keyword": {
+                                                  |    "specificSequenceConfigurationId": "keyword-id",
+                                                  |    "newProposalsRatio": 0.5,
+                                                  |    "intraIdeaEnabled": true,
+                                                  |    "intraIdeaMinCount": 1,
+                                                  |    "intraIdeaProposalsRatio": 0,
+                                                  |    "interIdeaCompetitionEnabled": false,
+                                                  |    "interIdeaCompetitionTargetCount": 50,
+                                                  |    "interIdeaCompetitionControversialRatio": 0,
+                                                  |    "interIdeaCompetitionControversialCount": 0,
+                                                  |    "maxTestedProposalCount": 1000,
+                                                  |    "sequenceSize": 12,
+                                                  |    "selectionAlgorithmName": "Bandit"
+                                                  |  },
                                                   |  "newProposalsVoteThreshold": 100,
                                                   |  "testedProposalsEngagementThreshold": 0.8,
                                                   |  "testedProposalsScoreThreshold": 0,
                                                   |  "testedProposalsControversyThreshold": 0,
                                                   |  "testedProposalsMaxVotesThreshold": 1500,
-                                                  |  "intraIdeaEnabled": true,
-                                                  |  "intraIdeaMinCount": 1,
-                                                  |  "intraIdeaProposalsRatio": 0,
-                                                  |  "interIdeaCompetitionEnabled": false,
-                                                  |  "interIdeaCompetitionTargetCount": 50,
-                                                  |  "interIdeaCompetitionControversialRatio": 0,
-                                                  |  "interIdeaCompetitionControversialCount": 0,
-                                                  |  "maxTestedProposalCount": 1000,
-                                                  |  "sequenceSize": 12,
-                                                  |  "maxVotes": 1500,
-                                                  |  "selectionAlgorithmName": "Bandit",
                                                   |  "nonSequenceVotesWeight": 0.5
                                                   |}""".stripMargin
 
-  val routes: Route = sealRoute(moderationSequenceApi.routes)
+  val routes: Route = sealRoute(adminSequenceApi.routes)
 
   val sequenceConfiguration: SequenceConfiguration = SequenceConfiguration(
     sequenceId = SequenceId("mySequence"),
@@ -124,7 +167,7 @@ class ModerationSequenceApiTest
       expected: StatusCode
     ): Unit =
       Scenario(s"get sequence config by $by id as $as") {
-        Get(s"/moderation/sequences/$id/configuration")
+        Get(s"/admin/sequences-configuration/$id")
           .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
           status should be(expected)
         }
@@ -151,7 +194,7 @@ class ModerationSequenceApiTest
       payload: String = setSequenceConfigurationPayload
     ): Unit =
       Scenario(s"set sequence config by $by id as $as") {
-        Put(s"/moderation/sequences/$id/configuration")
+        Put(s"/admin/sequences-configuration/$id")
           .withEntity(HttpEntity(ContentTypes.`application/json`, payload))
           .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
           status should be(expected)
