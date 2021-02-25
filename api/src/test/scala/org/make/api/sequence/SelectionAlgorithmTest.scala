@@ -32,12 +32,12 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
-import org.make.core.sequence.SequenceId
+import org.make.core.sequence.{SelectionAlgorithmName, SequenceConfiguration, SequenceId, SpecificSequenceConfiguration}
 import org.make.core.user.{UserId, UserType}
 import org.scalatest.BeforeAndAfterEach
-
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
+
 import scala.Ordering.Double.TotalOrdering
 import scala.collection.mutable
 

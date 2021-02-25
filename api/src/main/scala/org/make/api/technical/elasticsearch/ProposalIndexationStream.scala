@@ -39,7 +39,8 @@ import org.make.api.proposal.{
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.segment.SegmentServiceComponent
 import org.make.api.semantic.SemanticComponent
-import org.make.api.sequence.{SequenceConfiguration, SequenceConfigurationComponent}
+import org.make.api.sequence.SequenceConfigurationComponent
+import org.make.core.sequence.SequenceConfiguration
 import org.make.api.tag.TagServiceComponent
 import org.make.api.tagtype.TagTypeServiceComponent
 import org.make.api.user.UserServiceComponent

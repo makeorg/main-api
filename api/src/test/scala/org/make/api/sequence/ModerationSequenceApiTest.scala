@@ -26,7 +26,7 @@ import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.testkit.TestDuration
 import org.make.api.MakeApiTestBase
 import org.make.core.question.QuestionId
-import org.make.core.sequence.SequenceId
+import org.make.core.sequence.{SequenceConfiguration, SequenceId, SpecificSequenceConfiguration}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._

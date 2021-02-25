@@ -27,17 +27,14 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.MaxSize
 import grizzled.slf4j.Logging
 import org.make.api.question.{PersistentQuestionServiceComponent, QuestionServiceComponent, SearchQuestionRequest}
-import org.make.api.sequence.{
-  PersistentSequenceConfigurationComponent,
-  SequenceConfiguration,
-  SpecificSequenceConfiguration
-}
+import org.make.api.sequence.PersistentSequenceConfigurationComponent
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation._
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
+import org.make.core.sequence.{SequenceConfiguration, SpecificSequenceConfiguration}
 import org.make.core.{DateHelper, Order}
 
 import scala.concurrent.ExecutionContext.Implicits.global

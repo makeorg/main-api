@@ -30,7 +30,7 @@ import org.make.api.proposal.{ProposalCoordinatorService, ProposalSearchEngine}
 import org.make.api.question.QuestionService
 import org.make.api.segment.SegmentService
 import org.make.api.semantic.SemanticService
-import org.make.api.sequence.{SequenceConfiguration, SequenceConfigurationService}
+import org.make.api.sequence.{SequenceConfigurationService}
 import org.make.api.tag.TagService
 import org.make.api.tagtype.TagTypeService
 import org.make.api.user.UserService
@@ -42,6 +42,7 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed.IndexedTag
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
+import org.make.core.sequence.SequenceConfiguration
 import org.make.core.tag._
 import org.make.core.user.UserId
 import org.scalatest.concurrent.PatienceConfiguration.Timeout

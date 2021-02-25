@@ -22,16 +22,11 @@ package org.make.api.sequence
 import akka.pattern.ask
 import akka.util.Timeout
 import grizzled.slf4j.Logging
-import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder}
-import io.swagger.annotations.{ApiModel, ApiModelProperty}
-import org.make.api.proposal.SelectionAlgorithmName
 import org.make.api.sequence.SequenceConfigurationActor._
 import org.make.api.technical.TimeSettings
 import org.make.core.question.QuestionId
-import org.make.core.sequence.SequenceId
+import org.make.core.sequence.{SequenceConfiguration, SequenceId}
 
-import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -71,96 +66,6 @@ import scala.concurrent.Future
   *     in the "tested" proposal pool if only one of the two thresholds is surpassed. I.e. the logical condition is an OR.
   *
   **/
-
-@ApiModel
-final case class SequenceConfiguration(
-  @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
-  sequenceId: SequenceId,
-  @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
-  questionId: QuestionId,
-  mainSequence: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
-  controversial: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
-  popular: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
-  keyword: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
-  @(ApiModelProperty @field)(dataType = "int", example = "100")
-  newProposalsVoteThreshold: Int = 10,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.8")
-  testedProposalsEngagementThreshold: Option[Double] = None,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  testedProposalsScoreThreshold: Option[Double] = None,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  testedProposalsControversyThreshold: Option[Double] = None,
-  @(ApiModelProperty @field)(dataType = "int", example = "1500")
-  testedProposalsMaxVotesThreshold: Option[Int] = None,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.5")
-  nonSequenceVotesWeight: Double = 0.5
-)
-
-object SequenceConfiguration {
-  implicit val decoder: Decoder[SequenceConfiguration] = deriveDecoder[SequenceConfiguration]
-  implicit val encoder: Encoder[SequenceConfiguration] = deriveEncoder[SequenceConfiguration]
-
-  val default: SequenceConfiguration = SequenceConfiguration(
-    sequenceId = SequenceId("default-sequence"),
-    questionId = QuestionId("default-question"),
-    mainSequence = SpecificSequenceConfiguration.default,
-    controversial = SpecificSequenceConfiguration.default,
-    popular = SpecificSequenceConfiguration.default,
-    keyword = SpecificSequenceConfiguration.default,
-    newProposalsVoteThreshold = 10,
-    testedProposalsEngagementThreshold = Some(0.8),
-    testedProposalsScoreThreshold = None,
-    testedProposalsControversyThreshold = None,
-    testedProposalsMaxVotesThreshold = Some(1500),
-    nonSequenceVotesWeight = 0.5
-  )
-
-}
-
-final case class SpecificSequenceConfiguration(
-  @(ApiModelProperty @field)(dataType = "int", example = "12")
-  sequenceSize: Int = 12,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.5")
-  newProposalsRatio: Double = 0.5,
-  @(ApiModelProperty @field)(dataType = "int", example = "1000")
-  maxTestedProposalCount: Int = 1000,
-  @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
-  selectionAlgorithmName: SelectionAlgorithmName = SelectionAlgorithmName.Bandit,
-  @(ApiModelProperty @field)(dataType = "boolean", example = "false")
-  intraIdeaEnabled: Boolean = true,
-  @(ApiModelProperty @field)(dataType = "int", example = "1")
-  intraIdeaMinCount: Int = 1,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  intraIdeaProposalsRatio: Double = 0.0,
-  @(ApiModelProperty @field)(dataType = "boolean", example = "false")
-  interIdeaCompetitionEnabled: Boolean = true,
-  @(ApiModelProperty @field)(dataType = "int", example = "50")
-  interIdeaCompetitionTargetCount: Int = 50,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  interIdeaCompetitionControversialRatio: Double = 0.0,
-  @(ApiModelProperty @field)(dataType = "int", example = "0")
-  interIdeaCompetitionControversialCount: Int = 0
-)
-
-object SpecificSequenceConfiguration {
-  implicit val decoder: Decoder[SpecificSequenceConfiguration] = deriveDecoder[SpecificSequenceConfiguration]
-  implicit val encoder: Encoder[SpecificSequenceConfiguration] = deriveEncoder[SpecificSequenceConfiguration]
-
-  val default: SpecificSequenceConfiguration = SpecificSequenceConfiguration(
-    sequenceSize = 12,
-    newProposalsRatio = 0.5,
-    maxTestedProposalCount = 1000,
-    selectionAlgorithmName = SelectionAlgorithmName.Bandit,
-    intraIdeaEnabled = true,
-    intraIdeaMinCount = 1,
-    intraIdeaProposalsRatio = 0.0,
-    interIdeaCompetitionEnabled = false,
-    interIdeaCompetitionTargetCount = 50,
-    interIdeaCompetitionControversialRatio = 0.0,
-    interIdeaCompetitionControversialCount = 0
-  )
-}
-
 trait SequenceConfigurationService {
   def getSequenceConfiguration(sequenceId: SequenceId): Future[SequenceConfiguration]
   def getSequenceConfigurationByQuestionId(questionId: QuestionId): Future[SequenceConfiguration]

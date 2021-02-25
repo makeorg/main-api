@@ -119,7 +119,7 @@ import org.make.core.job.Job.JobId
 import org.make.core.proposal.indexed.{SequencePool, Zone}
 import org.make.core.proposal.{Proposal, ProposalStatus, SearchFilters, SearchQuery, StatusSearchFilter, VoteKey}
 import org.make.core.question.QuestionId
-import org.make.core.sequence.SequenceId
+import org.make.core.sequence.{SequenceConfiguration, SequenceId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt

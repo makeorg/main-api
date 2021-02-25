@@ -29,7 +29,7 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
 import org.make.core.question.QuestionId
-import org.make.core.sequence.SequenceId
+import org.make.core.sequence.{SequenceConfiguration, SequenceId}
 import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Moderation Sequence")
@@ -146,12 +146,12 @@ trait DefaultModerationSequenceApiComponent
                   sequenceConfigurationService.getPersistentSequenceConfigurationByQuestionId(QuestionId(id))
                 ) {
                   case Some(result) =>
-                    complete(result)
+                    complete(SequenceConfigurationResponse.fromSequenceConfiguration(result))
                   case _ =>
                     provideAsyncOrNotFound[SequenceConfiguration](
                       sequenceConfigurationService.getPersistentSequenceConfiguration(SequenceId(id))
-                    ) {
-                      complete(_)
+                    ) { result =>
+                      complete(SequenceConfigurationResponse.fromSequenceConfiguration(result))
                     }
                 }
               }

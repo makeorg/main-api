@@ -27,6 +27,7 @@ import io.circe.{Decoder, Encoder, Json}
 import org.make.core.SprayJsonFormatters._
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
+import org.make.core.question.QuestionId
 import org.make.core.reference.Language
 import org.make.core.user.UserId
 import org.make.core.{MakeSerializable, RequestContext, SprayJsonFormatters, StringValue, Timestamped}
@@ -91,4 +92,84 @@ object SequenceStatus extends StringEnum[SequenceStatus] with StringCirceEnum[Se
 
   override def values: IndexedSeq[SequenceStatus] = findValues
 
+}
+
+sealed abstract class SelectionAlgorithmName(val value: String) extends StringEnumEntry
+object SelectionAlgorithmName extends StringEnum[SelectionAlgorithmName] with StringCirceEnum[SelectionAlgorithmName] {
+
+  final case object Bandit extends SelectionAlgorithmName("Bandit")
+  final case object RoundRobin extends SelectionAlgorithmName("RoundRobin")
+  final case object Random extends SelectionAlgorithmName("Random")
+
+  override def values: IndexedSeq[SelectionAlgorithmName] = findValues
+
+}
+
+final case class SequenceConfiguration(
+  sequenceId: SequenceId,
+  questionId: QuestionId,
+  mainSequence: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
+  controversial: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
+  popular: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
+  keyword: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
+  newProposalsVoteThreshold: Int = 10,
+  testedProposalsEngagementThreshold: Option[Double] = None,
+  testedProposalsScoreThreshold: Option[Double] = None,
+  testedProposalsControversyThreshold: Option[Double] = None,
+  testedProposalsMaxVotesThreshold: Option[Int] = None,
+  nonSequenceVotesWeight: Double = 0.5
+)
+
+object SequenceConfiguration {
+  implicit val decoder: Decoder[SequenceConfiguration] = deriveDecoder[SequenceConfiguration]
+  implicit val encoder: Encoder[SequenceConfiguration] = deriveEncoder[SequenceConfiguration]
+
+  val default: SequenceConfiguration = SequenceConfiguration(
+    sequenceId = SequenceId("default-sequence"),
+    questionId = QuestionId("default-question"),
+    mainSequence = SpecificSequenceConfiguration.default,
+    controversial = SpecificSequenceConfiguration.default,
+    popular = SpecificSequenceConfiguration.default,
+    keyword = SpecificSequenceConfiguration.default,
+    newProposalsVoteThreshold = 10,
+    testedProposalsEngagementThreshold = Some(0.8),
+    testedProposalsScoreThreshold = None,
+    testedProposalsControversyThreshold = None,
+    testedProposalsMaxVotesThreshold = Some(1500),
+    nonSequenceVotesWeight = 0.5
+  )
+
+}
+
+final case class SpecificSequenceConfiguration(
+  sequenceSize: Int = 12,
+  newProposalsRatio: Double = 0.5,
+  maxTestedProposalCount: Int = 1000,
+  selectionAlgorithmName: SelectionAlgorithmName = SelectionAlgorithmName.Bandit,
+  intraIdeaEnabled: Boolean = true,
+  intraIdeaMinCount: Int = 1,
+  intraIdeaProposalsRatio: Double = 0.0,
+  interIdeaCompetitionEnabled: Boolean = true,
+  interIdeaCompetitionTargetCount: Int = 50,
+  interIdeaCompetitionControversialRatio: Double = 0.0,
+  interIdeaCompetitionControversialCount: Int = 0
+)
+
+object SpecificSequenceConfiguration {
+  implicit val decoder: Decoder[SpecificSequenceConfiguration] = deriveDecoder[SpecificSequenceConfiguration]
+  implicit val encoder: Encoder[SpecificSequenceConfiguration] = deriveEncoder[SpecificSequenceConfiguration]
+
+  val default: SpecificSequenceConfiguration = SpecificSequenceConfiguration(
+    sequenceSize = 12,
+    newProposalsRatio = 0.5,
+    maxTestedProposalCount = 1000,
+    selectionAlgorithmName = SelectionAlgorithmName.Bandit,
+    intraIdeaEnabled = true,
+    intraIdeaMinCount = 1,
+    intraIdeaProposalsRatio = 0.0,
+    interIdeaCompetitionEnabled = false,
+    interIdeaCompetitionTargetCount = 50,
+    interIdeaCompetitionControversialRatio = 0.0,
+    interIdeaCompetitionControversialCount = 0
+  )
 }

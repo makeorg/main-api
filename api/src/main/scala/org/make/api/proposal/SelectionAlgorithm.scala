@@ -20,15 +20,14 @@
 package org.make.api.proposal
 
 import grizzled.slf4j.Logging
-import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import org.make.api.proposal.DefaultSelectionAlgorithmComponent.Scored
 import org.make.api.proposal.ProposalScorer.{Score, VotesCounter}
-import org.make.api.sequence.SpecificSequenceConfiguration
 import org.make.api.technical.MakeRandom
 import org.make.core.DateHelper._
 import org.make.core.idea.IdeaId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.IndexedProposal
+import org.make.core.sequence.{SelectionAlgorithmName, SpecificSequenceConfiguration}
 
 import Ordering.Double.IeeeOrdering
 import scala.annotation.tailrec
@@ -87,17 +86,6 @@ object UniformRandom extends ProposalChooser with Logging {
   def choose(proposals: Seq[IndexedProposal]): IndexedProposal = {
     proposals(MakeRandom.nextInt(proposals.length))
   }
-
-}
-
-sealed abstract class SelectionAlgorithmName(val value: String) extends StringEnumEntry
-object SelectionAlgorithmName extends StringEnum[SelectionAlgorithmName] with StringCirceEnum[SelectionAlgorithmName] {
-
-  final case object Bandit extends SelectionAlgorithmName("Bandit")
-  final case object RoundRobin extends SelectionAlgorithmName("RoundRobin")
-  final case object Random extends SelectionAlgorithmName("Random")
-
-  override def values: IndexedSeq[SelectionAlgorithmName] = findValues
 
 }
 
