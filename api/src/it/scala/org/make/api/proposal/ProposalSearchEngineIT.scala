@@ -1818,7 +1818,7 @@ class ProposalSearchEngineIT
             .sortBy(_.createdAt)
             .reverse
             .take(3)
-          proposals should contain theSameElementsAs expected
+          proposals shouldBe expected
       }
     }
   }
