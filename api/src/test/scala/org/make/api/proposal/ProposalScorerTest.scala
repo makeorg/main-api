@@ -22,7 +22,6 @@ package org.make.api.proposal
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.ProposalScorer.VotesCounter
 import org.make.api.proposal.ProposalScorerTest.ExpectedScores
-import org.make.api.sequence.SequenceConfiguration
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.QualificationKey.{
   DoNotCare,
@@ -39,7 +38,7 @@ import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.SequencePool
 import org.make.core.question.QuestionId
-import org.make.core.sequence.SequenceId
+import org.make.core.sequence.{SequenceConfiguration, SequenceId}
 
 import scala.collection.immutable.Seq
 

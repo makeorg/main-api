@@ -23,7 +23,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
 import akka.pattern.{pipe, BackoffOpts, BackoffSupervisor}
 import org.make.api.sequence.SequenceConfigurationActor._
 import org.make.core.question.QuestionId
-import org.make.core.sequence.SequenceId
+import org.make.core.sequence.{SequenceConfiguration, SequenceId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

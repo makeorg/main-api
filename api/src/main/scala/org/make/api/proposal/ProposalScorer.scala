@@ -23,12 +23,12 @@ import grizzled.slf4j.Logging
 import org.apache.commons.math3.distribution.BetaDistribution
 import org.apache.commons.math3.random.{MersenneTwister, RandomGenerator}
 import org.make.api.proposal.ProposalScorer.{findSmoothing, Score, ScorePart, VotesCounter}
-import org.make.api.sequence.SequenceConfiguration
 import org.make.api.technical.MakeRandom
 import org.make.core.proposal.QualificationKey.{Doable, Impossible, LikeIt, NoWay, PlatitudeAgree, PlatitudeDisagree}
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{SequencePool, Zone}
+import org.make.core.sequence.SequenceConfiguration
 
 final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, nonSequenceVotesWeight: Double) {
 

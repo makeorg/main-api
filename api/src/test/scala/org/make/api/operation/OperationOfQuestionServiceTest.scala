@@ -24,11 +24,7 @@ import java.util.UUID
 
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.question._
-import org.make.api.sequence.{
-  PersistentSequenceConfigurationComponent,
-  PersistentSequenceConfigurationService,
-  SequenceConfiguration
-}
+import org.make.api.sequence.{PersistentSequenceConfigurationComponent, PersistentSequenceConfigurationService}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.core.{DateHelper, Order}
@@ -36,7 +32,7 @@ import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation._
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.sequence.SequenceId
+import org.make.core.sequence.{SequenceConfiguration, SequenceId}
 import org.make.core.technical.IdGenerator
 import org.make.core.user.UserId
 import org.scalatest.concurrent.PatienceConfiguration.Timeout

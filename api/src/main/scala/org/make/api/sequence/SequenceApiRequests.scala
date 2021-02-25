@@ -22,7 +22,6 @@ package org.make.api.sequence
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations.ApiModelProperty
-import org.make.api.proposal.SelectionAlgorithmName
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
 import org.make.core.sequence._
