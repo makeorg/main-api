@@ -25,7 +25,7 @@ import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.feature.DefaultPersistentFeatureServiceComponent.PersistentFeature
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
-import org.make.api.technical.RichFutures._
+import org.make.api.technical.Futures._
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.feature.{Feature, FeatureId}
 import org.make.core.Order

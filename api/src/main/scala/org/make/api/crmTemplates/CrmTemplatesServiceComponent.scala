@@ -24,7 +24,7 @@ import cats.instances.option._
 import cats.syntax.traverse._
 import grizzled.slf4j.Logging
 import org.make.api.technical._
-import org.make.api.technical.RichFutures._
+import org.make.api.technical.Futures._
 import org.make.core.crmTemplate.{
   CrmLanguageTemplate,
   CrmLanguageTemplateId,

@@ -26,7 +26,7 @@ import org.make.api.feature.DefaultPersistentActiveFeatureServiceComponent.Persi
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
-import org.make.api.technical.RichFutures._
+import org.make.api.technical.Futures._
 import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId}
 import org.make.core.question.QuestionId
 import org.make.core.Order

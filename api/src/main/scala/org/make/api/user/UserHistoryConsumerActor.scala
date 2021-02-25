@@ -23,7 +23,7 @@ import akka.actor.Props
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import grizzled.slf4j.Logging
-import org.make.api.technical.RichFutures._
+import org.make.api.technical.Futures._
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory._
 import org.make.core.AvroSerializers

@@ -24,7 +24,7 @@ import com.sksamuel.elastic4s.http.index.admin.AliasExistsResponse
 import com.sksamuel.elastic4s.http.{ElasticClient, ElasticProperties}
 import grizzled.slf4j.Logging
 import org.make.api.ActorSystemComponent
-import org.make.api.technical.RichFutures._
+import org.make.api.technical.Futures._
 import org.make.api.technical.security.SecurityHelper
 import org.make.core.DateHelper
 

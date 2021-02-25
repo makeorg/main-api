@@ -23,7 +23,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.util.Timeout
 import org.make.api.ActorSystemTypedComponent
-import org.make.api.technical.RichFutures._
+import org.make.api.technical.Futures._
 import org.make.api.technical.job.JobActor.Protocol.Command._
 import org.make.api.technical.job.JobActor.Protocol.Response._
 import org.make.api.technical.job.JobReportingActor.JobReportingActorFacade

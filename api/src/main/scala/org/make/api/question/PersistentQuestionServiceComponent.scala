@@ -26,7 +26,7 @@ import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.question.DefaultPersistentQuestionServiceComponent.{COUNTRY_SEPARATOR, PersistentQuestion}
 import org.make.api.technical.DatabaseTransactions.RichDatabase
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
-import org.make.api.technical.RichFutures._
+import org.make.api.technical.Futures._
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.DateHelper
 import org.make.core.operation.OperationId

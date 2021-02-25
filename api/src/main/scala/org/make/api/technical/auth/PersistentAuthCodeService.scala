@@ -25,7 +25,7 @@ import org.make.api.technical.ShortenedNames
 import org.make.core.auth.{AuthCode, ClientId}
 import org.make.core.user.UserId
 import org.make.api.technical.DatabaseTransactions._
-import org.make.api.technical.RichFutures._
+import org.make.api.technical.Futures._
 import scalikejdbc._
 
 import scala.concurrent.Future

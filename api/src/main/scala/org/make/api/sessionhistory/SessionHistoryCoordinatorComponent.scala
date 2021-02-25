@@ -26,7 +26,7 @@ import akka.util.Timeout
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryActor.{CurrentSessionId, SessionHistory}
-import org.make.api.technical.RichFutures._
+import org.make.api.technical.Futures._
 import org.make.api.technical.{StreamUtils, TimeSettings}
 import org.make.api.userhistory.{VotedProposals, VotesValues}
 import org.make.core.RequestContext

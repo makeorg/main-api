@@ -32,7 +32,7 @@ import org.make.api.migrations.db.V98__Split_CRM_templates_by_language_and_quest
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.technical.{DefaultIdGeneratorComponent, ShortenedNames}
 import org.make.api.technical.ExecutorServiceHelper._
-import org.make.api.technical.RichFutures._
+import org.make.api.technical.Futures._
 import org.make.core.crmTemplate.{CrmTemplateKind, TemplateId}
 import org.make.core.crmTemplate.CrmTemplateKind._
 import org.make.core.reference.Language
