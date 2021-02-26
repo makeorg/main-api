@@ -92,7 +92,6 @@ trait UserService extends ShortenedNames {
   ): Future[User]
   def createOrUpdateUserFromSocial(
     userInfo: UserInfo,
-    clientIp: Option[String],
     questionId: Option[QuestionId],
     requestContext: RequestContext
   ): Future[(User, Boolean)]
@@ -420,7 +419,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def createOrUpdateUserFromSocial(
       userInfo: UserInfo,
-      clientIp: Option[String],
       questionId: Option[QuestionId],
       requestContext: RequestContext
     ): Future[(User, Boolean)] = {
@@ -430,9 +428,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         .map(_.toLowerCase())
         .map { lowerCasedEmail =>
           persistentUserService.findByEmail(lowerCasedEmail).flatMap {
-            case Some(user) => updateUserFromSocial(user, userInfo, clientIp).map((_, false))
+            case Some(user) => updateUserFromSocial(user, userInfo, requestContext.ipAddress).map((_, false))
             case None =>
-              createUserFromSocial(lowerCasedEmail, requestContext, userInfo, questionId, clientIp).map((_, true))
+              createUserFromSocial(lowerCasedEmail, requestContext, userInfo, questionId).map((_, true))
           }
         }
         .getOrElse {
@@ -448,8 +446,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       lowerCasedEmail: String,
       requestContext: RequestContext,
       userInfo: UserInfo,
-      questionId: Option[QuestionId],
-      clientIp: Option[String]
+      questionId: Option[QuestionId]
     ): Future[User] = {
 
       val profile: Option[Profile] =
@@ -472,7 +469,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         email = lowerCasedEmail,
         firstName = userInfo.firstName,
         lastName = None,
-        lastIp = clientIp,
+        lastIp = requestContext.ipAddress,
         hashedPassword = None,
         enabled = true,
         emailVerified = true,

@@ -687,39 +687,35 @@ trait DefaultUserApiComponent
         makeOperation("SocialLogin", EndpointType.CoreOnly) { requestContext =>
           decodeRequest {
             entity(as[SocialLoginRequest]) { request: SocialLoginRequest =>
-              extractClientIP { clientIp =>
-                extractClientOrDefault { client =>
-                  val ip = clientIp.toOption.map(_.getHostAddress).getOrElse("unknown")
-                  val country: Country = request.country.orElse(requestContext.country).getOrElse(Country("FR"))
+              extractClientOrDefault { client =>
+                val country: Country = request.country.orElse(requestContext.country).getOrElse(Country("FR"))
 
-                  val futureMaybeQuestion: Future[Option[Question]] = requestContext.questionId match {
-                    case Some(questionId) => questionService.getQuestion(questionId)
-                    case _                => Future.successful(None)
-                  }
-                  provideAsync(futureMaybeQuestion) { maybeQuestion =>
-                    onSuccess(
-                      socialService
-                        .login(
-                          request.provider,
-                          request.token,
-                          country,
-                          Some(ip),
-                          maybeQuestion.map(_.questionId),
-                          requestContext,
-                          client.clientId
-                        )
-                        .flatMap {
-                          case (userId, social) =>
-                            sessionHistoryCoordinatorService
-                              .convertSession(requestContext.sessionId, userId, requestContext)
-                              .map(_ => (userId, social))
-                        }
-                    ) {
-                      case (userId, social) =>
-                        setMakeSecure(requestContext.applicationName, social.toTokenResponse, userId) {
-                          complete(StatusCodes.Created -> social)
-                        }
-                    }
+                val futureMaybeQuestion: Future[Option[Question]] = requestContext.questionId match {
+                  case Some(questionId) => questionService.getQuestion(questionId)
+                  case _                => Future.successful(None)
+                }
+                provideAsync(futureMaybeQuestion) { maybeQuestion =>
+                  onSuccess(
+                    socialService
+                      .login(
+                        request.provider,
+                        request.token,
+                        country,
+                        maybeQuestion.map(_.questionId),
+                        requestContext,
+                        client.clientId
+                      )
+                      .flatMap {
+                        case (userId, social) =>
+                          sessionHistoryCoordinatorService
+                            .convertSession(requestContext.sessionId, userId, requestContext)
+                            .map(_ => (userId, social))
+                      }
+                  ) {
+                    case (userId, social) =>
+                      setMakeSecure(requestContext.applicationName, social.toTokenResponse, userId) {
+                        complete(StatusCodes.Created -> social)
+                      }
                   }
                 }
               }

@@ -698,7 +698,6 @@ class UserApiTest
             any[SocialProvider],
             eqTo("ABCDEFGHIJK"),
             any[Country],
-            any[Option[String]],
             any[Option[QuestionId]],
             any[RequestContext],
             any[ClientId]
@@ -740,8 +739,7 @@ class UserApiTest
           eqTo(Google),
           eqTo("ABCDEFGHIJK"),
           eqTo(Country("FR")),
-          eqTo(Some("192.0.0.1")),
-          any[Option[QuestionId]],
+          eqTo(None),
           any[RequestContext],
           any[ClientId]
         )
@@ -788,7 +786,6 @@ class UserApiTest
           eqTo(Google),
           eqTo(token),
           eqTo(Country("FR")),
-          any[Option[String]],
           any[Option[QuestionId]],
           any[RequestContext],
           eqTo(specificClient.clientId)
@@ -822,7 +819,6 @@ class UserApiTest
           eqTo(Google),
           eqTo(token),
           eqTo(Country("FR")),
-          eqTo(Some("192.0.0.2")),
           eqTo(None),
           any[RequestContext],
           eqTo(specificClient.clientId)
@@ -851,7 +847,6 @@ class UserApiTest
           eqTo(Google),
           eqTo(token),
           eqTo(Country("FR")),
-          any[Option[String]],
           any[Option[QuestionId]],
           any[RequestContext],
           eqTo(clientId)
