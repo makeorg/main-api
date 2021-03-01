@@ -30,61 +30,51 @@ import org.make.api.technical.crm.{MailJetEventWrapper, SendEmail}
 import org.make.api.technical.tracking.TrackingEventWrapper
 import org.make.api.userhistory.UserEventWrapper
 import org.make.core.AvroSerializers
-import org.scalatest.Assertion
 
 class AvroCompatibilityTest extends MakeUnitTest with AvroSerializers with Logging {
 
   Feature("avro schemas") {
 
-    Scenario("check avro compatibility for SendEmail") {
-      val currentSchema: Schema = SendEmail.schemaFor.schema(DefaultFieldMapper)
-      checkEntityType(currentSchema, "SendEmail")
-    }
-    Scenario("check avro compatibility for UserEventWrapper") {
-      val currentSchema: Schema = UserEventWrapper.schemaFor.schema(DefaultFieldMapper)
-      checkEntityType(currentSchema, "UserEventWrapper")
-    }
-    Scenario("check avro compatibility for ProposalEventWrapper") {
-      val currentSchema: Schema = ProposalEventWrapper.schemaFor.schema(DefaultFieldMapper)
-      checkEntityType(currentSchema, "ProposalEventWrapper")
-    }
-    Scenario("check avro compatibility for MailJetEventWrapper") {
-      val currentSchema: Schema = MailJetEventWrapper.schemaFor.schema(DefaultFieldMapper)
-      checkEntityType(currentSchema, "MailJetEventWrapper")
-    }
-    Scenario("check avro compatibility for TrackingEventWrapper") {
-      val currentSchema: Schema = TrackingEventWrapper.schemaFor.schema(DefaultFieldMapper)
-      checkEntityType(currentSchema, "TrackingEventWrapper")
-    }
-    Scenario("check avro compatibility for PredictionsEventWrapper") {
-      val currentSchema: Schema = PredictionsEventWrapper.schemaFor.schema(DefaultFieldMapper)
-      checkEntityType(currentSchema, "PredictionsEventWrapper")
-    }
-    Scenario("check avro compatibility for IdeaEventWrapper") {
-      val currentSchema: Schema = IdeaEventWrapper.schemaFor.schema(DefaultFieldMapper)
-      checkEntityType(currentSchema, "IdeaEventWrapper")
-    }
-    Scenario("check avro compatibility for PredictDuplicateEventWrapper") {
-      val currentSchema: Schema = PredictDuplicateEventWrapper.schemaFor.schema(DefaultFieldMapper)
-      checkEntityType(currentSchema, "PredictDuplicateEventWrapper")
+    Seq(
+      ("SendEmail", SendEmail.schemaFor),
+      ("UserEventWrapper", UserEventWrapper.schemaFor),
+      ("ProposalEventWrapper", ProposalEventWrapper.schemaFor),
+      ("MailJetEventWrapper", MailJetEventWrapper.schemaFor),
+      ("TrackingEventWrapper", TrackingEventWrapper.schemaFor),
+      ("PredictionsEventWrapper", PredictionsEventWrapper.schemaFor),
+      ("IdeaEventWrapper", IdeaEventWrapper.schemaFor),
+      ("PredictDuplicateEventWrapper", PredictDuplicateEventWrapper.schemaFor)
+    ).foreach {
+      case (name, schema) =>
+        Scenario(s"check avro compatibility for $name") {
+          checkAvroCompatibilityForEntity(name, schema.schema(DefaultFieldMapper))
+        }
     }
   }
 
-  private def checkEntityType(currentSchema: Schema, name: String): Assertion = {
+  private def checkAvroCompatibilityForEntity(name: String, currentSchema: Schema): Unit = {
     val schemas = AvroCompatibilityChecker.loadSchemas(name)
+    ensureCurrentSchemaIsLatest(name, currentSchema, schemas)
+    ensureSchemasAreCompatibleWithPreviousVersion(schemas)
+  }
 
-    if (schemas.isEmpty) {
-      fail(s"No schema found for entity $name!")
+  private def ensureCurrentSchemaIsLatest(name: String, currentSchema: Schema, schemas: Seq[Schema]): Unit = {
+    schemas.lastOption match {
+      case None =>
+        fail(s"No schema found for entity $name!")
+      case Some(latest) =>
+        if (latest != currentSchema) {
+          fail(s"Schema not up-to-date for entity $name.\nSchema is:\n${currentSchema.toString(false)}")
+        }
     }
+  }
 
-    // Checking that all schemas are compatible one with another
+  private def ensureSchemasAreCompatibleWithPreviousVersion(schemas: Seq[Schema]): Unit = {
     val schemasWithNextVersions: Seq[(Schema, Schema)] = schemas.zip(schemas.drop(1))
     schemasWithNextVersions.foreach {
       case (oldSchema, newerSchema) =>
         AvroCompatibilityChecker.isCompatible(newerSchema, oldSchema) should be(true)
     }
-
-    // check that the current schema is in the list of schemas
-    schemas.last.toString(true) should be(currentSchema.toString(true))
   }
+
 }

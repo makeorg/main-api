@@ -19,6 +19,9 @@
 
 package org.make.core
 
+import io.circe.{Decoder, Encoder, Json}
+import spray.json.JsonFormat
+
 import java.time.ZonedDateTime
 
 trait EventWrapper[T] extends Sharded {
@@ -30,4 +33,19 @@ trait EventWrapper[T] extends Sharded {
 
 trait Sharded {
   def id: String
+}
+
+trait WithEventId {
+  def eventId: Option[EventId]
+}
+
+final case class EventId(value: String) extends StringValue
+
+object EventId {
+  implicit val proposalIdFormatter: JsonFormat[EventId] = SprayJsonFormatters.forStringValue(EventId.apply)
+
+  implicit lazy val proposalIdEncoder: Encoder[EventId] =
+    (a: EventId) => Json.fromString(a.value)
+  implicit lazy val proposalIdDecoder: Decoder[EventId] =
+    Decoder.decodeString.map(EventId(_))
 }

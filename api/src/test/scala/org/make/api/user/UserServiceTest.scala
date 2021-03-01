@@ -862,7 +862,11 @@ class UserServiceTest
 
       whenReady(futureUser, Timeout(3.seconds)) { _ =>
         proposals.foreach(
-          p => verify(eventBusService).publish(ReindexProposal(p.id, currentDate, RequestContext.empty))
+          p =>
+            verify(eventBusService).publish(argThat[AnyRef] {
+              case ReindexProposal(p.id, `currentDate`, RequestContext.empty, _) => true
+              case _                                                             => false
+            })
         )
       }
     }

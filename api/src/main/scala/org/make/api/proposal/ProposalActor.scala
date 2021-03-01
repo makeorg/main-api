@@ -21,7 +21,6 @@ package org.make.api.proposal
 
 import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
-
 import akka.actor.{ActorLogging, ActorRef, PoisonPill}
 import akka.persistence.SnapshotOffer
 import akka.util.Timeout
@@ -39,6 +38,7 @@ import org.make.core.proposal.ProposalActionType._
 import org.make.core.proposal.QualificationKey._
 import org.make.core.proposal.VoteKey._
 import org.make.core.proposal.{Qualification, Vote, _}
+import org.make.core.technical.IdGenerator
 import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
@@ -48,8 +48,11 @@ import scala.concurrent.Future
 import scala.concurrent.duration.{Deadline, FiniteDuration}
 import scala.util.{Failure, Success}
 
-class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService, lockDuration: FiniteDuration)
-    extends MakePersistentActor(classOf[Proposal], classOf[ProposalEvent])
+class ProposalActor(
+  sessionHistoryCoordinatorService: SessionHistoryCoordinatorService,
+  lockDuration: FiniteDuration,
+  idGenerator: IdGenerator
+) extends MakePersistentActor(classOf[Proposal], classOf[ProposalEvent])
     with ActorLogging {
 
   override def receiveRecover: Receive = {
@@ -164,7 +167,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
           id = command.proposalId,
           requestContext = command.requestContext,
           proposal = modifiedProposal,
-          eventDate = DateHelper.now()
+          eventDate = DateHelper.now(),
+          eventId = Some(idGenerator.nextEventId())
         )
       ) { _ =>
         getStateOrSendProposalNotFound()(sender() ! UpdatedProposal(_))
@@ -185,7 +189,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
               maybeOrganisationId = command.maybeOrganisationId,
               requestContext = command.requestContext,
               voteKey = command.voteKey,
-              voteTrust = command.voteTrust
+              voteTrust = command.voteTrust,
+              eventId = Some(idGenerator.nextEventId())
             )
           ) { event =>
             val originalSender = sender()
@@ -208,7 +213,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
             voteKey = vote.voteKey,
             maybeOrganisationId = command.maybeOrganisationId,
             voteTrust = vote.trust,
-            selectedQualifications = vote.qualificationKeys.keys.toSeq
+            selectedQualifications = vote.qualificationKeys.keys.toSeq,
+            eventId = Some(idGenerator.nextEventId())
           )
           val voteEvent = ProposalVoted(
             id = proposalId,
@@ -217,7 +223,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
             maybeOrganisationId = command.maybeOrganisationId,
             requestContext = command.requestContext,
             voteKey = command.voteKey,
-            voteTrust = command.voteTrust
+            voteTrust = command.voteTrust,
+            eventId = Some(idGenerator.nextEventId())
           )
           persistAndPublishEvents(Seq(unvoteEvent, voteEvent)) {
             case _: ProposalVoted =>
@@ -314,7 +321,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
               voteKey = vote.voteKey,
               maybeOrganisationId = command.maybeOrganisationId,
               selectedQualifications = vote.qualificationKeys.keys.toSeq,
-              voteTrust = vote.trust
+              voteTrust = vote.trust,
+              eventId = Some(idGenerator.nextEventId())
             )
           ) { event =>
             val originalSender = sender()
@@ -328,7 +336,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
                     requestContext = event.requestContext,
                     voteKey = event.voteKey,
                     qualificationKey = qualification,
-                    voteTrust = vote.qualificationKeys.getOrElse(qualification, event.voteTrust)
+                    voteTrust = vote.qualificationKeys.getOrElse(qualification, event.voteTrust),
+                    eventId = Some(idGenerator.nextEventId())
                   )
                 )
               }
@@ -399,7 +408,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
               requestContext = command.requestContext,
               voteKey = command.voteKey,
               qualificationKey = command.qualificationKey,
-              voteTrust = resolvedTrust
+              voteTrust = resolvedTrust,
+              eventId = Some(idGenerator.nextEventId())
             )
           ) { event =>
             val originalSender = sender()
@@ -437,7 +447,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
               requestContext = command.requestContext,
               voteKey = command.voteKey,
               qualificationKey = command.qualificationKey,
-              voteTrust = vote.qualificationKeys.getOrElse(command.qualificationKey, command.voteTrust)
+              voteTrust = vote.qualificationKeys.getOrElse(command.qualificationKey, command.voteTrust),
+              eventId = Some(idGenerator.nextEventId())
             )
           ) { event =>
             val originalSender = sender()
@@ -461,7 +472,12 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
 
   private def onViewProposalCommand(command: ViewProposalCommand): Unit = {
     persistAndPublishEvent(
-      ProposalViewed(id = proposalId, eventDate = DateHelper.now(), requestContext = command.requestContext)
+      ProposalViewed(
+        id = proposalId,
+        eventDate = DateHelper.now(),
+        requestContext = command.requestContext,
+        eventId = Some(idGenerator.nextEventId())
+      )
     ) { _ =>
       getStateOrSendProposalNotFound()(sender() ! ProposalEnveloppe(_))
     }
@@ -489,7 +505,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
         language = Some(command.question.language),
         country = command.requestContext.country,
         question = Some(command.question.questionId),
-        initialProposal = command.initialProposal
+        initialProposal = command.initialProposal,
+        eventId = Some(idGenerator.nextEventId())
       )
     ) { _ =>
       sender() ! CreatedProposalId(proposalId)
@@ -517,7 +534,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
             similarProposals = Seq.empty,
             idea = command.idea,
             operation = command.question.operationId.orElse(proposal.operation),
-            question = Some(command.question.questionId)
+            question = Some(command.question.questionId),
+            eventId = Some(idGenerator.nextEventId())
           )
         persistAndPublishEvent(event) { _ =>
           getStateOrSendProposalNotFound()(sender() ! UpdatedProposal(_))
@@ -536,7 +554,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
           requestContext = command.requestContext,
           updatedAt = command.updatedAt,
           moderator = Some(command.moderator),
-          newVotes = mergeVotes(proposal.votes, command.votes)
+          newVotes = mergeVotes(proposal.votes, command.votes),
+          eventId = Some(idGenerator.nextEventId())
         )
         persistAndPublishEvent(event) { _ =>
           getStateOrSendProposalNotFound()(sender() ! UpdatedProposal(_))
@@ -568,7 +587,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
           similarProposals = Seq.empty,
           idea = command.idea,
           operation = command.question.operationId.orElse(proposal.operation),
-          question = Some(command.question.questionId)
+          question = Some(command.question.questionId),
+          eventId = Some(idGenerator.nextEventId())
         )
         persistAndPublishEvent(event) { _ =>
           getStateOrSendProposalNotFound()(sender() ! ModeratedProposal(_))
@@ -592,7 +612,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
           moderator = command.moderator,
           sendRefuseEmail = command.sendNotificationEmail,
           refusalReason = command.refusalReason,
-          operation = proposal.operation
+          operation = proposal.operation,
+          eventId = Some(idGenerator.nextEventId())
         )
         persistAndPublishEvent(event) { _ =>
           getStateOrSendProposalNotFound()(sender() ! ModeratedProposal(_))
@@ -616,7 +637,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
             id = command.proposalId,
             requestContext = command.requestContext,
             moderator = command.moderator,
-            eventDate = DateHelper.now()
+            eventDate = DateHelper.now(),
+            eventId = Some(idGenerator.nextEventId())
           )
         persistAndPublishEvent(event) { _ =>
           getStateOrSendProposalNotFound()(sender() ! ModeratedProposal(_))
@@ -638,7 +660,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
               moderatorId = command.moderatorId,
               moderatorName = command.moderatorName,
               eventDate = DateHelper.now(),
-              requestContext = command.requestContext
+              requestContext = command.requestContext,
+              eventId = Some(idGenerator.nextEventId())
             )
           ) { event =>
             lock =
@@ -694,7 +717,12 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
 
   def onAnonymizeProposalCommand(command: AnonymizeProposalCommand): Unit = {
     persistAndPublishEvent(
-      ProposalAnonymized(command.proposalId, eventDate = DateHelper.now(), requestContext = command.requestContext)
+      ProposalAnonymized(
+        command.proposalId,
+        eventDate = DateHelper.now(),
+        requestContext = command.requestContext,
+        eventId = Some(idGenerator.nextEventId())
+      )
     )(_ => ())
   }
 
@@ -704,7 +732,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
         command.proposalId,
         eventDate = DateHelper.now(),
         keywords = command.keywords,
-        requestContext = command.requestContext
+        requestContext = command.requestContext,
+        eventId = Some(idGenerator.nextEventId())
       )
     ) { _ =>
       getStateOrSendProposalNotFound()(sender() ! UpdatedProposal(_))

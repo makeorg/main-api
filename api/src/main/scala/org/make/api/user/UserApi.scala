@@ -850,7 +850,8 @@ trait DefaultUserApiComponent
                           userId = userId,
                           country = user.country,
                           requestContext = requestContext,
-                          eventDate = DateHelper.now()
+                          eventDate = DateHelper.now(),
+                          eventId = Some(idGenerator.nextEventId())
                         )
                       )
                       token
@@ -881,7 +882,8 @@ trait DefaultUserApiComponent
                         connectedUserId = userAuth.map(_.user.userId),
                         country = user.country,
                         requestContext = requestContext,
-                        eventDate = DateHelper.now()
+                        eventDate = DateHelper.now(),
+                        eventId = Some(idGenerator.nextEventId())
                       )
                     )
                     result
@@ -1080,7 +1082,8 @@ trait DefaultUserApiComponent
                             requestContext = requestContext,
                             eventDate = DateHelper.now(),
                             country = user.country,
-                            optInNewsletter = user.profile.exists(_.optInNewsletter)
+                            optInNewsletter = user.profile.exists(_.optInNewsletter),
+                            eventId = Some(idGenerator.nextEventId())
                           )
                         )
                       }
@@ -1091,7 +1094,8 @@ trait DefaultUserApiComponent
                             userId = user.userId,
                             requestContext = requestContext,
                             country = user.country,
-                            eventDate = DateHelper.now()
+                            eventDate = DateHelper.now(),
+                            eventId = Some(idGenerator.nextEventId())
                           )
                         )
                       }
@@ -1244,7 +1248,8 @@ trait DefaultUserApiComponent
                         eventDate = DateHelper.now(),
                         userId = user.userId,
                         country = user.country,
-                        requestContext = requestContext
+                        requestContext = requestContext,
+                        eventId = Some(idGenerator.nextEventId())
                       )
                     )
                   }

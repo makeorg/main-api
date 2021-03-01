@@ -20,7 +20,6 @@
 package org.make.api.idea
 
 import java.time.ZonedDateTime
-
 import com.sksamuel.avro4s._
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.{AvroSerializers, DateHelper, EventWrapper, MakeSerializable}

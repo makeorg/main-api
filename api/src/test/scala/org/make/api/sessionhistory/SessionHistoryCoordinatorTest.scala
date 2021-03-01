@@ -68,13 +68,13 @@ class SessionHistoryCoordinatorTest
 
   override implicit val actorSystem: ActorSystem = system
   actorSystem.actorOf(
-    SessionHistoryCoordinator.props(userHistoryCoordinatorProbe.ref, 10.milliseconds),
+    SessionHistoryCoordinator.props(userHistoryCoordinatorProbe.ref, idGenerator, 10.milliseconds),
     SessionHistoryCoordinator.name
   )
   override val sessionHistoryCoordinator: ActorRef =
     SessionHistoryCoordinatorTest.actorSystemSeed
       .actorOf(
-        SessionHistoryCoordinator.props(userHistoryCoordinatorProbe.ref, 10.milliseconds),
+        SessionHistoryCoordinator.props(userHistoryCoordinatorProbe.ref, idGenerator, 10.milliseconds),
         SessionHistoryCoordinator.name
       )
 

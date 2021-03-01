@@ -212,9 +212,9 @@ class SequenceServiceIT
 
   override val jobCoordinator: typed.ActorRef[JobActor.Protocol.Command] = JobCoordinator(actorSystemTyped, 1.second)
   override lazy val proposalCoordinator: ActorRef =
-    actorSystem.actorOf(ProposalCoordinator.props(sessionHistoryCoordinatorService, 1.second))
+    actorSystem.actorOf(ProposalCoordinator.props(sessionHistoryCoordinatorService, 1.second, idGenerator))
   override lazy val sessionHistoryCoordinator: ActorRef =
-    actorSystem.actorOf(SessionHistoryCoordinator.props(userHistoryCoordinator))
+    actorSystem.actorOf(SessionHistoryCoordinator.props(userHistoryCoordinator, idGenerator))
   override val spawnActorRef: typed.ActorRef[SpawnProtocol.Command] =
     actorSystemTyped.systemActorOf(SpawnProtocol(), "spawner")
   override lazy val userHistoryCoordinator: ActorRef = actorSystem.actorOf(UserHistoryCoordinator.props)

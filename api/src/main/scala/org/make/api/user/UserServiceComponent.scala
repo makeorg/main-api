@@ -370,7 +370,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             socioProfessionalCategory = user.profile.flatMap(_.socioProfessionalCategory),
             optInPartner = user.profile.flatMap(_.optInPartner),
             registerQuestionId = user.profile.flatMap(_.registerQuestionId),
-            eventDate = dateHelper.now()
+            eventDate = dateHelper.now(),
+            eventId = Some(idGenerator.nextEventId())
           )
         )
         user
@@ -410,7 +411,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             requestContext = requestContext,
             email = user.email,
             country = user.country,
-            eventDate = dateHelper.now()
+            eventDate = dateHelper.now(),
+            eventId = Some(idGenerator.nextEventId())
           )
         )
         user
@@ -546,7 +548,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           socioProfessionalCategory = user.profile.flatMap(_.socioProfessionalCategory),
           optInPartner = user.profile.flatMap(_.optInPartner),
           registerQuestionId = user.profile.flatMap(_.registerQuestionId),
-          eventDate = dateHelper.now()
+          eventDate = dateHelper.now(),
+          eventId = Some(idGenerator.nextEventId())
         )
       )
       eventBusService.publish(
@@ -555,7 +558,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           country = user.country,
           requestContext = requestContext,
           isSocialLogin = true,
-          eventDate = dateHelper.now()
+          eventDate = dateHelper.now(),
+          eventId = Some(idGenerator.nextEventId())
         )
       )
       user.profile.flatMap(_.avatarUrl).foreach { avatarUrl =>
@@ -566,7 +570,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             country = user.country,
             requestContext = requestContext,
             avatarUrl = avatarUrl,
-            eventDate = dateHelper.now()
+            eventDate = dateHelper.now(),
+            eventId = Some(idGenerator.nextEventId())
           )
         )
       }
@@ -612,7 +617,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               eventDate = dateHelper.now(),
               userId = userId,
               requestContext = RequestContext.empty,
-              optInNewsletter = optInNewsletter
+              optInNewsletter = optInNewsletter,
+              eventId = Some(idGenerator.nextEventId())
             )
           )
         }
@@ -636,7 +642,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
                   userId = userId,
                   eventDate = dateHelper.now(),
                   requestContext = RequestContext.empty,
-                  optInNewsletter = optInNewsletter
+                  optInNewsletter = optInNewsletter,
+                  eventId = Some(idGenerator.nextEventId())
                 )
               )
             }
@@ -688,7 +695,14 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               result.results.foreach(
                 proposal =>
                   eventBusService
-                    .publish(ReindexProposal(proposal.id, dateHelper.now(), RequestContext.empty))
+                    .publish(
+                      ReindexProposal(
+                        proposal.id,
+                        dateHelper.now(),
+                        RequestContext.empty,
+                        Some(idGenerator.nextEventId())
+                      )
+                    )
               )
           )
       } else {
@@ -714,7 +728,14 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             result.results.foreach(
               proposal =>
                 eventBusService
-                  .publish(ReindexProposal(proposal.id, dateHelper.now(), RequestContext.empty))
+                  .publish(
+                    ReindexProposal(
+                      proposal.id,
+                      dateHelper.now(),
+                      RequestContext.empty,
+                      Some(idGenerator.nextEventId())
+                    )
+                  )
             )
         )
     }
@@ -755,7 +776,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
                 country = personality.country,
                 eventDate = dateHelper.now(),
                 oldEmail = oldEmail,
-                newEmail = email
+                newEmail = email,
+                eventId = Some(idGenerator.nextEventId())
               )
             )
           }
@@ -820,7 +842,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             requestContext = requestContext,
             country = user.country,
             eventDate = dateHelper.now(),
-            adminId = adminId
+            adminId = adminId,
+            eventId = Some(idGenerator.nextEventId())
           )
         )
       }
@@ -838,7 +861,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             eventDate = dateHelper.now(),
             userId = userId,
             requestContext = requestContext,
-            followedUserId = followedUserId
+            followedUserId = followedUserId,
+            eventId = Some(idGenerator.nextEventId())
           )
         )
         value
@@ -857,7 +881,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             userId = userId,
             eventDate = dateHelper.now(),
             requestContext = requestContext,
-            unfollowedUserId = followedUserId
+            unfollowedUserId = followedUserId,
+            eventId = Some(idGenerator.nextEventId())
           )
         )
         value

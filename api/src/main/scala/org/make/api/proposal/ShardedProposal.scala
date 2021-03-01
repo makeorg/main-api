@@ -25,15 +25,21 @@ import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorService
 import org.make.api.technical.MakePersistentActor.{Snapshot, StartShard}
+import org.make.core.technical.IdGenerator
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 object ShardedProposal {
-  def props(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService, lockDuration: FiniteDuration): Props =
+  def props(
+    sessionHistoryCoordinatorService: SessionHistoryCoordinatorService,
+    lockDuration: FiniteDuration,
+    idGenerator: IdGenerator
+  ): Props =
     Props(
       new ShardedProposal(
         sessionHistoryCoordinatorService = sessionHistoryCoordinatorService,
-        lockDuration = lockDuration
+        lockDuration = lockDuration,
+        idGenerator = idGenerator
       )
     )
   val shardName: String = "proposal"
@@ -55,10 +61,14 @@ object ShardedProposal {
   val queryJournal: String = "make-api.event-sourcing.proposals.query-journal"
 }
 
-class ShardedProposal(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService, lockDuration: FiniteDuration)
-    extends ProposalActor(
+class ShardedProposal(
+  sessionHistoryCoordinatorService: SessionHistoryCoordinatorService,
+  lockDuration: FiniteDuration,
+  idGenerator: IdGenerator
+) extends ProposalActor(
       sessionHistoryCoordinatorService = sessionHistoryCoordinatorService,
-      lockDuration = lockDuration
+      lockDuration = lockDuration,
+      idGenerator = idGenerator
     ) {
 
   import ShardedProposal._

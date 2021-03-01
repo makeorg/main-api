@@ -19,14 +19,13 @@
 
 package org.make.api.technical
 
-import java.util.Properties
-
+import java.util.{Properties, UUID}
 import akka.actor.{Actor, ActorLogging, ActorSystem}
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.apache.kafka.clients.producer.{KafkaProducer, _}
 import org.apache.kafka.common.serialization.{Serializer, StringSerializer}
 import org.make.api.extensions.{KafkaConfiguration, KafkaConfigurationExtension}
-import org.make.core.AvroSerializers
+import org.make.core.{AvroSerializers, WithEventId}
 
 import scala.util.{Failure, Success, Try}
 
@@ -53,6 +52,13 @@ abstract class ProducerActor[Wrapper, Event]
   }
 
   protected def createProducer(): KafkaProducer[String, Wrapper] = {
+    val props: Properties = createProducerConfiguration
+    val valueSerializer: Serializer[Wrapper] =
+      new MakeKafkaAvroSerializer[Wrapper](kafkaConfiguration.schemaRegistry, schema, format)
+    new KafkaProducer(props, new StringSerializer(), valueSerializer)
+  }
+
+  protected def createProducerConfiguration: Properties = {
     val props = new Properties()
     props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfiguration.connectionString)
     props.put(ProducerConfig.ACKS_CONFIG, "all")
@@ -61,18 +67,29 @@ abstract class ProducerActor[Wrapper, Event]
     props.put(ProducerConfig.LINGER_MS_CONFIG, "1")
     props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, "org.make.api.technical.MakePartitioner")
     props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, "33554432")
-    val valueSerializer: Serializer[Wrapper] =
-      new MakeKafkaAvroSerializer[Wrapper](kafkaConfiguration.schemaRegistry, schema, format)
-    new KafkaProducer(props, new StringSerializer(), valueSerializer)
+    props
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Null"))
   protected def sendRecord(kafkaTopic: String, record: Wrapper): Unit = {
     producer.send(
-      new ProducerRecord[String, Wrapper](kafkaTopic, None.orNull, System.currentTimeMillis(), None.orNull, record),
+      new ProducerRecord[String, Wrapper](
+        kafkaTopic,
+        None.orNull,
+        System.currentTimeMillis(),
+        extractKey(record).getOrElse(UUID.randomUUID().toString),
+        record
+      ),
       sendCallBack
     )
     ()
+  }
+
+  private def extractKey(message: Wrapper): Option[String] = {
+    message match {
+      case event: WithEventId => event.eventId.map(_.value)
+      case _                  => None
+    }
   }
 
   override def postStop(): Unit = {

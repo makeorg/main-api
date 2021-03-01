@@ -72,7 +72,8 @@ class ProposalProducerActorIT
           eventDate = DateHelper.now(),
           content = "Ma raison de proposer",
           operation = None,
-          theme = None
+          theme = None,
+          eventId = None
         )
       )
 

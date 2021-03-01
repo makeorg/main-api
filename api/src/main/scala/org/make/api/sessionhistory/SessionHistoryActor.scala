@@ -20,13 +20,12 @@
 package org.make.api.sessionhistory
 
 import java.time.ZonedDateTime
-
 import akka.actor.{ActorRef, PoisonPill}
 import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.extensions.MakeSettingsExtension
 import org.make.api.sessionhistory.SessionHistoryActor._
-import org.make.api.technical.MakePersistentActor
+import org.make.api.technical.{ActorEventBusServiceComponent, MakePersistentActor}
 import org.make.api.technical.MakePersistentActor.Snapshot
 import org.make.api.userhistory.UserHistoryActor.{
   InjectSessionEvents,
@@ -39,6 +38,7 @@ import org.make.api.userhistory._
 import org.make.core.history.HistoryActions._
 import org.make.core.proposal.{ProposalId, QualificationKey}
 import org.make.core.session._
+import org.make.core.technical.IdGenerator
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, MakeSerializable, RequestContext}
 import spray.json.DefaultJsonProtocol._
@@ -49,9 +49,10 @@ import scala.concurrent.duration.{Deadline, FiniteDuration}
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
 
-class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration)
+class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration, idGenerator: IdGenerator)
     extends MakePersistentActor(classOf[SessionHistory], classOf[SessionHistoryEvent[_]])
-    with MakeSettingsExtension {
+    with MakeSettingsExtension
+    with ActorEventBusServiceComponent {
 
   implicit val timeout: Timeout = defaultTimeout
   private val maxEvents: Int = settings.maxUserHistoryEvents
@@ -268,12 +269,13 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def transforming(userId: UserId, pendingEvents: Seq[(ActorRef, Any)], requestContext: RequestContext): Receive = {
     case SessionClosed(originalSender) =>
-      context.system.eventStream.publish(
+      eventBusService.publish(
         UserConnectedEvent(
           connectedUserId = Some(userId),
           eventDate = DateHelper.now(),
           userId = userId,
-          requestContext = requestContext
+          requestContext = requestContext,
+          eventId = Some(idGenerator.nextEventId())
         )
       )
       persistEvent(

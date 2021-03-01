@@ -19,6 +19,8 @@
 
 package org.make.core.technical
 
+import org.make.core.EventId
+
 import java.util.UUID
 import org.make.core.idea.IdeaMappingId
 import org.make.core.auth.ClientId
@@ -59,6 +61,7 @@ trait IdGenerator {
   def nextPersonalityRoleId(): PersonalityRoleId = PersonalityRoleId(nextId())
   def nextPersonalityRoleFieldId(): PersonalityRoleFieldId = PersonalityRoleFieldId(nextId())
   def nextSessionId(): SessionId = SessionId(nextId())
+  def nextEventId(): EventId = EventId(nextId())
 
   def nextId(): String
 }

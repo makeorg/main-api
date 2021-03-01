@@ -18,7 +18,6 @@ image: makeorg/docker-sbt
 
 variables:
   CI_BUILD: "true"
-  SBT_OPTS: "-Xms2G -Xmx2G"
   IMAGE: "make-api"
 
 stages:
