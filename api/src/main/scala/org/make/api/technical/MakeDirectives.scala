@@ -87,19 +87,27 @@ trait MakeDirectives
     }
   }
 
+  def optionalCookieValue(cookieName: String, applicationName: Option[ApplicationName]): Directive1[Option[String]] = {
+    if (usesCookies(applicationName)) {
+      optionalCookie(cookieName).map(_.map(_.value))
+    } else {
+      provide(None)
+    }
+  }
+
   /**
     * sessionId is set in cookie and header
     * for web app and native app respectively
     */
-  def maybeSessionId: Directive1[Option[SessionId]] =
+  def maybeSessionId(applicationName: Option[ApplicationName]): Directive1[Option[SessionId]] = {
     (for {
-      maybeCookieSessionId <- optionalCookie(makeSettings.SessionCookie.name)
+      maybeCookieSessionId <- optionalCookieValue(makeSettings.SessionCookie.name, applicationName)
       maybeHeaderSessionId <- optionalNonEmptyHeaderValueByName(`X-Session-Id`.name)
-    } yield maybeCookieSessionId.map(_.value).orElse(maybeHeaderSessionId))
-      .map(_.map(SessionId(_)))
+    } yield maybeCookieSessionId.orElse(maybeHeaderSessionId)).map(_.map(SessionId(_)))
+  }
 
-  def getCurrentSessionId: Directive1[SessionId] = {
-    maybeSessionId.flatMap {
+  def getCurrentSessionId(applicationName: Option[ApplicationName]): Directive1[SessionId] = {
+    maybeSessionId(applicationName).flatMap {
       case None => provide(idGenerator.nextSessionId())
       case Some(id) =>
         val newSessionId = idGenerator.nextSessionId()
@@ -114,11 +122,12 @@ trait MakeDirectives
     * visitorId is set in cookie and header
     * for web app and native app respectively
     */
-  def visitorId: Directive1[String] =
+  def visitorId: Directive1[String] = {
     for {
       maybeCookieVisitorId <- optionalCookie(makeSettings.VisitorCookie.name)
       maybeVisitorId       <- optionalNonEmptyHeaderValueByName(`X-Visitor-Id`.name)
     } yield maybeCookieVisitorId.map(_.value).orElse(maybeVisitorId).getOrElse(idGenerator.nextVisitorId().value)
+  }
 
   def visitorCreatedAt: Directive1[ZonedDateTime] =
     for {
@@ -294,13 +303,16 @@ trait MakeDirectives
     maybeUserId.foreach(userId => sessionHistoryCoordinatorService.convertSession(sessionId, userId, requestContext))
   }
 
-  def checkTokenExpirationIfNoCookieIsDefined(maybeUser: Option[AuthInfo[UserRights]]): Directive0 = {
+  def checkTokenExpirationIfNoCookieIsDefined(
+    maybeUser: Option[AuthInfo[UserRights]],
+    applicationName: Option[ApplicationName]
+  ): Directive0 = {
     mapInnerRoute { route =>
       maybeUser match {
         // If a user has been found, the token is valid and the route can continue
         case Some(_) => route
         case _ =>
-          optionalCookie(makeSettings.SecureCookie.name) {
+          secureCookieValue(applicationName) {
             // If the make-secure cookie is used, then rely on the cookie and auto-refresh mecanism
             case Some(_) => route
             case None =>
@@ -321,18 +333,18 @@ trait MakeDirectives
     Tracing.entrypoint(slugifiedName)
 
     for {
-      requestId        <- requestId
-      _                <- operationName(slugifiedName)
-      origin           <- optionalNonEmptyHeaderValueByName(Origin.name)
-      _                <- addCorsHeaders(origin)
-      _                <- encodeResponse
-      startTime        <- startTime
+      requestId <- requestId
+      _         <- operationName(slugifiedName)
+      origin    <- optionalNonEmptyHeaderValueByName(Origin.name)
+      _         <- addCorsHeaders(origin)
+      _         <- encodeResponse
+      startTime <- startTime
+      maybeApplicationName <- optionalNonEmptyHeaderValueByName(`X-Make-App-Name`.name)
+        .map(_.flatMap(ApplicationName.withValueOpt))
       visitorId        <- visitorId
       visitorCreatedAt <- visitorCreatedAt
       externalId       <- optionalNonEmptyHeaderValueByName(`X-Make-External-Id`.name).map(_.getOrElse(requestId))
-      currentSessionId <- getCurrentSessionId
-      maybeApplicationName <- optionalNonEmptyHeaderValueByName(`X-Make-App-Name`.name)
-        .map(_.flatMap(ApplicationName.withValueOpt))
+      currentSessionId <- getCurrentSessionId(maybeApplicationName)
       _ <- addMakeHeaders(
         maybeApplicationName,
         requestId,
@@ -345,12 +357,12 @@ trait MakeDirectives
       )
       _                    <- handleExceptions(MakeApi.exceptionHandler(slugifiedName, requestId))
       _                    <- handleRejections(MakeApi.rejectionHandler)
-      maybeTokenRefreshed  <- makeTriggerAuthRefreshFromCookie()
+      maybeTokenRefreshed  <- makeTriggerAuthRefreshFromCookie(maybeApplicationName)
       _                    <- addMaybeRefreshedSecureCookie(maybeApplicationName, maybeTokenRefreshed)
-      _                    <- makeAuthCookieHandlers(maybeTokenRefreshed)
+      _                    <- makeAuthCookieHandlers(maybeTokenRefreshed, maybeApplicationName)
       maybeIpAddress       <- extractClientIP
       maybeUser            <- optionalMakeOAuth2
-      _                    <- checkTokenExpirationIfNoCookieIsDefined(maybeUser)
+      _                    <- checkTokenExpirationIfNoCookieIsDefined(maybeUser, maybeApplicationName)
       _                    <- checkEndpointAccess(maybeUser.map(_.user), endpointType)
       maybeUserAgent       <- optionalNonEmptyHeaderValueByName(`User-Agent`.name)
       maybeOperation       <- optionalNonEmptyHeaderValueByName(`X-Make-Operation`.name)
@@ -460,13 +472,13 @@ trait MakeDirectives
 
   }
 
-  def makeAuthCookieHandlers(maybeRefreshedToken: Option[Token]): Directive0 =
+  def makeAuthCookieHandlers(maybeRefreshedToken: Option[Token], applicationName: Option[ApplicationName]): Directive0 =
     mapInnerRoute { route =>
-      optionalCookie(makeSettings.SecureCookie.name) {
+      secureCookieValue(applicationName) {
         case Some(secureCookie) =>
           val credentials: OAuth2BearerToken = maybeRefreshedToken match {
             case Some(refreshedToken) => OAuth2BearerToken(refreshedToken.accessToken)
-            case None                 => OAuth2BearerToken(secureCookie.value)
+            case None                 => OAuth2BearerToken(secureCookie)
           }
           mapRequest((request: HttpRequest) => request.addCredentials(credentials)) {
             route
@@ -475,10 +487,10 @@ trait MakeDirectives
       }
     }
 
-  def makeTriggerAuthRefreshFromCookie(): Directive1[Option[Token]] =
-    optionalCookie(makeSettings.SecureCookie.name).flatMap {
+  def makeTriggerAuthRefreshFromCookie(applicationName: Option[ApplicationName]): Directive1[Option[Token]] =
+    secureCookieValue(applicationName).flatMap {
       case Some(secureCookie) =>
-        provideAsync[Option[Token]](oauth2DataHandler.refreshIfTokenIsExpired(secureCookie.value))
+        provideAsync[Option[Token]](oauth2DataHandler.refreshIfTokenIsExpired(secureCookie))
       case None => provide[Option[Token]](None)
     }
 
@@ -587,9 +599,17 @@ trait MakeDirectives
   private def addCookiesHeaders(
     f: Seq[HttpHeader] => Directive0
   ): (Option[ApplicationName], Seq[HttpCookie]) => Directive0 = { (applicationName, cookies) =>
+    if (usesCookies(applicationName)) {
+      f(cookies.map(`Set-Cookie`.apply))
+    } else {
+      Directive.Empty
+    }
+  }
+
+  def usesCookies(applicationName: Option[ApplicationName]): Boolean = {
     applicationName match {
-      case Some(ApplicationName.Backoffice | ApplicationName.Widget) => Directive.Empty
-      case _                                                         => f(cookies.map(`Set-Cookie`.apply))
+      case Some(ApplicationName.Backoffice | ApplicationName.Widget) => false
+      case _                                                         => true
     }
   }
 

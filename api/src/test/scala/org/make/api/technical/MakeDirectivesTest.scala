@@ -91,13 +91,13 @@ class MakeDirectivesTest
   })
 
   val tokenRoute: Route = sealRoute(path("test") {
-    requireToken { token =>
+    requireToken(None) { token =>
       complete(token)
     }
   })
 
   val optionalTokenRoute: Route = sealRoute(path("test") {
-    extractToken {
+    extractToken(None) {
       case Some(token) => complete(token)
       case None        => complete(StatusCodes.NotFound)
     }
