@@ -23,7 +23,7 @@ import java.time.ZonedDateTime
 import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.DatabaseTransactions._
-import org.make.api.technical.RichFutures._
+import org.make.api.technical.Futures._
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.DefaultPersistentUserToAnonymizeServiceComponent.PersistentUserToAnonymize
 import org.make.core.DateHelper

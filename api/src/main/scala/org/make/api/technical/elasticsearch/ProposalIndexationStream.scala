@@ -43,15 +43,16 @@ import org.make.api.sequence.SequenceConfigurationComponent
 import org.make.core.sequence.SequenceConfiguration
 import org.make.api.tag.TagServiceComponent
 import org.make.api.tagtype.TagTypeServiceComponent
+import org.make.api.technical.Futures
 import org.make.api.user.UserServiceComponent
 import org.make.core.SlugHelper
 import org.make.core.operation.{OperationOfQuestion, SimpleOperation}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{
   IndexedAuthor,
-  IndexedProposalKeyword,
   IndexedOrganisationInfo,
   IndexedProposal,
+  IndexedProposalKeyword,
   IndexedProposalQuestion,
   IndexedScores,
   IndexedTag,
@@ -88,7 +89,10 @@ trait ProposalIndexationStream
 
   object ProposalStream {
     def maybeIndexedProposal(implicit mat: Materializer): Flow[ProposalId, Option[IndexedProposal], NotUsed] =
-      Flow[ProposalId].mapAsync(parallelism)(proposalId => getIndexedProposal(proposalId))
+      Flow[ProposalId]
+        .mapAsync(parallelism) { proposalId =>
+          Futures.retryOnAskTimeout(() => getIndexedProposal(proposalId))
+        }
 
     def runIndexProposals(proposalIndexName: String): Flow[Seq[IndexedProposal], Done, NotUsed] =
       Flow[Seq[IndexedProposal]].mapAsync(parallelism)(proposals => executeIndexProposals(proposals, proposalIndexName))

@@ -26,7 +26,7 @@ import cats.data.NonEmptyList
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
-import org.make.api.technical.RichFutures._
+import org.make.api.technical.Futures._
 import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.api.{ActorSystemComponent, DatabaseTest, TestUtilsIT}
 import org.make.core.{DateHelper, Order}

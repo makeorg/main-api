@@ -25,7 +25,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import grizzled.slf4j.Logging
 import org.make.api.technical.ActorProtocol
-import org.make.api.technical.RichFutures._
+import org.make.api.technical.Futures._
 import org.make.api.technical.job.JobReportingActor.Protocol.{Command, Response}
 import org.make.core.job.Job.{JobId, Progress}
 

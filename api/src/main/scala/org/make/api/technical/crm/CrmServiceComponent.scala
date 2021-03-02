@@ -46,12 +46,12 @@ import org.make.api.operation.OperationServiceComponent
 import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.ExecutorServiceHelper._
-import org.make.api.technical.RichFutures._
+import org.make.api.technical.Futures._
 import org.make.api.technical.crm.BasicCrmResponse.ManageManyContactsResponse
 import org.make.api.technical.crm.ManageContactAction.{AddNoForce, Remove}
 import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.api.technical.job.JobCoordinatorServiceComponent
-import org.make.api.technical.{RichFutures => _, _}
+import org.make.api.technical._
 import org.make.api.user.{PersistentUserToAnonymizeServiceComponent, UserServiceComponent}
 import org.make.api.userhistory._
 import org.make.core.DateHelper.isLast30daysDate
