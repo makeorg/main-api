@@ -280,7 +280,7 @@ class SequenceServiceIT
     // initialize ES
     Await.result(elasticsearchClient.initialize(), 10.seconds)
     // generate a question with data (proposals, votes, organisations…)
-    val fixturesResult = whenReady(fixturesService.generate(None, None), Timeout(60.seconds))(identity)
+    val fixturesResult = whenReady(fixturesService.generate(None, None, Some(300)), Timeout(60.seconds))(identity)
     questionId = fixturesResult.questionId
     // index the proposals that we just created, so we can find them
     reindex()
@@ -328,9 +328,9 @@ class SequenceServiceIT
     ProposalScorer(proposal.votes, VotesCounter.SequenceVotesCounter, sequenceConfiguration.nonSequenceVotesWeight)
 
   Feature("Start a sequence") {
-    Scenario("no zone") {
+    Scenario("standard behaviour") {
       whenReady(
-        sequenceService.startNewSequence(None, None, questionId, Nil, None, requestContext),
+        sequenceService.startNewSequence(None, None, None, questionId, Nil, None, requestContext),
         Timeout(60.seconds)
       ) { result =>
         result.proposals.size should be > 0
@@ -338,10 +338,11 @@ class SequenceServiceIT
         result.proposals.foreach(_.votes.foreach(_.hasVoted shouldBe false))
       }
     }
+
     for (zone <- Zone.values) {
-      Scenario(s"$zone zone") {
+      Scenario(s"$zone zone behaviour") {
         whenReady(
-          sequenceService.startNewSequence(Some(zone), None, questionId, Nil, None, requestContext),
+          sequenceService.startNewSequence(Some(zone), None, None, questionId, Nil, None, requestContext),
           Timeout(60.seconds)
         ) { result =>
           result.proposals.size should be > 0
@@ -353,6 +354,35 @@ class SequenceServiceIT
             p.votes.foreach(_.hasVoted shouldBe false)
           }
         }
+      }
+    }
+
+    Scenario("tag behaviour") {
+      val futureSequenceTags = for {
+        proposals <- elasticsearchProposalAPI.searchProposals(SearchQuery(limit = Some(10)))
+        tags = proposals.results.flatMap(_.tags.map(_.tagId)).take(2)
+        sequence <- sequenceService.startNewSequence(None, None, None, questionId, Nil, Some(tags), requestContext)
+      } yield (sequence, tags)
+      whenReady(futureSequenceTags, Timeout(60.seconds)) {
+        case (sequence, tags) if tags.nonEmpty =>
+          sequence.proposals.size should be > 0
+          sequence.proposals.foreach(proposal => tags.intersect(proposal.tags.map(_.tagId)).size should be > 0)
+        case (sequence, _) =>
+          sequence.proposals.size should be(0)
+      }
+    }
+
+    Scenario("keyword behaviour") {
+      val futureSequenceKey = for {
+        proposals <- elasticsearchProposalAPI.searchProposals(SearchQuery(limit = Some(10)))
+        key = proposals.results.flatMap(_.keywords.map(_.key)).headOption
+        sequence <- sequenceService.startNewSequence(None, key, None, questionId, Nil, None, requestContext)
+      } yield (sequence, key)
+      whenReady(futureSequenceKey, Timeout(60.seconds)) {
+        case (sequence, Some(key)) =>
+          sequence.proposals.size should be > 0
+          sequence.proposals.foreach(_.keywords.map(_.key) should contain(key))
+        case (_, None) => succeed
       }
     }
   }

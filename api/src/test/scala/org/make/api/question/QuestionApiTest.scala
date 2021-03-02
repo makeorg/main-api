@@ -192,15 +192,23 @@ class QuestionApiTest
       when(
         sequenceService.startNewSequence(
           zone = eqTo(None),
+          keyword = eqTo(None),
           maybeUserId = any[Option[UserId]],
           questionId = eqTo(questionId),
           includedProposals = any[Seq[ProposalId]],
           tagsIds = any[Option[Seq[TagId]]],
           requestContext = any[RequestContext]
         )
-      ).thenReturn(Future.successful(SequenceResult(SequenceId("sequence-id"), "title", "slug", Seq.empty)))
+      ).thenReturn(Future.successful(SequenceResult(Seq.empty)))
       Get(s"/questions/${questionId.value}/start-sequence") ~> routes ~> check {
         status should be(StatusCodes.OK)
+      }
+    }
+
+    Scenario("invalid params") {
+      val questionId = QuestionId("question-id")
+      Get(s"/questions/${questionId.value}/start-sequence?zone=zone&keyword=keyword") ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
       }
     }
 

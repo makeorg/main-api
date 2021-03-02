@@ -59,7 +59,11 @@ import org.scalacheck.rng.Seed
 import scala.concurrent.{ExecutionContext, Future}
 
 trait FixturesService {
-  def generate(maybeOperationId: Option[OperationId], maybeQuestionId: Option[QuestionId]): Future[FixtureResponse]
+  def generate(
+    maybeOperationId: Option[OperationId],
+    maybeQuestionId: Option[QuestionId],
+    maxProposals: Option[Int] = None
+  ): Future[FixtureResponse]
 }
 
 trait FixturesServiceComponent {
@@ -146,9 +150,10 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Logg
       question: Question,
       users: Seq[User],
       tagsIds: Seq[TagId],
-      adminUserId: UserId
+      adminUserId: UserId,
+      maxProposals: Option[Int]
     ): Future[Seq[ProposalId]] = {
-      val parameters: Parameters = Parameters.default.withSize(2000)
+      val parameters: Parameters = Parameters.default.withSize(maxProposals.getOrElse(2000))
       val proposalsData =
         Gen.listOf(EntitiesGen.genProposal(question, users, tagsIds)).pureApply(parameters, Seed.random())
       logger.info(s"generating: ${proposalsData.size} proposals")
@@ -298,7 +303,8 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Logg
     @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
     override def generate(
       maybeOperationId: Option[OperationId],
-      maybeQuestionId: Option[QuestionId]
+      maybeQuestionId: Option[QuestionId],
+      maxProposals: Option[Int] = None
     ): Future[FixtureResponse] = {
       val futureAdmin: Future[User] = userService.getUserByEmail("admin@make.org").flatMap {
         case Some(user) => Future.successful(user)
@@ -313,7 +319,7 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Logg
         partners       <- generatePartners(questionId, orgas)
         question       <- questionService.getQuestion(questionId).map(_.get)
         tags           <- generateTags(question)
-        proposals      <- generateProposals(question, users ++ orgas, tags.map(_.tagId), admin.userId)
+        proposals      <- generateProposals(question, users ++ orgas, tags.map(_.tagId), admin.userId, maxProposals)
         orgasVoteCount <- generateOrganisationVotes(orgas, proposals)
       } yield FixtureResponse(
         operationId = operationId,

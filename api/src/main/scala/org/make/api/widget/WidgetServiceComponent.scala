@@ -72,6 +72,7 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
       for {
         selectedProposals <- sequenceService.startNewSequence(
           zone = None,
+          keyword = None,
           maybeUserId = maybeUserId,
           questionId = questionId,
           includedProposals = Seq.empty,

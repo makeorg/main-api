@@ -34,16 +34,14 @@ import com.sksamuel.elastic4s.searches.aggs.{
   TermsAggregation,
   TopHitsAggregation
 }
-import com.sksamuel.elastic4s.searches.queries.funcscorer.FunctionScoreQuery
 import com.sksamuel.elastic4s.searches.queries.term.TermQuery
-import com.sksamuel.elastic4s.searches.queries.{BoolQuery, ExistsQuery, IdQuery, Query}
+import com.sksamuel.elastic4s.searches.queries.{BoolQuery, ExistsQuery, Query}
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import com.sksamuel.elastic4s.searches.{IncludeExclude, SearchRequest => ElasticSearchRequest}
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import grizzled.slf4j.Logging
 import org.make.api.question.{AvatarsAndProposalsCount, PopularTagResponse}
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
-import org.make.core.DateHelper
 import org.make.core.DateHelper._
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.ProposalStatus.Accepted
@@ -70,8 +68,6 @@ trait ProposalSearchEngineComponent {
 //TODO: add multi-country
 trait ProposalSearchEngine {
   def findProposalById(proposalId: ProposalId): Future[Option[IndexedProposal]]
-
-  def findProposalsByIds(proposalIds: Seq[ProposalId], size: Int, random: Boolean = true): Future[Seq[IndexedProposal]]
 
   def searchProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult]
 
@@ -132,27 +128,6 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
     override def findProposalById(proposalId: ProposalId): Future[Option[IndexedProposal]] = {
       client.executeAsFuture(get(id = proposalId.value).from(proposalAlias)).map(_.toOpt[IndexedProposal])
-    }
-
-    override def findProposalsByIds(
-      proposalIds: Seq[ProposalId],
-      size: Int,
-      random: Boolean = true
-    ): Future[Seq[IndexedProposal]] = {
-
-      val seed: Int = DateHelper.now().toEpochSecond.toInt
-
-      val query: IdQuery = idsQuery(ids = proposalIds.map(_.value)).types("proposal")
-      val randomQuery: FunctionScoreQuery =
-        functionScoreQuery(idsQuery(ids = proposalIds.map(_.value)).types("proposal")).functions(Seq(randomScore(seed)))
-
-      val request: ElasticSearchRequest = searchWithType(proposalAlias)
-        .query(if (random) randomQuery else query)
-        .size(size)
-
-      client.executeAsFuture(request).map {
-        _.to[IndexedProposal]
-      }
     }
 
     override def searchProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult] =

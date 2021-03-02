@@ -60,6 +60,7 @@ import org.make.core.personality.PersonalityRoleId
 import org.make.core.proposal.{
   MinScoreLowerBoundSearchFilter,
   ProposalId,
+  ProposalKeywordKey,
   QuestionSearchFilter,
   SearchFilters,
   SearchQuery,
@@ -460,20 +461,31 @@ trait DefaultQuestionApiComponent
       path("questions" / questionId / "start-sequence") { questionId =>
         makeOperation("StartSequenceByQuestionId") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters("zone".as[Zone].?, "include".csv[ProposalId]) { (zone, includes) =>
-              provideAsync(
-                sequenceService
-                  .startNewSequence(
-                    zone = zone,
-                    maybeUserId = userAuth.map(_.user.userId),
-                    questionId = questionId,
-                    includedProposals = includes.getOrElse(Seq.empty),
-                    tagsIds = None,
-                    requestContext = requestContext
+            parameters("zone".as[Zone].?, "keyword".as[ProposalKeywordKey].?, "include".csv[ProposalId]) {
+              (zone, keyword, includes) =>
+                val zoneOrKeyword = !(zone.isDefined && keyword.isDefined)
+                Validation.validate(
+                  validateField(
+                    "keyword",
+                    "invalid_value",
+                    zoneOrKeyword,
+                    "Cannot use both zone and keyword parameters."
                   )
-              ) { sequences =>
-                complete(sequences)
-              }
+                )
+                provideAsync(
+                  sequenceService
+                    .startNewSequence(
+                      zone = zone,
+                      keyword = keyword,
+                      maybeUserId = userAuth.map(_.user.userId),
+                      questionId = questionId,
+                      includedProposals = includes.getOrElse(Seq.empty),
+                      tagsIds = None,
+                      requestContext = requestContext
+                    )
+                ) { sequences =>
+                  complete(sequences)
+                }
             }
           }
         }

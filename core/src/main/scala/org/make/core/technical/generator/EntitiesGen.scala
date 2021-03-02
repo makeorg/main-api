@@ -306,6 +306,7 @@ trait EntitiesGen extends DateGenerators {
       organisationIds <- Gen.someOf(users.filter(_.userType == UserType.UserTypeOrganisation).map(_.userId))
       date            <- Gen.calendar.map(_.toZonedDateTime).asOption
       initialProposal <- Gen.frequency((9, false), (1, true))
+      keywords        <- Gen.listOf(genKeyword)
     } yield Proposal(
       proposalId = IdGenerator.uuidGenerator.nextProposalId(),
       slug = SlugHelper(content),
@@ -325,7 +326,7 @@ trait EntitiesGen extends DateGenerators {
       updatedAt = date,
       events = List.empty,
       initialProposal = initialProposal,
-      keywords = Seq.empty
+      keywords = keywords
     )
   }
 
@@ -366,6 +367,13 @@ trait EntitiesGen extends DateGenerators {
       operationId = operationId,
       questionId = questionId
     )
+
+  def genKeyword: Gen[ProposalKeyword] = {
+    for {
+      key   <- CustomGenerators.LoremIpsumGen.word.map(ProposalKeywordKey.apply)
+      label <- CustomGenerators.LoremIpsumGen.word
+    } yield ProposalKeyword(key = key, label = label)
+  }
 
 }
 

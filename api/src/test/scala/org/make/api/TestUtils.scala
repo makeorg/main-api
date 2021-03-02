@@ -26,6 +26,7 @@ import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.MaxSize
 import org.make.api.proposal.ProposalScorer
 import org.make.api.proposal.ProposalScorer.VotesCounter
+import org.make.core.sequence.{SequenceConfiguration, SpecificSequenceConfiguration}
 import org.make.core.auth.{Client, ClientId}
 import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
 import org.make.core.operation._
@@ -628,6 +629,36 @@ trait TestUtils {
     operationId = operationId,
     questionId = questionId
   )
+
+  def sequenceConfiguration(
+    questionId: QuestionId,
+    sequenceId: SequenceId = SequenceId("deprecated-sequence-id"),
+    mainSequence: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
+    controversial: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
+    popular: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
+    keyword: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
+    newProposalsVoteThreshold: Int = 10,
+    testedProposalsEngagementThreshold: Option[Double] = None,
+    testedProposalsScoreThreshold: Option[Double] = None,
+    testedProposalsControversyThreshold: Option[Double] = None,
+    testedProposalsMaxVotesThreshold: Option[Int] = None,
+    nonSequenceVotesWeight: Double = 0.5
+  ): SequenceConfiguration =
+    SequenceConfiguration(
+      sequenceId = sequenceId,
+      questionId = questionId,
+      mainSequence = mainSequence,
+      controversial = controversial,
+      popular = popular,
+      keyword = keyword,
+      newProposalsVoteThreshold = newProposalsVoteThreshold,
+      testedProposalsEngagementThreshold = testedProposalsEngagementThreshold,
+      testedProposalsScoreThreshold = testedProposalsScoreThreshold,
+      testedProposalsControversyThreshold = testedProposalsControversyThreshold,
+      testedProposalsMaxVotesThreshold = testedProposalsMaxVotesThreshold,
+      nonSequenceVotesWeight = nonSequenceVotesWeight
+    )
+
 }
 
 object TestUtils extends TestUtils

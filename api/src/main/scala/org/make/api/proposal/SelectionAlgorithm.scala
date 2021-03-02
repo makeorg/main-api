@@ -104,7 +104,6 @@ trait SelectionAlgorithm {
     includedProposals: Seq[IndexedProposal],
     newProposals: Seq[IndexedProposal],
     testedProposals: Seq[IndexedProposal],
-    votedProposals: Seq[ProposalId],
     userSegment: Option[String]
   ): Seq[IndexedProposal]
 }
@@ -147,7 +146,6 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       includedProposals: Seq[IndexedProposal],
       newProposals: Seq[IndexedProposal],
       testedProposals: Seq[IndexedProposal],
-      votedProposals: Seq[ProposalId],
       userSegment: Option[String]
     ): Seq[IndexedProposal] = {
 
@@ -156,7 +154,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
 
       // fetch included proposals and exclude same idea
       var sequence: Seq[IndexedProposal] = includedProposals
-      var distinctProposals: Set[ProposalId] = (votedProposals ++ includedProposals.map(_.id)).toSet
+      var distinctProposals: Set[ProposalId] = includedProposals.map(_.id).toSet
       var distinctIdeas: Set[IdeaId] = includedProposals.map(p => p.ideaId.getOrElse(uniqueIdeaIdForProposal(p))).toSet
 
       // distinct proposals by distinct ideas
@@ -462,12 +460,10 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       includedProposals: Seq[IndexedProposal],
       newProposals: Seq[IndexedProposal],
       testedProposals: Seq[IndexedProposal],
-      votedProposals: Seq[ProposalId],
       userSegment: Option[String]
     ): Seq[IndexedProposal] = {
 
-      val proposalsPool: Seq[IndexedProposal] =
-        (newProposals ++ testedProposals).filterNot(p => votedProposals.contains(p.id))
+      val proposalsPool: Seq[IndexedProposal] = newProposals ++ testedProposals
 
       // balance proposals between new and tested
       val sequenceSize: Int = sequenceConfiguration.sequenceSize
@@ -526,11 +522,10 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       includedProposals: Seq[IndexedProposal],
       newProposals: Seq[IndexedProposal],
       testedProposals: Seq[IndexedProposal],
-      votedProposals: Seq[ProposalId],
       userSegment: Option[String]
     ): Seq[IndexedProposal] = {
 
-      val excludedIds = votedProposals ++ includedProposals.map(_.id)
+      val excludedIds = includedProposals.map(_.id)
       val candidates = (newProposals ++ testedProposals)
         .filter(p => !excludedIds.contains(p.id))
       val shuffled = MakeRandom.shuffleSeq(candidates)
