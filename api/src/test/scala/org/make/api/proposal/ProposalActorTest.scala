@@ -20,12 +20,13 @@
 package org.make.api.proposal
 
 import java.time.ZonedDateTime
-import akka.actor.{Actor, ActorRef}
-import akka.testkit.TestKit
+import akka.actor.typed.ActorRef
 import cats.data.NonEmptyList
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, TransactionalSessionHistoryEvent}
+import org.make.api.{ShardingTypedActorTest, TestUtils}
+import org.make.api.proposal.ProposalActorResponse._
+import org.make.api.proposal.ProposalActorResponse.Error._
 import org.make.api.technical.DefaultIdGeneratorComponent
-import org.make.api.{ShardingActorTest, TestUtils}
 import org.make.core.history.HistoryActions._
 import org.make.core.history.HistoryActions.VoteTrust._
 import org.make.core.idea.IdeaId
@@ -47,19 +48,10 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyChecks with DefaultIdGeneratorComponent {
-
-  class Controller {
-    def handle(message: Any, sender: ActorRef): Unit = {
-      sender ! message
-    }
-  }
-
-  class ControllableActor(controller: Controller) extends Actor {
-    override def receive: Receive = {
-      case something => controller.handle(something, sender())
-    }
-  }
+class ProposalActorTest
+    extends ShardingTypedActorTest
+    with ScalaCheckDrivenPropertyChecks
+    with DefaultIdGeneratorComponent {
 
   val questionOnNothingFr = Question(
     questionId = QuestionId("my-question"),
@@ -122,12 +114,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
       .logTransactionalHistory(any[TransactionalSessionHistoryEvent[_]])
   ).thenReturn(Future.unit)
 
-  val coordinator: ActorRef =
-    system.actorOf(
-      ProposalCoordinator
-        .props(sessionHistoryCoordinatorService, LOCK_DURATION_MILLISECONDS, idGenerator),
-      ProposalCoordinator.name
-    )
+  val coordinator: ActorRef[ProposalCommand] =
+    ProposalCoordinator(system, sessionHistoryCoordinatorService, LOCK_DURATION_MILLISECONDS, idGenerator)
 
   val mainUserId: UserId = UserId("1234")
   val mainCreatedAt: Option[ZonedDateTime] = Some(DateHelper.now().minusSeconds(CREATED_DATE_SECOND_MINUS))
@@ -155,15 +143,15 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
       )
     )
 
-  override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
-
   Feature("Propose a proposal") {
     val proposalId: ProposalId = ProposalId("proposeCommand")
     val proposalItalyId: ProposalId = ProposalId("proposeItalyCommand")
     Scenario("Initialize the state if it was empty") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("an empty state")
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
-      expectMsg(ProposalNotFound)
+      coordinator ! GetProposal(proposalId, RequestContext.empty, probe.ref)
+      probe.expectMessage(ProposalNotFound)
 
       And("a newly proposed Proposal")
 
@@ -174,19 +162,18 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       Then("have the proposal state after proposal")
 
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
+      coordinator ! GetProposal(proposalId, RequestContext.empty, probe.ref)
 
-      expectMsg(
-        ProposalEnveloppe(
-          newProposal(proposalId = proposalId, content = "This is a proposal", question = questionOnNothingFr)
-        )
+      probe.expectMessage(
+        Envelope(newProposal(proposalId = proposalId, content = "This is a proposal", question = questionOnNothingFr))
       )
 
       And("recover its state after having been kill")
@@ -194,19 +181,19 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
 
       Thread.sleep(THREAD_SLEEP_MICROSECONDS)
 
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
+      coordinator ! GetProposal(proposalId, RequestContext.empty, probe.ref)
 
-      expectMsg(
-        ProposalEnveloppe(
-          newProposal(proposalId = proposalId, content = "This is a proposal", question = questionOnNothingFr)
-        )
+      probe.expectMessage(
+        Envelope(newProposal(proposalId = proposalId, content = "This is a proposal", question = questionOnNothingFr))
       )
     }
 
     Scenario("Initialize the state for a proposal from Italy") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("an empty state")
-      coordinator ! GetProposal(proposalItalyId, RequestContext.empty)
-      expectMsg(ProposalNotFound)
+      coordinator ! GetProposal(proposalItalyId, RequestContext.empty, probe.ref)
+      probe.expectMessage(ProposalNotFound)
 
       And("a newly proposed Proposal")
       coordinator ! ProposeCommand(
@@ -216,17 +203,18 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is an italian proposal",
         question = questionOnNothingIT,
-        initialProposal = false
+        initialProposal = false,
+        probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalItalyId))
+      probe.expectMessage(Envelope(proposalItalyId))
 
       Then("have the proposal state after proposal")
 
-      coordinator ! GetProposal(proposalItalyId, RequestContext.empty)
+      coordinator ! GetProposal(proposalItalyId, RequestContext.empty, probe.ref)
 
-      expectMsg(
-        ProposalEnveloppe(
+      probe.expectMessage(
+        Envelope(
           newProposal(
             proposalId = proposalItalyId,
             content = "This is an italian proposal",
@@ -240,10 +228,10 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
 
       Thread.sleep(THREAD_SLEEP_MICROSECONDS)
 
-      coordinator ! GetProposal(proposalItalyId, RequestContext.empty)
+      coordinator ! GetProposal(proposalItalyId, RequestContext.empty, probe.ref)
 
-      expectMsg(
-        ProposalEnveloppe(
+      probe.expectMessage(
+        Envelope(
           newProposal(
             proposalId = proposalItalyId,
             content = "This is an italian proposal",
@@ -257,21 +245,25 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
   Feature("View a proposal") {
     val proposalId: ProposalId = ProposalId("viewCommand")
     Scenario("Fail if ProposalId doesn't exists") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("an empty state")
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
-      expectMsg(ProposalNotFound)
+      coordinator ! GetProposal(proposalId, RequestContext.empty, probe.ref)
+      probe.expectMessage(ProposalNotFound)
 
       When("a asking for a fake ProposalId")
-      coordinator ! ViewProposalCommand(ProposalId("fake"), RequestContext.empty)
+      coordinator ! ViewProposalCommand(ProposalId("fake"), RequestContext.empty, probe.ref)
 
       Then("returns None")
-      expectMsg(ProposalNotFound)
+      probe.expectMessage(ProposalNotFound)
     }
 
     Scenario("Return the state if valid") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("an empty state")
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
-      expectMsg(ProposalNotFound)
+      coordinator ! GetProposal(proposalId, RequestContext.empty, probe.ref)
+      probe.expectMessage(ProposalNotFound)
 
       When("a new Proposal is proposed")
       coordinator ! ProposeCommand(
@@ -281,23 +273,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       Then("returns the state")
-      coordinator ! ViewProposalCommand(proposalId, RequestContext.empty)
-      expectMsg(
-        ProposalEnveloppe(
-          newProposal(proposalId = proposalId, content = "This is a proposal", question = questionOnNothingFr)
-        )
+      coordinator ! ViewProposalCommand(proposalId, RequestContext.empty, probe.ref)
+      probe.expectMessage(
+        Envelope(newProposal(proposalId = proposalId, content = "This is a proposal", question = questionOnNothingFr))
       )
     }
   }
 
   Feature("accept a proposal") {
     Scenario("accepting a non existing proposal") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("no proposal corresponding to id 'nothing-there'")
       When("I try to accept the proposal")
       coordinator ! AcceptProposalCommand(
@@ -309,15 +302,18 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(),
         tags = Seq(TagId("some tag id")),
         question = questionOnTheme,
-        idea = Some(IdeaId("my-id"))
+        idea = Some(IdeaId("my-id")),
+        replyTo = probe.ref
       )
 
       Then("I should receive 'None' since nothing is found")
-      expectMsg(ProposalNotFound)
+      probe.expectMessage(ProposalNotFound)
 
     }
 
     Scenario("accept an existing proposal changing the text") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a freshly created proposal")
       val originalContent = "This is a proposal that will be validated"
       coordinator ! ProposeCommand(
@@ -327,10 +323,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = originalContent,
         question = questionOnTheme,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(ProposalId("to-be-moderated-changing-text")))
+      probe.expectMessage(Envelope(ProposalId("to-be-moderated-changing-text")))
 
       When("I validate the proposal")
       coordinator ! AcceptProposalCommand(
@@ -342,12 +339,13 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         question = questionOnTheme,
-        idea = Some(IdeaId("my-idea"))
+        idea = Some(IdeaId("my-idea")),
+        replyTo = probe.ref
       )
 
       Then("I should receive the accepted proposal with modified content")
 
-      val response: Proposal = expectMsgType[ModeratedProposal].proposal
+      val response: Proposal = probe.expectMessageType[Envelope[Proposal]].value
 
       response.proposalId should be(ProposalId("to-be-moderated-changing-text"))
       response.events.length should be(2)
@@ -363,6 +361,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("accept an existing proposal without changing text") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a freshly created proposal")
       val originalContent = "This is a proposal that will be validated"
       coordinator ! ProposeCommand(
@@ -372,10 +372,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = originalContent,
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(ProposalId("to-be-moderated")))
+      probe.expectMessage(Envelope(ProposalId("to-be-moderated")))
 
       When("I validate the proposal")
       coordinator ! AcceptProposalCommand(
@@ -387,12 +388,13 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         question = questionOnNothingFr,
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = Some(IdeaId("some-idea"))
+        idea = Some(IdeaId("some-idea")),
+        replyTo = probe.ref
       )
 
       Then("I should receive the accepted proposal")
 
-      val response: Proposal = expectMsgType[ModeratedProposal].proposal
+      val response: Proposal = probe.expectMessageType[Envelope[Proposal]].value
 
       response.proposalId should be(ProposalId("to-be-moderated"))
       response.events.length should be(2)
@@ -407,6 +409,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("accept an existing proposal without a theme") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a freshly created proposal")
       val originalContent = "This is a proposal that will be validated"
       val proposalId = ProposalId("to-be-moderated-without-a-theme")
@@ -417,10 +421,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = originalContent,
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       When("I validate the proposal")
       coordinator ! AcceptProposalCommand(
@@ -432,12 +437,13 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         question = questionOnNothingFr,
         labels = Seq.empty,
         tags = Seq(TagId("some tag id")),
-        idea = Some(IdeaId("some-idea"))
+        idea = Some(IdeaId("some-idea")),
+        replyTo = probe.ref
       )
 
       Then("I should receive the accepted proposal")
 
-      val response: Proposal = expectMsgType[ModeratedProposal].proposal
+      val response: Proposal = probe.expectMessageType[Envelope[Proposal]].value
 
       response.proposalId should be(proposalId)
       response.events.length should be(2)
@@ -452,6 +458,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("validating a validated proposal shouldn't do anything") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a validated proposal")
       val originalContent = "This is a proposal that will be validated"
       coordinator ! ProposeCommand(
@@ -461,10 +469,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = originalContent,
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(ProposalId("to-be-moderated-2")))
+      probe.expectMessage(Envelope(ProposalId("to-be-moderated-2")))
 
       coordinator ! AcceptProposalCommand(
         proposalId = ProposalId("to-be-moderated-2"),
@@ -475,10 +484,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = Some(IdeaId("some-idea")),
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal].proposal
+      probe.expectMessageType[Envelope[Proposal]].value
 
       When("I re-validate the proposal")
       coordinator ! AcceptProposalCommand(
@@ -490,15 +500,18 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action2")),
         tags = Seq(TagId("some tag id 2")),
         idea = Some(IdeaId("some-idea")),
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        replyTo = probe.ref
       )
 
       Then("I should receive an error")
-      val error = expectMsgType[InvalidStateError]
+      val error = probe.expectMessageType[InvalidStateError]
       error.message should be("Proposal to-be-moderated-2 is already validated")
     }
 
     Scenario("validate a proposal and set the idea") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a validated proposal")
       val proposalId = ProposalId("to-be-moderated-with-idea-1")
       val idea = IdeaId("idea-1")
@@ -510,10 +523,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = originalContent,
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       When("I validate the proposal")
       coordinator ! AcceptProposalCommand(
@@ -525,9 +539,10 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = Some(idea),
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
-      val validatedProposal: Proposal = expectMsgType[ModeratedProposal].proposal
+      val validatedProposal: Proposal = probe.expectMessageType[Envelope[Proposal]].value
 
       Then("I should have an idea present")
       validatedProposal.proposalId should be(proposalId)
@@ -535,8 +550,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
       validatedProposal.questionId should be(Some(questionOnTheme.questionId))
 
       When("I search for the proposal")
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
-      val searchedProposal: Proposal = expectMsgType[ProposalEnveloppe].proposal
+      coordinator ! GetProposal(proposalId, RequestContext.empty, probe.ref)
+      val searchedProposal: Proposal = probe.expectMessageType[Envelope[Proposal]].value
 
       Then("I should have idea present")
       searchedProposal.proposalId should be(proposalId)
@@ -546,6 +561,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
 
   Feature("refuse a proposal") {
     Scenario("refusing a non existing proposal") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("no proposal corresponding to id 'nothing-there'")
       When("I try to refuse the proposal")
       coordinator ! RefuseProposalCommand(
@@ -553,14 +570,17 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         moderator = UserId("some user"),
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
-        refusalReason = Some("nothing")
+        refusalReason = Some("nothing"),
+        replyTo = probe.ref
       )
 
       Then("I should receive 'None' since nothing is found")
-      expectMsg(ProposalNotFound)
+      probe.expectMessage(ProposalNotFound)
     }
 
     Scenario("refuse an existing proposal with a refuse reason") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a freshly created proposal")
       val originalContent = "This is a proposal that will be refused with a reason"
       coordinator ! ProposeCommand(
@@ -570,10 +590,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = originalContent,
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(ProposalId("to-be-moderated")))
+      probe.expectMessage(Envelope(ProposalId("to-be-moderated")))
 
       When("I refuse the proposal")
       coordinator ! RefuseProposalCommand(
@@ -581,12 +602,13 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         moderator = UserId("some user"),
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
-        refusalReason = Some("this proposal is bad")
+        refusalReason = Some("this proposal is bad"),
+        replyTo = probe.ref
       )
 
       Then("I should receive the refused proposal")
 
-      val response: Proposal = expectMsgType[ModeratedProposal].proposal
+      val response: Proposal = probe.expectMessageType[Envelope[Proposal]].value
 
       response.proposalId should be(ProposalId("to-be-moderated"))
       response.events.length should be(2)
@@ -599,6 +621,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("refuse an existing proposal without a refuse reason") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a freshly created proposal")
       val originalContent = "This is a proposal that will be refused without reason"
       coordinator ! ProposeCommand(
@@ -608,10 +632,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = originalContent,
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(ProposalId("to-be-moderated")))
+      probe.expectMessage(Envelope(ProposalId("to-be-moderated")))
 
       When("I refuse the proposal")
       coordinator ! RefuseProposalCommand(
@@ -619,12 +644,13 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         moderator = UserId("some user"),
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
-        refusalReason = None
+        refusalReason = None,
+        replyTo = probe.ref
       )
 
       Then("I should receive the refused proposal")
 
-      val response: Proposal = expectMsgType[ModeratedProposal].proposal
+      val response: Proposal = probe.expectMessageType[Envelope[Proposal]].value
 
       response.proposalId should be(ProposalId("to-be-moderated"))
       response.events.length should be(2)
@@ -637,6 +663,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("refusing a refused proposal shouldn't do anything") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a refused proposal")
       val originalContent = "This is a new proposal"
       coordinator ! ProposeCommand(
@@ -646,20 +674,22 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = originalContent,
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(ProposalId("to-be-moderated-2")))
+      probe.expectMessage(Envelope(ProposalId("to-be-moderated-2")))
 
       coordinator ! RefuseProposalCommand(
         proposalId = ProposalId("to-be-moderated-2"),
         moderator = UserId("some user"),
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
-        refusalReason = Some("my reason")
+        refusalReason = Some("my reason"),
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
       When("I re-refuse the proposal")
       coordinator ! RefuseProposalCommand(
@@ -667,30 +697,36 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         moderator = UserId("some other user"),
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
-        refusalReason = Some("another reason")
+        refusalReason = Some("another reason"),
+        replyTo = probe.ref
       )
 
       Then("I should receive an error")
-      val error = expectMsgType[InvalidStateError]
+      val error = probe.expectMessageType[InvalidStateError]
       error.message should be("Proposal to-be-moderated-2 is already refused")
     }
   }
 
   Feature("postpone a proposal") {
     Scenario("postpone a non existing proposal") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("no proposal corresponding to id 'nothing-there'")
       When("I try to postpone the proposal")
       coordinator ! PostponeProposalCommand(
         proposalId = ProposalId("nothing-there"),
         moderator = UserId("some user"),
-        requestContext = RequestContext.empty
+        requestContext = RequestContext.empty,
+        replyTo = probe.ref
       )
 
       Then("I should receive 'None' since nothing is found")
-      expectMsg(ProposalNotFound)
+      probe.expectMessage(ProposalNotFound)
     }
 
     Scenario("postpone a pending proposal") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a freshly created proposal")
       val originalContent = "This is a proposal that will be postponed"
       coordinator ! ProposeCommand(
@@ -700,21 +736,23 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = originalContent,
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(ProposalId("to-be-postponed")))
+      probe.expectMessage(Envelope(ProposalId("to-be-postponed")))
 
       When("i postpone the proposal")
       coordinator ! PostponeProposalCommand(
         moderator = UserId("moderatorFoo"),
         proposalId = ProposalId("to-be-postponed"),
-        requestContext = RequestContext.empty
+        requestContext = RequestContext.empty,
+        replyTo = probe.ref
       )
 
       Then("I should receive the postponed proposal")
 
-      val response: Proposal = expectMsgType[ModeratedProposal].proposal
+      val response: Proposal = probe.expectMessageType[Envelope[Proposal]].value
 
       response.proposalId should be(ProposalId("to-be-postponed"))
       response.events.length should be(2)
@@ -726,6 +764,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("postpone a refused proposal shouldn't do nothing") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a refused proposal")
       val originalContent = "This is a new proposal to refuse"
       coordinator ! ProposeCommand(
@@ -735,34 +775,39 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = originalContent,
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(ProposalId("proposal-to-be-refused")))
+      probe.expectMessage(Envelope(ProposalId("proposal-to-be-refused")))
 
       coordinator ! RefuseProposalCommand(
         proposalId = ProposalId("proposal-to-be-refused"),
         moderator = UserId("fooUser"),
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
-        refusalReason = Some("good reason")
+        refusalReason = Some("good reason"),
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
       When("I try to postpone the proposal")
       coordinator ! PostponeProposalCommand(
         proposalId = ProposalId("proposal-to-be-refused"),
         moderator = UserId("moderatorFoo"),
-        requestContext = RequestContext.empty
+        requestContext = RequestContext.empty,
+        replyTo = probe.ref
       )
 
       Then("I should receive an error")
-      val error = expectMsgType[InvalidStateError]
+      val error = probe.expectMessageType[InvalidStateError]
       error.message should be("Proposal proposal-to-be-refused is already moderated and cannot be postponed")
     }
 
     Scenario("postpone a postponed proposal shouldn't do nothing") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a postponed proposal")
       val originalContent = "This is a new proposal to postpone"
       coordinator ! ProposeCommand(
@@ -772,28 +817,31 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = originalContent,
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(ProposalId("proposal-to-be-postponed")))
+      probe.expectMessage(Envelope(ProposalId("proposal-to-be-postponed")))
 
       coordinator ! PostponeProposalCommand(
         proposalId = ProposalId("proposal-to-be-postponed"),
         moderator = UserId("fooUser"),
-        requestContext = RequestContext.empty
+        requestContext = RequestContext.empty,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
       When("I try to re-postpone the proposal")
       coordinator ! PostponeProposalCommand(
         proposalId = ProposalId("proposal-to-be-postponed"),
         moderator = UserId("moderatorFoo"),
-        requestContext = RequestContext.empty
+        requestContext = RequestContext.empty,
+        replyTo = probe.ref
       )
 
       Then("I should receive an error")
-      val error = expectMsgType[InvalidStateError]
+      val error = probe.expectMessageType[InvalidStateError]
       error.message should be("Proposal proposal-to-be-postponed is already postponed")
     }
   }
@@ -801,9 +849,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
   Feature("Update a proposal") {
     val proposalId: ProposalId = ProposalId("updateCommand")
     Scenario("Fail if ProposalId doesn't exists") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("an empty state")
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
-      expectMsg(ProposalNotFound)
+      coordinator ! GetProposal(proposalId, RequestContext.empty, probe.ref)
+      probe.expectMessage(ProposalNotFound)
 
       When("I want to update a non existant proposal")
       coordinator ! UpdateProposalCommand(
@@ -815,14 +865,17 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq.empty,
         tags = Seq.empty,
         idea = Some(IdeaId("some-idea")),
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        replyTo = probe.ref
       )
 
       Then("I should receive 'None' since nothing is found")
-      expectMsg(ProposalNotFound)
+      probe.expectMessage(ProposalNotFound)
     }
 
     Scenario("Update a validated Proposal") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a newly proposed Proposal")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -831,10 +884,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       When("I accept the proposal")
       coordinator ! AcceptProposalCommand(
@@ -846,10 +900,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq.empty,
         tags = Seq(TagId("some tag id")),
         idea = Some(IdeaId("some-idea")),
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
       And("I update this Proposal")
       coordinator ! UpdateProposalCommand(
@@ -861,12 +916,13 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = Some(IdeaId("idea-id")),
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
       Then("I should receive the updated proposal")
 
-      val response: Proposal = expectMsgType[UpdatedProposal].proposal
+      val response: Proposal = probe.expectMessageType[Envelope[Proposal]].value
 
       response.proposalId should be(ProposalId("updateCommand"))
       response.content should be("This content must be changed")
@@ -880,6 +936,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("Update a validated Proposal with no tags") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a newly proposed Proposal")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -888,10 +946,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       When("I accept the proposal")
       coordinator ! AcceptProposalCommand(
@@ -903,10 +962,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq.empty,
         tags = Seq(),
         idea = Some(IdeaId("some-idea")),
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
       And("I update this Proposal")
       coordinator ! UpdateProposalCommand(
@@ -918,12 +978,13 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = Some(IdeaId("idea-id")),
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
       Then("I should receive the updated proposal")
 
-      val response: Proposal = expectMsgType[UpdatedProposal].proposal
+      val response: Proposal = probe.expectMessageType[Envelope[Proposal]].value
 
       response.proposalId should be(ProposalId("updateCommand"))
       response.content should be("This content must be changed")
@@ -937,6 +998,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("Update a validated Proposal with no idea") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a newly proposed Proposal")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -945,10 +1008,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       When("I accept the proposal")
       coordinator ! AcceptProposalCommand(
@@ -960,10 +1024,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq.empty,
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
       And("I update this Proposal")
       coordinator ! UpdateProposalCommand(
@@ -975,12 +1040,13 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = Some(IdeaId("idea-id")),
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
       Then("I should receive the updated proposal")
 
-      val response: Proposal = expectMsgType[UpdatedProposal].proposal
+      val response: Proposal = probe.expectMessageType[Envelope[Proposal]].value
 
       response.proposalId should be(ProposalId("updateCommand"))
       response.content should be("This content must be changed")
@@ -994,6 +1060,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("Update a non validated Proposal") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a newly proposed Proposal")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -1002,10 +1070,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       When("I update the proposal")
       coordinator ! UpdateProposalCommand(
@@ -1017,17 +1086,20 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq.empty,
         tags = Seq.empty,
         idea = Some(IdeaId("some-idea")),
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        replyTo = probe.ref
       )
 
       Then("I should receive a ValidationFailedError")
-      val error = expectMsgType[InvalidStateError]
+      val error = probe.expectMessageType[InvalidStateError]
       error.message should be("Proposal updateCommand is not accepted and cannot be updated")
     }
   }
 
   Feature("Lock a proposal") {
     Scenario("try to lock a non-existing proposal") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a fake proposalId")
       val proposalId = ProposalId("this-is-fake-proposal")
       And("moderator")
@@ -1038,14 +1110,17 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         proposalId = proposalId,
         moderatorId = moderatorId,
         moderatorName = Some("Mod"),
-        requestContext = RequestContext.empty
+        requestContext = RequestContext.empty,
+        replyTo = probe.ref
       )
 
       Then("The proposal should not be seen as locked")
-      expectMsg(ProposalNotFound)
+      probe.expectMessage(ProposalNotFound)
     }
 
     Scenario("lock an unlocked proposal") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("an unlocked proposal")
       val proposalId: ProposalId = ProposalId("unlockedProposal")
       coordinator ! ProposeCommand(
@@ -1055,10 +1130,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is an unlocked proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       And("a moderator Mod")
       val moderatorMod = UserId("mod")
@@ -1068,14 +1144,17 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         proposalId = proposalId,
         moderatorId = moderatorMod,
         moderatorName = Some("Mod"),
-        requestContext = RequestContext.empty
+        requestContext = RequestContext.empty,
+        replyTo = probe.ref
       )
 
       Then("I should receive the moderatorId")
-      expectMsg(Locked(moderatorMod))
+      probe.expectMessage(Envelope(moderatorMod))
     }
 
     Scenario("expand the time a proposal is locked by yourself") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("an unlocked proposal")
       val proposalId: ProposalId = ProposalId("lockedProposal")
       coordinator ! ProposeCommand(
@@ -1085,10 +1164,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is an unlocked proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       And("a moderator Mod")
       val moderatorMod = UserId("mod")
@@ -1099,23 +1179,27 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         proposalId = proposalId,
         moderatorId = moderatorMod,
         moderatorName = Some("Mod"),
-        requestContext = RequestContext.empty
+        requestContext = RequestContext.empty,
+        replyTo = probe.ref
       )
-      expectMsg(Locked(moderatorMod))
+      probe.expectMessage(Envelope(moderatorMod))
 
       And("I lock the proposal again after 10 milli sec")
       coordinator ! LockProposalCommand(
         proposalId = proposalId,
         moderatorId = moderatorMod,
         moderatorName = Some("Mod"),
-        requestContext = RequestContext.empty
+        requestContext = RequestContext.empty,
+        replyTo = probe.ref
       )
 
       Then("I should receive the moderatorId")
-      expectMsg(Locked(moderatorMod))
+      probe.expectMessage(Envelope(moderatorMod))
     }
 
     Scenario("fail to lock a proposal already locked by someone else") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("two moderators Mod1 & Mod2")
       val moderatorMod1 = UserId("mod1")
       val moderatorMod2 = UserId("mod2")
@@ -1129,33 +1213,38 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is an unlocked proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! LockProposalCommand(
         proposalId = proposalId,
         moderatorId = moderatorMod1,
         moderatorName = Some("Mod1"),
-        requestContext = RequestContext.empty
+        requestContext = RequestContext.empty,
+        replyTo = probe.ref
       )
 
-      expectMsg(Locked(moderatorMod1))
+      probe.expectMessage(Envelope(moderatorMod1))
 
       When("Mod2 tries to lock the proposal")
       coordinator ! LockProposalCommand(
         proposalId = proposalId,
         moderatorId = moderatorMod2,
         moderatorName = Some("Mod2"),
-        requestContext = RequestContext.empty
+        requestContext = RequestContext.empty,
+        replyTo = probe.ref
       )
 
       Then("Mod2 fails to lock the proposal")
-      expectMsg(AlreadyLockedBy("Mod1"))
+      probe.expectMessage(AlreadyLockedBy("Mod1"))
     }
 
     Scenario("lock a proposal after lock deadline was reached") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("two moderators Mod1 & Mod2")
       val moderatorMod1 = UserId("mod1")
       val moderatorMod2 = UserId("mod2")
@@ -1169,19 +1258,21 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is an unlocked proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! LockProposalCommand(
         proposalId = proposalId,
         moderatorId = moderatorMod1,
         moderatorName = Some("Mod1"),
-        requestContext = RequestContext.empty
+        requestContext = RequestContext.empty,
+        replyTo = probe.ref
       )
 
-      expectMsg(Locked(moderatorMod1))
+      probe.expectMessage(Envelope(moderatorMod1))
 
       When("Mod2 waits enough time")
       Thread.sleep(150)
@@ -1190,14 +1281,17 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         proposalId = proposalId,
         moderatorId = moderatorMod2,
         moderatorName = Some("Mod2"),
-        requestContext = RequestContext.empty
+        requestContext = RequestContext.empty,
+        replyTo = probe.ref
       )
 
       Then("Mod2 succeeds to lock the proposal")
-      expectMsg(Locked(moderatorMod2))
+      probe.expectMessage(Envelope(moderatorMod2))
     }
 
     Scenario("lock a proposal and try to vote after") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a moderator FooModerator")
       val moderator = UserId("FooModerator")
 
@@ -1210,19 +1304,21 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! LockProposalCommand(
         proposalId = proposalId,
         moderatorId = moderator,
         moderatorName = Some("FooModerator"),
-        requestContext = RequestContext.empty
+        requestContext = RequestContext.empty,
+        replyTo = probe.ref
       )
 
-      expectMsg(Locked(moderator))
+      probe.expectMessage(Envelope(moderator))
 
       val voteAgree = Vote(
         key = VoteKey.Agree,
@@ -1244,10 +1340,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         voteKey = VoteKey.Agree,
         vote = None,
         maybeOrganisationId = None,
-        voteTrust = Trusted
+        voteTrust = Trusted,
+        replyTo = probe.ref
       )
 
-      expectMsg(ProposalVote(voteAgree))
+      probe.expectMessage(Envelope(voteAgree))
 
       val voteDisagree = Vote(
         key = VoteKey.Disagree,
@@ -1274,15 +1371,18 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         voteKey = VoteKey.Disagree,
         vote = None,
         maybeOrganisationId = None,
-        voteTrust = Trusted
+        voteTrust = Trusted,
+        replyTo = probe.ref
       )
 
-      expectMsg(ProposalVote(voteDisagree))
+      probe.expectMessage(Envelope(voteDisagree))
     }
   }
 
   Feature("Patch a proposal") {
     Scenario("patch creation context") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("patched-context")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -1291,14 +1391,15 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
+      coordinator ! GetProposal(proposalId, RequestContext.empty, probe.ref)
 
-      expectMsgType[ProposalEnveloppe]
+      probe.expectMessageType[Envelope[Proposal]]
 
       val dateVisitor = DateHelper.now()
       coordinator ! PatchProposalCommand(
@@ -1329,10 +1430,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
           )
         )
         ),
-        RequestContext.empty
+        RequestContext.empty,
+        replyTo = probe.ref
       )
 
-      val proposal: Proposal = expectMsgType[UpdatedProposal].proposal
+      val proposal: Proposal = probe.expectMessageType[Envelope[Proposal]].value
       proposal.creationContext should be(
         RequestContext(
           currentTheme = None,
@@ -1362,6 +1464,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("patch some proposal information") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("patched-context")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -1370,14 +1474,15 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
+      coordinator ! GetProposal(proposalId, RequestContext.empty, probe.ref)
 
-      expectMsgType[ProposalEnveloppe]
+      probe.expectMessageType[Envelope[Proposal]]
 
       coordinator ! PatchProposalCommand(
         proposalId,
@@ -1396,10 +1501,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
           operation = Some(OperationId("my-operation-id")),
           initialProposal = Some(false)
         ),
-        RequestContext.empty
+        RequestContext.empty,
+        replyTo = probe.ref
       )
 
-      val proposal: Proposal = expectMsgType[UpdatedProposal].proposal
+      val proposal: Proposal = probe.expectMessageType[Envelope[Proposal]].value
 
       proposal.slug should be("some-custom-slug")
       proposal.content should be("some content different from the slug")
@@ -1415,6 +1521,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("patch other proposal information") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("patched-context")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -1423,14 +1531,15 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
+      coordinator ! GetProposal(proposalId, RequestContext.empty, probe.ref)
 
-      expectMsgType[ProposalEnveloppe]
+      probe.expectMessageType[Envelope[Proposal]]
 
       coordinator ! PatchProposalCommand(
         proposalId,
@@ -1441,10 +1550,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
           author = Some(UserId("the user id")),
           status = Some(Postponed)
         ),
-        RequestContext.empty
+        RequestContext.empty,
+        replyTo = probe.ref
       )
 
-      val proposal: Proposal = expectMsgType[UpdatedProposal].proposal
+      val proposal: Proposal = probe.expectMessageType[Envelope[Proposal]].value
 
       proposal.slug should be("some-custom-slug")
       proposal.content should be("This is a proposal")
@@ -1455,6 +1565,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
 
   Feature("anonymize proposals") {
     Scenario("anonymize proposal") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("anonymized-context")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -1471,16 +1583,17 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
           shortTitle = None,
           operationId = None
         ),
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AnonymizeProposalCommand(proposalId)
 
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
+      coordinator ! GetProposal(proposalId, RequestContext.empty, probe.ref)
 
-      val proposal: Proposal = expectMsgType[ProposalEnveloppe].proposal
+      val proposal: Proposal = probe.expectMessageType[Envelope[Proposal]].value
 
       proposal.slug should be("delete-requested")
       proposal.content should be("DELETE_REQUESTED")
@@ -1492,6 +1605,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
   Feature("update verified votes") {
     val proposalId = ProposalId("updateCommand")
     Scenario("Update the verified votes of validated Proposal") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a newly proposed Proposal")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -1500,10 +1615,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       When("I accept the proposal")
       coordinator ! AcceptProposalCommand(
@@ -1515,10 +1631,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq.empty,
         tags = Seq(TagId("some tag id")),
         idea = Some(IdeaId("some-idea")),
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal].proposal
+      probe.expectMessageType[Envelope[Proposal]].value
 
       And("I update the verified votes for the Proposal")
       val votesVerified = Seq(
@@ -1565,12 +1682,13 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         proposalId = proposalId,
         requestContext = RequestContext.empty,
         updatedAt = mainUpdatedAt.get,
-        votes = votesVerified
+        votes = votesVerified,
+        replyTo = probe.ref
       )
 
       Then("I should receive the updated proposal")
 
-      val response: Proposal = expectMsgType[UpdatedProposal].proposal
+      val response: Proposal = probe.expectMessageType[Envelope[Proposal]].value
 
       response.proposalId should be(ProposalId("updateCommand"))
       val voteAgree = response.votes.find(vote => vote.key == VoteKey.Agree)
@@ -1593,6 +1711,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
   Feature("update verified votes on refused proposal") {
     val proposalId = ProposalId("update-on-refused")
     Scenario("Update the verified votes of refused Proposal") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       Given("a newly proposed Proposal")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -1601,10 +1721,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       When("I accept the proposal")
       coordinator ! RefuseProposalCommand(
@@ -1612,10 +1733,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         moderator = UserId("some user"),
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
-        refusalReason = None
+        refusalReason = None,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
       And("I update the verified votes for the Proposal")
       val votesVerified = Seq(
@@ -1653,18 +1775,21 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         proposalId = proposalId,
         requestContext = RequestContext.empty,
         updatedAt = mainUpdatedAt.get,
-        votes = votesVerified
+        votes = votesVerified,
+        replyTo = probe.ref
       )
 
       Then("I should receive an error")
 
-      expectMsg(InvalidStateError(s"Proposal ${proposalId.value} is not accepted and cannot be updated"))
+      probe.expectMessage(InvalidStateError(s"Proposal ${proposalId.value} is not accepted and cannot be updated"))
     }
   }
 
   Feature("vote on proposal") {
     val proposalId = ProposalId("proposal-id")
     Scenario("vote on a new proposal with the valid proposalKey") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
@@ -1672,10 +1797,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! VoteProposalCommand(
         proposalId,
@@ -1684,16 +1810,19 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         None,
-        voteTrust = Trusted
+        voteTrust = Trusted,
+        replyTo = probe.ref
       )
 
-      val response = expectMsgType[ProposalVote].vote
+      val response = probe.expectMessageType[Envelope[Vote]].value
       response.key should be(VoteKey.Agree)
       response.count should be(1)
       response.countVerified should be(1)
     }
 
     Scenario("vote on a new proposal with the wrong proposalKey") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
@@ -1701,10 +1830,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! VoteProposalCommand(
         proposalId,
@@ -1713,10 +1843,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         None,
-        voteTrust = Troll
+        voteTrust = Troll,
+        replyTo = probe.ref
       )
 
-      val response = expectMsgType[ProposalVote].vote
+      val response = probe.expectMessageType[Envelope[Vote]].value
       response.key should be(VoteKey.Agree)
       response.count should be(1)
       response.countVerified should be(0)
@@ -1726,6 +1857,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
   Feature("unvote on proposal") {
     val proposalId = ProposalId("proposal-id")
     Scenario("unvote on a new proposal with the valid proposalKey") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
@@ -1733,10 +1866,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! VoteProposalCommand(
         proposalId,
@@ -1745,10 +1879,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         None,
-        voteTrust = Trusted
+        voteTrust = Trusted,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ProposalVote]
+      probe.expectMessageType[Envelope[Vote]]
 
       coordinator ! UnvoteProposalCommand(
         proposalId,
@@ -1757,16 +1892,19 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
-        voteTrust = Trusted
+        voteTrust = Trusted,
+        replyTo = probe.ref
       )
 
-      val response = expectMsgType[ProposalVote].vote
+      val response = probe.expectMessageType[Envelope[Vote]].value
       response.key should be(VoteKey.Agree)
       response.count should be(0)
       response.countVerified should be(0)
     }
 
     Scenario("vote on a new proposal with the wrong proposalKey") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
@@ -1774,10 +1912,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! VoteProposalCommand(
         proposalId,
@@ -1786,10 +1925,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         None,
-        voteTrust = Trusted
+        voteTrust = Trusted,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ProposalVote]
+      probe.expectMessageType[Envelope[Vote]]
 
       coordinator ! UnvoteProposalCommand(
         proposalId,
@@ -1798,10 +1938,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
-        voteTrust = Troll
+        voteTrust = Troll,
+        replyTo = probe.ref
       )
 
-      val response = expectMsgType[ProposalVote].vote
+      val response = probe.expectMessageType[Envelope[Vote]].value
       response.key should be(VoteKey.Agree)
       response.count should be(0)
       response.countVerified should be(0)
@@ -1811,6 +1952,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
   Feature("qualify on proposal") {
     val proposalId = ProposalId("proposal-id")
     Scenario("qualify on a new proposal with the valid proposalKey") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
@@ -1818,10 +1961,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! VoteProposalCommand(
         proposalId,
@@ -1830,10 +1974,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         None,
-        voteTrust = Trusted
+        voteTrust = Trusted,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ProposalVote]
+      probe.expectMessageType[Envelope[Vote]]
 
       coordinator ! QualifyVoteCommand(
         proposalId,
@@ -1842,16 +1987,19 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
-        voteTrust = Trusted
+        voteTrust = Trusted,
+        replyTo = probe.ref
       )
 
-      val response = expectMsgType[ProposalQualification].qualification
+      val response = probe.expectMessageType[Envelope[Qualification]].value
       response.key should be(QualificationKey.LikeIt)
       response.count should be(1)
       response.countVerified should be(1)
     }
 
     Scenario("qualify on a new proposal with the wrong proposalKey") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
@@ -1859,10 +2007,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! VoteProposalCommand(
         proposalId,
@@ -1871,10 +2020,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         None,
-        voteTrust = Troll
+        voteTrust = Troll,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ProposalVote]
+      probe.expectMessageType[Envelope[Vote]]
 
       coordinator ! QualifyVoteCommand(
         proposalId,
@@ -1883,10 +2033,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
-        voteTrust = Troll
+        voteTrust = Troll,
+        replyTo = probe.ref
       )
 
-      val response = expectMsgType[ProposalQualification].qualification
+      val response = probe.expectMessageType[Envelope[Qualification]].value
       response.key should be(QualificationKey.LikeIt)
       response.count should be(1)
       response.countVerified should be(0)
@@ -1896,6 +2047,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
   Feature("unqualify on proposal") {
     val proposalId = ProposalId("proposal-id")
     Scenario("unqualify on a new proposal with the valid proposalKey") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
@@ -1903,10 +2056,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! VoteProposalCommand(
         proposalId,
@@ -1915,10 +2069,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         None,
-        voteTrust = Trusted
+        voteTrust = Trusted,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ProposalVote]
+      probe.expectMessageType[Envelope[Vote]]
 
       coordinator ! QualifyVoteCommand(
         proposalId,
@@ -1927,10 +2082,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
-        voteTrust = Trusted
+        voteTrust = Trusted,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ProposalQualification]
+      probe.expectMessageType[Envelope[Qualification]]
 
       coordinator ! UnqualifyVoteCommand(
         proposalId,
@@ -1939,16 +2095,19 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map(QualificationKey.LikeIt -> Trusted), DateHelper.now(), Trusted)),
-        voteTrust = Trusted
+        voteTrust = Trusted,
+        replyTo = probe.ref
       )
 
-      val response = expectMsgType[ProposalQualification].qualification
+      val response = probe.expectMessageType[Envelope[Qualification]].value
       response.key should be(QualificationKey.LikeIt)
       response.count should be(0)
       response.countVerified should be(0)
     }
 
     Scenario("unqualify on a new proposal with the wrong proposalKey") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
@@ -1956,10 +2115,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! VoteProposalCommand(
         proposalId,
@@ -1968,10 +2128,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         None,
-        voteTrust = Trusted
+        voteTrust = Trusted,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ProposalVote]
+      probe.expectMessageType[Envelope[Vote]]
 
       coordinator ! QualifyVoteCommand(
         proposalId,
@@ -1980,10 +2141,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
-        voteTrust = Trusted
+        voteTrust = Trusted,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ProposalQualification]
+      probe.expectMessageType[Envelope[Qualification]]
 
       coordinator ! UnqualifyVoteCommand(
         proposalId,
@@ -1992,10 +2154,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map(QualificationKey.LikeIt -> Troll), DateHelper.now(), Troll)),
-        voteTrust = Troll
+        voteTrust = Troll,
+        replyTo = probe.ref
       )
 
-      val response = expectMsgType[ProposalQualification].qualification
+      val response = probe.expectMessageType[Envelope[Qualification]].value
       response.key should be(QualificationKey.LikeIt)
       response.count should be(0)
       response.countVerified should be(1)
@@ -2004,6 +2167,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
 
   Feature("troll detection on votes") {
     Scenario("vote and unvote as a troll") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("vote_and_unvote_as_a_troll")
 
       coordinator ! ProposeCommand(
@@ -2013,10 +2178,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "vote and unvote as a troll",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2027,14 +2193,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Troll)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Troll,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(0)
@@ -2046,9 +2222,10 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Troll)),
-        Troll
+        Troll,
+        replyTo = probe.ref
       )
-      val unvote = expectMsgType[ProposalVote].vote
+      val unvote = probe.expectMessageType[Envelope[Vote]].value
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -2056,6 +2233,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("trusted vote and unvote as a troll") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("trusted_vote_and_unvote_as_a_troll")
 
       coordinator ! ProposeCommand(
@@ -2065,10 +2244,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "vote and unvote as a troll",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2079,14 +2259,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Trusted,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2098,15 +2288,18 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
-        Troll
+        Troll,
+        replyTo = probe.ref
       )
-      val unvote = expectMsgType[ProposalVote].vote
+      val unvote = probe.expectMessageType[Envelope[Vote]].value
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
     }
 
     Scenario("vote as a troll and trusted unvote") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("vote_as_a_troll_and_trusted_unvote")
 
       coordinator ! ProposeCommand(
@@ -2116,10 +2309,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "vote and unvote as a troll",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2130,14 +2324,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Troll)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Troll,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(0)
@@ -2149,15 +2353,18 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Troll)),
-        Troll
+        Troll,
+        replyTo = probe.ref
       )
-      val unvote = expectMsgType[ProposalVote].vote
+      val unvote = probe.expectMessageType[Envelope[Vote]].value
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
     }
 
     Scenario("trusted vote and troll revote") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("trusted_vote_and_troll_revote")
 
       coordinator ! ProposeCommand(
@@ -2167,10 +2374,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "trusted vote and troll revote",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2181,14 +2389,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Trusted,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2200,16 +2418,17 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Neutral,
         None,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
-        Troll
+        Troll,
+        replyTo = probe.ref
       )
-      val revote = expectMsgType[ProposalVote].vote
+      val revote = probe.expectMessageType[Envelope[Vote]].value
 
       revote.count should be(1)
       revote.countVerified should be(0)
 
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
+      coordinator ! GetProposal(proposalId, RequestContext.empty, probe.ref)
 
-      val votedProposal = expectMsgType[ProposalEnveloppe].proposal
+      val votedProposal = probe.expectMessageType[Envelope[Proposal]].value
       val proposalAgree = votedProposal.votes.find(_.key == VoteKey.Agree)
       proposalAgree should be(defined)
       proposalAgree.map(_.count) should be(Some(0))
@@ -2225,6 +2444,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
 
   Feature("troll detection on qualifications") {
     Scenario("qualify and unqualify as a troll") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("qualify_and_unqualify_as_a_troll")
 
       coordinator ! ProposeCommand(
@@ -2234,10 +2455,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "qualify and unqualify as a troll",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2248,14 +2470,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Trusted,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2267,10 +2499,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
-        Troll
+        Troll,
+        replyTo = probe.ref
       )
 
-      val qualification = expectMsgType[ProposalQualification].qualification
+      val qualification = probe.expectMessageType[Envelope[Qualification]].value
 
       qualification.count should be(1)
       qualification.countVerified should be(0)
@@ -2282,16 +2515,19 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map(LikeIt -> Troll), DateHelper.now(), Trusted)),
-        Troll
+        Troll,
+        replyTo = probe.ref
       )
 
-      val unqualification = expectMsgType[ProposalQualification].qualification
+      val unqualification = probe.expectMessageType[Envelope[Qualification]].value
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
     }
 
     Scenario("trusted qualify and unqualify as a troll") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("trusted_qualify_and_unqualify_as_a_troll")
 
       coordinator ! ProposeCommand(
@@ -2301,10 +2537,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "trusted qualify and unqualify as a troll",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2315,14 +2552,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Trusted,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2334,10 +2581,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
-        Trusted
+        Trusted,
+        replyTo = probe.ref
       )
 
-      val qualification = expectMsgType[ProposalQualification].qualification
+      val qualification = probe.expectMessageType[Envelope[Qualification]].value
 
       qualification.count should be(1)
       qualification.countVerified should be(1)
@@ -2349,16 +2597,19 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map(LikeIt -> Trusted), DateHelper.now(), Trusted)),
-        Troll
+        Troll,
+        replyTo = probe.ref
       )
 
-      val unqualification = expectMsgType[ProposalQualification].qualification
+      val unqualification = probe.expectMessageType[Envelope[Qualification]].value
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
     }
 
     Scenario("qualify as a troll and trusted unqualify") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("qualify_as_a_troll_and_trusted_unqualify")
 
       coordinator ! ProposeCommand(
@@ -2368,10 +2619,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "qualify as a troll and truste unqualify",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2382,14 +2634,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Trusted,
+        replyTo = probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2401,10 +2663,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
-        Troll
+        Troll,
+        replyTo = probe.ref
       )
 
-      val qualification = expectMsgType[ProposalQualification].qualification
+      val qualification = probe.expectMessageType[Envelope[Qualification]].value
 
       qualification.count should be(1)
       qualification.countVerified should be(0)
@@ -2416,10 +2679,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map(LikeIt -> Troll), DateHelper.now(), Trusted)),
-        Trusted
+        Trusted,
+        replyTo = probe.ref
       )
 
-      val unqualification = expectMsgType[ProposalQualification].qualification
+      val unqualification = probe.expectMessageType[Envelope[Qualification]].value
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
@@ -2428,6 +2692,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
 
   Feature("votes in sequence") {
     Scenario("vote and devote in sequence") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("vote_and_devote_in_sequence")
 
       coordinator ! ProposeCommand(
@@ -2437,10 +2703,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "vote and devote in sequence",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2451,14 +2718,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Sequence)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Sequence,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2472,9 +2749,10 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Sequence)),
-        Sequence
+        Sequence,
+        replyTo = probe.ref
       )
-      val unvote = expectMsgType[ProposalVote].vote
+      val unvote = probe.expectMessageType[Envelope[Vote]].value
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -2483,6 +2761,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("vote in sequence, devote out of it") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("vote_in_sequence_then_devote_out_of_it")
 
       coordinator ! ProposeCommand(
@@ -2492,10 +2772,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "vote in sequence, devote out of it",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2506,14 +2787,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Sequence)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Sequence,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2527,9 +2818,10 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Sequence)),
-        Troll
+        Troll,
+        replyTo = probe.ref
       )
-      val unvote = expectMsgType[ProposalVote].vote
+      val unvote = probe.expectMessageType[Envelope[Vote]].value
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -2538,6 +2830,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("vote out of sequence, devote in it") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("vote_out_of_sequence_then_devote_in_it")
 
       coordinator ! ProposeCommand(
@@ -2547,10 +2841,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "vote out of sequence, devote in it",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2561,14 +2856,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Troll)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Troll,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(0)
@@ -2582,9 +2887,10 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Troll)),
-        Sequence
+        Sequence,
+        replyTo = probe.ref
       )
-      val unvote = expectMsgType[ProposalVote].vote
+      val unvote = probe.expectMessageType[Envelope[Vote]].value
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -2595,6 +2901,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
 
   Feature("votes in segment") {
     Scenario("vote and devote in segment") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("vote_and_devote_in_sequence")
 
       coordinator ! ProposeCommand(
@@ -2604,10 +2912,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "vote and devote in sequence",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2618,14 +2927,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Segment)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Segment,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2639,9 +2958,10 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Segment)),
-        Segment
+        Segment,
+        replyTo = probe.ref
       )
-      val unvote = expectMsgType[ProposalVote].vote
+      val unvote = probe.expectMessageType[Envelope[Vote]].value
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -2650,6 +2970,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("vote in segment, devote out of it") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("vote_in_segment_then_devote_out_of_it")
 
       coordinator ! ProposeCommand(
@@ -2659,10 +2981,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "vote in segment, devote out of it",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2673,14 +2996,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Segment)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Segment,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2694,9 +3027,10 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Segment)),
-        Troll
+        Troll,
+        replyTo = probe.ref
       )
-      val unvote = expectMsgType[ProposalVote].vote
+      val unvote = probe.expectMessageType[Envelope[Vote]].value
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -2705,6 +3039,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("vote out of segment, devote in it") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("vote_out_of_segment_then_devote_in_it")
 
       coordinator ! ProposeCommand(
@@ -2714,10 +3050,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "vote out of segment, devote in it",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2728,14 +3065,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Trusted,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2749,9 +3096,10 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
-        Segment
+        Segment,
+        replyTo = probe.ref
       )
-      val unvote = expectMsgType[ProposalVote].vote
+      val unvote = probe.expectMessageType[Envelope[Vote]].value
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -2762,6 +3110,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
 
   Feature("qualifications in sequence") {
     Scenario("qualify and unqualify in sequence") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("qualify_and_unqualify_in_sequence")
 
       coordinator ! ProposeCommand(
@@ -2771,10 +3121,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "qualify and unqualify as a troll",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2785,14 +3136,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Sequence)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Sequence,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2806,10 +3167,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Sequence)),
-        Sequence
+        Sequence,
+        replyTo = probe.ref
       )
 
-      val qualification = expectMsgType[ProposalQualification].qualification
+      val qualification = probe.expectMessageType[Envelope[Qualification]].value
 
       qualification.count should be(1)
       qualification.countVerified should be(1)
@@ -2823,10 +3185,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map(LikeIt -> Sequence), DateHelper.now(), Sequence)),
-        Sequence
+        Sequence,
+        replyTo = probe.ref
       )
 
-      val unqualification = expectMsgType[ProposalQualification].qualification
+      val unqualification = probe.expectMessageType[Envelope[Qualification]].value
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
@@ -2835,6 +3198,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("qualify in sequence and unqualify out of it") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("qualify_in_sequence_and_unqualify_out_of_it")
 
       coordinator ! ProposeCommand(
@@ -2844,10 +3209,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "qualify in sequence and unqualify out of it",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2858,14 +3224,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Sequence)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Sequence,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2879,10 +3255,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Sequence)),
-        Sequence
+        Sequence,
+        replyTo = probe.ref
       )
 
-      val qualification = expectMsgType[ProposalQualification].qualification
+      val qualification = probe.expectMessageType[Envelope[Qualification]].value
 
       qualification.count should be(1)
       qualification.countVerified should be(1)
@@ -2896,10 +3273,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map(LikeIt -> Sequence), DateHelper.now(), Sequence)),
-        Troll
+        Troll,
+        replyTo = probe.ref
       )
 
-      val unqualification = expectMsgType[ProposalQualification].qualification
+      val unqualification = probe.expectMessageType[Envelope[Qualification]].value
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
@@ -2908,6 +3286,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("qualify in sequence and unvote") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("qualify_in_sequence_and_unvote")
 
       coordinator ! ProposeCommand(
@@ -2917,10 +3297,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "qualify in sequence and unvote",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2931,14 +3312,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Sequence)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Sequence,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2952,10 +3343,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Sequence)),
-        Sequence
+        Sequence,
+        replyTo = probe.ref
       )
 
-      val qualification = expectMsgType[ProposalQualification].qualification
+      val qualification = probe.expectMessageType[Envelope[Qualification]].value
 
       qualification.count should be(1)
       qualification.countVerified should be(1)
@@ -2969,10 +3361,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         Some(VoteAndQualifications(VoteKey.Agree, Map(LikeIt -> Sequence), DateHelper.now(), Sequence)),
-        Troll
+        Troll,
+        replyTo = probe.ref
       )
 
-      val unvote = expectMsgType[ProposalVote].vote
+      val unvote = probe.expectMessageType[Envelope[Vote]].value
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -2988,6 +3381,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("qualify out of sequence and unqualify in it") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("qualify_out_of_sequence_and_unqualify_in_it")
 
       coordinator ! ProposeCommand(
@@ -2997,10 +3392,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "qualify out of sequence and unqualify in it",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -3011,14 +3407,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Sequence)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Sequence,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -3032,10 +3438,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Sequence)),
-        Troll
+        Troll,
+        replyTo = probe.ref
       )
 
-      val qualification = expectMsgType[ProposalQualification].qualification
+      val qualification = probe.expectMessageType[Envelope[Qualification]].value
 
       qualification.count should be(1)
       qualification.countVerified should be(0)
@@ -3049,10 +3456,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map(LikeIt -> Troll), DateHelper.now(), Sequence)),
-        Sequence
+        Sequence,
+        replyTo = probe.ref
       )
 
-      val unqualification = expectMsgType[ProposalQualification].qualification
+      val unqualification = probe.expectMessageType[Envelope[Qualification]].value
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
@@ -3063,6 +3471,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
 
   Feature("qualifications in segment") {
     Scenario("qualify and unqualify in segment") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("qualify_and_unqualify_in_segment")
 
       coordinator ! ProposeCommand(
@@ -3072,10 +3482,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "qualify and unqualify as a troll",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -3086,14 +3497,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Segment)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Segment,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -3107,10 +3528,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Segment)),
-        Segment
+        Segment,
+        replyTo = probe.ref
       )
 
-      val qualification = expectMsgType[ProposalQualification].qualification
+      val qualification = probe.expectMessageType[Envelope[Qualification]].value
 
       qualification.count should be(1)
       qualification.countVerified should be(1)
@@ -3124,10 +3546,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map(LikeIt -> Segment), DateHelper.now(), Segment)),
-        Segment
+        Segment,
+        replyTo = probe.ref
       )
 
-      val unqualification = expectMsgType[ProposalQualification].qualification
+      val unqualification = probe.expectMessageType[Envelope[Qualification]].value
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
@@ -3136,6 +3559,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("qualify in segment and unqualify out of it") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("qualify_in_segment_and_unqualify_out_of_it")
 
       coordinator ! ProposeCommand(
@@ -3145,10 +3570,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "qualify in segment and unqualify out of it",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -3159,14 +3585,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Segment)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Segment,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -3180,10 +3616,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Segment)),
-        Segment
+        Segment,
+        replyTo = probe.ref
       )
 
-      val qualification = expectMsgType[ProposalQualification].qualification
+      val qualification = probe.expectMessageType[Envelope[Qualification]].value
 
       qualification.count should be(1)
       qualification.countVerified should be(1)
@@ -3197,10 +3634,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map(LikeIt -> Segment), DateHelper.now(), Segment)),
-        Troll
+        Troll,
+        replyTo = probe.ref
       )
 
-      val unqualification = expectMsgType[ProposalQualification].qualification
+      val unqualification = probe.expectMessageType[Envelope[Qualification]].value
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
@@ -3209,6 +3647,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("qualify in segment and unvote") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("qualify_in_segment_and_unvote")
 
       coordinator ! ProposeCommand(
@@ -3218,10 +3658,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "qualify in sequence and unvote",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -3232,14 +3673,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Segment)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Segment,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -3253,10 +3704,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Segment)),
-        Segment
+        Segment,
+        replyTo = probe.ref
       )
 
-      val qualification = expectMsgType[ProposalQualification].qualification
+      val qualification = probe.expectMessageType[Envelope[Qualification]].value
 
       qualification.count should be(1)
       qualification.countVerified should be(1)
@@ -3270,10 +3722,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         None,
         Some(VoteAndQualifications(VoteKey.Agree, Map(LikeIt -> Segment), DateHelper.now(), Segment)),
-        Troll
+        Troll,
+        replyTo = probe.ref
       )
 
-      val unvote = expectMsgType[ProposalVote].vote
+      val unvote = probe.expectMessageType[Envelope[Vote]].value
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -3289,6 +3742,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
     }
 
     Scenario("qualify out of segment and unqualify in it") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("qualify_out_of_segment_and_unqualify_in_it")
 
       coordinator ! ProposeCommand(
@@ -3298,10 +3753,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "qualify out of segment and unqualify in it",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -3312,14 +3768,24 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         idea = None,
-        question = questionOnTheme
+        question = questionOnTheme,
+        replyTo = probe.ref
       )
 
-      expectMsgType[ModeratedProposal]
+      probe.expectMessageType[Envelope[Proposal]]
 
-      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Segment)
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        Segment,
+        probe.ref
+      )
 
-      val vote = expectMsgType[ProposalVote].vote
+      val vote = probe.expectMessageType[Envelope[Vote]].value
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -3333,10 +3799,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Segment)),
-        Troll
+        Troll,
+        replyTo = probe.ref
       )
 
-      val qualification = expectMsgType[ProposalQualification].qualification
+      val qualification = probe.expectMessageType[Envelope[Qualification]].value
 
       qualification.count should be(1)
       qualification.countVerified should be(0)
@@ -3350,10 +3817,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         VoteKey.Agree,
         QualificationKey.LikeIt,
         Some(VoteAndQualifications(VoteKey.Agree, Map(LikeIt -> Troll), DateHelper.now(), Segment)),
-        Segment
+        Segment,
+        replyTo = probe.ref
       )
 
-      val unqualification = expectMsgType[ProposalQualification].qualification
+      val unqualification = probe.expectMessageType[Envelope[Qualification]].value
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
@@ -3364,6 +3832,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
 
   Feature("keywords") {
     Scenario("add keywords") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
       val proposalId = ProposalId("keywords")
 
       coordinator ! ProposeCommand(
@@ -3373,10 +3843,11 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
         createdAt = DateHelper.now(),
         content = "keywords",
         question = questionOnNothingFr,
-        initialProposal = false
+        initialProposal = false,
+        replyTo = probe.ref
       )
 
-      expectMsg(CreatedProposalId(proposalId))
+      probe.expectMessage(Envelope(proposalId))
 
       implicit val arbKeyword: Arbitrary[ProposalKeyword] = Arbitrary(for {
         key   <- arbitrary[String]
@@ -3384,8 +3855,8 @@ class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyC
       } yield ProposalKeyword(ProposalKeywordKey(key), label))
 
       forAll { keywords: Seq[ProposalKeyword] =>
-        coordinator ! SetKeywordsCommand(proposalId, keywords, RequestContext.empty)
-        expectMsgType[UpdatedProposal].proposal.keywords should contain theSameElementsAs keywords
+        coordinator ! SetKeywordsCommand(proposalId, keywords, RequestContext.empty, probe.ref)
+        probe.expectMessageType[Envelope[Proposal]].value.keywords should contain theSameElementsAs keywords
       }
     }
   }

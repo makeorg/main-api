@@ -33,7 +33,6 @@ import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
 import org.make.api.operation.{OperationServiceComponent, PersistentOperationOfQuestionServiceComponent}
-import org.make.api.proposal.{ProposalCoordinatorComponent, SnapshotProposal}
 import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
@@ -43,7 +42,6 @@ import org.make.api.user.UserServiceComponent
 import org.make.api.userhistory._
 import org.make.core._
 import org.make.core.profile.Profile
-import org.make.core.proposal.ProposalId
 import org.make.core.question.Question
 import org.make.core.session.SessionId
 import org.make.core.tag.{Tag => _}
@@ -90,22 +88,7 @@ trait MigrationApi extends Directives {
   @Path(value = "/upload-all-avatars")
   def uploadAllAvatars: Route
 
-  @ApiOperation(
-    value = "snapshot-all-proposals",
-    httpMethod = "POST",
-    code = HttpCodes.NoContent,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
-      )
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
-  @Path(value = "/snapshot-all-proposals")
-  def snapshotAllProposals: Route
-
-  def routes: Route = setProperSignUpOperation ~ uploadAllAvatars ~ snapshotAllProposals
+  def routes: Route = setProperSignUpOperation ~ uploadAllAvatars
 }
 
 trait MigrationApiComponent {
@@ -125,8 +108,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
     with QuestionServiceComponent
     with EventBusServiceComponent
     with StorageConfigurationComponent
-    with PersistentOperationOfQuestionServiceComponent
-    with ProposalCoordinatorComponent =>
+    with PersistentOperationOfQuestionServiceComponent =>
 
   override lazy val migrationApi: MigrationApi = new DefaultMigrationApi
 
@@ -295,21 +277,6 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
       }
     }
 
-    override def snapshotAllProposals: Route = post {
-      path("migrations" / "snapshot-all-proposals") {
-        makeOperation("SnapshotAllProposals") { requestContext =>
-          makeOAuth2 { userAuth =>
-            requireAdminRole(userAuth.user) {
-              proposalJournal.currentPersistenceIds().runForeach { proposalIdValue =>
-                proposalCoordinator ! SnapshotProposal(ProposalId(proposalIdValue), requestContext)
-              }
-              complete(StatusCodes.NoContent)
-            }
-          }
-        }
-
-      }
-    }
   }
 
 }

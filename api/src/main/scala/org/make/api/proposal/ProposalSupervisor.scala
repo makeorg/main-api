@@ -19,13 +19,16 @@
 
 package org.make.api.proposal
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{typed, Actor, ActorLogging, Props}
+import akka.actor.typed.ActorRef
+import akka.actor.typed.receptionist.Receptionist
+import akka.actor.typed.scaladsl.adapter._
 import org.make.api.proposal.ProposalSupervisor.ProposalSupervisorDependencies
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.technical.crm.SendMailPublisherServiceComponent
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
-import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
+import org.make.api.{kafkaDispatcher, ActorSystemTypedComponent, MakeBackoffSupervisor}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -33,21 +36,20 @@ class ProposalSupervisor(dependencies: ProposalSupervisorDependencies, lockDurat
     extends Actor
     with ActorLogging
     with ShortenedNames
+    with ActorSystemTypedComponent
     with DefaultProposalCoordinatorServiceComponent
     with ProposalCoordinatorComponent {
 
-  override val proposalCoordinator: ActorRef =
-    context.watch(
-      context.actorOf(
-        ProposalCoordinator
-          .props(
-            sessionHistoryCoordinatorService = dependencies.sessionHistoryCoordinatorService,
-            lockDuration = lockDuration,
-            idGenerator = dependencies.idGenerator
-          ),
-        ProposalCoordinator.name
-      )
-    )
+  override implicit val actorSystemTyped: typed.ActorSystem[_] = context.system.toTyped
+
+  override val proposalCoordinator: ActorRef[ProposalCommand] = ProposalCoordinator(
+    system = actorSystemTyped,
+    sessionHistoryCoordinatorService = dependencies.sessionHistoryCoordinatorService,
+    lockDuration = lockDuration,
+    idGenerator = dependencies.idGenerator
+  )
+  context.watch(proposalCoordinator)
+  actorSystemTyped.receptionist ! Receptionist.Register(ProposalCoordinator.Key, proposalCoordinator)
 
   override def preStart(): Unit = {
     context.watch {

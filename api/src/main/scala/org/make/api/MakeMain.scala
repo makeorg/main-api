@@ -36,7 +36,6 @@ import kamon.Kamon
 import org.make.api.MakeGuardian.Ping
 import org.make.api.extensions.ThreadPoolMonitoringActor.MonitorThreadPool
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings, ThreadPoolMonitoringActor}
-import org.make.api.proposal.ShardedProposal
 import org.make.api.sessionhistory.ShardedSessionHistory
 import org.make.api.technical.MakePersistentActor.StartShard
 import org.make.api.technical.{ClusterShardingMonitor, MemoryMonitoringActor}
@@ -111,7 +110,6 @@ object MakeMain extends App with Logging with MakeApi {
 
   // Start the shards
   (0 until 100).foreach { i =>
-    proposalCoordinator ! StartShard(i.toString)
     userHistoryCoordinator ! StartShard(i.toString)
     sessionHistoryCoordinator ! StartShard(i.toString)
   }
@@ -119,10 +117,6 @@ object MakeMain extends App with Logging with MakeApi {
   private val settings = MakeSettings(actorSystem)
 
   // Initialize journals
-  actorSystem.actorOf(
-    ShardedProposal.props(sessionHistoryCoordinatorService, settings.lockDuration, idGenerator),
-    "fake-proposal"
-  ) ! PoisonPill
   actorSystem.actorOf(ShardedUserHistory.props, "fake-user") ! PoisonPill
   actorSystem.actorOf(ShardedSessionHistory.props(userHistoryCoordinator, 1.second, idGenerator), "fake-session") ! PoisonPill
 

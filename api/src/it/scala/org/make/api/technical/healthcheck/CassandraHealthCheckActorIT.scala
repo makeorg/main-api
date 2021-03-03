@@ -20,12 +20,15 @@
 package org.make.api.technical.healthcheck
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.testkit.{ImplicitSender, TestKit}
+import akka.actor.typed.{ActorRef => TypedActorRef}
+import akka.actor.typed.scaladsl.adapter._
+import akka.testkit.{ImplicitSender, TestProbe}
 import akka.util.Timeout
 import cats.data.NonEmptyList
 import com.typesafe.config.ConfigFactory
 import org.make.api.docker.DockerCassandraService
-import org.make.api.proposal.{CreatedProposalId, ProposalCoordinator, ProposeCommand}
+import org.make.api.proposal.{ProposalCommand, ProposalCoordinator, ProposeCommand}
+import org.make.api.proposal.ProposalActorResponse.Envelope
 import org.make.api.sessionhistory.SessionHistoryCoordinatorService
 import org.make.api.technical.{DefaultIdGeneratorComponent, TimeSettings}
 import org.make.api.technical.healthcheck.HealthCheckCommands.CheckStatus
@@ -40,7 +43,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class CassandraHealthCheckActorIT
-    extends TestKit(CassandraHealthCheckActorIT.actorSystem)
+    extends TestProbe(CassandraHealthCheckActorIT.actorSystem)
     with DefaultIdGeneratorComponent
     with ItMakeTest
     with ImplicitSender
@@ -58,12 +61,8 @@ class CassandraHealthCheckActorIT
 
   val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService = mock[SessionHistoryCoordinatorService]
 
-  val coordinator: ActorRef =
-    system.actorOf(
-      ProposalCoordinator
-        .props(sessionHistoryCoordinatorService, LOCK_DURATION_MILLISECONDS, idGenerator),
-      ProposalCoordinator.name
-    )
+  val coordinator: TypedActorRef[ProposalCommand] =
+    ProposalCoordinator(system.toTyped, sessionHistoryCoordinatorService, LOCK_DURATION_MILLISECONDS, idGenerator)
 
   Feature("Check Cassandra status") {
     Scenario("query proposal journal") {
@@ -91,10 +90,11 @@ class CassandraHealthCheckActorIT
           shortTitle = None,
           operationId = None
         ),
-        initialProposal = false
+        initialProposal = false,
+        ref
       )
 
-      expectMsgType[CreatedProposalId](1.minute)
+      expectMsgType[Envelope[ProposalId]](1.minute)
 
       When("I send a message to check the status of cassandra")
       healthCheckCassandra ! CheckStatus

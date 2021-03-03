@@ -22,6 +22,8 @@ package org.make.api.proposal
 import java.time.{LocalDate, ZonedDateTime}
 import akka.actor.ActorSystem
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
+import akka.stream.scaladsl.Source
+import akka.Done
 import cats.data.NonEmptyList
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import org.make.api.idea._
@@ -270,9 +272,8 @@ class ProposalServiceTest
 
       Seq(proposal1, proposal2, proposal3, proposal4).foreach { proposal =>
         when(
-          proposalCoordinatorService.lock(
-            eqTo(LockProposalCommand(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
-          )
+          proposalCoordinatorService
+            .lock(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
         ).thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
 
         when(proposalCoordinatorService.getProposal(proposal.proposalId))
@@ -330,15 +331,12 @@ class ProposalServiceTest
         )
 
       when(
-        proposalCoordinatorService.lock(
-          eqTo(LockProposalCommand(unlockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
-        )
+        proposalCoordinatorService
+          .lock(unlockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
       ).thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
 
       when(
-        proposalCoordinatorService.lock(
-          eqTo(LockProposalCommand(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
-        )
+        proposalCoordinatorService.lock(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
       ).thenReturn(Future.successful(Some(moderatorId)))
 
       Seq(unlockable, lockable).foreach { proposal =>
@@ -404,9 +402,8 @@ class ProposalServiceTest
           .thenReturn(Future.successful(Some(user(proposal.author))))
 
         when(
-          proposalCoordinatorService.lock(
-            eqTo(LockProposalCommand(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
-          )
+          proposalCoordinatorService
+            .lock(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
         ).thenReturn(Future.successful(Some(moderatorId)))
       }
 
@@ -443,9 +440,7 @@ class ProposalServiceTest
         )
 
       when(
-        proposalCoordinatorService.lock(
-          eqTo(LockProposalCommand(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
-        )
+        proposalCoordinatorService.lock(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
       ).thenReturn(Future.successful(Some(moderatorId)))
 
       when(proposalCoordinatorService.getProposal(lockable.proposalId))
@@ -577,9 +572,8 @@ class ProposalServiceTest
           .thenReturn(Future.successful(Some(proposal)))
 
         when(
-          proposalCoordinatorService.lock(
-            eqTo(LockProposalCommand(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
-          )
+          proposalCoordinatorService
+            .lock(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
         ).thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
 
         when(userService.getUser(proposal.author))
@@ -635,15 +629,12 @@ class ProposalServiceTest
         )
 
       when(
-        proposalCoordinatorService.lock(
-          eqTo(LockProposalCommand(unlockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
-        )
+        proposalCoordinatorService
+          .lock(unlockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
       ).thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
 
       when(
-        proposalCoordinatorService.lock(
-          eqTo(LockProposalCommand(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
-        )
+        proposalCoordinatorService.lock(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
       ).thenReturn(Future.successful(Some(moderatorId)))
 
       when(proposalCoordinatorService.getProposal(eqTo(unlockable.proposalId)))
@@ -714,9 +705,8 @@ class ProposalServiceTest
 
       Seq(enriched, lockable).foreach { proposal =>
         when(
-          proposalCoordinatorService.lock(
-            eqTo(LockProposalCommand(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
-          )
+          proposalCoordinatorService
+            .lock(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
         ).thenReturn(Future.successful(Some(moderatorId)))
 
         when(proposalCoordinatorService.getProposal(eqTo(proposal.proposalId)))
@@ -758,9 +748,7 @@ class ProposalServiceTest
         )
 
       when(
-        proposalCoordinatorService.lock(
-          eqTo(LockProposalCommand(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
-        )
+        proposalCoordinatorService.lock(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
       ).thenReturn(Future.successful(Some(moderatorId)))
 
       when(proposalCoordinatorService.getProposal(lockable.proposalId))
@@ -923,7 +911,7 @@ class ProposalServiceTest
       when(userService.getUser(any[UserId]))
         .thenReturn(Future.successful(Some(user(UserId("user")))))
 
-      when(proposalCoordinatorService.propose(any[ProposeCommand]))
+      when(proposalCoordinatorService.propose(any, any, any, any, any, any, any))
         .thenReturn(Future.successful(ProposalId("my-proposal")))
 
       when(proposalCoordinatorService.getProposal(ProposalId("my-proposal")))
@@ -939,19 +927,15 @@ class ProposalServiceTest
 
       when(
         proposalCoordinatorService.accept(
-          eqTo(
-            AcceptProposalCommand(
-              proposalId = ProposalId("my-proposal"),
-              moderator = moderatorId,
-              requestContext = RequestContext.empty,
-              sendNotificationEmail = false,
-              newContent = None,
-              question = question,
-              labels = Seq.empty,
-              tags = Seq(TagId("my-tag")),
-              idea = Some(IdeaId("my-idea"))
-            )
-          )
+          proposalId = ProposalId("my-proposal"),
+          moderator = moderatorId,
+          requestContext = RequestContext.empty,
+          sendNotificationEmail = false,
+          newContent = None,
+          question = question,
+          labels = Seq.empty,
+          tags = Seq(TagId("my-tag")),
+          idea = Some(IdeaId("my-idea"))
         )
       ).thenReturn(Future.successful(None))
 
@@ -1124,19 +1108,15 @@ class ProposalServiceTest
 
     when(
       proposalCoordinatorService.accept(
-        eqTo(
-          AcceptProposalCommand(
-            proposalId = proposalId,
-            moderator = moderatorId,
-            requestContext = RequestContext.empty,
-            sendNotificationEmail = false,
-            newContent = None,
-            question = question,
-            labels = Seq.empty,
-            tags = Seq.empty,
-            idea = None
-          )
-        )
+        proposalId = proposalId,
+        moderator = moderatorId,
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = false,
+        newContent = None,
+        question = question,
+        labels = Seq.empty,
+        tags = Seq.empty,
+        idea = None
       )
     ).thenReturn(Future.successful(Some(validatedProposal)))
 
@@ -1244,17 +1224,15 @@ class ProposalServiceTest
 
       when(
         proposalCoordinatorService.update(
-          UpdateProposalCommand(
-            moderatorId,
-            ProposalId("update-proposal"),
-            RequestContext.empty,
-            ZonedDateTime.parse("2019-01-16T16:48:00Z"),
-            None,
-            Seq.empty,
-            tagIds,
-            Some(IdeaId("update-idea")),
-            question
-          )
+          moderatorId,
+          ProposalId("update-proposal"),
+          RequestContext.empty,
+          ZonedDateTime.parse("2019-01-16T16:48:00Z"),
+          None,
+          Seq.empty,
+          tagIds,
+          Some(IdeaId("update-idea")),
+          question
         )
       ).thenReturn(
         Future.successful(
@@ -1303,17 +1281,15 @@ class ProposalServiceTest
 
       when(
         proposalCoordinatorService.update(
-          UpdateProposalCommand(
-            moderatorId,
-            ProposalId("update-proposal-3"),
-            RequestContext.empty,
-            ZonedDateTime.parse("2019-01-16T16:48:00Z"),
-            None,
-            Seq.empty,
-            tagIds,
-            Some(IdeaId("moderator-idea")),
-            question
-          )
+          moderatorId,
+          ProposalId("update-proposal-3"),
+          RequestContext.empty,
+          ZonedDateTime.parse("2019-01-16T16:48:00Z"),
+          None,
+          Seq.empty,
+          tagIds,
+          Some(IdeaId("moderator-idea")),
+          question
         )
       ).thenReturn(
         Future.successful(
@@ -1398,17 +1374,15 @@ class ProposalServiceTest
 
       when(
         proposalCoordinatorService.update(
-          UpdateProposalCommand(
-            moderatorId,
-            ProposalId("update-proposal-4"),
-            RequestContext.empty,
-            ZonedDateTime.parse("2019-01-16T16:48:00Z"),
-            None,
-            Seq.empty,
-            tagIds,
-            Some(IdeaId("update-idea-2")),
-            question
-          )
+          moderatorId,
+          ProposalId("update-proposal-4"),
+          RequestContext.empty,
+          ZonedDateTime.parse("2019-01-16T16:48:00Z"),
+          None,
+          Seq.empty,
+          tagIds,
+          Some(IdeaId("update-idea-2")),
+          question
         )
       ).thenReturn(
         Future.successful(
@@ -1451,24 +1425,20 @@ class ProposalServiceTest
 
     val updatedProposal = simpleProposal(proposalId)
 
-    when(proposalCoordinatorService.update(any[UpdateProposalCommand]))
+    when(proposalCoordinatorService.update(any, any, any, any, any, any, any, any, any))
       .thenReturn(Future.successful(Some(updatedProposal)))
 
     when(
       proposalCoordinatorService.update(
-        eqTo(
-          UpdateProposalCommand(
-            proposalId = proposalId,
-            moderator = moderatorId,
-            requestContext = RequestContext.empty,
-            updatedAt = now,
-            newContent = None,
-            question = question,
-            labels = Seq.empty,
-            tags = Seq.empty,
-            idea = None
-          )
-        )
+        proposalId = proposalId,
+        moderator = moderatorId,
+        requestContext = RequestContext.empty,
+        updatedAt = now,
+        newContent = None,
+        question = question,
+        labels = Seq.empty,
+        tags = Seq.empty,
+        idea = None
       )
     ).thenReturn(Future.successful(Some(updatedProposal)))
 
@@ -1534,7 +1504,7 @@ class ProposalServiceTest
       ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
       when(
         proposalCoordinatorService
-          .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
+          .vote(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted)
       ).thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, 1, 1, Seq.empty))))
 
       val hash = generateHash(proposalId, requestContext)
@@ -1565,7 +1535,7 @@ class ProposalServiceTest
       ).thenReturn(Future.successful(Map(proposalId -> votes)))
       when(
         proposalCoordinatorService
-          .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, Some(votes), Trusted))
+          .vote(proposalId, None, requestContext, VoteKey.Agree, None, Some(votes), Trusted)
       ).thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, 1, 1, Seq.empty))))
 
       val hash = generateHash(proposalId, requestContext)
@@ -1595,7 +1565,7 @@ class ProposalServiceTest
       ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
       when(
         proposalCoordinatorService
-          .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
+          .vote(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted)
       ).thenReturn(Future.failed(new IllegalArgumentException("You shall not, vote!")))
 
       whenReady(
@@ -1623,15 +1593,13 @@ class ProposalServiceTest
       ) { _ =>
         verify(sessionHistoryCoordinatorService, never).unlockSessionForVote(sessionId, proposalId)
         verify(proposalCoordinatorService, never).vote(
-          VoteProposalCommand(
-            proposalId = proposalId,
-            maybeUserId = None,
-            requestContext = requestContext,
-            voteKey = VoteKey.Agree,
-            maybeOrganisationId = None,
-            vote = None,
-            voteTrust = Trusted
-          )
+          proposalId = proposalId,
+          maybeUserId = None,
+          requestContext = requestContext,
+          voteKey = VoteKey.Agree,
+          maybeOrganisationId = None,
+          vote = None,
+          voteTrust = Trusted
         )
       }
     }
@@ -1652,7 +1620,7 @@ class ProposalServiceTest
       ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
       when(
         proposalCoordinatorService
-          .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Troll))
+          .vote(proposalId, None, requestContext, VoteKey.Agree, None, None, Troll)
       ).thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 0, 0, 0, Seq.empty))))
 
       whenReady(
@@ -1681,7 +1649,7 @@ class ProposalServiceTest
       ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
       when(
         proposalCoordinatorService
-          .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
+          .unvote(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted)
       ).thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, 1, 1, Seq.empty))))
 
       val hash = generateHash(proposalId, requestContext)
@@ -1712,7 +1680,7 @@ class ProposalServiceTest
       ).thenReturn(Future.successful(Map(proposalId -> votes)))
       when(
         proposalCoordinatorService
-          .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, Some(votes), Trusted))
+          .unvote(proposalId, None, requestContext, VoteKey.Agree, None, Some(votes), Trusted)
       ).thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, 1, 1, Seq.empty))))
 
       val hash = generateHash(proposalId, requestContext)
@@ -1742,7 +1710,7 @@ class ProposalServiceTest
       ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
       when(
         proposalCoordinatorService
-          .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
+          .unvote(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted)
       ).thenReturn(Future.failed(new IllegalArgumentException("You shall not, vote!")))
 
       whenReady(
@@ -1770,15 +1738,13 @@ class ProposalServiceTest
       ) { _ =>
         verify(sessionHistoryCoordinatorService, never).unlockSessionForVote(sessionId, proposalId)
         verify(proposalCoordinatorService, never).unvote(
-          UnvoteProposalCommand(
-            proposalId = proposalId,
-            maybeUserId = None,
-            requestContext = requestContext,
-            voteKey = VoteKey.Agree,
-            maybeOrganisationId = None,
-            vote = None,
-            voteTrust = Trusted
-          )
+          proposalId = proposalId,
+          maybeUserId = None,
+          requestContext = requestContext,
+          voteKey = VoteKey.Agree,
+          maybeOrganisationId = None,
+          vote = None,
+          voteTrust = Trusted
         )
       }
     }
@@ -1803,15 +1769,13 @@ class ProposalServiceTest
 
       when(
         proposalCoordinatorService.qualification(
-          QualifyVoteCommand(
-            proposalId = proposalId,
-            maybeUserId = None,
-            requestContext = requestContext,
-            voteKey = VoteKey.Agree,
-            qualificationKey = QualificationKey.LikeIt,
-            vote = None,
-            voteTrust = Trusted
-          )
+          proposalId = proposalId,
+          maybeUserId = None,
+          requestContext = requestContext,
+          voteKey = VoteKey.Agree,
+          qualificationKey = QualificationKey.LikeIt,
+          vote = None,
+          voteTrust = Trusted
         )
       ).thenReturn(Future.successful(Some(Qualification(QualificationKey.LikeIt, 1, 1, 1, 1))))
 
@@ -1848,15 +1812,13 @@ class ProposalServiceTest
 
       when(
         proposalCoordinatorService.qualification(
-          QualifyVoteCommand(
-            proposalId = proposalId,
-            maybeUserId = None,
-            requestContext = requestContext,
-            voteKey = VoteKey.Agree,
-            qualificationKey = QualificationKey.LikeIt,
-            vote = None,
-            voteTrust = Trusted
-          )
+          proposalId = proposalId,
+          maybeUserId = None,
+          requestContext = requestContext,
+          voteKey = VoteKey.Agree,
+          qualificationKey = QualificationKey.LikeIt,
+          vote = None,
+          voteTrust = Trusted
         )
       ).thenReturn(Future.failed(new IllegalStateException("Thou shall not qualify!")))
 
@@ -1893,15 +1855,13 @@ class ProposalServiceTest
 
         verify(proposalCoordinatorService, never)
           .qualification(
-            QualifyVoteCommand(
-              proposalId = proposalId,
-              maybeUserId = None,
-              requestContext = requestContext,
-              voteKey = VoteKey.Agree,
-              qualificationKey = QualificationKey.LikeIt,
-              vote = None,
-              voteTrust = Trusted
-            )
+            proposalId = proposalId,
+            maybeUserId = None,
+            requestContext = requestContext,
+            voteKey = VoteKey.Agree,
+            qualificationKey = QualificationKey.LikeIt,
+            vote = None,
+            voteTrust = Trusted
           )
       }
     }
@@ -1926,15 +1886,13 @@ class ProposalServiceTest
 
       when(
         proposalCoordinatorService.unqualification(
-          UnqualifyVoteCommand(
-            proposalId = proposalId,
-            maybeUserId = None,
-            requestContext = requestContext,
-            voteKey = VoteKey.Agree,
-            qualificationKey = QualificationKey.LikeIt,
-            vote = None,
-            voteTrust = Trusted
-          )
+          proposalId = proposalId,
+          maybeUserId = None,
+          requestContext = requestContext,
+          voteKey = VoteKey.Agree,
+          qualificationKey = QualificationKey.LikeIt,
+          vote = None,
+          voteTrust = Trusted
         )
       ).thenReturn(Future.successful(Some(Qualification(QualificationKey.LikeIt, 1, 1, 1, 1))))
 
@@ -1968,15 +1926,13 @@ class ProposalServiceTest
 
       when(
         proposalCoordinatorService.unqualification(
-          UnqualifyVoteCommand(
-            proposalId = proposalId,
-            maybeUserId = None,
-            requestContext = requestContext,
-            voteKey = VoteKey.Agree,
-            qualificationKey = QualificationKey.LikeIt,
-            vote = None,
-            voteTrust = Trusted
-          )
+          proposalId = proposalId,
+          maybeUserId = None,
+          requestContext = requestContext,
+          voteKey = VoteKey.Agree,
+          qualificationKey = QualificationKey.LikeIt,
+          vote = None,
+          voteTrust = Trusted
         )
       ).thenReturn(Future.failed(new IllegalStateException("Thou shall not qualify!")))
 
@@ -2013,15 +1969,13 @@ class ProposalServiceTest
 
         verify(proposalCoordinatorService, never)
           .unqualification(
-            UnqualifyVoteCommand(
-              proposalId = proposalId,
-              maybeUserId = None,
-              requestContext = requestContext,
-              voteKey = VoteKey.Agree,
-              qualificationKey = QualificationKey.LikeIt,
-              vote = None,
-              voteTrust = Trusted
-            )
+            proposalId = proposalId,
+            maybeUserId = None,
+            requestContext = requestContext,
+            voteKey = VoteKey.Agree,
+            qualificationKey = QualificationKey.LikeIt,
+            vote = None,
+            voteTrust = Trusted
           )
       }
     }
@@ -2310,6 +2264,7 @@ class ProposalServiceTest
     val requestContext = RequestContext.empty
 
     Scenario("trolled proposal on votes") {
+      val proposalId = ProposalId("trolled-votes")
       val votes: Seq[Vote] = Seq(
         Vote(
           key = Agree,
@@ -2349,17 +2304,27 @@ class ProposalServiceTest
         )
       )
       val proposal =
-        TestUtils.proposal(id = ProposalId("trolled-votes"), status = ProposalStatus.Accepted, votes = votes)
+        TestUtils.proposal(id = proposalId, status = ProposalStatus.Accepted, votes = votes)
       proposalService.needVoteReset(proposal) shouldBe true
 
-      val updates = proposalService.updateCommand(adminId, requestContext, proposal.proposalId, proposal.votes)
-      updates.votes.size shouldBe 1
-      updates.votes.exists(_.key == Agree) shouldBe true
-      updates.votes.head.count shouldBe Some(42)
-      updates.votes.flatMap(_.qualifications).isEmpty shouldBe true
+      when(proposalJournal.currentPersistenceIds()).thenReturn(Source.single(proposalId.value))
+      when(proposalCoordinatorService.getProposal(proposalId)).thenReturn(Future.successful(Some(proposal)))
+      when(proposalCoordinatorService.updateVotes(eqTo(adminId), eqTo(proposalId), eqTo(requestContext), any, any))
+        .thenAnswer((_: UserId, _: ProposalId, _: RequestContext, _: ZonedDateTime, votes: Seq[UpdateVoteRequest]) => {
+          votes.size shouldBe 1
+          votes.exists(_.key == Agree) shouldBe true
+          votes.head.count shouldBe Some(42)
+          votes.flatMap(_.qualifications).isEmpty shouldBe true
+          Future.successful(Some(proposal))
+        })
+
+      whenReady(proposalService.resetVotes(adminId, requestContext), Timeout(3.seconds)) { result =>
+        result shouldBe Done
+      }
     }
 
     Scenario("trolled proposal on qualifications") {
+      val proposalId = ProposalId("trolled-qualification")
       val votes: Seq[Vote] = Seq(
         Vote(
           key = Agree,
@@ -2399,14 +2364,23 @@ class ProposalServiceTest
         )
       )
       val proposal =
-        TestUtils.proposal(id = ProposalId("trolled-qualification"), status = ProposalStatus.Accepted, votes = votes)
+        TestUtils.proposal(id = proposalId, status = ProposalStatus.Accepted, votes = votes)
       proposalService.needVoteReset(proposal) shouldBe true
 
-      val updates = proposalService.updateCommand(adminId, requestContext, proposal.proposalId, proposal.votes)
-      updates.votes.size shouldBe 1
-      updates.votes.exists(_.key == Disagree) shouldBe true
-      updates.votes.head.qualifications.exists(_.key == NoWay) shouldBe true
-      updates.votes.head.qualifications.head.count shouldBe Some(1)
+      when(proposalJournal.currentPersistenceIds()).thenReturn(Source.single(proposalId.value))
+      when(proposalCoordinatorService.getProposal(proposalId)).thenReturn(Future.successful(Some(proposal)))
+      when(proposalCoordinatorService.updateVotes(eqTo(adminId), eqTo(proposalId), eqTo(requestContext), any, any))
+        .thenAnswer((_: UserId, _: ProposalId, _: RequestContext, _: ZonedDateTime, votes: Seq[UpdateVoteRequest]) => {
+          votes.size shouldBe 1
+          votes.exists(_.key == Disagree) shouldBe true
+          votes.head.qualifications.exists(_.key == NoWay) shouldBe true
+          votes.head.qualifications.head.count shouldBe Some(1)
+          Future.successful(Some(proposal))
+        })
+
+      whenReady(proposalService.resetVotes(adminId, requestContext), Timeout(3.seconds)) { result =>
+        result shouldBe Done
+      }
     }
 
     Scenario("not trolled proposal") {
@@ -2804,8 +2778,9 @@ class ProposalServiceTest
 
   Feature("proposal keywords") {
     Scenario("add keywords") {
-      when(proposalCoordinatorService.setKeywords(any)).thenAnswer { command: SetKeywordsCommand =>
-        Future.successful(Option.when(command.keywords.nonEmpty)(proposal(command.proposalId)))
+      when(proposalCoordinatorService.setKeywords(any, any, any)).thenAnswer {
+        (proposalId: ProposalId, keywords: Seq[ProposalKeyword], _: RequestContext) =>
+          Future.successful(Option.when(keywords.nonEmpty)(proposal(proposalId)))
       }
       whenReady(
         proposalService.setKeywords(

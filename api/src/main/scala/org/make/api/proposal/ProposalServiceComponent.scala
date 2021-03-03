@@ -499,15 +499,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     ): Future[ProposalId] = {
 
       proposalCoordinatorService.propose(
-        ProposeCommand(
-          proposalId = idGenerator.nextProposalId(),
-          requestContext = requestContext,
-          user = user,
-          createdAt = createdAt,
-          content = content,
-          question = question,
-          initialProposal = initialProposal
-        )
+        proposalId = idGenerator.nextProposalId(),
+        requestContext = requestContext,
+        user = user,
+        createdAt = createdAt,
+        content = content,
+        question = question,
+        initialProposal = initialProposal
       )
     }
 
@@ -583,17 +581,15 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         }
         toModerationProposalResponse(
           proposalCoordinatorService.update(
-            UpdateProposalCommand(
-              moderator = moderator,
-              proposalId = proposalId,
-              requestContext = requestContext,
-              updatedAt = updatedAt,
-              newContent = newContent,
-              question = question,
-              labels = Seq.empty,
-              tags = tags,
-              idea = ideaId
-            )
+            moderator = moderator,
+            proposalId = proposalId,
+            requestContext = requestContext,
+            updatedAt = updatedAt,
+            newContent = newContent,
+            question = question,
+            labels = Seq.empty,
+            tags = tags,
+            idea = ideaId
           )
         )
       }
@@ -661,13 +657,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     ): Future[Option[ModerationProposalResponse]] = {
       toModerationProposalResponse(
         proposalCoordinatorService.updateVotes(
-          UpdateProposalVotesCommand(
-            moderator = moderator,
-            proposalId = proposalId,
-            requestContext = requestContext,
-            updatedAt = updatedAt,
-            votes = votesVerified
-          )
+          moderator = moderator,
+          proposalId = proposalId,
+          requestContext = requestContext,
+          updatedAt = updatedAt,
+          votes = votesVerified
         )
       )
     }
@@ -693,17 +687,15 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         }
         toModerationProposalResponse(
           proposalCoordinatorService.accept(
-            AcceptProposalCommand(
-              proposalId = proposalId,
-              moderator = moderator,
-              requestContext = requestContext,
-              sendNotificationEmail = sendNotificationEmail,
-              newContent = newContent,
-              question = question,
-              labels = Seq.empty,
-              tags = tags,
-              idea = ideaId
-            )
+            proposalId = proposalId,
+            moderator = moderator,
+            requestContext = requestContext,
+            sendNotificationEmail = sendNotificationEmail,
+            newContent = newContent,
+            question = question,
+            labels = Seq.empty,
+            tags = tags,
+            idea = ideaId
           )
         )
       }
@@ -717,13 +709,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     ): Future[Option[ModerationProposalResponse]] = {
       toModerationProposalResponse(
         proposalCoordinatorService.refuse(
-          RefuseProposalCommand(
-            proposalId = proposalId,
-            moderator = moderator,
-            requestContext = requestContext,
-            sendNotificationEmail = request.sendNotificationEmail,
-            refusalReason = request.refusalReason
-          )
+          proposalId = proposalId,
+          moderator = moderator,
+          requestContext = requestContext,
+          sendNotificationEmail = request.sendNotificationEmail,
+          refusalReason = request.refusalReason
         )
       )
     }
@@ -735,9 +725,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     ): Future[Option[ModerationProposalResponse]] = {
 
       toModerationProposalResponse(
-        proposalCoordinatorService.postpone(
-          PostponeProposalCommand(proposalId = proposalId, moderator = moderator, requestContext = requestContext)
-        )
+        proposalCoordinatorService
+          .postpone(proposalId = proposalId, moderator = moderator, requestContext = requestContext)
       )
     }
 
@@ -863,16 +852,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         maybeProposalSegment <- getSegmentForProposal(proposalId)
         maybeUserSegment     <- segmentService.resolveSegment(requestContext)
         vote <- proposalCoordinatorService.vote(
-          VoteProposalCommand(
-            proposalId = proposalId,
-            maybeUserId = maybeUserId,
-            requestContext = requestContext,
-            voteKey = voteKey,
-            maybeOrganisationId = user.filter(_.userType == UserType.UserTypeOrganisation).map(_.userId),
-            vote = votes.get(proposalId),
-            voteTrust =
-              resolveVoteTrust(proposalKey, proposalId, maybeUserSegment, maybeProposalSegment, requestContext)
-          )
+          proposalId = proposalId,
+          maybeUserId = maybeUserId,
+          requestContext = requestContext,
+          voteKey = voteKey,
+          maybeOrganisationId = user.filter(_.userType == UserType.UserTypeOrganisation).map(_.userId),
+          vote = votes.get(proposalId),
+          voteTrust = resolveVoteTrust(proposalKey, proposalId, maybeUserSegment, maybeProposalSegment, requestContext)
         )
         _ <- sessionHistoryCoordinatorService.unlockSessionForVote(requestContext.sessionId, proposalId)
       } yield vote
@@ -902,16 +888,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         maybeUserSegment     <- segmentService.resolveSegment(requestContext)
         maybeProposalSegment <- getSegmentForProposal(proposalId)
         unvote <- proposalCoordinatorService.unvote(
-          UnvoteProposalCommand(
-            proposalId = proposalId,
-            maybeUserId = maybeUserId,
-            requestContext = requestContext,
-            voteKey = voteKey,
-            maybeOrganisationId = user.filter(_.userType == UserType.UserTypeOrganisation).map(_.userId),
-            vote = votes.get(proposalId),
-            voteTrust =
-              resolveVoteTrust(proposalKey, proposalId, maybeUserSegment, maybeProposalSegment, requestContext)
-          )
+          proposalId = proposalId,
+          maybeUserId = maybeUserId,
+          requestContext = requestContext,
+          voteKey = voteKey,
+          maybeOrganisationId = user.filter(_.userType == UserType.UserTypeOrganisation).map(_.userId),
+          vote = votes.get(proposalId),
+          voteTrust = resolveVoteTrust(proposalKey, proposalId, maybeUserSegment, maybeProposalSegment, requestContext)
         )
         _ <- sessionHistoryCoordinatorService.unlockSessionForVote(requestContext.sessionId, proposalId)
       } yield unvote
@@ -944,16 +927,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         maybeUserSegment     <- segmentService.resolveSegment(requestContext)
         maybeProposalSegment <- getSegmentForProposal(proposalId)
         qualify <- proposalCoordinatorService.qualification(
-          QualifyVoteCommand(
-            proposalId = proposalId,
-            maybeUserId = maybeUserId,
-            requestContext = requestContext,
-            voteKey = voteKey,
-            qualificationKey = qualificationKey,
-            vote = votes.get(proposalId),
-            voteTrust =
-              resolveVoteTrust(proposalKey, proposalId, maybeUserSegment, maybeProposalSegment, requestContext)
-          )
+          proposalId = proposalId,
+          maybeUserId = maybeUserId,
+          requestContext = requestContext,
+          voteKey = voteKey,
+          qualificationKey = qualificationKey,
+          vote = votes.get(proposalId),
+          voteTrust = resolveVoteTrust(proposalKey, proposalId, maybeUserSegment, maybeProposalSegment, requestContext)
         )
         _ <- sessionHistoryCoordinatorService.unlockSessionForQualification(
           requestContext.sessionId,
@@ -993,16 +973,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         maybeUserSegment     <- segmentService.resolveSegment(requestContext)
         maybeProposalSegment <- getSegmentForProposal(proposalId)
         removeQualification <- proposalCoordinatorService.unqualification(
-          UnqualifyVoteCommand(
-            proposalId = proposalId,
-            maybeUserId = maybeUserId,
-            requestContext = requestContext,
-            voteKey = voteKey,
-            qualificationKey = qualificationKey,
-            vote = votes.get(proposalId),
-            voteTrust =
-              resolveVoteTrust(proposalKey, proposalId, maybeUserSegment, maybeProposalSegment, requestContext)
-          )
+          proposalId = proposalId,
+          maybeUserId = maybeUserId,
+          requestContext = requestContext,
+          voteKey = voteKey,
+          qualificationKey = qualificationKey,
+          vote = votes.get(proposalId),
+          voteTrust = resolveVoteTrust(proposalKey, proposalId, maybeUserSegment, maybeProposalSegment, requestContext)
         )
         _ <- sessionHistoryCoordinatorService.unlockSessionForQualification(
           requestContext.sessionId,
@@ -1032,12 +1009,10 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         case None => Future.successful(None)
         case Some(moderator) =>
           proposalCoordinatorService.lock(
-            LockProposalCommand(
-              proposalId = proposalId,
-              moderatorId = moderatorId,
-              moderatorName = moderator.firstName,
-              requestContext = requestContext
-            )
+            proposalId = proposalId,
+            moderatorId = moderatorId,
+            moderatorName = moderator.firstName,
+            requestContext = requestContext
           )
       }
     }
@@ -1050,14 +1025,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     ): Future[Option[ModerationProposalResponse]] = {
       toModerationProposalResponse(
         proposalCoordinatorService
-          .patch(
-            PatchProposalCommand(
-              proposalId = proposalId,
-              userId = userId,
-              changes = changes,
-              requestContext = requestContext
-            )
-          )
+          .patch(proposalId = proposalId, userId = userId, changes = changes, requestContext = requestContext)
       )
     }
 
@@ -1069,12 +1037,10 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       Future
         .sequence(proposalIds.map { proposalId =>
           proposalCoordinatorService.patch(
-            PatchProposalCommand(
-              proposalId = proposalId,
-              userId = moderatorId,
-              changes = PatchProposalRequest(ideaId = Some(ideaId)),
-              requestContext = RequestContext.empty
-            )
+            proposalId = proposalId,
+            userId = moderatorId,
+            changes = PatchProposalRequest(ideaId = Some(ideaId)),
+            requestContext = RequestContext.empty
           )
         })
         .map(_.flatten)
@@ -1149,14 +1115,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                       case false => recursiveLock(otherProposalIds)
                       case true =>
                         proposalCoordinatorService
-                          .lock(
-                            LockProposalCommand(
-                              proposal.proposalId,
-                              moderator,
-                              user.flatMap(_.fullName),
-                              requestContext
-                            )
-                          )
+                          .lock(proposal.proposalId, moderator, user.flatMap(_.fullName), requestContext)
                           .map { _ =>
                             searchFilters.status.foreach(
                               filter =>
@@ -1192,7 +1151,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         ),
         RequestContext.empty
       ).map(_.results.foreach { proposal =>
-        proposalCoordinatorService.anonymize(AnonymizeProposalCommand(proposal.id))
+        proposalCoordinatorService.anonymize(proposal.id)
       })
     }
 
@@ -1235,40 +1194,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     def needVoteReset(proposal: Proposal): Boolean =
       proposal.status == ProposalStatus.Accepted && proposal.votes.exists(trolledVote)
 
-    def updateCommand(
-      adminUserId: UserId,
-      requestContext: RequestContext,
-      proposalId: ProposalId,
-      votes: Seq[Vote]
-    ): UpdateProposalVotesCommand = {
-      UpdateProposalVotesCommand(
-        moderator = adminUserId,
-        proposalId = proposalId,
-        requestContext = requestContext,
-        updatedAt = DateHelper.now(),
-        votes = votes.collect {
-          case vote if trolledVote(vote) =>
-            UpdateVoteRequest(
-              key = vote.key,
-              count = Some(vote.countVerified),
-              countVerified = None,
-              countSequence = None,
-              countSegment = None,
-              qualifications = vote.qualifications.collect {
-                case qualification if trolledQualification(qualification) =>
-                  UpdateQualificationRequest(
-                    key = qualification.key,
-                    count = Some(qualification.countVerified),
-                    countVerified = None,
-                    countSequence = None,
-                    countSegment = None
-                  )
-              }
-            )
-        }
-      )
-    }
-
     override def resetVotes(adminUserId: UserId, requestContext: RequestContext): Future[Done] = {
       val start = System.currentTimeMillis()
 
@@ -1282,7 +1207,30 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         }
         .mapAsync(4) { proposal =>
           proposalCoordinatorService.updateVotes(
-            updateCommand(adminUserId, requestContext, proposal.proposalId, proposal.votes)
+            moderator = adminUserId,
+            proposalId = proposal.proposalId,
+            requestContext = requestContext,
+            updatedAt = DateHelper.now(),
+            votes = proposal.votes.collect {
+              case vote if trolledVote(vote) =>
+                UpdateVoteRequest(
+                  key = vote.key,
+                  count = Some(vote.countVerified),
+                  countVerified = None,
+                  countSequence = None,
+                  countSegment = None,
+                  qualifications = vote.qualifications.collect {
+                    case qualification if trolledQualification(qualification) =>
+                      UpdateQualificationRequest(
+                        key = qualification.key,
+                        count = Some(qualification.countVerified),
+                        countVerified = None,
+                        countSequence = None,
+                        countSegment = None
+                      )
+                  }
+                )
+            }
           )
         }
         .runWith(Sink.ignore)
@@ -1434,7 +1382,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       keywords: Seq[ProposalKeyword],
       requestContext: RequestContext
     ): Future[ProposalKeywordsResponse] = {
-      proposalCoordinatorService.setKeywords(SetKeywordsCommand(proposalId, keywords, requestContext)).map {
+      proposalCoordinatorService.setKeywords(proposalId, keywords, requestContext).map {
         case Some(proposal) =>
           ProposalKeywordsResponse(proposal.proposalId, status = ProposalKeywordsResponseStatus.Ok, message = None)
         case None =>

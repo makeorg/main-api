@@ -19,9 +19,9 @@
 
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
+import org.make.api.proposal.ProposalActor.State
 
-import org.make.api.proposal.ProposalActor.{Lock, ProposalState}
+import java.time.ZonedDateTime
 import org.make.api.proposal.ProposalEvent.{SimilarProposalRemoved, SimilarProposalsCleared}
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.core.RequestContext
@@ -358,12 +358,10 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
         .copy(keywords = Seq(ProposalKeyword(ProposalKeywordKey("keyword-key"), "keyword-label")))
       )
 
-    val proposalState = ProposalState(
-      proposal = proposal,
-      lock = Some(Lock(moderatorId = userId, moderatorName = "moderator name", expirationDate = eventDate))
+    val proposalState = State(proposal = Some(proposal))
+    val proposalStateWithKeywords = proposalState.copy(proposal = proposalState.proposal.map(
+      _.copy(keywords = Seq(ProposalKeyword(ProposalKeywordKey("keyword-key"), "keyword-label")))
     )
-    val proposalStateWithKeywords = proposalState.copy(proposal =
-      proposalState.proposal.copy(keywords = Seq(ProposalKeyword(ProposalKeywordKey("keyword-key"), "keyword-label")))
     )
 
     val proposalKeywordsSet = ProposalKeywordsSet(

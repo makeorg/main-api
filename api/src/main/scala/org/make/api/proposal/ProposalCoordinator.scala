@@ -19,52 +19,33 @@
 
 package org.make.api.proposal
 
-import akka.actor.{Actor, ActorRef, Props}
-import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
+import akka.actor.typed.{ActorRef, ActorSystem}
+import akka.actor.typed.receptionist.ServiceKey
+import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityTypeKey}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorService
+import org.make.api.technical.ShardingNoEnvelopeMessageExtractor
 import org.make.core.technical.IdGenerator
 
 import scala.concurrent.duration.FiniteDuration
 
 object ProposalCoordinator {
-  def props(
+
+  val name: String = "proposal-coordinator"
+
+  val TypeKey: EntityTypeKey[ProposalCommand] =
+    EntityTypeKey[ProposalCommand]("proposal")
+
+  val Key: ServiceKey[ProposalCommand] = ServiceKey(name)
+
+  def apply(
+    system: ActorSystem[_],
     sessionHistoryCoordinatorService: SessionHistoryCoordinatorService,
     lockDuration: FiniteDuration,
     idGenerator: IdGenerator
-  ): Props =
-    Props(
-      new ProposalCoordinator(
-        sessionHistoryCoordinatorService = sessionHistoryCoordinatorService,
-        lockDuration = lockDuration,
-        idGenerator = idGenerator
-      )
+  ): ActorRef[ProposalCommand] = {
+    ClusterSharding(system).init(
+      Entity(TypeKey)(_ => ProposalActor(sessionHistoryCoordinatorService, lockDuration, idGenerator))
+        .withMessageExtractor(ShardingNoEnvelopeMessageExtractor[ProposalCommand](5))
     )
-  val name: String = "proposal-coordinator"
-}
-
-class ProposalCoordinator(
-  sessionHistoryCoordinatorService: SessionHistoryCoordinatorService,
-  lockDuration: FiniteDuration,
-  idGenerator: IdGenerator
-) extends Actor {
-  ClusterSharding(context.system).start(
-    ShardedProposal.shardName,
-    ShardedProposal
-      .props(
-        sessionHistoryCoordinatorService = sessionHistoryCoordinatorService,
-        lockDuration = lockDuration,
-        idGenerator = idGenerator
-      ),
-    ClusterShardingSettings(context.system),
-    ShardedProposal.extractEntityId,
-    ShardedProposal.extractShardId
-  )
-
-  def shardedProposal: ActorRef = {
-    ClusterSharding(context.system).shardRegion(ShardedProposal.shardName)
-  }
-
-  override def receive: Receive = {
-    case cmd: ProposalCommand => shardedProposal.forward(cmd)
   }
 }

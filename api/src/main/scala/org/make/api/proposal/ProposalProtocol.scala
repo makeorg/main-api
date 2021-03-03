@@ -21,7 +21,10 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
-import org.make.api.technical.ActorProtocol
+import akka.actor.typed.ActorRef
+import org.make.api.proposal.ProposalActorResponse.Envelope
+import org.make.api.proposal.ProposalActorResponse.Error._
+import org.make.api.technical.{ActorCommand, ActorProtocol}
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.{VoteAndQualifications, VoteTrust}
 import org.make.core.idea.IdeaId
@@ -33,7 +36,8 @@ import org.make.core.user.{User, UserId}
 
 sealed trait ProposalActorProtocol extends ActorProtocol
 
-sealed trait ProposalCommand extends ProposalActorProtocol {
+sealed trait ProposalCommand extends ActorCommand[ProposalId] with ProposalActorProtocol {
+  def id: ProposalId = proposalId
   def proposalId: ProposalId
   def requestContext: RequestContext
 }
@@ -45,7 +49,8 @@ final case class ProposeCommand(
   createdAt: ZonedDateTime,
   content: String,
   question: Question,
-  initialProposal: Boolean
+  initialProposal: Boolean,
+  replyTo: ActorRef[Envelope[ProposalId]]
 ) extends ProposalCommand
 
 final case class UpdateProposalCommand(
@@ -57,7 +62,8 @@ final case class UpdateProposalCommand(
   labels: Seq[LabelId],
   tags: Seq[TagId],
   idea: Option[IdeaId],
-  question: Question
+  question: Question,
+  replyTo: ActorRef[ProposalActorResponse[ModificationError, Proposal]]
 ) extends ProposalCommand
 
 final case class UpdateProposalVotesCommand(
@@ -65,12 +71,21 @@ final case class UpdateProposalVotesCommand(
   proposalId: ProposalId,
   requestContext: RequestContext,
   updatedAt: ZonedDateTime,
-  votes: Seq[UpdateVoteRequest]
+  votes: Seq[UpdateVoteRequest],
+  replyTo: ActorRef[ProposalActorResponse[ModificationError, Proposal]]
 ) extends ProposalCommand
 
-final case class ViewProposalCommand(proposalId: ProposalId, requestContext: RequestContext) extends ProposalCommand
+final case class ViewProposalCommand(
+  proposalId: ProposalId,
+  requestContext: RequestContext,
+  replyTo: ActorRef[ProposalActorResponse[ProposalNotFound, Proposal]]
+) extends ProposalCommand
 
-final case class GetProposal(proposalId: ProposalId, requestContext: RequestContext) extends ProposalCommand
+final case class GetProposal(
+  proposalId: ProposalId,
+  requestContext: RequestContext,
+  replyTo: ActorRef[ProposalActorResponse[ProposalNotFound, Proposal]]
+) extends ProposalCommand
 
 final case class KillProposalShard(proposalId: ProposalId, requestContext: RequestContext) extends ProposalCommand
 
@@ -83,7 +98,8 @@ final case class AcceptProposalCommand(
   question: Question,
   labels: Seq[LabelId],
   tags: Seq[TagId],
-  idea: Option[IdeaId]
+  idea: Option[IdeaId],
+  replyTo: ActorRef[ProposalActorResponse[ModificationError, Proposal]]
 ) extends ProposalCommand
 
 final case class RefuseProposalCommand(
@@ -91,11 +107,16 @@ final case class RefuseProposalCommand(
   proposalId: ProposalId,
   requestContext: RequestContext,
   sendNotificationEmail: Boolean,
-  refusalReason: Option[String]
+  refusalReason: Option[String],
+  replyTo: ActorRef[ProposalActorResponse[ModificationError, Proposal]]
 ) extends ProposalCommand
 
-final case class PostponeProposalCommand(moderator: UserId, proposalId: ProposalId, requestContext: RequestContext)
-    extends ProposalCommand
+final case class PostponeProposalCommand(
+  moderator: UserId,
+  proposalId: ProposalId,
+  requestContext: RequestContext,
+  replyTo: ActorRef[ProposalActorResponse[ModificationError, Proposal]]
+) extends ProposalCommand
 
 final case class VoteProposalCommand(
   proposalId: ProposalId,
@@ -104,7 +125,8 @@ final case class VoteProposalCommand(
   voteKey: VoteKey,
   maybeOrganisationId: Option[UserId],
   vote: Option[VoteAndQualifications],
-  voteTrust: VoteTrust
+  voteTrust: VoteTrust,
+  replyTo: ActorRef[ProposalActorResponse[VoteError, Vote]]
 ) extends ProposalCommand
 
 final case class UnvoteProposalCommand(
@@ -114,7 +136,8 @@ final case class UnvoteProposalCommand(
   voteKey: VoteKey,
   maybeOrganisationId: Option[UserId],
   vote: Option[VoteAndQualifications],
-  voteTrust: VoteTrust
+  voteTrust: VoteTrust,
+  replyTo: ActorRef[ProposalActorResponse[VoteError, Vote]]
 ) extends ProposalCommand
 
 final case class QualifyVoteCommand(
@@ -124,7 +147,8 @@ final case class QualifyVoteCommand(
   voteKey: VoteKey,
   qualificationKey: QualificationKey,
   vote: Option[VoteAndQualifications],
-  voteTrust: VoteTrust
+  voteTrust: VoteTrust,
+  replyTo: ActorRef[ProposalActorResponse[QualificationError, Qualification]]
 ) extends ProposalCommand
 
 final case class UnqualifyVoteCommand(
@@ -134,21 +158,24 @@ final case class UnqualifyVoteCommand(
   voteKey: VoteKey,
   qualificationKey: QualificationKey,
   vote: Option[VoteAndQualifications],
-  voteTrust: VoteTrust
+  voteTrust: VoteTrust,
+  replyTo: ActorRef[ProposalActorResponse[QualificationError, Qualification]]
 ) extends ProposalCommand
 
 final case class LockProposalCommand(
   proposalId: ProposalId,
   moderatorId: UserId,
   moderatorName: Option[String],
-  requestContext: RequestContext
+  requestContext: RequestContext,
+  replyTo: ActorRef[ProposalActorResponse[LockError, UserId]]
 ) extends ProposalCommand
 
 final case class PatchProposalCommand(
   proposalId: ProposalId,
   userId: UserId,
   changes: PatchProposalRequest,
-  requestContext: RequestContext
+  requestContext: RequestContext,
+  replyTo: ActorRef[ProposalActorResponse[ProposalNotFound, Proposal]]
 ) extends ProposalCommand
 
 final case class AnonymizeProposalCommand(proposalId: ProposalId, requestContext: RequestContext = RequestContext.empty)
@@ -157,27 +184,47 @@ final case class AnonymizeProposalCommand(proposalId: ProposalId, requestContext
 final case class SetKeywordsCommand(
   proposalId: ProposalId,
   keywords: Seq[ProposalKeyword],
-  requestContext: RequestContext
+  requestContext: RequestContext,
+  replyTo: ActorRef[ProposalActorResponse[ProposalNotFound, Proposal]]
 ) extends ProposalCommand
-
-final case class SnapshotProposal(proposalId: ProposalId, requestContext: RequestContext) extends ProposalCommand
 
 // Responses
 
-sealed trait ProposalActorResponse extends ProposalActorProtocol
+sealed trait ProposalActorResponse[+E, +T] extends ProposalActorProtocol {
+  def flatMap[F >: E, U](f: T => ProposalActorResponse[F, U]): ProposalActorResponse[F, U]
+}
 
-final case class ProposalEnveloppe(proposal: Proposal) extends ProposalActorResponse
-final case class CreatedProposalId(proposalId: ProposalId) extends ProposalActorResponse
-final case class UpdatedProposal(proposal: Proposal) extends ProposalActorResponse
-final case class ModeratedProposal(proposal: Proposal) extends ProposalActorResponse
-final case class ProposalVote(vote: Vote) extends ProposalActorResponse
-final case class ProposalQualification(qualification: Qualification) extends ProposalActorResponse
-final case class Locked(moderatorId: UserId) extends ProposalActorResponse
+object ProposalActorResponse {
 
-final case class InvalidStateError(message: String) extends ProposalActorResponse
-case object ProposalNotFound extends ProposalActorResponse
-case object VoteNotFound extends ProposalActorResponse
-final case class VoteError(error: Throwable) extends ProposalActorResponse
-case object QualificationNotFound extends ProposalActorResponse
-final case class QualificationError(error: Throwable) extends ProposalActorResponse
-final case class AlreadyLockedBy(moderatorName: String) extends ProposalActorResponse
+  final case class Envelope[T](value: T) extends ProposalActorResponse[Nothing, T] {
+    override def flatMap[E, U](f: T => ProposalActorResponse[E, U]): ProposalActorResponse[E, U] = f(value)
+  }
+
+  sealed trait Error[E <: Error[E]] extends ProposalActorResponse[E, Nothing] { self: E =>
+    override def flatMap[F >: E, U](f: Nothing => ProposalActorResponse[F, U]): ProposalActorResponse[E, Nothing] = self
+  }
+
+  object Error {
+
+    sealed trait LockError
+    sealed trait ModificationError
+    sealed trait VoteError extends QualificationError
+    sealed trait QualificationError
+
+    sealed trait ProposalNotFound extends Error[ProposalNotFound] with LockError with ModificationError with VoteError
+    case object ProposalNotFound extends ProposalNotFound
+
+    sealed trait VoteNotFound extends Error[VoteNotFound] with VoteError
+    case object VoteNotFound extends VoteNotFound
+
+    sealed trait QualificationNotFound extends Error[QualificationNotFound] with QualificationError
+    case object QualificationNotFound extends QualificationNotFound
+
+    final case class AlreadyLockedBy(moderatorName: String) extends Error[AlreadyLockedBy] with LockError
+
+    final case class InvalidStateError(message: String) extends Error[InvalidStateError] with ModificationError
+
+    final case class HistoryError(error: Throwable) extends Error[HistoryError] with VoteError
+
+  }
+}
