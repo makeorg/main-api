@@ -411,6 +411,32 @@ object SequenceServiceIT {
        |  cluster.seed-nodes = ["akka://SequenceServiceIT@localhost:25520"]
        |  cluster.jmx.multi-mbeans-in-same-jvm = on
        |
+       |  persistence {
+       |    cassandra {
+       |      events-by-tag.enabled = false
+       |      journal {
+       |        keyspace = "fake"
+       |        keyspace-autocreate = true
+       |        tables-autocreate = true
+       |        replication-factor = 1
+       |      }
+       |      snapshot {
+       |        keyspace = "fake"
+       |        keyspace-autocreate = true
+       |        tables-autocreate = true
+       |        replication-factor = 1
+       |      }
+       |    }
+       |
+       |    journal {
+       |      plugin = "make-api.event-sourcing.proposals.journal"
+       |    }
+       |    snapshot-store {
+       |      plugin = "make-api.event-sourcing.proposals.snapshot"
+       |    }
+       |    role = "worker"
+       |  }
+       |
        |  remote.artery.canonical {
        |    port = 25520
        |    hostname = "localhost"
@@ -420,6 +446,12 @@ object SequenceServiceIT {
        |    timefactor = 10.0
        |  }
        |}
+       |
+       |datastax-java-driver.basic {
+       |  contact-points = ["127.0.0.1:$cassandraExposedPort"]
+       |  load-balancing-policy.local-datacenter = "datacenter1"
+       |}
+       |
        |make-api {
        |  elasticSearch {
        |    connection-string = "localhost:30007"
@@ -429,33 +461,6 @@ object SequenceServiceIT {
        |    proposal-alias-name = "proposal"
        |    operation-of-question-alias-name = "operation-of-question"
        |    post-alias-name = "post"
-       |  }
-       |
-       |  event-sourcing {
-       |    jobs {
-       |      read-journal.port = $cassandraExposedPort
-       |      snapshot-store.port = $cassandraExposedPort
-       |    }
-       |    proposals {
-       |      read-journal.port = $cassandraExposedPort
-       |      snapshot-store.port = $cassandraExposedPort
-       |    }
-       |    sequences {
-       |      read-journal.port = $cassandraExposedPort
-       |      snapshot-store.port = $cassandraExposedPort
-       |    }
-       |    sessions {
-       |      read-journal.port = $cassandraExposedPort
-       |      snapshot-store.port = $cassandraExposedPort
-       |    }
-       |    technical {
-       |      read-journal.port = $cassandraExposedPort
-       |      snapshot-store.port = $cassandraExposedPort
-       |    }
-       |    users {
-       |      read-journal.port = $cassandraExposedPort
-       |      snapshot-store.port = $cassandraExposedPort
-       |    }
        |  }
        |
        |  kafka {

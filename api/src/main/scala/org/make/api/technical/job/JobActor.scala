@@ -157,8 +157,8 @@ object JobActor {
     }
   }
 
-  val JournalPluginId: String = "make-api.event-sourcing.jobs.read-journal"
-  val SnapshotPluginId: String = "make-api.event-sourcing.jobs.snapshot-store"
+  val JournalPluginId: String = "make-api.event-sourcing.jobs.journal"
+  val SnapshotPluginId: String = "make-api.event-sourcing.jobs.snapshot"
 
   def apply(heartRate: Duration): Behavior[Protocol.Command] = {
     Behaviors.setup { context =>

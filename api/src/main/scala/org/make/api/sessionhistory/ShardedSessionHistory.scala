@@ -48,9 +48,9 @@ class ShardedSessionHistory(userHistoryCoordinator: ActorRef, lockDuration: Fini
 }
 
 object ShardedSessionHistory {
-  val readJournal: String = "make-api.event-sourcing.sessions.read-journal"
-  val snapshotStore: String = "make-api.event-sourcing.sessions.snapshot-store"
-  val queryJournal: String = "make-api.event-sourcing.sessions.query-journal"
+  val readJournal: String = "make-api.event-sourcing.sessions.journal"
+  val snapshotStore: String = "make-api.event-sourcing.sessions.snapshot"
+  val queryJournal: String = "make-api.event-sourcing.sessions.query"
 
   def props(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration, idGenerator: IdGenerator): Props =
     Props(new ShardedSessionHistory(userHistoryCoordinator, lockDuration, idGenerator))

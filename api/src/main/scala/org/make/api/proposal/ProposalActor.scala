@@ -50,9 +50,9 @@ import scala.util.{Failure, Success}
 
 object ProposalActor {
 
-  val JournalPluginId: String = "make-api.event-sourcing.proposals.read-journal"
-  val SnapshotPluginId: String = "make-api.event-sourcing.proposals.snapshot-store"
-  val QueryJournalPluginId: String = "make-api.event-sourcing.proposals.query-journal"
+  val JournalPluginId: String = "make-api.event-sourcing.proposals.journal"
+  val SnapshotPluginId: String = "make-api.event-sourcing.proposals.snapshot"
+  val QueryJournalPluginId: String = "make-api.event-sourcing.proposals.query"
 
   final case class State(proposal: Option[Proposal]) extends MakeSerializable {
 
