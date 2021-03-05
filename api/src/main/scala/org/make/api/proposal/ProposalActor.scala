@@ -24,7 +24,7 @@ import java.time.{LocalDate, ZoneOffset}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.{PersistenceId, SnapshotAdapter}
 import akka.persistence.typed.scaladsl.{Effect, EffectBuilder, EventSourcedBehavior, ReplyEffect, RetentionCriteria}
 import org.make.api.proposal.ProposalEvent._
 import org.make.api.proposal.ProposalActorResponse._
@@ -1155,6 +1155,18 @@ object ProposalActor {
         case (state, _) => state
       }
 
+      val snapshotAdapter = new SnapshotAdapter[State] {
+        override def toJournal(state: State): Any = state
+
+        @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+        override def fromJournal(from: Any): State = from match {
+          case proposal: Proposal => State(Some(proposal))
+          case state: State       => state
+          case other =>
+            throw new IllegalStateException(s"$other with class ${other.getClass} is not a recoverable state")
+        }
+      }
+
       EventSourcedBehavior
         .withEnforcedReplies[ProposalCommand, ProposalEvent, State](
           persistenceId = PersistenceId.ofUniqueId(context.self.path.name),
@@ -1165,6 +1177,7 @@ object ProposalActor {
         .withJournalPluginId(JournalPluginId)
         .withSnapshotPluginId(SnapshotPluginId)
         .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 10, keepNSnapshots = 50))
+        .snapshotAdapter(snapshotAdapter)
     }
   }
 
