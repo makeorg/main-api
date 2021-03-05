@@ -608,8 +608,8 @@ trait MakeDirectives
 
   def usesCookies(applicationName: Option[ApplicationName]): Boolean = {
     applicationName match {
-      case Some(ApplicationName.Backoffice | ApplicationName.Widget) => false
-      case _                                                         => true
+      case Some(ApplicationName.Backoffice | ApplicationName.ConcertationBeta | ApplicationName.Widget) => false
+      case _                                                                                            => true
     }
   }
 

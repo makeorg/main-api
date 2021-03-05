@@ -43,6 +43,7 @@ object ApplicationName extends StringEnum[ApplicationName] with StringCirceEnum[
 
   case object Backoffice extends ApplicationName("backoffice")
   case object BiBatchs extends ApplicationName("bi-batchs")
+  case object ConcertationBeta extends ApplicationName("concertation-beta")
   case object Dial extends ApplicationName("dial")
   case object DialBatchs extends ApplicationName("dial-batchs")
   case object Infrastructure extends ApplicationName("infra")
