@@ -35,7 +35,6 @@ import akka.http.scaladsl.server.Route
 import akka.util.ByteString
 import cats.data.NonEmptyList
 import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.{
   ProposalResponse,
   ProposalService,
@@ -44,7 +43,6 @@ import org.make.api.proposal.{
   _
 }
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
@@ -78,15 +76,11 @@ class UserApiTest
     with QuestionServiceComponent
     with ProposalServiceComponent
     with UserServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
     with SocialServiceComponent
-    with SessionHistoryCoordinatorServiceComponent
     with UserHistoryCoordinatorServiceComponent
     with ReadJournalComponent
     with PersistentUserServiceComponent
     with EventBusServiceComponent
-    with MakeSettingsComponent
     with ActorSystemComponent
     with StorageServiceComponent
     with StorageConfigurationComponent
@@ -288,7 +282,7 @@ class UserApiTest
               firstName = Some("olive"),
               lastName = Some("tom"),
               password = Some("mypassss"),
-              lastIp = Some("192.0.0.1"),
+              lastIp = Some("192.0.0.x"),
               dateOfBirth = Some(LocalDate.parse("1997-12-02")),
               country = Country("FR"),
               gender = Some(Gender.Male),
@@ -338,7 +332,7 @@ class UserApiTest
               firstName = Some("olive"),
               lastName = Some("tom"),
               password = Some("mypassss"),
-              lastIp = Some("192.0.0.1"),
+              lastIp = Some("192.0.0.x"),
               dateOfBirth = Some(dateOfBirth),
               country = Country("FR"),
               gender = Some(Gender.Male),
@@ -386,7 +380,7 @@ class UserApiTest
               firstName = Some("olive"),
               lastName = Some("tom"),
               password = Some("mypassss"),
-              lastIp = Some("192.0.0.1"),
+              lastIp = Some("192.0.0.x"),
               dateOfBirth = None,
               postalCode = Some("75011"),
               profession = Some("football player"),

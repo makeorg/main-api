@@ -80,21 +80,21 @@ import org.make.core.technical.Pagination.Start
 class ProposalServiceTest
     extends MakeUnitTest
     with DefaultProposalServiceComponent
+    with IdGeneratorComponent
+    with SessionHistoryCoordinatorServiceComponent
+    with SecurityConfigurationComponent
     with ActorSystemComponent
     with EventBusServiceComponent
     with IdeaMappingServiceComponent
     with IdeaServiceComponent
-    with IdGeneratorComponent
     with PartnerServiceComponent
     with ProposalCoordinatorServiceComponent
     with ProposalSearchEngineComponent
     with ProposalServiceComponent
     with QuestionServiceComponent
     with ReadJournalComponent
-    with SecurityConfigurationComponent
     with SegmentServiceComponent
     with SemanticComponent
-    with SessionHistoryCoordinatorServiceComponent
     with TagServiceComponent
     with TagTypeServiceComponent
     with UserHistoryCoordinatorServiceComponent

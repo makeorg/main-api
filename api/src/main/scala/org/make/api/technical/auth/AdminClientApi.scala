@@ -25,9 +25,9 @@ import grizzled.slf4j.Logging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical._
 import org.make.core.auth.{Client, ClientId, UserRights}
 import org.make.core.user.{CustomRole, Role, UserId}
@@ -142,11 +142,7 @@ trait DefaultAdminClientApiComponent
     with MakeAuthenticationDirectives
     with Logging
     with ParameterExtractors {
-  self: MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with ClientServiceComponent =>
+  self: MakeDirectivesDependencies with ClientServiceComponent =>
 
   override lazy val adminClientApi: AdminClientApi = new DefaultAdminClientApi
 

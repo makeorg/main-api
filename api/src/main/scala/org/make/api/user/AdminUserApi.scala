@@ -21,19 +21,18 @@ package org.make.api.user
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
-import grizzled.slf4j.Logging
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Url
+import grizzled.slf4j.Logging
 import io.circe.refined._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiImplicitParam, _}
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.storage.{Content, StorageConfigurationComponent, StorageServiceComponent, UploadResponse}
-import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.core.Validation.{validateField, _}
 import org.make.core._
 import org.make.core.auth.UserRights
@@ -383,11 +382,8 @@ trait DefaultAdminUserApiComponent
     with Logging
     with ParameterExtractors {
 
-  this: UserServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with MakeSettingsComponent
+  this: MakeDirectivesDependencies
+    with UserServiceComponent
     with PersistentUserServiceComponent
     with StorageServiceComponent
     with StorageConfigurationComponent =>

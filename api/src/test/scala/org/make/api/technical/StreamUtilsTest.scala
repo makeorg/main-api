@@ -20,20 +20,13 @@
 package org.make.api.technical
 
 import org.make.api.MakeApiTestBase
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.Future
 
-class StreamUtilsTest
-    extends MakeApiTestBase
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with MakeAuthentication
-    with ScalaFutures {
+class StreamUtilsTest extends MakeApiTestBase with MakeDataHandlerComponent with MakeAuthentication with ScalaFutures {
 
   val elements: Range.Inclusive = 0.to(10)
 

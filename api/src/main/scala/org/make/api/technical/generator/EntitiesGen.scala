@@ -20,7 +20,6 @@
 package org.make.api.technical.generator
 
 import java.time.Period
-
 import cats.data.NonEmptyList
 import enumeratum.values.scalacheck._
 import eu.timepit.refined.auto._

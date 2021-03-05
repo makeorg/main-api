@@ -177,6 +177,8 @@ object UserHistoryCoordinatorTest {
       |akka.remote.artery.advanced.maximum-frame-size = 128000b
       |akka.actor.serialize-messages = on
       |akka-kryo-serialization.post-serialization-transformations = "off"
+      |make-api.security.secure-hash-salt = "salt-secure"
+      |make-api.security.secure-vote-salt = "vote-secure"
     """.stripMargin
 
   val conf: Config =
@@ -191,6 +193,8 @@ object UserHistoryCoordinatorTest {
     s"""
       |akka.cluster.roles = ["seed"]
       |akka.remote.artery.canonical.port = ${TestHelper.counter.getAndIncrement()}
+      |make-api.security.secure-hash-salt = "salt-secure"
+      |make-api.security.secure-vote-salt = "vote-secure"
       |""".stripMargin
 
   val configSeed: Config =

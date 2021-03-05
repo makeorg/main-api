@@ -22,9 +22,6 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.technical.IdGeneratorComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.idea.{IdeaId, IdeaMapping, IdeaMappingId}
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
@@ -36,9 +33,6 @@ import org.make.core.technical.Pagination.Start
 class AdminIdeaMappingApiTest
     extends MakeApiTestBase
     with DefaultAdminIdeaMappingApiComponent
-    with IdGeneratorComponent
-    with MakeDataHandlerComponent
-    with MakeSettingsComponent
     with IdeaMappingServiceComponent {
 
   override val ideaMappingService: IdeaMappingService = mock[IdeaMappingService]

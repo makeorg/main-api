@@ -24,7 +24,6 @@ import akka.http.scaladsl.server.Route
 import cats.data.NonEmptyList
 import eu.timepit.refined.auto._
 import org.make.api.MakeApiTestBase
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.feature.{
   ActiveFeatureService,
   ActiveFeatureServiceComponent,
@@ -40,8 +39,6 @@ import org.make.api.personality.{PersonalityRoleService, PersonalityRoleServiceC
 import org.make.api.proposal._
 import org.make.api.sequence.{SequenceResult, SequenceService}
 import org.make.api.tag.{TagService, TagServiceComponent}
-import org.make.api.technical.IdGeneratorComponent
-import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId, Feature => Feat}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.keyword.Keyword
@@ -69,14 +66,10 @@ class QuestionApiTest
     extends MakeApiTestBase
     with DefaultQuestionApiComponent
     with QuestionServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
     with OperationServiceComponent
     with OperationOfQuestionSearchEngineComponent
     with OperationOfQuestionServiceComponent
     with PartnerServiceComponent
-    with MakeSettingsComponent
-    with MakeAuthentication
     with FeatureServiceComponent
     with ActiveFeatureServiceComponent
     with ProposalSearchEngineComponent

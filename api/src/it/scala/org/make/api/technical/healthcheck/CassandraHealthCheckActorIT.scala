@@ -201,6 +201,8 @@ object CassandraHealthCheckActorIT {
        |
        |    }
        |  }
+       |  security.secure-hash-salt = "salt-secure"
+       |  security.secure-vote-salt = "vote-secure"
        |}
     """.stripMargin
 

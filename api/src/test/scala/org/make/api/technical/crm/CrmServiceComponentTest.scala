@@ -202,7 +202,12 @@ class CrmServiceComponentTest
       .lines()
       .map[Object] { line =>
         val splitted = line.split(":", 3)
-        StaminaTestUtils.deserializeEventFromJson[Object](splitted(0), splitted(2), splitted(1).toInt)
+        StaminaTestUtils.deserializeEventFromJson[Object](
+          actorSystemTyped.classicSystem,
+          splitted(0),
+          splitted(2),
+          splitted(1).toInt
+        )
       }
       .toArray
       .toIndexedSeq
@@ -1500,5 +1505,10 @@ class CrmServiceComponentTest
 }
 
 object CrmServiceComponentTest {
-  val configuration: String = "akka.log-dead-letters-during-shutdown = off"
+  val configuration: String =
+    """
+      |akka.log-dead-letters-during-shutdown = off
+      |make-api.security.secure-hash-salt = "salt-secure"
+      |make-api.security.secure-vote-salt = "vote-secure"
+      |""".stripMargin
 }

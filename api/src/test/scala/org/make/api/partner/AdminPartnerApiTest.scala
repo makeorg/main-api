@@ -23,18 +23,13 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
-import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.question.QuestionId
 
 import scala.concurrent.Future
 import org.make.core.technical.Pagination.Start
 
-class AdminPartnerApiTest
-    extends MakeApiTestBase
-    with DefaultAdminPartnerApiComponent
-    with PartnerServiceComponent
-    with MakeDataHandlerComponent {
+class AdminPartnerApiTest extends MakeApiTestBase with DefaultAdminPartnerApiComponent with PartnerServiceComponent {
 
   override val partnerService: PartnerService = mock[PartnerService]
 

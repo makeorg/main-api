@@ -24,7 +24,6 @@ import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.feature.{ActiveFeatureServiceComponent, FeatureServiceComponent}
 import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
 import org.make.api.keyword.KeywordServiceComponent
@@ -44,11 +43,10 @@ import org.make.api.proposal.{
   ProposalsResultSeededResponse
 }
 import org.make.api.sequence.{SequenceResult, SequenceServiceComponent}
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.CsvReceptacle._
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{EndpointType, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{EndpointType, MakeAuthenticationDirectives}
 import org.make.core.Validation.validateField
 import org.make.core.auth.UserRights
 import org.make.core.idea.TopIdeaId
@@ -319,11 +317,8 @@ trait DefaultQuestionApiComponent
     with Logging
     with ParameterExtractors {
 
-  this: QuestionServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with MakeSettingsComponent
+  this: MakeDirectivesDependencies
+    with QuestionServiceComponent
     with OperationServiceComponent
     with OperationOfQuestionSearchEngineComponent
     with OperationOfQuestionServiceComponent

@@ -24,11 +24,9 @@ import akka.http.scaladsl.server._
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations._
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.QuestionServiceComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, IdResponse, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{`X-Total-Count`, IdResponse, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.crmTemplate.{CrmQuestionTemplate, CrmQuestionTemplateId, CrmTemplateKind, TemplateId}
 import org.make.core.question.QuestionId
@@ -163,12 +161,7 @@ trait DefaultAdminCrmQuestionTemplatesApiComponent
     extends AdminCrmQuestionTemplatesApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors {
-  this: CrmTemplatesServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with MakeSettingsComponent
-    with QuestionServiceComponent =>
+  this: MakeDirectivesDependencies with CrmTemplatesServiceComponent with QuestionServiceComponent =>
 
   val crmQuestionTemplateId: PathMatcher1[CrmQuestionTemplateId] = Segment.map(CrmQuestionTemplateId.apply)
 

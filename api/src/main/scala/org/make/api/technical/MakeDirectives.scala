@@ -33,10 +33,12 @@ import org.make.api.MakeApi
 import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.api.technical.directives.FutureDirectives
 import org.make.api.technical.monitoring.MonitoringMessageHelper
+import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.technical.storage.Content
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.tracing.Tracing
@@ -64,13 +66,9 @@ trait MakeDirectives
     extends Directives
     with ErrorAccumulatingCirceSupport
     with CirceFormatters
-    with MakeDataHandlerComponent
     with FutureDirectives
     with TracingDirectives {
-  this: IdGeneratorComponent
-    with MakeSettingsComponent
-    with MakeAuthentication
-    with SessionHistoryCoordinatorServiceComponent =>
+  this: MakeDirectivesDependencies =>
 
   lazy val authorizedUris: Seq[String] = makeSettings.authorizedCorsUri
   lazy val mandatoryConnection: Boolean = makeSettings.mandatoryConnection
@@ -359,7 +357,7 @@ trait MakeDirectives
       maybeTokenRefreshed  <- makeTriggerAuthRefreshFromCookie(maybeApplicationName)
       _                    <- addMaybeRefreshedSecureCookie(maybeApplicationName, maybeTokenRefreshed)
       _                    <- makeAuthCookieHandlers(maybeTokenRefreshed, maybeApplicationName)
-      maybeIpAddress       <- extractClientIP
+      maybeIpAddress       <- extractIpAndHash
       maybeUser            <- optionalMakeOAuth2
       _                    <- checkTokenExpirationIfNoCookieIsDefined(maybeUser, maybeApplicationName)
       _                    <- checkEndpointAccess(maybeUser.map(_.user), endpointType)
@@ -378,7 +376,6 @@ trait MakeDirectives
       maybeCustomData      <- optionalNonEmptyHeaderValueByName(`X-Make-Custom-Data`.name)
     } yield {
       val requestContext = RequestContext(
-        currentTheme = None,
         userId = maybeUser.map(_.user.userId),
         requestId = requestId,
         sessionId = currentSessionId,
@@ -393,7 +390,8 @@ trait MakeDirectives
         country = maybeCountry.map(Country(_)),
         detectedCountry = maybeDetectedCountry.map(Country(_)),
         hostname = maybeHostName,
-        ipAddress = maybeIpAddress.toOption.map(_.getHostAddress),
+        ipAddress = maybeIpAddress.map(_.ip),
+        ipAddressHash = maybeIpAddress.map(_.hash),
         getParameters = maybeGetParameters.map(
           _.split("&")
             .map(_.split("=", 2))
@@ -612,8 +610,29 @@ trait MakeDirectives
     }
   }
 
+  def extractIpAndHash: Directive1[Option[IpAndHash]] = {
+    extractClientIP.map(
+      _.toOption.map(
+        addr =>
+          IpAndHash(
+            IpAndHash.obfuscateIp(addr.getHostAddress),
+            SecurityHelper.generateHash(addr.getHostAddress, securityConfiguration.secureHashSalt)
+          )
+      )
+    )
+  }
+
   implicit def stringEnumPathMatcher[A <: StringEnumEntry](enum: StringEnum[A]): PathMatcher1[A] =
     Segment.flatMap(enum.withValueOpt)
+}
+
+object MakeDirectives {
+  type MakeDirectivesDependencies = IdGeneratorComponent
+    with MakeSettingsComponent
+    with MakeAuthentication
+    with SessionHistoryCoordinatorServiceComponent
+    with SecurityConfigurationComponent
+    with MakeDataHandlerComponent
 }
 
 sealed trait EndpointType
@@ -676,10 +695,7 @@ object `X-Make-External-Id` extends ModeledCustomHeaderCompanion[`X-Make-Externa
 }
 
 trait MakeAuthenticationDirectives extends MakeAuthentication {
-  this: MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent =>
+  this: MakeDirectivesDependencies =>
 
   def requireModerationRole(user: UserRights): Directive0 = {
     authorize(user.roles.contains(RoleModerator) || user.roles.contains(RoleAdmin))
@@ -939,4 +955,11 @@ final case class `X-Make-Custom-Data`(override val value: String) extends Modele
 object `X-Make-Custom-Data` extends ModeledCustomHeaderCompanion[`X-Make-Custom-Data`] {
   override val name: String = "x-make-custom-data"
   override def parse(value: String): Try[`X-Make-Custom-Data`] = Success(new `X-Make-Custom-Data`(value))
+}
+
+final case class IpAndHash(ip: String, hash: String)
+
+object IpAndHash {
+  def obfuscateIp(ip: String): String =
+    s"${ip.take(ip.lastIndexOf("."))}.x"
 }

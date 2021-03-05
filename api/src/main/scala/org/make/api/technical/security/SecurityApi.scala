@@ -24,12 +24,11 @@ import akka.http.scaladsl.server.{Directives, Route}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{EndpointType, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{EndpointType, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
 import scalaoauth2.provider.AuthInfo
@@ -86,12 +85,7 @@ trait SecurityApiComponent {
 }
 
 trait DefaultSecurityApiComponent extends SecurityApiComponent with MakeAuthenticationDirectives {
-  this: SecurityConfigurationComponent
-    with ActorSystemComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with MakeSettingsComponent =>
+  this: MakeDirectivesDependencies with ActorSystemComponent =>
 
   override lazy val securityApi: SecurityApi = new DefaultSecurityApi
 

@@ -24,11 +24,10 @@ import akka.http.scaladsl.server._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRole, PersonalityRoleId}
 import org.make.core.question.QuestionId
@@ -145,12 +144,7 @@ trait DefaultAdminQuestionPersonalityApiComponent
     extends AdminQuestionPersonalityApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors {
-  this: QuestionPersonalityServiceComponent
-    with MakeDataHandlerComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with PersonalityRoleServiceComponent =>
+  this: MakeDirectivesDependencies with QuestionPersonalityServiceComponent with PersonalityRoleServiceComponent =>
 
   override lazy val adminQuestionPersonalityApi: AdminQuestionPersonalityApi = new DefaultAdminQuestionPersonalityApi
 

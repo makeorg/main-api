@@ -419,8 +419,9 @@ final case class PatchRequestContext(
   location: Option[String] = None,
   question: Option[String] = None,
   hostname: Option[String] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "0.0.0.0")
+  @(ApiModelProperty @field)(dataType = "string", example = "0.0.0.x")
   ipAddress: Option[String] = None,
+  ipAddressHash: Option[String] = None,
   getParameters: Option[Map[String, String]] = None,
   userAgent: Option[String] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "f626cabc-d0f1-49ef-aec1-eb8d50c8dda1")

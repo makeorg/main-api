@@ -25,17 +25,17 @@ import akka.http.scaladsl.server.directives.Credentials.Provided
 import akka.http.scaladsl.server.{Directives, Route}
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
-import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.extensions.MailJetConfigurationComponent
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{EventBusServiceComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.job.Job.JobId.SyncCrmData
 import org.make.core.{DateHelper, HttpCodes, Validation}
 import scalaoauth2.provider.AuthInfo
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
 @Api(value = "CRM")
@@ -126,15 +126,11 @@ trait CrmApiComponent {
 }
 
 trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDirectives with Logging {
-  this: MakeDataHandlerComponent
+  this: MakeDirectivesDependencies
     with EventBusServiceComponent
     with MailJetConfigurationComponent
     with CrmServiceComponent
-    with EventBusServiceComponent
-    with IdGeneratorComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with MakeSettingsComponent
-    with MakeAuthentication =>
+    with EventBusServiceComponent =>
 
   override lazy val crmApi: CrmApi = new DefaultCrmApi
 

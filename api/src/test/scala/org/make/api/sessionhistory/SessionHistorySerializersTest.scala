@@ -19,14 +19,15 @@
 
 package org.make.api.sessionhistory
 
-import java.time.ZonedDateTime
-
+import akka.actor.ActorSystem
+import com.typesafe.config.ConfigFactory
 import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
+import org.make.api.technical.security.SecurityConfiguration
 import org.make.api.userhistory.StartSequenceParameters
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteTrust.Trusted
-import org.make.core.proposal._
 import org.make.core.proposal.ProposalActionType._
+import org.make.core.proposal._
 import org.make.core.sequence.SequenceId
 import org.make.core.session.SessionId
 import org.make.core.user.UserId
@@ -34,10 +35,13 @@ import org.scalatest.wordspec.AnyWordSpec
 import stamina.Persisters
 import stamina.testkit.StaminaTestKit
 
+import java.time.ZonedDateTime
+
 class SessionHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
 
   val sessionId = SessionId("session-id")
-  val persisters = Persisters(SessionHistorySerializers.serializers.toList)
+  val conf = SecurityConfiguration(SessionHistorySerializersTest.system)
+  val persisters = Persisters(SessionHistorySerializers(conf).serializers.toList)
   val userId = UserId("my-user-id")
   val requestContext: RequestContext = RequestContext.empty
   val eventDate: ZonedDateTime = ZonedDateTime.parse("2018-03-01T16:09:30.441Z")
@@ -147,5 +151,17 @@ class SessionHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
       sample(sessionHistory),
       sample("sessionHistory2", sessionHistory2)
     )
+  }
+}
+
+object SessionHistorySerializersTest {
+  val configuration: String =
+    """
+      |make-api.security.secure-hash-salt = "salt-secure"
+      |make-api.security.secure-vote-salt = "vote-secure"     """.stripMargin
+
+  val system: ActorSystem = {
+    val config = ConfigFactory.load(ConfigFactory.parseString(configuration))
+    ActorSystem(classOf[SessionHistorySerializersTest].getSimpleName, config)
   }
 }

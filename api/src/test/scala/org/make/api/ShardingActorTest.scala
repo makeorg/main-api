@@ -85,6 +85,8 @@ object TestHelper {
        |  }
        |
        |  cookie-session.lifetime = "600 milliseconds"
+       |  security.secure-hash-salt = "salt-secure"
+       |  security.secure-vote-salt = "vote-secure"
        |}
     """.stripMargin
   }

@@ -25,11 +25,10 @@ import grizzled.slf4j.Logging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical._
-import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.HttpCodes
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
@@ -63,11 +62,7 @@ trait FixturesApiComponent {
 }
 
 trait DefaultFixturesApiComponent extends FixturesApiComponent with MakeAuthenticationDirectives with Logging {
-  this: MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with FixturesServiceComponent =>
+  this: MakeDirectivesDependencies with FixturesServiceComponent =>
 
   override lazy val fixturesApi: FixturesApi = new DefaultFixturesApi
 

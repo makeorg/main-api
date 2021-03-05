@@ -23,12 +23,11 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.core.{HttpCodes, Order, ParameterExtractors}
 import org.make.core.auth.UserRights
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
@@ -125,11 +124,7 @@ trait DefaultAdminPartnerApiComponent
     extends AdminPartnerApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors {
-  this: PartnerServiceComponent
-    with MakeDataHandlerComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent =>
+  this: MakeDirectivesDependencies with PartnerServiceComponent =>
 
   override lazy val adminPartnerApi: AdminPartnerApi = new DefaultAdminPartnerApi
 

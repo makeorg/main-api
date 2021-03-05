@@ -26,13 +26,10 @@ import akka.http.scaladsl.server.Route
 import cats.data.NonEmptyList
 import io.circe.syntax._
 import org.make.api.MakeApiTestBase
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.tag.{TagService, TagServiceComponent}
-import org.make.api.technical.IdGeneratorComponent
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
@@ -65,9 +62,6 @@ class DefaultAdminProposalApiComponentTest
     with ProposalServiceComponent
     with ProposalCoordinatorServiceComponent
     with QuestionServiceComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent
     with IdeaServiceComponent
     with OperationServiceComponent
     with UserServiceComponent

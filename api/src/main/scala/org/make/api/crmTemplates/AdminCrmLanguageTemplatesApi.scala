@@ -26,10 +26,8 @@ import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiModelProperty, _}
 
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.crmTemplate.{CrmLanguageTemplate, CrmTemplateKind, TemplateId}
 import org.make.core.reference.Language
@@ -142,11 +140,7 @@ trait AdminCrmLanguageTemplatesApiComponent {
 trait DefaultAdminCrmLanguageTemplatesApiComponent
     extends AdminCrmLanguageTemplatesApiComponent
     with MakeAuthenticationDirectives {
-  this: CrmTemplatesServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with MakeSettingsComponent =>
+  this: MakeDirectivesDependencies with CrmTemplatesServiceComponent =>
 
   val language: PathMatcher1[Language] = Segment.flatMap(lang => Try(Language(lang)).toOption)
 

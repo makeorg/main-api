@@ -23,7 +23,6 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
-import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.personality.{
   FieldType,
   PersonalityRole,
@@ -38,7 +37,6 @@ import org.make.core.technical.Pagination.Start
 class AdminPersonalityRoleApiTest
     extends MakeApiTestBase
     with DefaultAdminPersonalityRoleApiComponent
-    with MakeDataHandlerComponent
     with PersonalityRoleServiceComponent
     with PersonalityRoleFieldServiceComponent {
 

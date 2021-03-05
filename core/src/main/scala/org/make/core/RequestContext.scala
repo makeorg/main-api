@@ -29,7 +29,7 @@ import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
@@ -58,8 +58,6 @@ object ApplicationName extends StringEnum[ApplicationName] with StringCirceEnum[
 }
 
 final case class RequestContext(
-  @(ApiModelProperty @field)(dataType = "string", example = "9aff4846-3cb8-4737-aea0-2c4a608f30fd")
-  currentTheme: Option[ThemeId],
   @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55")
   userId: Option[UserId] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "40ab2307-8ebf-4da6-8eb5-9e23b7c4deb0")
@@ -86,6 +84,7 @@ final case class RequestContext(
   hostname: Option[String] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "0.0.0.0")
   ipAddress: Option[String] = None,
+  ipAddressHash: Option[String] = None,
   getParameters: Option[Map[String, String]] = None,
   userAgent: Option[String] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
@@ -112,7 +111,6 @@ object RequestContext extends CirceFormatters with SprayJsonFormatters with Avro
 
   val empty: RequestContext =
     RequestContext(
-      currentTheme = None,
       userId = None,
       requestId = "",
       sessionId = SessionId(""),
@@ -128,6 +126,7 @@ object RequestContext extends CirceFormatters with SprayJsonFormatters with Avro
       question = None,
       hostname = None,
       ipAddress = None,
+      ipAddressHash = None,
       getParameters = None,
       userAgent = None,
       questionId = None,

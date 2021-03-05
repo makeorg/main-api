@@ -23,9 +23,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.technical._
-import org.make.api.technical.auth._
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage._
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
@@ -43,9 +40,6 @@ class AdminUserApiTest
     extends MakeApiTestBase
     with DefaultAdminUserApiComponent
     with UserServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
     with ActorSystemComponent
     with PersistentUserServiceComponent
     with StorageServiceComponent

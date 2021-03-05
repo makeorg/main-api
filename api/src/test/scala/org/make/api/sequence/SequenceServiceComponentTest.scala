@@ -21,13 +21,12 @@ package org.make.api.sequence
 
 import grizzled.slf4j.Logging
 import org.make.api.MakeUnitTest
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.operation.{OperationOfQuestionSearchEngine, OperationOfQuestionSearchEngineComponent}
 import org.make.api.proposal._
 import org.make.api.segment.{SegmentService, SegmentServiceComponent}
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent}
-import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGeneratorComponent}
+import org.make.api.technical.{EventBusService, EventBusServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.RequestContext
@@ -35,7 +34,6 @@ import org.make.core.proposal.ProposalKeywordKey
 import org.make.core.proposal.indexed.Zone
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
-import org.make.core.technical.IdGenerator
 import org.scalatest.PrivateMethodTester
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -46,19 +44,17 @@ class SequenceServiceComponentTest
     extends MakeUnitTest
     with PrivateMethodTester
     with DefaultSequenceServiceComponent
+    with SecurityConfigurationComponent
     with SequenceConfigurationComponent
-    with IdGeneratorComponent
+    with SessionHistoryCoordinatorServiceComponent
     with ProposalServiceComponent
     with ProposalCoordinatorServiceComponent
     with UserHistoryCoordinatorServiceComponent
-    with SessionHistoryCoordinatorServiceComponent
     with SequenceServiceComponent
     with ProposalSearchEngineComponent
     with EventBusServiceComponent
     with UserServiceComponent
-    with MakeSettingsComponent
     with SelectionAlgorithmComponent
-    with SecurityConfigurationComponent
     with SegmentServiceComponent
     with OperationOfQuestionSearchEngineComponent
     with Logging {
@@ -71,9 +67,7 @@ class SequenceServiceComponentTest
     mock[UserHistoryCoordinatorService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
   override val proposalService: ProposalService = mock[ProposalService]
-  override val idGenerator: IdGenerator = mock[IdGenerator]
   override val userService: UserService = mock[UserService]
-  override val makeSettings: MakeSettings = mock[MakeSettings]
   override val banditSelectionAlgorithm: SelectionAlgorithm = mock[SelectionAlgorithm]
   override val roundRobinSelectionAlgorithm: SelectionAlgorithm = mock[SelectionAlgorithm]
   override val randomSelectionAlgorithm: SelectionAlgorithm = mock[SelectionAlgorithm]

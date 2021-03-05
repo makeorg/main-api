@@ -21,7 +21,6 @@ package org.make.api.technical.auth
 
 import java.util.Date
 import java.util.concurrent.TimeUnit
-
 import com.google.common.cache.{Cache, CacheBuilder}
 import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeSettingsComponent

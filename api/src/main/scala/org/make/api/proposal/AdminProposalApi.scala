@@ -21,18 +21,17 @@ package org.make.api.proposal
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
-import grizzled.slf4j.Logging
 import cats.implicits._
+import grizzled.slf4j.Logging
 import io.swagger.annotations._
 
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.idea.IdeaServiceComponent
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.question.QuestionServiceComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.tag.TagServiceComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{MakeAuthenticationDirectives}
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalId
@@ -147,12 +146,10 @@ trait DefaultAdminProposalApiComponent
     with Logging
     with ParameterExtractors {
 
-  this: ProposalServiceComponent
+  this: MakeDirectivesDependencies
+    with ProposalServiceComponent
     with ProposalCoordinatorServiceComponent
     with QuestionServiceComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent
     with IdeaServiceComponent
     with OperationServiceComponent
     with UserServiceComponent

@@ -22,11 +22,11 @@ package org.make.api.technical.auth
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.HttpCookie
 import akka.http.scaladsl.server.{Directives, Route}
+import grizzled.slf4j.Logging
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.MakeDataHandler.{CreatedAtParameter, RefreshTokenExpirationParameter}
@@ -227,11 +227,9 @@ trait AuthenticationApiComponent {
 trait DefaultAuthenticationApiComponent
     extends AuthenticationApiComponent
     with MakeDirectives
-    with MakeAuthenticationDirectives {
-  self: MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent =>
+    with MakeAuthenticationDirectives
+    with Logging {
+  self: MakeDirectivesDependencies =>
 
   def tokenEndpoint: TokenEndpoint
 

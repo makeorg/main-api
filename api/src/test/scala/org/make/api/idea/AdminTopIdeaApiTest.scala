@@ -23,10 +23,7 @@ import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import cats.data.NonEmptyList
 import org.make.api.MakeApiTestBase
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
-import org.make.api.technical.IdGeneratorComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.idea._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -37,9 +34,6 @@ import org.make.core.technical.Pagination.Start
 class AdminTopIdeaApiTest
     extends MakeApiTestBase
     with DefaultAdminTopIdeaApiComponent
-    with IdGeneratorComponent
-    with MakeDataHandlerComponent
-    with MakeSettingsComponent
     with TopIdeaServiceComponent
     with QuestionServiceComponent
     with IdeaServiceComponent {

@@ -20,17 +20,15 @@
 package org.make.api.technical.job
 
 import java.time.ZonedDateTime
-
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import enumeratum.{Circe, Enum, EnumEntry}
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.MakeAuthenticationDirectives
 import org.make.core.auth.UserRights
 import org.make.core.job.Job
 import org.make.core.job.Job.JobId
@@ -69,12 +67,7 @@ trait JobApiComponent {
 }
 
 trait DefaultJobApiComponent extends JobApiComponent with MakeAuthenticationDirectives {
-  self: IdGeneratorComponent
-    with JobCoordinatorServiceComponent
-    with MakeDataHandlerComponent
-    with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent =>
-
+  self: MakeDirectivesDependencies with JobCoordinatorServiceComponent =>
   override lazy val jobApi: JobApi = new DefaultJobApi
 
   class DefaultJobApi extends JobApi {

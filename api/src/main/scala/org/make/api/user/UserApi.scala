@@ -27,13 +27,11 @@ import io.swagger.annotations._
 
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse, ProposalsResultSeededResponse}
 import org.make.api.question.QuestionServiceComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
 import org.make.api.technical.CsvReceptacle._
-import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.directives.ClientDirectives
 import org.make.api.technical.storage._
 import org.make.api.user.social.SocialServiceComponent
@@ -572,16 +570,13 @@ trait DefaultUserApiComponent
     with Logging
     with ParameterExtractors {
 
-  this: UserServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
+  this: MakeDirectivesDependencies
+    with UserServiceComponent
     with SocialServiceComponent
     with ProposalServiceComponent
     with QuestionServiceComponent
     with EventBusServiceComponent
     with PersistentUserServiceComponent
-    with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent
     with UserHistoryCoordinatorServiceComponent
     with ReadJournalComponent
     with ActorSystemComponent

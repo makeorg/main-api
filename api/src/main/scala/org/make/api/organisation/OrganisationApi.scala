@@ -23,17 +23,16 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.{
   ProposalServiceComponent,
   ProposalsResultSeededResponse,
   ProposalsResultWithUserVoteSeededResponse
 }
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeAuthenticationDirectives
 import org.make.api.technical.CsvReceptacle._
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.user.UserResponse
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.Sort
@@ -178,12 +177,7 @@ trait DefaultOrganisationApiComponent
     with Logging
     with ParameterExtractors {
 
-  this: OrganisationServiceComponent
-    with ProposalServiceComponent
-    with IdGeneratorComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with MakeDataHandlerComponent
-    with MakeSettingsComponent =>
+  this: MakeDirectivesDependencies with OrganisationServiceComponent with ProposalServiceComponent =>
 
   override lazy val organisationApi: OrganisationApi = new DefaultOrganisationApi
 

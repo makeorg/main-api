@@ -19,11 +19,12 @@
 
 package org.make.api.proposal
 
+import akka.actor.ActorSystem
+import com.typesafe.config.ConfigFactory
 import org.make.api.proposal.ProposalActor.State
-
-import java.time.ZonedDateTime
 import org.make.api.proposal.ProposalEvent.{SimilarProposalRemoved, SimilarProposalsCleared}
 import org.make.api.proposal.PublishedProposalEvent._
+import org.make.api.technical.security.SecurityConfiguration
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.idea.IdeaId
@@ -46,11 +47,14 @@ import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.scalatest.wordspec.AnyWordSpec
 import stamina.testkit.StaminaTestKit
-import stamina.{Persisters, V3, V7, V8, V9}
+import stamina._
+
+import java.time.ZonedDateTime
 
 class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
 
-  val persisters = Persisters(ProposalSerializers.serializers.toList)
+  val conf = SecurityConfiguration(ProposalSerializersTest.system)
+  val persisters = Persisters(ProposalSerializers(conf).serializers.toList)
   val userId = UserId("my-user-id")
   val requestContext: RequestContext = RequestContext.empty
   val requestContextFromGermany: RequestContext =
@@ -401,5 +405,17 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       sample(proposalKeywordsSet)
     )
 
+  }
+}
+
+object ProposalSerializersTest {
+  val configuration: String =
+    """
+      |make-api.security.secure-hash-salt = "salt-secure"
+      |make-api.security.secure-vote-salt = "vote-secure"     """.stripMargin
+
+  val system: ActorSystem = {
+    val config = ConfigFactory.load(ConfigFactory.parseString(configuration))
+    ActorSystem(classOf[ProposalSerializersTest].getSimpleName, config)
   }
 }

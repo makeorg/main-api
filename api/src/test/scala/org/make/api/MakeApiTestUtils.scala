@@ -20,15 +20,16 @@
 package org.make.api
 
 import java.util.Date
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical._
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandler, MakeDataHandlerComponent}
+import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.RequestContext
 import org.make.core.auth.UserRights
@@ -43,10 +44,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
 trait MakeApiTestUtils extends MakeUnitTest with ScalatestRouteTest with MakeDirectives {
-  this: IdGeneratorComponent
-    with MakeSettingsComponent
-    with MakeAuthentication
-    with SessionHistoryCoordinatorServiceComponent =>
+  this: MakeDirectivesDependencies =>
 
   def sealRoute(route: Route): Route =
     Route.seal(handleRejections(MakeApi.rejectionHandler)(route))
@@ -54,13 +52,14 @@ trait MakeApiTestUtils extends MakeUnitTest with ScalatestRouteTest with MakeDir
 
 trait MakeApiTestBase
     extends MakeApiTestUtils
-    with MakeDataHandlerComponent
     with IdGeneratorComponent
     with SessionHistoryCoordinatorServiceComponent
+    with SecurityConfigurationComponent
+    with MakeSettingsComponent
+    with MakeDataHandlerComponent
     with UserHistoryCoordinatorServiceComponent
     with ReadJournalComponent
     with EventBusServiceComponent
-    with MakeSettingsComponent
     with ActorSystemComponent {
   this: MakeAuthentication =>
 
@@ -76,6 +75,7 @@ trait MakeApiTestBase
   override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
   override val userJournal: MakeReadJournal = mock[MakeReadJournal]
   override val sessionJournal: MakeReadJournal = mock[MakeReadJournal]
+  override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
   override val actorSystem: ActorSystem = ActorSystem()
 
   protected val secureCookieConfiguration: makeSettings.SecureCookie.type = mock[makeSettings.SecureCookie.type]

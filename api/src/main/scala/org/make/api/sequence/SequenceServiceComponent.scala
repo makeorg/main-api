@@ -58,12 +58,12 @@ trait SequenceService {
 
 trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
   this: UserHistoryCoordinatorServiceComponent
-    with SessionHistoryCoordinatorServiceComponent
     with ProposalSearchEngineComponent
-    with SelectionAlgorithmComponent
-    with SequenceConfigurationComponent
     with SecurityConfigurationComponent
     with SegmentServiceComponent
+    with SelectionAlgorithmComponent
+    with SequenceConfigurationComponent
+    with SessionHistoryCoordinatorServiceComponent
     with OperationOfQuestionSearchEngineComponent
     with Logging =>
 

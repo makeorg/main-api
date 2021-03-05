@@ -27,11 +27,10 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.circe.refined._
 import io.swagger.annotations.{ApiImplicitParam, _}
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.api.user.{PersonalityRegisterData, UserServiceComponent}
 import org.make.core.Validation._
 import org.make.core._
@@ -142,11 +141,7 @@ trait DefaultAdminPersonalityApiComponent
     extends AdminPersonalityApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors {
-  this: MakeDataHandlerComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with UserServiceComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent =>
+  this: MakeDirectivesDependencies with UserServiceComponent =>
 
   override lazy val adminPersonalityApi: AdminPersonalityApi = new DefaultAdminPersonalityApi
 

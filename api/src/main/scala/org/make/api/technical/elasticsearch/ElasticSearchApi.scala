@@ -24,11 +24,10 @@ import akka.http.scaladsl.server.{Directives, Route}
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations.{Api, _}
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{EndpointType, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{EndpointType, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
 import org.make.core.job.Job.JobId.{Reindex, ReindexPosts}
@@ -97,11 +96,7 @@ trait ElasticSearchApiComponent {
 }
 
 trait DefaultElasticSearchApiComponent extends ElasticSearchApiComponent with MakeAuthenticationDirectives {
-  this: DefaultIndexationComponent
-    with MakeSettingsComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with SessionHistoryCoordinatorServiceComponent =>
+  this: MakeDirectivesDependencies with IndexationComponent =>
 
   override lazy val elasticSearchApi: ElasticSearchApi = new DefaultElasticSearchApi
 

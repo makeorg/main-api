@@ -22,9 +22,6 @@ package org.make.api.organisation
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.technical._
-import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.{Order, RequestContext}
 import org.make.core.user.Role.RoleActor
@@ -36,10 +33,7 @@ import org.make.core.technical.Pagination.{End, Start}
 class ModerationOrganisationApiTest
     extends MakeApiTestBase
     with DefaultModerationOrganisationApiComponent
-    with OrganisationServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent {
+    with OrganisationServiceComponent {
 
   override val organisationService: OrganisationService = mock[OrganisationService]
 

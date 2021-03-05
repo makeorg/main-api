@@ -21,11 +21,10 @@ package org.make.api.technical.businessconfig
 
 import akka.http.scaladsl.server.{Directives, Route}
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, MakeDirectives, ShortenedNames}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{MakeAuthenticationDirectives, MakeDirectives, ShortenedNames}
 import org.make.core.{FrontConfiguration, HttpCodes}
 
 @Api(value = "Configurations")
@@ -51,9 +50,8 @@ trait DefaultConfigurationsApiComponent
     extends ConfigurationsApiComponent
     with MakeDirectives
     with MakeAuthenticationDirectives
-    with ShortenedNames
-    with SessionHistoryCoordinatorServiceComponent {
-  self: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
+    with ShortenedNames {
+  self: MakeDirectivesDependencies =>
 
   override lazy val configurationsApi: ConfigurationsApi = new DefaultConfigurationsApi
 
