@@ -21,15 +21,16 @@ package org.make.api.technical.auth
 
 import akka.http.scaladsl.model.headers.{Authorization, HttpChallenges}
 import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsMissing
-import akka.http.scaladsl.server.directives.{AuthenticationDirective, Credentials}
+import akka.http.scaladsl.server.directives.Credentials
 import akka.http.scaladsl.server.{AuthenticationFailedRejection, Directive1}
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeDirectives, ShortenedNames}
+import org.make.core.ApplicationName
 import org.make.core.auth.UserRights
+import scalaoauth2.provider._
 
 import scala.concurrent.Future
-import scalaoauth2.provider._
 
 /**
   * Mostly taken from https://github.com/nulab/akka-http-oauth2-provider with added support for redirect
@@ -42,18 +43,14 @@ trait MakeAuthentication extends ShortenedNames with MakeDirectives {
 
   val realm = "make.org API"
 
-  private def defaultMakeOAuth2: AuthenticationDirective[AuthInfo[UserRights]] = {
+  def makeOAuth2: Directive1[AuthInfo[UserRights]] = {
     authenticateOAuth2Async[AuthInfo[UserRights]](realm, oauth2Authenticator)
   }
 
-  def makeOAuth2: Directive1[AuthInfo[UserRights]] = {
-    defaultMakeOAuth2
-  }
-
   def optionalMakeOAuth2: Directive1[Option[AuthInfo[UserRights]]] = {
-    defaultMakeOAuth2.map(Some(_): Option[AuthInfo[UserRights]]).recover {
+    makeOAuth2.map(Some(_): Option[AuthInfo[UserRights]]).recover {
       case AuthenticationFailedRejection(_, _) +: _ => provide(None)
-      case rejs                                     => reject(rejs: _*)
+      case rejections                               => reject(rejections: _*)
     }
   }
 
@@ -67,15 +64,19 @@ trait MakeAuthentication extends ShortenedNames with MakeDirectives {
       case _ => Future.successful(None)
     }
 
-  def extractToken: Directive1[Option[String]] = {
-    for {
-      maybeCookie        <- optionalCookie(makeSettings.SecureCookie.name)
-      maybeAuthorization <- optionalHeaderValueByType(Authorization)
-    } yield maybeCookie.map(_.value).orElse(maybeAuthorization.map(_.credentials.token()))
+  def secureCookieValue(applicationName: Option[ApplicationName]): Directive1[Option[String]] = {
+    optionalCookieValue(makeSettings.SecureCookie.name, applicationName)
   }
 
-  def requireToken: Directive1[String] = {
-    extractToken.flatMap {
+  def extractToken(applicationName: Option[ApplicationName]): Directive1[Option[String]] = {
+    for {
+      maybeCookie        <- secureCookieValue(applicationName)
+      maybeAuthorization <- optionalHeaderValueByType(Authorization)
+    } yield maybeCookie.orElse(maybeAuthorization.map(_.credentials.token()))
+  }
+
+  def requireToken(applicationName: Option[ApplicationName]): Directive1[String] = {
+    extractToken(applicationName).flatMap {
       case Some(token) => provide(token)
       case None =>
         mapInnerRoute { _ =>

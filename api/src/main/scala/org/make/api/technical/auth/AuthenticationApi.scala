@@ -314,9 +314,9 @@ trait DefaultAuthenticationApiComponent
     override def getAccessTokenRoute: Route = pathPrefix("oauth") {
       get {
         path("access_token") {
-          makeOperation("OauthGetAccessToken") { _ =>
+          makeOperation("OauthGetAccessToken") { requestContext =>
             makeOAuth2 { _ =>
-              requireToken { token =>
+              requireToken(requestContext.applicationName) { token =>
                 provideAsyncOrNotFound(oauth2DataHandler.findAccessToken(token)) { tokenResult =>
                   complete(TokenResponse.fromAccessToken(tokenResult))
                 }
@@ -379,7 +379,7 @@ trait DefaultAuthenticationApiComponent
       path("logout") {
         makeOperation("OauthLogout") { requestContext =>
           makeOAuth2 { _ =>
-            requireToken { token =>
+            requireToken(requestContext.applicationName) { token =>
               onComplete(oauth2DataHandler.removeToken(token)) {
                 case Success(_) =>
                   addCookies(requestContext.applicationName, logoutCookies) { complete(StatusCodes.NoContent) }
@@ -394,7 +394,7 @@ trait DefaultAuthenticationApiComponent
     override def resetCookies: Route = post {
       path("resetCookies") {
         makeOperation("ResetCookies") { requestContext =>
-          extractToken { token =>
+          extractToken(requestContext.applicationName) { token =>
             onComplete(token.map(oauth2DataHandler.removeToken).getOrElse(Future.unit)) {
               case Success(_) =>
                 addCookies(
