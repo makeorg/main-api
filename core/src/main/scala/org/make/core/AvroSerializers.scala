@@ -82,8 +82,10 @@ trait AvroSerializers {
     override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): Language = Language(value.toString)
   }
 
-  // do not use stringEnumSchemaFor, to keep legacy complex schema
+  // do not use automatic StringEnum typeclasses, to keep legacy complex schema
   implicit val proposalStatusSchemaFor: SchemaFor[ProposalStatus] = SchemaFor.gen[ProposalStatus]
+  implicit val proposalStatusDecoder: Decoder[ProposalStatus] = Decoder.gen
+  implicit val proposalStatusEncoder: Encoder[ProposalStatus] = Encoder.gen
 
   implicit val voteTrustDecoder: Decoder[VoteTrust] = new Decoder[VoteTrust] {
     override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): VoteTrust = {
