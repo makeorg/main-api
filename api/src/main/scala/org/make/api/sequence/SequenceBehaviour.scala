@@ -23,17 +23,8 @@ import com.sksamuel.elastic4s.searches.sort.SortOrder
 import grizzled.slf4j.Logging
 import org.make.api.technical.MakeRandom
 import org.make.core.proposal
-import org.make.core.proposal.{
-  CreationDateAlgorithm,
-  KeywordsSearchFilter,
-  MinScoreLowerBoundSearchFilter,
-  ProposalKeywordKey,
-  RandomAlgorithm,
-  SegmentFirstAlgorithm,
-  SortAlgorithm,
-  ZoneSearchFilter
-}
 import org.make.core.proposal.indexed.{IndexedProposal, SequencePool, Zone}
+import org.make.core.proposal._
 import org.make.core.question.QuestionId
 import org.make.core.sequence.{SequenceConfiguration, SpecificSequenceConfiguration}
 import org.make.core.session.SessionId
