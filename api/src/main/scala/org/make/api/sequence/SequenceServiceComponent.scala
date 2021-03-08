@@ -276,12 +276,15 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     ): Future[Seq[IndexedProposal]] = {
       val poolFilter = maybePool.map(SequencePoolSearchFilter.apply)
       val query = baseQuery.copy(
-        filters = baseQuery.filters.map(
-          _.copy(
-            sequencePool = maybeSegment.fold(poolFilter)(_ => None),
-            sequenceSegmentPool = maybeSegment.flatMap(_   => poolFilter),
-            question = Some(QuestionSearchFilter(Seq(questionId))),
-            segment = maybeSegment.map(SegmentSearchFilter.apply)
+        filters = SearchFilters.merge(
+          baseQuery.filters,
+          Some(
+            SearchFilters(
+              sequencePool = maybeSegment.fold(poolFilter)(_ => None),
+              sequenceSegmentPool = maybeSegment.flatMap(_   => poolFilter),
+              question = Some(QuestionSearchFilter(Seq(questionId))),
+              segment = maybeSegment.map(SegmentSearchFilter.apply)
+            )
           )
         ),
         excludes = Some(proposal.SearchFilters(proposal = Some(ProposalSearchFilter(excluded)))),

@@ -196,6 +196,38 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
+  def merge(base: Option[SearchFilters], fallback: Option[SearchFilters]): Option[SearchFilters] =
+    parse(
+      base.flatMap(_.proposal).orElse(fallback.flatMap(_.proposal)),
+      base.flatMap(_.initialProposal).orElse(fallback.flatMap(_.initialProposal)),
+      base.flatMap(_.tags).orElse(fallback.flatMap(_.tags)),
+      base.flatMap(_.labels).orElse(fallback.flatMap(_.labels)),
+      base.flatMap(_.operation).orElse(fallback.flatMap(_.operation)),
+      base.flatMap(_.question).orElse(fallback.flatMap(_.question)),
+      base.flatMap(_.content).orElse(fallback.flatMap(_.content)),
+      base.flatMap(_.status).orElse(fallback.flatMap(_.status)),
+      base.flatMap(_.slug).orElse(fallback.flatMap(_.slug)),
+      base.flatMap(_.context).orElse(fallback.flatMap(_.context)),
+      base.flatMap(_.idea).orElse(fallback.flatMap(_.idea)),
+      base.flatMap(_.language).orElse(fallback.flatMap(_.language)),
+      base.flatMap(_.country).orElse(fallback.flatMap(_.country)),
+      base.flatMap(_.users).orElse(fallback.flatMap(_.users)),
+      base.flatMap(_.minVotesCount).orElse(fallback.flatMap(_.minVotesCount)),
+      base.flatMap(_.toEnrich).orElse(fallback.flatMap(_.toEnrich)),
+      base.flatMap(_.minScore).orElse(fallback.flatMap(_.minScore)),
+      base.flatMap(_.createdAt).orElse(fallback.flatMap(_.createdAt)),
+      base.flatMap(_.sequencePool).orElse(fallback.flatMap(_.sequencePool)),
+      base.flatMap(_.sequenceSegmentPool).orElse(fallback.flatMap(_.sequenceSegmentPool)),
+      base.flatMap(_.operationKinds).orElse(fallback.flatMap(_.operationKinds)),
+      base.flatMap(_.questionIsOpen).orElse(fallback.flatMap(_.questionIsOpen)),
+      base.flatMap(_.segment).orElse(fallback.flatMap(_.segment)),
+      base.flatMap(_.userTypes).orElse(fallback.flatMap(_.userTypes)),
+      base.flatMap(_.zone).orElse(fallback.flatMap(_.zone)),
+      base.flatMap(_.segmentZone).orElse(fallback.flatMap(_.segmentZone)),
+      base.flatMap(_.minScoreLowerBound).orElse(fallback.flatMap(_.minScoreLowerBound)),
+      base.flatMap(_.keywords).orElse(fallback.flatMap(_.keywords))
+    )
+
   /**
     * Build elasticsearch search filters from searchQuery
     *
