@@ -642,7 +642,7 @@ class MakeDirectivesTest
   }
 
   Feature("cookieless navigation") {
-    val cookieless = Seq(ApplicationName.Backoffice, ApplicationName.Widget)
+    val cookieless = Seq(ApplicationName.Backoffice, ApplicationName.ConcertationBeta, ApplicationName.Widget)
     for (app <- cookieless) {
       Scenario(s"cookieless $app") {
         Get("/test").withHeaders(`X-Make-App-Name`(app.value)) ~> route ~> check {
