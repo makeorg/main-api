@@ -115,9 +115,8 @@ object ProposalActor extends Logging {
         case (state, command: UnqualifyVoteCommand)       => onUnqualificationProposalCommand(state, command)
         case (state, command: LockProposalCommand)        => onLockProposalCommand(state, command, lockHandler)
         case (state, command: PatchProposalCommand)       => onPatchProposalCommand(state, command)
-        case (_, command: AnonymizeProposalCommand)       => onAnonymizeProposalCommand(command)
         case (_, command: SetKeywordsCommand)             => onSetKeywordsCommand(command)
-        case (_, KillProposalShard(_, _))                 => Effect.stop().thenNoReply()
+        case (_, Stop(_, _, replyTo))                     => Effect.stop().thenReply(replyTo)(_ => Envelope(()))
       }
 
       def onPatchProposalCommand(state: State, command: PatchProposalCommand): ReplyEffect[ProposalEvent, State] = {
@@ -761,17 +760,6 @@ object ProposalActor extends Logging {
         }
       }
 
-      def onAnonymizeProposalCommand(command: AnonymizeProposalCommand): ReplyEffect[ProposalEvent, State] = {
-        val event =
-          ProposalAnonymized(
-            command.proposalId,
-            eventDate = DateHelper.now(),
-            requestContext = command.requestContext,
-            eventId = Some(idGenerator.nextEventId())
-          )
-        Effect.persist[ProposalAnonymized, State](event).thenPublish(event).thenNoReply()
-      }
-
       def onSetKeywordsCommand(command: SetKeywordsCommand): ReplyEffect[ProposalEvent, State] = {
         val event = ProposalKeywordsSet(
           command.proposalId,
@@ -1145,18 +1133,7 @@ object ProposalActor extends Logging {
         case (_, e: ProposalPatched)          => State(Some(e.proposal))
         case (state, e: ProposalKeywordsSet)  => State(state.proposal.map(applyProposalKeywordsSet(_, e)))
         case (state, _: DeprecatedEvent)      => state
-        case (state, _: ProposalAnonymized) =>
-          State(
-            state.proposal.map(
-              _.copy(
-                content = "DELETE_REQUESTED",
-                slug = "delete-requested",
-                refusalReason = Some("other"),
-                status = Refused
-              )
-            )
-          )
-        case (state, _) => state
+        case (state, _)                       => state
       }
 
       val snapshotAdapter = new SnapshotAdapter[State] {

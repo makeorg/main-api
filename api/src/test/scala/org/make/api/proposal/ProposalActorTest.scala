@@ -177,8 +177,9 @@ class ProposalActorTest
       )
 
       And("recover its state after having been kill")
-      coordinator ! KillProposalShard(proposalId, RequestContext.empty)
+      coordinator ! Stop(proposalId, RequestContext.empty, probe.ref)
 
+      probe.expectMessage(Envelope(()))
       Thread.sleep(THREAD_SLEEP_MICROSECONDS)
 
       coordinator ! GetProposal(proposalId, RequestContext.empty, probe.ref)
@@ -224,8 +225,9 @@ class ProposalActorTest
       )
 
       And("recover its state after having been kill")
-      coordinator ! KillProposalShard(proposalItalyId, RequestContext.empty)
+      coordinator ! Stop(proposalItalyId, RequestContext.empty, probe.ref)
 
+      probe.expectMessage(Envelope(()))
       Thread.sleep(THREAD_SLEEP_MICROSECONDS)
 
       coordinator ! GetProposal(proposalItalyId, RequestContext.empty, probe.ref)
@@ -1360,8 +1362,9 @@ class ProposalActorTest
       )
 
       And("recover its state after having been kill")
-      coordinator ! KillProposalShard(proposalId, RequestContext.empty)
+      coordinator ! Stop(proposalId, RequestContext.empty, probe.ref)
 
+      probe.expectMessage(Envelope(()))
       Thread.sleep(THREAD_SLEEP_MICROSECONDS)
 
       coordinator ! VoteProposalCommand(
@@ -1561,45 +1564,6 @@ class ProposalActorTest
       proposal.content should be("This is a proposal")
       proposal.author should be(UserId("the user id"))
       proposal.status should be(Postponed)
-    }
-  }
-
-  Feature("anonymize proposals") {
-    Scenario("anonymize proposal") {
-      val probe = testKit.createTestProbe[ProposalActorProtocol]()
-
-      val proposalId = ProposalId("anonymized-context")
-      coordinator ! ProposeCommand(
-        proposalId = proposalId,
-        RequestContext.empty,
-        user = user,
-        createdAt = mainCreatedAt.get,
-        content = "This is a proposal",
-        question = Question(
-          questionId = QuestionId("some-question"),
-          slug = "some-question",
-          countries = NonEmptyList.of(Country("FR")),
-          language = Language("fr"),
-          question = "my question",
-          shortTitle = None,
-          operationId = None
-        ),
-        initialProposal = false,
-        replyTo = probe.ref
-      )
-
-      probe.expectMessage(Envelope(proposalId))
-
-      coordinator ! AnonymizeProposalCommand(proposalId)
-
-      coordinator ! GetProposal(proposalId, RequestContext.empty, probe.ref)
-
-      val proposal: Proposal = probe.expectMessageType[Envelope[Proposal]].value
-
-      proposal.slug should be("delete-requested")
-      proposal.content should be("DELETE_REQUESTED")
-      proposal.status should be(Refused)
-      proposal.refusalReason should be(Some("other"))
     }
   }
 

@@ -26,6 +26,7 @@ import akka.util.ByteString
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage._
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
+import org.make.api.user.UserService.Anonymization
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase, TestUtils}
 import org.make.core.reference.Country
 import org.make.core.user.Role.{RoleCitizen, RoleModerator, RolePolitical}
@@ -582,7 +583,7 @@ class AdminUserApiTest
 
     Scenario("admin user") {
       when(userService.getUser(moderatorId)).thenReturn(Future.successful(Some(newModerator)))
-      when(userService.anonymize(eqTo(newModerator), eqTo(adminId), any[RequestContext]))
+      when(userService.anonymize(eqTo(newModerator), eqTo(adminId), any[RequestContext], eqTo(Anonymization.Automatic)))
         .thenReturn(Future.unit)
       when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
       Delete(s"/admin/users/${moderatorId.value}")
@@ -627,7 +628,7 @@ class AdminUserApiTest
     }
 
     Scenario("admin user") {
-      when(userService.anonymize(eqTo(newModerator), eqTo(adminId), any[RequestContext]))
+      when(userService.anonymize(eqTo(newModerator), eqTo(adminId), any[RequestContext], eqTo(Anonymization.Automatic)))
         .thenReturn(Future.unit)
       when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
       Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, request))

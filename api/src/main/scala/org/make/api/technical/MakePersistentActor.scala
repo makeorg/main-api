@@ -19,11 +19,16 @@
 
 package org.make.api.technical
 
-import akka.actor.ActorLogging
+import akka.actor.{ActorLogging, ClassicActorSystemProvider}
+import akka.persistence.cassandra.cleanup.{Cleanup, CleanupSettings}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import akka.util.Timeout
+import com.typesafe.config.ConfigValueFactory
+import org.make.api.technical.Futures._
 import org.make.api.technical.MakePersistentActor.Snapshot
+import org.make.core.StringValue
 
+import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 abstract class MakePersistentActor[State, Event <: AnyRef](
@@ -83,8 +88,23 @@ abstract class MakePersistentActor[State, Event <: AnyRef](
 
 }
 
-object MakePersistentActor {
+object MakePersistentActor extends ShortenedNames {
 
   case object Snapshot extends ActorProtocol
   final case class StartShard(shardId: String) extends ActorProtocol
+
+  def delete[ID <: StringValue](
+    id: ID,
+    plugin: String
+  )(implicit ec: EC, provider: ClassicActorSystemProvider): Future[Unit] = {
+    new Cleanup(
+      provider,
+      new CleanupSettings(
+        provider.classicSystem.settings.config
+          .getConfig("akka.persistence.cassandra.cleanup")
+          .withValue("plugin-location", ConfigValueFactory.fromAnyRef(plugin.dropRight(".journal".length)))
+      )
+    ).deleteAll(persistenceId = id.value, neverUsePersistenceIdAgain = true).toUnit
+  }
+
 }
