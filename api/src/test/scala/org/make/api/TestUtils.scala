@@ -26,7 +26,12 @@ import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.MaxSize
 import org.make.api.proposal.ProposalScorer
 import org.make.api.proposal.ProposalScorer.VotesCounter
-import org.make.core.sequence.{SequenceConfiguration, SpecificSequenceConfiguration}
+import org.make.core.sequence.{
+  SequenceConfiguration,
+  SequenceId,
+  SpecificSequenceConfiguration,
+  SpecificSequenceConfigurationId
+}
 import org.make.core.auth.{Client, ClientId}
 import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
 import org.make.core.operation._
@@ -51,12 +56,10 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
-import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagType, TagTypeId}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
 import org.make.core.{RequestContext, SlugHelper}
-
 import java.net.URL
 import java.time.ZonedDateTime
 
@@ -633,10 +636,18 @@ trait TestUtils {
   def sequenceConfiguration(
     questionId: QuestionId,
     sequenceId: SequenceId = SequenceId("deprecated-sequence-id"),
-    mainSequence: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
-    controversial: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
-    popular: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
-    keyword: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
+    mainSequence: SpecificSequenceConfiguration = SpecificSequenceConfiguration(
+      SpecificSequenceConfigurationId("main-id")
+    ),
+    controversial: SpecificSequenceConfiguration = SpecificSequenceConfiguration(
+      SpecificSequenceConfigurationId("controversial-id")
+    ),
+    popular: SpecificSequenceConfiguration = SpecificSequenceConfiguration(
+      SpecificSequenceConfigurationId("popular-id")
+    ),
+    keyword: SpecificSequenceConfiguration = SpecificSequenceConfiguration(
+      SpecificSequenceConfigurationId("keyword-id")
+    ),
     newProposalsVoteThreshold: Int = 10,
     testedProposalsEngagementThreshold: Option[Double] = None,
     testedProposalsScoreThreshold: Option[Double] = None,

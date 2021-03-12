@@ -151,11 +151,15 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Logg
       users: Seq[User],
       tagsIds: Seq[TagId],
       adminUserId: UserId,
-      maxProposals: Option[Int]
+      proposalsSize: Option[Int]
     ): Future[Seq[ProposalId]] = {
-      val parameters: Parameters = Parameters.default.withSize(maxProposals.getOrElse(2000))
-      val proposalsData =
-        Gen.listOf(EntitiesGen.genProposal(question, users, tagsIds)).pureApply(parameters, Seed.random())
+      val parameters: Parameters = Parameters.default.withSize(2000)
+      def gen[T]: Gen[T] => Gen[List[T]] = proposalsSize match {
+        case None       => Gen.listOf(_)
+        case Some(size) => Gen.listOfN(size, _)
+      }
+      val proposalsData = gen(EntitiesGen.genProposal(question, users, tagsIds))
+        .pureApply(parameters, Seed.random())
       logger.info(s"generating: ${proposalsData.size} proposals")
 
       Source(proposalsData)

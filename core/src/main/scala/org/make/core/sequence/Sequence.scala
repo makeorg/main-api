@@ -108,16 +108,16 @@ object SelectionAlgorithmName extends StringEnum[SelectionAlgorithmName] with St
 final case class SequenceConfiguration(
   sequenceId: SequenceId,
   questionId: QuestionId,
-  mainSequence: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
-  controversial: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
-  popular: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
-  keyword: SpecificSequenceConfiguration = SpecificSequenceConfiguration(),
-  newProposalsVoteThreshold: Int = 10,
-  testedProposalsEngagementThreshold: Option[Double] = None,
-  testedProposalsScoreThreshold: Option[Double] = None,
-  testedProposalsControversyThreshold: Option[Double] = None,
-  testedProposalsMaxVotesThreshold: Option[Int] = None,
-  nonSequenceVotesWeight: Double = 0.5
+  mainSequence: SpecificSequenceConfiguration,
+  controversial: SpecificSequenceConfiguration,
+  popular: SpecificSequenceConfiguration,
+  keyword: SpecificSequenceConfiguration,
+  newProposalsVoteThreshold: Int,
+  testedProposalsEngagementThreshold: Option[Double],
+  testedProposalsScoreThreshold: Option[Double],
+  testedProposalsControversyThreshold: Option[Double],
+  testedProposalsMaxVotesThreshold: Option[Int],
+  nonSequenceVotesWeight: Double
 )
 
 object SequenceConfiguration {
@@ -127,11 +127,12 @@ object SequenceConfiguration {
   val default: SequenceConfiguration = SequenceConfiguration(
     sequenceId = SequenceId("default-sequence"),
     questionId = QuestionId("default-question"),
-    mainSequence = SpecificSequenceConfiguration.default,
-    controversial = SpecificSequenceConfiguration.default,
-    popular = SpecificSequenceConfiguration.default,
-    keyword = SpecificSequenceConfiguration.default,
-    newProposalsVoteThreshold = 10,
+    mainSequence = SpecificSequenceConfiguration.mainSequenceDefault(SpecificSequenceConfigurationId("default-main")),
+    controversial =
+      SpecificSequenceConfiguration.otherSequenceDefault(SpecificSequenceConfigurationId("default-controversial")),
+    popular = SpecificSequenceConfiguration.otherSequenceDefault(SpecificSequenceConfigurationId("default-popular")),
+    keyword = SpecificSequenceConfiguration.otherSequenceDefault(SpecificSequenceConfigurationId("default-keyword")),
+    newProposalsVoteThreshold = 100,
     testedProposalsEngagementThreshold = Some(0.8),
     testedProposalsScoreThreshold = None,
     testedProposalsControversyThreshold = None,
@@ -142,6 +143,7 @@ object SequenceConfiguration {
 }
 
 final case class SpecificSequenceConfiguration(
+  specificSequenceConfigurationId: SpecificSequenceConfigurationId,
   sequenceSize: Int = 12,
   newProposalsRatio: Double = 0.5,
   maxTestedProposalCount: Int = 1000,
@@ -159,17 +161,47 @@ object SpecificSequenceConfiguration {
   implicit val decoder: Decoder[SpecificSequenceConfiguration] = deriveDecoder[SpecificSequenceConfiguration]
   implicit val encoder: Encoder[SpecificSequenceConfiguration] = deriveEncoder[SpecificSequenceConfiguration]
 
-  val default: SpecificSequenceConfiguration = SpecificSequenceConfiguration(
-    sequenceSize = 12,
-    newProposalsRatio = 0.5,
-    maxTestedProposalCount = 1000,
-    selectionAlgorithmName = SelectionAlgorithmName.Bandit,
-    intraIdeaEnabled = true,
-    intraIdeaMinCount = 1,
-    intraIdeaProposalsRatio = 0.0,
-    interIdeaCompetitionEnabled = false,
-    interIdeaCompetitionTargetCount = 50,
-    interIdeaCompetitionControversialRatio = 0.0,
-    interIdeaCompetitionControversialCount = 0
-  )
+  def mainSequenceDefault(id: SpecificSequenceConfigurationId): SpecificSequenceConfiguration =
+    SpecificSequenceConfiguration(
+      specificSequenceConfigurationId = id,
+      sequenceSize = 12,
+      newProposalsRatio = 0.5,
+      maxTestedProposalCount = 1000,
+      selectionAlgorithmName = SelectionAlgorithmName.Bandit,
+      intraIdeaEnabled = true,
+      intraIdeaMinCount = 1,
+      intraIdeaProposalsRatio = 0.0,
+      interIdeaCompetitionEnabled = false,
+      interIdeaCompetitionTargetCount = 50,
+      interIdeaCompetitionControversialRatio = 0.0,
+      interIdeaCompetitionControversialCount = 0
+    )
+
+  def otherSequenceDefault(id: SpecificSequenceConfigurationId): SpecificSequenceConfiguration =
+    SpecificSequenceConfiguration(
+      specificSequenceConfigurationId = id,
+      sequenceSize = 12,
+      newProposalsRatio = 0.5,
+      maxTestedProposalCount = 1000,
+      selectionAlgorithmName = SelectionAlgorithmName.Random,
+      intraIdeaEnabled = false,
+      intraIdeaMinCount = 0,
+      intraIdeaProposalsRatio = 0.0,
+      interIdeaCompetitionEnabled = false,
+      interIdeaCompetitionTargetCount = 0,
+      interIdeaCompetitionControversialRatio = 0.0,
+      interIdeaCompetitionControversialCount = 0
+    )
+}
+
+final case class SpecificSequenceConfigurationId(value: String) extends StringValue
+
+object SpecificSequenceConfigurationId {
+  implicit val specificSequenceConfigurationIdEncoder: Encoder[SpecificSequenceConfigurationId] =
+    Encoder.encodeString.contramap(_.value)
+  implicit val specificSequenceConfigurationIdDecoder: Decoder[SpecificSequenceConfigurationId] =
+    Decoder.decodeString.map(SpecificSequenceConfigurationId(_))
+
+  implicit val specificSequenceConfigurationIdFormatter: JsonFormat[SpecificSequenceConfigurationId] =
+    SprayJsonFormatters.forStringValue(SpecificSequenceConfigurationId.apply)
 }

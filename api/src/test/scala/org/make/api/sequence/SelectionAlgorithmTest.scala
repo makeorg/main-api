@@ -32,7 +32,13 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
-import org.make.core.sequence.{SelectionAlgorithmName, SequenceConfiguration, SequenceId, SpecificSequenceConfiguration}
+import org.make.core.sequence.{
+  SelectionAlgorithmName,
+  SequenceConfiguration,
+  SequenceId,
+  SpecificSequenceConfiguration,
+  SpecificSequenceConfigurationId
+}
 import org.make.core.user.{UserId, UserType}
 import org.scalatest.BeforeAndAfterEach
 import java.time.ZonedDateTime
@@ -53,22 +59,33 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
     sequenceId = SequenceId("test-sequence"),
     questionId = QuestionId("test-question"),
     mainSequence = SpecificSequenceConfiguration(
+      specificSequenceConfigurationId = SpecificSequenceConfigurationId("main-id"),
       newProposalsRatio = 0.5,
       intraIdeaMinCount = 3,
       intraIdeaProposalsRatio = 1.0 / 3.0,
       interIdeaCompetitionEnabled = false,
       selectionAlgorithmName = SelectionAlgorithmName.Bandit
     ),
+    controversial = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+      SpecificSequenceConfigurationId("controversial-id")
+    ),
+    popular =
+      SpecificSequenceConfiguration(specificSequenceConfigurationId = SpecificSequenceConfigurationId("popular-id")),
+    keyword =
+      SpecificSequenceConfiguration(specificSequenceConfigurationId = SpecificSequenceConfigurationId("keyword-id")),
     newProposalsVoteThreshold = 100,
     testedProposalsEngagementThreshold = Some(0.8),
     testedProposalsScoreThreshold = Some(0.0),
-    testedProposalsControversyThreshold = Some(0.0)
+    testedProposalsControversyThreshold = Some(0.0),
+    testedProposalsMaxVotesThreshold = Some(1500),
+    nonSequenceVotesWeight = 0.5
   )
 
   val roundRobinSequenceConfiguration: SequenceConfiguration = SequenceConfiguration(
     sequenceId = SequenceId("test-sequence-round-robin"),
     questionId = QuestionId("test-question-round-robin"),
     mainSequence = SpecificSequenceConfiguration(
+      specificSequenceConfigurationId = SpecificSequenceConfigurationId("main-id"),
       sequenceSize = 20,
       newProposalsRatio = 1.0,
       intraIdeaEnabled = false,
@@ -76,17 +93,42 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       interIdeaCompetitionEnabled = false,
       selectionAlgorithmName = SelectionAlgorithmName.RoundRobin
     ),
+    controversial = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+      SpecificSequenceConfigurationId("controversial-id")
+    ),
+    popular =
+      SpecificSequenceConfiguration(specificSequenceConfigurationId = SpecificSequenceConfigurationId("popular-id")),
+    keyword =
+      SpecificSequenceConfiguration(specificSequenceConfigurationId = SpecificSequenceConfigurationId("keyword-id")),
     newProposalsVoteThreshold = 100,
     testedProposalsEngagementThreshold = Some(0.8),
     testedProposalsScoreThreshold = Some(0.0),
-    testedProposalsControversyThreshold = Some(0.0)
+    testedProposalsControversyThreshold = Some(0.0),
+    testedProposalsMaxVotesThreshold = Some(1500),
+    nonSequenceVotesWeight = 0.5
   )
 
   val randomSequenceConfiguration: SequenceConfiguration = SequenceConfiguration(
     sequenceId = SequenceId("test-sequence-random"),
     questionId = QuestionId("test-question-random"),
-    mainSequence =
-      SpecificSequenceConfiguration(sequenceSize = 20, selectionAlgorithmName = SelectionAlgorithmName.Random)
+    mainSequence = SpecificSequenceConfiguration(
+      specificSequenceConfigurationId = SpecificSequenceConfigurationId("main-id"),
+      sequenceSize = 20,
+      selectionAlgorithmName = SelectionAlgorithmName.Random
+    ),
+    controversial = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+      SpecificSequenceConfigurationId("controversial-id")
+    ),
+    popular =
+      SpecificSequenceConfiguration(specificSequenceConfigurationId = SpecificSequenceConfigurationId("popular-id")),
+    keyword =
+      SpecificSequenceConfiguration(specificSequenceConfigurationId = SpecificSequenceConfigurationId("keyword-id")),
+    newProposalsVoteThreshold = 100,
+    testedProposalsEngagementThreshold = Some(0.8),
+    testedProposalsScoreThreshold = Some(0.0),
+    testedProposalsControversyThreshold = Some(0.0),
+    testedProposalsMaxVotesThreshold = Some(1500),
+    nonSequenceVotesWeight = 0.5
   )
 
   val banditProposalIds: Seq[ProposalId] =
@@ -895,15 +937,27 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         sequenceId = SequenceId("test-sequence"),
         questionId = QuestionId("test-question"),
         mainSequence = SpecificSequenceConfiguration(
+          specificSequenceConfigurationId = SpecificSequenceConfigurationId("main-id"),
           newProposalsRatio = 0.5,
           intraIdeaEnabled = false,
           intraIdeaMinCount = 3,
           intraIdeaProposalsRatio = 1.0 / 3.0
         ),
+        controversial = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("controversial-id")
+        ),
+        popular = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("popular-id")
+        ),
+        keyword = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("keyword-id")
+        ),
         newProposalsVoteThreshold = 100,
         testedProposalsEngagementThreshold = Some(0.8),
         testedProposalsScoreThreshold = Some(1.2),
-        testedProposalsControversyThreshold = Some(0.1)
+        testedProposalsControversyThreshold = Some(0.1),
+        testedProposalsMaxVotesThreshold = Some(1500),
+        nonSequenceVotesWeight = 0.5
       )
 
       val testedProposals: Map[IdeaId, Seq[IndexedProposal]] = (1 to 100).map { i =>
@@ -951,15 +1005,27 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         sequenceId = SequenceId("test-sequence"),
         questionId = QuestionId("test-question"),
         mainSequence = SpecificSequenceConfiguration(
+          specificSequenceConfigurationId = SpecificSequenceConfigurationId("main-id"),
           newProposalsRatio = 0.5,
           intraIdeaEnabled = true,
           intraIdeaMinCount = 3,
           intraIdeaProposalsRatio = 0.0
         ),
+        controversial = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("controversial-id")
+        ),
+        popular = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("popular-id")
+        ),
+        keyword = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("keyword-id")
+        ),
         newProposalsVoteThreshold = 100,
         testedProposalsEngagementThreshold = Some(0.8),
         testedProposalsScoreThreshold = Some(0.0),
-        testedProposalsControversyThreshold = Some(0.0)
+        testedProposalsControversyThreshold = Some(0.0),
+        testedProposalsMaxVotesThreshold = Some(1500),
+        nonSequenceVotesWeight = 0.5
       )
 
       val testedProposals: Map[IdeaId, Seq[IndexedProposal]] = (1 to 100).map { i =>
@@ -1024,7 +1090,27 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       }
 
       val sequenceConfiguration =
-        SequenceConfiguration(sequenceId = SequenceId("test-sequence"), questionId = QuestionId("test-question"))
+        SequenceConfiguration(
+          sequenceId = SequenceId("test-sequence"),
+          questionId = QuestionId("test-question"),
+          mainSequence =
+            SpecificSequenceConfiguration(specificSequenceConfigurationId = SpecificSequenceConfigurationId("main-id")),
+          controversial = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+            SpecificSequenceConfigurationId("controversial-id")
+          ),
+          popular = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+            SpecificSequenceConfigurationId("popular-id")
+          ),
+          keyword = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+            SpecificSequenceConfigurationId("keyword-id")
+          ),
+          newProposalsVoteThreshold = 100,
+          testedProposalsEngagementThreshold = Some(0.8),
+          testedProposalsScoreThreshold = Some(0.0),
+          testedProposalsControversyThreshold = Some(0.0),
+          testedProposalsMaxVotesThreshold = Some(1500),
+          nonSequenceVotesWeight = 0.5
+        )
       val champion =
         banditSelectionAlgorithm.chooseChampion(sequenceConfiguration.nonSequenceVotesWeight, testedProposals, None)
 
@@ -1054,7 +1140,25 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       val sequenceConfiguration = SequenceConfiguration(
         sequenceId = SequenceId("test-sequence"),
         questionId = QuestionId("test-question"),
-        mainSequence = SpecificSequenceConfiguration(interIdeaCompetitionTargetCount = 5)
+        mainSequence = SpecificSequenceConfiguration(
+          specificSequenceConfigurationId = SpecificSequenceConfigurationId("main-id"),
+          interIdeaCompetitionTargetCount = 5
+        ),
+        controversial = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("controversial-id")
+        ),
+        popular = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("popular-id")
+        ),
+        keyword = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("keyword-id")
+        ),
+        newProposalsVoteThreshold = 100,
+        testedProposalsEngagementThreshold = Some(0.8),
+        testedProposalsScoreThreshold = Some(0.0),
+        testedProposalsControversyThreshold = Some(0.0),
+        testedProposalsMaxVotesThreshold = Some(1500),
+        nonSequenceVotesWeight = 0.5
       )
       val ideas = banditSelectionAlgorithm.selectIdeasWithChampions(
         sequenceConfiguration.mainSequence,
@@ -1111,7 +1215,25 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       val sequenceConfiguration = SequenceConfiguration(
         sequenceId = SequenceId("test-sequence"),
         questionId = QuestionId("test-question"),
-        mainSequence = SpecificSequenceConfiguration(interIdeaCompetitionControversialCount = 5)
+        mainSequence = SpecificSequenceConfiguration(
+          specificSequenceConfigurationId = SpecificSequenceConfigurationId("main-id"),
+          interIdeaCompetitionControversialCount = 5
+        ),
+        controversial = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("controversial-id")
+        ),
+        popular = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("popular-id")
+        ),
+        keyword = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("keyword-id")
+        ),
+        newProposalsVoteThreshold = 100,
+        testedProposalsEngagementThreshold = Some(0.8),
+        testedProposalsScoreThreshold = Some(0.0),
+        testedProposalsControversyThreshold = Some(0.0),
+        testedProposalsMaxVotesThreshold = Some(1500),
+        nonSequenceVotesWeight = 0.5
       )
       val ideas =
         banditSelectionAlgorithm.selectControversialIdeasWithChampions(
@@ -1151,6 +1273,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         sequenceId = SequenceId("test-sequence"),
         questionId = QuestionId("test-question"),
         mainSequence = SpecificSequenceConfiguration(
+          specificSequenceConfigurationId = SpecificSequenceConfigurationId("main-id"),
           newProposalsRatio = 0.5,
           intraIdeaEnabled = true,
           intraIdeaMinCount = 1,
@@ -1160,10 +1283,21 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           interIdeaCompetitionControversialRatio = 0.0,
           interIdeaCompetitionControversialCount = 2
         ),
+        controversial = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("controversial-id")
+        ),
+        popular = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("popular-id")
+        ),
+        keyword = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("keyword-id")
+        ),
         newProposalsVoteThreshold = 10,
         testedProposalsEngagementThreshold = Some(0.0),
         testedProposalsScoreThreshold = Some(0.0),
-        testedProposalsControversyThreshold = Some(0.0)
+        testedProposalsControversyThreshold = Some(0.0),
+        testedProposalsMaxVotesThreshold = Some(1500),
+        nonSequenceVotesWeight = 0.5
       )
 
       val testedProposals: Map[IdeaId, Seq[IndexedProposal]] = (1 to 100).map { i =>
@@ -1224,6 +1358,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         sequenceId = SequenceId("test-sequence"),
         questionId = QuestionId("test-question"),
         mainSequence = SpecificSequenceConfiguration(
+          specificSequenceConfigurationId = SpecificSequenceConfigurationId("main-id"),
           newProposalsRatio = 0.5,
           intraIdeaEnabled = true,
           intraIdeaMinCount = 1,
@@ -1233,10 +1368,20 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           interIdeaCompetitionControversialRatio = 0.0,
           interIdeaCompetitionControversialCount = 2
         ),
+        controversial = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("controversial-id")
+        ),
+        popular = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("popular-id")
+        ),
+        keyword = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("keyword-id")
+        ),
         newProposalsVoteThreshold = 10,
         testedProposalsEngagementThreshold = Some(0.0),
         testedProposalsScoreThreshold = Some(0.0),
         testedProposalsControversyThreshold = Some(0.0),
+        testedProposalsMaxVotesThreshold = Some(1500),
         nonSequenceVotesWeight = 0.5
       )
 
@@ -1301,6 +1446,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         sequenceId = SequenceId("test-sequence"),
         questionId = QuestionId("test-question"),
         mainSequence = SpecificSequenceConfiguration(
+          specificSequenceConfigurationId = SpecificSequenceConfigurationId("main-id"),
           newProposalsRatio = 0.5,
           intraIdeaEnabled = true,
           intraIdeaMinCount = 3,
@@ -1308,10 +1454,21 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           interIdeaCompetitionEnabled = false,
           sequenceSize = 10
         ),
+        controversial = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("controversial-id")
+        ),
+        popular = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("popular-id")
+        ),
+        keyword = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+          SpecificSequenceConfigurationId("keyword-id")
+        ),
         newProposalsVoteThreshold = 100,
         testedProposalsEngagementThreshold = Some(0.8),
         testedProposalsScoreThreshold = Some(0.0),
-        testedProposalsControversyThreshold = Some(0.0)
+        testedProposalsControversyThreshold = Some(0.0),
+        testedProposalsMaxVotesThreshold = Some(1500),
+        nonSequenceVotesWeight = 0.5
       )
 
       val testedProposals: Seq[IndexedProposal] = (1 to 1000).map { i =>

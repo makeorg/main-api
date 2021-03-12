@@ -26,7 +26,12 @@ import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.testkit.TestDuration
 import org.make.api.MakeApiTestBase
 import org.make.core.question.QuestionId
-import org.make.core.sequence.{SequenceConfiguration, SequenceId, SpecificSequenceConfiguration}
+import org.make.core.sequence.{
+  SequenceConfiguration,
+  SequenceId,
+  SpecificSequenceConfiguration,
+  SpecificSequenceConfigurationId
+}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -70,15 +75,25 @@ class ModerationSequenceApiTest
     sequenceId = SequenceId("mySequence"),
     questionId = QuestionId("myQuestion"),
     mainSequence = SpecificSequenceConfiguration(
+      specificSequenceConfigurationId = SpecificSequenceConfigurationId("main-id"),
       intraIdeaEnabled = true,
       intraIdeaMinCount = 3,
       intraIdeaProposalsRatio = .3,
       newProposalsRatio = 0.5
     ),
+    controversial = SpecificSequenceConfiguration(specificSequenceConfigurationId =
+      SpecificSequenceConfigurationId("controversial-id")
+    ),
+    popular =
+      SpecificSequenceConfiguration(specificSequenceConfigurationId = SpecificSequenceConfigurationId("popular-id")),
+    keyword =
+      SpecificSequenceConfiguration(specificSequenceConfigurationId = SpecificSequenceConfigurationId("keyword-id")),
     newProposalsVoteThreshold = 100,
     testedProposalsEngagementThreshold = Some(0.8),
     testedProposalsScoreThreshold = Some(0.0),
-    testedProposalsControversyThreshold = Some(0.0)
+    testedProposalsControversyThreshold = Some(0.0),
+    testedProposalsMaxVotesThreshold = Some(1500),
+    nonSequenceVotesWeight = 0.5
   )
 
   when(sequenceConfigurationService.getPersistentSequenceConfiguration(eqTo(SequenceId("myQuestion"))))
@@ -155,37 +170,5 @@ class ModerationSequenceApiTest
       StatusCodes.BadRequest,
       setSequenceConfigurationPayload.replaceFirst("Bandit", "invalid")
     )
-
-    // deprecated route using sequence and question id
-    testSequenceConfigurationWriteAccess(
-      "sequence and question",
-      "user",
-      "mySequence/myQuestion",
-      tokenCitizen,
-      StatusCodes.Forbidden
-    )
-    testSequenceConfigurationWriteAccess(
-      "sequence and question",
-      "moderator",
-      "mySequence/myQuestion",
-      tokenModerator,
-      StatusCodes.Forbidden
-    )
-    testSequenceConfigurationWriteAccess(
-      "sequence and question",
-      "admin",
-      "mySequence/myQuestion",
-      tokenAdmin,
-      StatusCodes.OK
-    )
-    testSequenceConfigurationWriteAccess(
-      "sequence and question",
-      "admin with wrong selectionAlgorithmName",
-      "mySequence/myQuestion",
-      tokenAdmin,
-      StatusCodes.BadRequest,
-      setSequenceConfigurationPayload.replaceFirst("Bandit", "invalid")
-    )
-
   }
 }
