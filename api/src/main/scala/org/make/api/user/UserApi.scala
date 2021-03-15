@@ -20,11 +20,11 @@
 package org.make.api.user
 
 import java.time.LocalDate
-
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
@@ -1154,7 +1154,7 @@ trait DefaultUserApiComponent
                     case Some(user) =>
                       provideAsync(userService.anonymize(user, userAuth.user.userId, requestContext)) { _ =>
                         provideAsync(oauth2DataHandler.removeTokenByUserId(userId)) { _ =>
-                          complete(StatusCodes.OK)
+                          addCookies(requestContext.applicationName, logoutCookies()) { complete(StatusCodes.OK) }
                         }
                       }
                     case None =>

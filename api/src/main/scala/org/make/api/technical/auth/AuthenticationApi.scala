@@ -22,11 +22,9 @@ package org.make.api.technical.auth
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.HttpCookie
 import akka.http.scaladsl.server.{Directives, Route}
-import grizzled.slf4j.Logging
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
-import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
@@ -36,6 +34,7 @@ import org.make.core.auth.{AuthCode, ClientId, UserRights}
 import org.make.core.{DateHelper, HttpCodes, RequestContext}
 import scalaoauth2.provider._
 
+import javax.ws.rs.Path
 import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -228,8 +227,7 @@ trait AuthenticationApiComponent {
 trait DefaultAuthenticationApiComponent
     extends AuthenticationApiComponent
     with MakeDirectives
-    with MakeAuthenticationDirectives
-    with Logging {
+    with MakeAuthenticationDirectives {
   self: MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
@@ -335,46 +333,6 @@ trait DefaultAuthenticationApiComponent
       }
     }
 
-    private def logoutCookies: Seq[HttpCookie] = Seq(
-      HttpCookie(
-        name = makeSettings.SessionCookie.name,
-        value = idGenerator.nextId(),
-        secure = makeSettings.SessionCookie.isSecure,
-        httpOnly = true,
-        maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
-        path = Some("/"),
-        domain = Some(makeSettings.SessionCookie.domain)
-      ),
-      HttpCookie(
-        name = makeSettings.SessionCookie.expirationName,
-        value = DateHelper
-          .format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds)),
-        secure = makeSettings.SessionCookie.isSecure,
-        httpOnly = false,
-        maxAge = None,
-        path = Some("/"),
-        domain = Some(makeSettings.SessionCookie.domain)
-      ),
-      HttpCookie(
-        name = makeSettings.SecureCookie.name,
-        value = "",
-        secure = makeSettings.SecureCookie.isSecure,
-        httpOnly = true,
-        maxAge = Some(0),
-        path = Some("/"),
-        domain = Some(makeSettings.SecureCookie.domain)
-      ),
-      HttpCookie(
-        name = makeSettings.SecureCookie.expirationName,
-        value = "",
-        secure = makeSettings.SecureCookie.isSecure,
-        httpOnly = false,
-        maxAge = Some(0),
-        path = Some("/"),
-        domain = Some(makeSettings.SecureCookie.domain)
-      )
-    )
-
     override def logoutRoute: Route = post {
       path("logout") {
         makeOperation("OauthLogout") { requestContext =>
@@ -382,7 +340,7 @@ trait DefaultAuthenticationApiComponent
             requireToken(requestContext.applicationName) { token =>
               onComplete(oauth2DataHandler.removeToken(token)) {
                 case Success(_) =>
-                  addCookies(requestContext.applicationName, logoutCookies) { complete(StatusCodes.NoContent) }
+                  addCookies(requestContext.applicationName, logoutCookies()) { complete(StatusCodes.NoContent) }
                 case Failure(ex) => failWith(ex)
               }
             }
@@ -399,7 +357,7 @@ trait DefaultAuthenticationApiComponent
               case Success(_) =>
                 addCookies(
                   requestContext.applicationName,
-                  logoutCookies ++
+                  logoutCookies() ++
                     Seq(
                       HttpCookie(
                         name = makeSettings.UserIdCookie.name,
