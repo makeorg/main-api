@@ -19,7 +19,7 @@
 
 package org.make.api.technical.healthcheck
 import akka.actor.Props
-import com.datastax.driver.core.querybuilder.QueryBuilder.select
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom
 import org.make.api.technical.{ActorReadJournalComponent, ShortenedNames}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -32,13 +32,13 @@ class CassandraHealthCheckActor(healthCheckExecutionContext: ExecutionContext)
   override val techno: String = "cassandra"
 
   val keyspace: String =
-    context.system.settings.config.getString("make-api.event-sourcing.proposals.read-journal.keyspace")
+    context.system.settings.config.getString("make-api.event-sourcing.proposals.journal.keyspace")
   val table: String =
-    context.system.settings.config.getString("make-api.event-sourcing.proposals.read-journal.table")
+    context.system.settings.config.getString("make-api.event-sourcing.proposals.journal.table")
 
   override def healthCheck(): Future[String] = {
     proposalJournal.session
-      .selectOne(select("persistence_id").from(keyspace, table).limit(1))
+      .selectOne(selectFrom(keyspace, table).column("persistence_id").limit(1).build())
       .map { row =>
         if (row.isDefined) {
           "OK"

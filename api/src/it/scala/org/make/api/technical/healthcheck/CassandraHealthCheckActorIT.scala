@@ -131,11 +131,27 @@ object CassandraHealthCheckActorIT {
        |  http.client.parsing.max-response-reason-length = 128
        |
        |  persistence {
+       |    cassandra {
+       |      events-by-tag.enabled = false
+       |      journal {
+       |        keyspace = "fake"
+       |        keyspace-autocreate = true
+       |        tables-autocreate = true
+       |        replication-factor = 1
+       |      }
+       |      snapshot {
+       |        keyspace = "fake"
+       |        keyspace-autocreate = true
+       |        tables-autocreate = true
+       |        replication-factor = 1
+       |      }
+       |    }
+       |
        |    journal {
-       |      plugin = "make-api.event-sourcing.proposals.read-journal"
+       |      plugin = "make-api.event-sourcing.proposals.journal"
        |    }
        |    snapshot-store {
-       |      plugin = "make-api.event-sourcing.proposals.snapshot-store"
+       |      plugin = "make-api.event-sourcing.proposals.snapshot"
        |    }
        |    role = "worker"
        |  }
@@ -159,35 +175,30 @@ object CassandraHealthCheckActorIT {
        |
        |}
        |
+       |datastax-java-driver.basic {
+       |  contact-points = ["127.0.0.1:$cassandraExposedPort"]
+       |  load-balancing-policy.local-datacenter = "datacenter1"
+       |}
+       |
        |make-api {
        |
        |  event-sourcing {
+       |
+       |    proposals = $${akka.persistence.cassandra}
        |    proposals {
        |
-       |      read-journal = $${cassandra-journal}
-       |      read-journal {
-       |        port = $cassandraExposedPort
-       |        keyspace = "fake"
-       |        query-plugin = "make-api.event-sourcing.proposals.query-journal"
+       |      journal {
        |        table = "proposal_events"
        |        metadata-table = "proposal_events_metadata"
        |        config-table = "proposal_events_config"
-       |        events-by-tag.table = "proposal_tag_views"
        |      }
        |
-       |      snapshot-store = $${cassandra-snapshot-store}
-       |      snapshot-store {
-       |        port = $cassandraExposedPort
-       |        keyspace = "fake"
+       |      snapshot {
        |        table = "proposal_snapshots"
        |        metadata-table = "proposal_snapshots_metadata"
        |        config-table = "proposals_snapshot_config"
        |      }
        |
-       |      query-journal = $${cassandra-query-journal}
-       |      query-journal {
-       |        write-plugin = "make-api.event-sourcing.proposals.read-journal"
-       |      }
        |    }
        |  }
        |}

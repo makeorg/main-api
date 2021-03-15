@@ -58,24 +58,24 @@ object TestHelper {
        |make-api {
        |  event-sourcing {
        |    jobs {
-       |      read-journal = $${inmemory-journal}
-       |      snapshot-store = $${inmemory-snapshot-store}
+       |      journal = $${inmemory-journal}
+       |      snapshot = $${inmemory-snapshot-store}
        |    }
        |    proposals {
-       |      read-journal = $${inmemory-journal}
-       |      snapshot-store = $${inmemory-snapshot-store}
+       |      journal = $${inmemory-journal}
+       |      snapshot = $${inmemory-snapshot-store}
        |    }
        |    sequences {
-       |      read-journal = $${inmemory-journal}
-       |      snapshot-store = $${inmemory-snapshot-store}
+       |      journal = $${inmemory-journal}
+       |      snapshot = $${inmemory-snapshot-store}
        |    }
        |    sessions {
-       |      read-journal = $${inmemory-journal}
-       |      snapshot-store = $${inmemory-snapshot-store}
+       |      journal = $${inmemory-journal}
+       |      snapshot = $${inmemory-snapshot-store}
        |    }
        |    users {
-       |      read-journal = $${inmemory-journal}
-       |      snapshot-store = $${inmemory-snapshot-store}
+       |      journal = $${inmemory-journal}
+       |      snapshot = $${inmemory-snapshot-store}
        |    }
        |  }
        |  

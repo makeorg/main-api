@@ -47,9 +47,9 @@ object ShardedUserHistory {
   val props: Props = Props[ShardedUserHistory]()
   val shardName: String = "user-history"
 
-  val readJournal: String = "make-api.event-sourcing.users.read-journal"
-  val snapshotStore: String = "make-api.event-sourcing.users.snapshot-store"
-  val queryJournal: String = "make-api.event-sourcing.users.query-journal"
+  val readJournal: String = "make-api.event-sourcing.users.journal"
+  val snapshotStore: String = "make-api.event-sourcing.users.snapshot"
+  val queryJournal: String = "make-api.event-sourcing.users.query"
 
   case object StopUserHistory
 

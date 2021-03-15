@@ -48,6 +48,7 @@ libraryDependencies ++= Seq(
   Dependencies.stamina,
   Dependencies.caliban,
   Dependencies.calibanAkkaHttp,
+  Dependencies.cassandraQueryBuilder,
   Dependencies.zio,
   Dependencies.zioStreams,
   Dependencies.circeGeneric,
