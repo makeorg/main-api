@@ -24,7 +24,9 @@ import java.time.temporal.ChronoUnit
 
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
+import akka.persistence.cassandra.reconciler.{Reconciliation, ReconciliationSettings}
 import akka.stream.scaladsl.{Sink, Source}
+import com.typesafe.config.ConfigValueFactory
 import grizzled.slf4j.Logging
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -33,15 +35,19 @@ import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
 import org.make.api.operation.{OperationServiceComponent, PersistentOperationOfQuestionServiceComponent}
+import org.make.api.proposal.{KillProposalShard, ProposalCoordinatorComponent}
 import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.crm.QuestionResolver
+import org.make.api.technical.job.{JobActor, JobCoordinatorComponent}
 import org.make.api.technical.storage.StorageConfigurationComponent
 import org.make.api.user.UserServiceComponent
 import org.make.api.userhistory._
 import org.make.core._
+import org.make.core.job.Job
 import org.make.core.profile.Profile
+import org.make.core.proposal.ProposalId
 import org.make.core.question.Question
 import org.make.core.session.SessionId
 import org.make.core.tag.{Tag => _}
@@ -88,7 +94,22 @@ trait MigrationApi extends Directives {
   @Path(value = "/upload-all-avatars")
   def uploadAllAvatars: Route
 
-  def routes: Route = setProperSignUpOperation ~ uploadAllAvatars
+  @ApiOperation(
+    value = "migrate-persistence-ids",
+    httpMethod = "POST",
+    code = HttpCodes.NoContent,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
+  @Path(value = "/migrate-persistence-ids")
+  def migratePersistenceIds: Route
+
+  def routes: Route = setProperSignUpOperation ~ uploadAllAvatars ~ migratePersistenceIds
 }
 
 trait MigrationApiComponent {
@@ -104,7 +125,9 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
     with MailJetConfigurationComponent
     with UserServiceComponent
     with ReadJournalComponent
+    with JobCoordinatorComponent
     with OperationServiceComponent
+    with ProposalCoordinatorComponent
     with QuestionServiceComponent
     with EventBusServiceComponent
     with StorageConfigurationComponent
@@ -269,6 +292,38 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                   )
                 }
                 .runForeach(eventBusService.publish)
+              complete(StatusCodes.NoContent)
+            }
+          }
+        }
+
+      }
+    }
+
+    override def migratePersistenceIds: Route = post {
+      path("migrations" / "migrate-persistence-ids") {
+        makeOperation("MigratePersistenceIds") { requestContext =>
+          makeOAuth2 { userAuth =>
+            requireAdminRole(userAuth.user) {
+              jobCoordinator ! JobActor.Protocol.Command.Kill(Job.JobId("fake-job"))
+              proposalCoordinator ! KillProposalShard(ProposalId("fake-proposal"), RequestContext.empty)
+              Thread.sleep(5000)
+              Future.traverse(Seq("proposals", "sessions", "users", "jobs")) { entity =>
+                val rec = new Reconciliation(
+                  actorSystem,
+                  new ReconciliationSettings(
+                    actorSystem.settings.config
+                      .getConfig("akka.persistence.cassandra.reconciler")
+                      .withValue("plugin-location", ConfigValueFactory.fromAnyRef(s"make-api.event-sourcing.$entity"))
+                  )
+                )
+                val future = rec.rebuildAllPersistenceIds()
+                future.onComplete {
+                  case Success(_)         => logger.info(s"$entity ids table populated")
+                  case Failure(exception) => logger.error(s"error while populating $entity ids table", exception)
+                }
+                future
+              }
               complete(StatusCodes.NoContent)
             }
           }
