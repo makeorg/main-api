@@ -100,7 +100,9 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
       val futureFeaturedQuestions = searchQuestionOfOperations(
         OperationOfQuestionSearchQuery(
           filters = Some(OperationOfQuestionSearchFilters(featured = Some(FeaturedSearchFilter(true)))),
-          sortAlgorithm = Some(SortAlgorithm.Chronological)
+          sortAlgorithm = Some(SortAlgorithm.Chronological),
+          // MP-1846 force to 15 until the design team comes up with a page working for any number of featured questions
+          limit = Some(15)
         )
       )
 
