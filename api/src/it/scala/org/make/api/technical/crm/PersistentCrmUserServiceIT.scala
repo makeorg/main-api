@@ -53,7 +53,11 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
     daysOfActivity = Some(20),
     daysOfActivity30d = Some(2),
     userType = Some("B2C"),
-    accountType = Some("USER")
+    accountType = Some("USER"),
+    daysBeforeDeletion = Some(3),
+    lastActivityDate = Some("2019-07-01T16:16:16Z"),
+    sessionsCount = Some(42),
+    eventsCount = Some(124)
   )
 
   Feature("persist crm users") {

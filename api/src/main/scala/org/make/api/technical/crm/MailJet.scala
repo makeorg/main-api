@@ -360,37 +360,16 @@ final case class ContactProperties(
   daysOfActivity30: Option[Int],
   userType: Option[String],
   accountType: Option[String],
-  updatedAt: Option[String]
+  updatedAt: Option[String],
+  daysBeforeDeletion: Option[Int],
+  lastActivityDate: Option[String],
+  sessionsCount: Option[Int],
+  eventsCount: Option[Int]
 ) {
   def toContactPropertySeq: Seq[ContactProperty[_]] = {
-    Seq(
-      ContactProperty("UserId", userId.map(_.value)),
-      ContactProperty("Firstname", firstName),
-      ContactProperty("Zipcode", postalCode),
-      ContactProperty("Date_Of_Birth", dateOfBirth),
-      ContactProperty("Email_Validation_Status", emailValidationStatus),
-      ContactProperty("Email_Hardbounce_Status", emailHardBounceValue),
-      ContactProperty("Unsubscribe_Status", unsubscribeStatus),
-      ContactProperty("Account_Creation_Date", accountCreationDate),
-      ContactProperty("Account_creation_source", accountCreationSource),
-      ContactProperty("Account_creation_origin", accountCreationOrigin),
-      ContactProperty("Account_Creation_Operation", accountCreationSlug),
-      ContactProperty("Account_Creation_Country", accountCreationCountry),
-      ContactProperty("Account_Creation_Location", accountCreationLocation),
-      ContactProperty("Countries_activity", countriesActivity),
-      ContactProperty("Last_country_activity", lastCountryActivity),
-      ContactProperty("Total_Number_Proposals", totalProposals),
-      ContactProperty("Total_number_votes", totalVotes),
-      ContactProperty("First_Contribution_Date", firstContributionDate),
-      ContactProperty("Last_Contribution_Date", lastContributionDate),
-      ContactProperty("Operation_activity", operationActivity),
-      ContactProperty("Source_activity", sourceActivity),
-      ContactProperty("Days_of_Activity", daysOfActivity),
-      ContactProperty("Days_of_Activity_30d", daysOfActivity30),
-      ContactProperty("User_type", userType),
-      ContactProperty("Account_type", accountType),
-      ContactProperty("Updated_at", updatedAt)
-    )
+    Field.fieldsList.map { field =>
+      ContactProperty(field.fieldName, field.extractValue(this))
+    }
   }
 
   def toStringCsv: String = {
@@ -404,67 +383,59 @@ final case class ContactProperties(
 }
 
 object ContactProperties {
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf", "org.wartremover.warts.Throw"))
   implicit val encoder: Encoder[ContactProperties] =
     (contactProperties: ContactProperties) => {
-      Json.obj(
-        ("UserId", contactProperties.userId.map(_.value).asJson),
-        ("Firstname", contactProperties.firstName.asJson),
-        ("Zipcode", contactProperties.postalCode.asJson),
-        ("Date_Of_Birth", contactProperties.dateOfBirth.asJson),
-        ("Email_Validation_Status", contactProperties.emailValidationStatus.asJson),
-        ("Email_Hardbounce_Status", contactProperties.emailHardBounceValue.asJson),
-        ("Unsubscribe_Status", contactProperties.unsubscribeStatus.asJson),
-        ("Account_Creation_Date", contactProperties.accountCreationDate.asJson),
-        ("Account_creation_source", contactProperties.accountCreationSource.asJson),
-        ("Account_creation_origin", contactProperties.accountCreationOrigin.asJson),
-        ("Account_Creation_Operation", contactProperties.accountCreationSlug.asJson),
-        ("Account_Creation_Country", contactProperties.accountCreationCountry.asJson),
-        ("Account_Creation_Location", contactProperties.accountCreationLocation.asJson),
-        ("Countries_activity", contactProperties.countriesActivity.asJson),
-        ("Last_country_activity", contactProperties.lastCountryActivity.asJson),
-        ("Total_Number_Proposals", contactProperties.totalProposals.asJson),
-        ("Total_number_votes", contactProperties.totalVotes.asJson),
-        ("First_Contribution_Date", contactProperties.firstContributionDate.asJson),
-        ("Last_Contribution_Date", contactProperties.lastContributionDate.asJson),
-        ("Operation_activity", contactProperties.operationActivity.asJson),
-        ("Source_activity", contactProperties.sourceActivity.asJson),
-        ("Days_of_Activity", contactProperties.daysOfActivity.asJson),
-        ("Days_of_Activity_30d", contactProperties.daysOfActivity30.asJson),
-        ("User_type", contactProperties.userType.asJson),
-        ("Account_type", contactProperties.accountType.asJson),
-        ("Updated_at", contactProperties.updatedAt.asJson)
-      )
+      Json.fromFields(contactProperties.toContactPropertySeq.map {
+        case property @ ContactProperty(_, None)                 => (property.name, None.asJson)
+        case property @ ContactProperty(_, Some(value: String))  => (property.name, Some(value).asJson)
+        case property @ ContactProperty(_, Some(value: Int))     => (property.name, Some(value).asJson)
+        case property @ ContactProperty(_, Some(value: Boolean)) => (property.name, Some(value).asJson)
+        case other =>
+          throw new IllegalStateException(s"Unable to convert ${other.toString}")
+      })
     }
 
   val getCsvHeader: String = {
+    ("email" :+ Field.fieldsList.map(_.fieldName)).map(name => s"""\"$name\"""").mkString("[", ",", "]")
+  }
+}
+
+final case class Field[T](fieldName: String, extractValue: ContactProperties => Option[T])
+
+object Field {
+  val fieldsList: Seq[Field[_]] = {
     Seq(
-      "email",
-      "UserId",
-      "Firstname",
-      "Zipcode",
-      "Date_Of_Birth",
-      "Email_Validation_Status",
-      "Email_Hardbounce_Status",
-      "Unsubscribe_Status",
-      "Account_Creation_Date",
-      "Account_creation_source",
-      "Account_creation_origin",
-      "Account_Creation_Operation",
-      "Account_Creation_Country",
-      "Account_Creation_Location",
-      "Countries_activity",
-      "Last_country_activity",
-      "Total_Number_Proposals",
-      "Total_number_votes",
-      "First_Contribution_Date",
-      "Last_Contribution_Date",
-      "Operation_activity",
-      "Source_activity",
-      "Days_of_Activity",
-      "Days_of_Activity_30d",
-      "User_type",
-      "Account_type",
-      "Updated_at"
-    ).map(name => s"""\"$name\"""").mkString("[", ",", "]")
+      Field("UserId", _.userId.map(_.value)),
+      Field("Firstname", _.firstName),
+      Field("Zipcode", _.postalCode),
+      Field("Date_Of_Birth", _.dateOfBirth),
+      Field("Email_Validation_Status", _.emailValidationStatus),
+      Field("Email_Hardbounce_Status", _.emailHardBounceValue),
+      Field("Unsubscribe_Status", _.unsubscribeStatus),
+      Field("Account_Creation_Date", _.accountCreationDate),
+      Field("Account_creation_source", _.accountCreationSource),
+      Field("Account_creation_origin", _.accountCreationOrigin),
+      Field("Account_Creation_Operation", _.accountCreationSlug),
+      Field("Account_Creation_Country", _.accountCreationCountry),
+      Field("Account_Creation_Location", _.accountCreationLocation),
+      Field("Countries_activity", _.countriesActivity),
+      Field("Last_country_activity", _.lastCountryActivity),
+      Field("Total_Number_Proposals", _.totalProposals),
+      Field("Total_number_votes", _.totalVotes),
+      Field("First_Contribution_Date", _.firstContributionDate),
+      Field("Last_Contribution_Date", _.lastContributionDate),
+      Field("Operation_activity", _.operationActivity),
+      Field("Source_activity", _.sourceActivity),
+      Field("Days_of_Activity", _.daysOfActivity),
+      Field("Days_of_Activity_30d", _.daysOfActivity30),
+      Field("User_type", _.userType),
+      Field("Account_type", _.accountType),
+      Field("Updated_at", _.updatedAt),
+      Field("Days_before_deletion", _.daysBeforeDeletion),
+      Field("Last_activity_date", _.lastActivityDate),
+      Field("Sessions_count", _.sessionsCount),
+      Field("Events_count", _.eventsCount)
+    )
   }
 }
