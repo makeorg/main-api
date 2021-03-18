@@ -22,9 +22,15 @@ package org.make.api.user
 import java.net.InetAddress
 import java.time.{Instant, LocalDate}
 import java.util.Date
-
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`X-Forwarded-For`, Authorization, BasicHttpCredentials, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{
+  `Set-Cookie`,
+  `X-Forwarded-For`,
+  Authorization,
+  BasicHttpCredentials,
+  HttpCookie,
+  OAuth2BearerToken
+}
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
 import cats.data.NonEmptyList
@@ -1601,6 +1607,14 @@ class UserApiTest
       Post("/user/sylvain-user-id/delete", HttpEntity(ContentTypes.`application/json`, fakeRequest))
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
+        val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
+        val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
+        val maybeSecureCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == makeSettings.SecureCookie.name)
+        val maybeSecureExpirationCookie: Option[HttpCookie] =
+          cookiesHeaders.find(_.name == makeSettings.SecureCookie.expirationName)
+
+        maybeSecureCookie.flatMap(_.maxAge) shouldBe Some(0)
+        maybeSecureExpirationCookie.flatMap(_.maxAge) shouldBe Some(0)
       }
     }
   }

@@ -19,11 +19,6 @@
 
 package org.make.api.technical
 
-import java.io.File
-import java.net.URLDecoder
-import java.nio.file.Files
-import java.time.ZonedDateTime
-
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
@@ -56,6 +51,10 @@ import org.make.core.user.UserId
 import org.make.core.{RequestContext, _}
 import scalaoauth2.provider.AuthInfo
 
+import java.io.File
+import java.net.URLDecoder
+import java.nio.file.Files
+import java.time.ZonedDateTime
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -696,6 +695,47 @@ trait MakeAuthenticationDirectives extends MakeAuthentication {
   def requireAdminRole(user: UserRights): Directive0 = {
     authorize(user.roles.contains(RoleAdmin))
   }
+
+  def logoutCookies(): Seq[HttpCookie] = Seq(
+    HttpCookie(
+      name = makeSettings.SessionCookie.name,
+      value = idGenerator.nextSessionId().value,
+      secure = makeSettings.SessionCookie.isSecure,
+      httpOnly = true,
+      maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
+      path = Some("/"),
+      domain = Some(makeSettings.SessionCookie.domain)
+    ),
+    HttpCookie(
+      name = makeSettings.SessionCookie.expirationName,
+      value = DateHelper
+        .format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds)),
+      secure = makeSettings.SessionCookie.isSecure,
+      httpOnly = false,
+      maxAge = None,
+      path = Some("/"),
+      domain = Some(makeSettings.SessionCookie.domain)
+    ),
+    HttpCookie(
+      name = makeSettings.SecureCookie.name,
+      value = "",
+      secure = makeSettings.SecureCookie.isSecure,
+      httpOnly = true,
+      maxAge = Some(0),
+      path = Some("/"),
+      domain = Some(makeSettings.SecureCookie.domain)
+    ),
+    HttpCookie(
+      name = makeSettings.SecureCookie.expirationName,
+      value = "",
+      secure = makeSettings.SecureCookie.isSecure,
+      httpOnly = false,
+      maxAge = Some(0),
+      path = Some("/"),
+      domain = Some(makeSettings.SecureCookie.domain)
+    )
+  )
+
 }
 
 case object EmailNotVerifiedRejection extends Rejection
