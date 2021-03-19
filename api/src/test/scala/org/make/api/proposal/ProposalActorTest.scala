@@ -3861,4 +3861,212 @@ class ProposalActorTest
       }
     }
   }
+
+  Feature("prevent-negative-counts") {
+    val proposalId = ProposalId("negative-counts")
+    Scenario("unqualify") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        question = questionOnNothingFr,
+        initialProposal = false,
+        replyTo = probe.ref
+      )
+
+      probe.expectMessage(Envelope(proposalId))
+
+      coordinator ! AcceptProposalCommand(
+        proposalId = proposalId,
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        newContent = None,
+        labels = Seq(LabelId("action")),
+        tags = Seq(TagId("some tag id")),
+        idea = None,
+        question = questionOnTheme,
+        replyTo = probe.ref
+      )
+
+      probe.expectMessageType[Envelope[Proposal]]
+
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        voteTrust = Trusted,
+        replyTo = probe.ref
+      )
+
+      probe.expectMessageType[Envelope[Vote]]
+
+      coordinator ! QualifyVoteCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        QualificationKey.LikeIt,
+        Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
+        voteTrust = Trusted,
+        replyTo = probe.ref
+      )
+
+      probe.expectMessageType[Envelope[Qualification]]
+
+      val votesVerified = Seq(
+        UpdateVoteRequest(
+          key = VoteKey.Agree,
+          count = Some(1),
+          countVerified = Some(1),
+          countSequence = Some(1),
+          countSegment = Some(1),
+          qualifications = Seq(
+            UpdateQualificationRequest(
+              QualificationKey.LikeIt,
+              count = Some(0),
+              countVerified = Some(0),
+              countSequence = Some(0),
+              countSegment = Some(0)
+            )
+          )
+        )
+      )
+
+      coordinator ! UpdateProposalVotesCommand(
+        moderator = UserId("some user"),
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        updatedAt = mainUpdatedAt.get,
+        votes = votesVerified,
+        replyTo = probe.ref
+      )
+
+      probe.expectMessageType[Envelope[Proposal]]
+
+      coordinator ! UnqualifyVoteCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        QualificationKey.LikeIt,
+        Some(VoteAndQualifications(VoteKey.Agree, Map(QualificationKey.LikeIt -> Trusted), DateHelper.now(), Trusted)),
+        voteTrust = Trusted,
+        replyTo = probe.ref
+      )
+
+      val response = probe.expectMessageType[Envelope[Qualification]].value
+      response.key should be(QualificationKey.LikeIt)
+      response.count should be(0)
+      response.countVerified should be(0)
+    }
+
+    Scenario("unvote") {
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        question = questionOnNothingFr,
+        initialProposal = false,
+        replyTo = probe.ref
+      )
+
+      probe.expectMessage(Envelope(proposalId))
+
+      coordinator ! AcceptProposalCommand(
+        proposalId = proposalId,
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        newContent = None,
+        labels = Seq(LabelId("action")),
+        tags = Seq(TagId("some tag id")),
+        idea = None,
+        question = questionOnTheme,
+        replyTo = probe.ref
+      )
+
+      probe.expectMessageType[Envelope[Proposal]]
+
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        voteTrust = Trusted,
+        replyTo = probe.ref
+      )
+
+      probe.expectMessageType[Envelope[Vote]]
+
+      val votesVerified = Seq(
+        UpdateVoteRequest(
+          key = VoteKey.Agree,
+          count = Some(0),
+          countVerified = Some(0),
+          countSequence = Some(0),
+          countSegment = Some(0),
+          qualifications = Seq(
+            UpdateQualificationRequest(
+              QualificationKey.LikeIt,
+              count = Some(0),
+              countVerified = Some(0),
+              countSequence = Some(0),
+              countSegment = Some(0)
+            )
+          )
+        )
+      )
+
+      coordinator ! UpdateProposalVotesCommand(
+        moderator = UserId("some user"),
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        updatedAt = mainUpdatedAt.get,
+        votes = votesVerified,
+        replyTo = probe.ref
+      )
+
+      probe.expectMessageType[Envelope[Proposal]]
+
+      coordinator ! UnvoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        Some(VoteAndQualifications(VoteKey.Agree, Map(LikeIt -> Segment), DateHelper.now(), Segment)),
+        Troll,
+        replyTo = probe.ref
+      )
+
+      val unvote = probe.expectMessageType[Envelope[Vote]].value
+
+      unvote.count should be(0)
+      unvote.countVerified should be(0)
+      unvote.countSequence should be(0)
+      unvote.countSegment should be(0)
+
+      unvote.qualifications.foreach { qualification =>
+        qualification.count should be(0)
+        qualification.countVerified should be(0)
+        qualification.countSequence should be(0)
+        qualification.countSegment should be(0)
+      }
+    }
+  }
+
 }
