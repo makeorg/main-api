@@ -18,17 +18,17 @@
  */
 
 package org.make.api.idea
+
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import io.circe.generic.semiauto.{deriveDecoder, _}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.idea.AdminIdeaMappingApi.{CreateIdeaMappingRequest, IdeaMappingResponse, UpdateIdeaMappingRequest}
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.core.idea.{IdeaId, IdeaMapping, IdeaMappingId}
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
@@ -211,11 +211,7 @@ trait DefaultAdminIdeaMappingApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors {
 
-  self: MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with MakeSettingsComponent
-    with IdeaMappingServiceComponent =>
+  self: MakeDirectivesDependencies with IdeaMappingServiceComponent =>
 
   override val adminIdeaMappingApi: DefaultAdminIdeaMappingApi = new DefaultAdminIdeaMappingApi
 

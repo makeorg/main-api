@@ -20,14 +20,13 @@
 package org.make.api.proposal
 
 import java.time.ZonedDateTime
-
 import akka.Done
 import akka.stream.scaladsl.{Sink, Source}
 import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
-import grizzled.slf4j.Logging
 import eu.timepit.refined.auto._
+import grizzled.slf4j.Logging
 import kamon.Kamon
 import kamon.tag.TagSet
 import org.make.api.ActorSystemComponent

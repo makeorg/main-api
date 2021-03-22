@@ -1420,7 +1420,8 @@ class ProposalActorTest
             location = Some("my-location"),
             question = Some("my-question"),
             hostname = Some("my-hostname"),
-            ipAddress = Some("1.2.3.4"),
+            ipAddress = Some("1.2.3.x"),
+            ipAddressHash = Some("123456789-sha-512-12345890"),
             getParameters = Some(Map("parameter" -> "value")),
             userAgent = Some("my-user-agent"),
             questionId = Some(QuestionId("my-question-id")),
@@ -1437,7 +1438,6 @@ class ProposalActorTest
       val proposal: Proposal = probe.expectMessageType[Envelope[Proposal]].value
       proposal.creationContext should be(
         RequestContext(
-          currentTheme = None,
           userId = None,
           requestId = "my-request-id",
           sessionId = SessionId("session-id"),
@@ -1452,7 +1452,8 @@ class ProposalActorTest
           location = Some("my-location"),
           question = Some("my-question"),
           hostname = Some("my-hostname"),
-          ipAddress = Some("1.2.3.4"),
+          ipAddress = Some("1.2.3.x"),
+          ipAddressHash = Some("123456789-sha-512-12345890"),
           getParameters = Some(Map("parameter" -> "value")),
           userAgent = Some("my-user-agent"),
           questionId = Some(QuestionId("my-question-id")),

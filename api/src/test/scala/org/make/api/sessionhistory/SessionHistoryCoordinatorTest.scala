@@ -195,7 +195,7 @@ object SessionHistoryCoordinatorTest {
     s"""
        |akka.cluster.roles = ["seed"]
        |akka.remote.artery.canonical.port = ${TestHelper.counter.getAndIncrement()}
-       |""".stripMargin
+    """.stripMargin
 
   val configSeed: Config =
     ConfigFactory

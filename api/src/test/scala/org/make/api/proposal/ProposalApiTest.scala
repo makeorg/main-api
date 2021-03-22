@@ -20,7 +20,6 @@
 package org.make.api.proposal
 
 import java.time.ZonedDateTime
-
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
@@ -29,8 +28,7 @@ import io.circe.syntax._
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent}
+import org.make.api.technical.security.SecurityConfiguration
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.idea.{Idea, IdeaId}
@@ -47,14 +45,12 @@ import scala.concurrent.Future
 
 class ProposalApiTest
     extends MakeApiTestBase
-    with SessionHistoryCoordinatorServiceComponent
     with DefaultProposalApiComponent
     with IdeaServiceComponent
     with ProposalServiceComponent
     with UserServiceComponent
     with OperationServiceComponent
     with QuestionServiceComponent
-    with SecurityConfigurationComponent
     with SortAlgorithmConfigurationComponent {
 
   override val proposalService: ProposalService = mock[ProposalService]

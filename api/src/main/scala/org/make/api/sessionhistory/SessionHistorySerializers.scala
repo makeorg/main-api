@@ -20,69 +20,117 @@
 package org.make.api.sessionhistory
 
 import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
+import org.make.api.technical.MakeEventSerializer
+import org.make.api.technical.security.SecurityConfiguration
 import org.make.core.SprayJsonFormatters
 import spray.json.DefaultJsonProtocol._
+import spray.json.JsObject
 import spray.json.lenses.JsonLenses._
 import stamina.json.{from, JsonPersister}
-import stamina.{json, V1, V2, V3}
+import stamina._
 
-object SessionHistorySerializers extends SprayJsonFormatters {
+final class SessionHistorySerializers(securityConfiguration: SecurityConfiguration) extends SprayJsonFormatters {
 
-  private val logSessionSearchEventSerializer: JsonPersister[LogSessionSearchProposalsEvent, V2] =
-    json.persister[LogSessionSearchProposalsEvent, V2](
+  private val logSessionSearchEventSerializer: JsonPersister[LogSessionSearchProposalsEvent, V3] =
+    json.persister[LogSessionSearchProposalsEvent, V3](
       "session-history-search-proposal",
-      from[V1].to[V2](_.update("context" / "customData" ! set[Map[String, String]](Map.empty)))
+      from[V1]
+        .to[V2](_.update("context" / "customData" ! set[Map[String, String]](Map.empty)))
+        .to[V3](
+          _.update(
+            "context" ! modify[JsObject](MakeEventSerializer.setIpAddressAndHash(securityConfiguration.secureHashSalt))
+          )
+        )
     )
 
-  private val logSessionVoteEventSerializer: JsonPersister[LogSessionVoteEvent, V3] =
-    json.persister[LogSessionVoteEvent, V3](
+  private val logSessionVoteEventSerializer: JsonPersister[LogSessionVoteEvent, V4] =
+    json.persister[LogSessionVoteEvent, V4](
       "session-history-vote-proposal",
       from[V1]
         .to[V2](_.update("action" / "arguments" / "trust" ! set[String]("trusted")))
         .to[V3](_.update("context" / "customData" ! set[Map[String, String]](Map.empty)))
+        .to[V4](
+          _.update(
+            "context" ! modify[JsObject](MakeEventSerializer.setIpAddressAndHash(securityConfiguration.secureHashSalt))
+          )
+        )
     )
 
-  private val logSessionUnvoteEventSerializer: JsonPersister[LogSessionUnvoteEvent, V3] =
-    json.persister[LogSessionUnvoteEvent, V3](
+  private val logSessionUnvoteEventSerializer: JsonPersister[LogSessionUnvoteEvent, V4] =
+    json.persister[LogSessionUnvoteEvent, V4](
       "session-history-unvote-proposal",
       from[V1]
         .to[V2](_.update("action" / "arguments" / "trust" ! set[String]("trusted")))
         .to[V3](_.update("context" / "customData" ! set[Map[String, String]](Map.empty)))
+        .to[V4](
+          _.update(
+            "context" ! modify[JsObject](MakeEventSerializer.setIpAddressAndHash(securityConfiguration.secureHashSalt))
+          )
+        )
     )
 
-  private val logSessionQualificationEventSerializer: JsonPersister[LogSessionQualificationEvent, V3] =
-    json.persister[LogSessionQualificationEvent, V3](
+  private val logSessionQualificationEventSerializer: JsonPersister[LogSessionQualificationEvent, V4] =
+    json.persister[LogSessionQualificationEvent, V4](
       "session-history-qualificaion-vote",
       from[V1]
         .to[V2](_.update("action" / "arguments" / "trust" ! set[String]("trusted")))
         .to[V3](_.update("context" / "customData" ! set[Map[String, String]](Map.empty)))
+        .to[V4](
+          _.update(
+            "context" ! modify[JsObject](MakeEventSerializer.setIpAddressAndHash(securityConfiguration.secureHashSalt))
+          )
+        )
     )
 
-  private val logSessionUnqualificationEventSerializer: JsonPersister[LogSessionUnqualificationEvent, V3] =
-    json.persister[LogSessionUnqualificationEvent, V3](
+  private val logSessionUnqualificationEventSerializer: JsonPersister[LogSessionUnqualificationEvent, V4] =
+    json.persister[LogSessionUnqualificationEvent, V4](
       "session-history-unqualificaion-vote",
       from[V1]
         .to[V2](_.update("action" / "arguments" / "trust" ! set[String]("trusted")))
         .to[V3](_.update("context" / "customData" ! set[Map[String, String]](Map.empty)))
+        .to[V4](
+          _.update(
+            "context" ! modify[JsObject](MakeEventSerializer.setIpAddressAndHash(securityConfiguration.secureHashSalt))
+          )
+        )
     )
 
-  private val logSessionTransformedEventSerializer: JsonPersister[SessionTransformed, V2] =
-    json.persister[SessionTransformed, V2](
+  private val logSessionTransformedEventSerializer: JsonPersister[SessionTransformed, V3] =
+    json.persister[SessionTransformed, V3](
       "session-transformed",
-      from[V1].to[V2](_.update("context" / "customData" ! set[Map[String, String]](Map.empty)))
+      from[V1]
+        .to[V2](_.update("context" / "customData" ! set[Map[String, String]](Map.empty)))
+        .to[V3](
+          _.update(
+            "context" ! modify[JsObject](MakeEventSerializer.setIpAddressAndHash(securityConfiguration.secureHashSalt))
+          )
+        )
     )
 
-  private val logSessionExpiredSerializer: JsonPersister[SessionExpired, V1] =
-    json.persister[SessionExpired]("session-expired")
+  private val logSessionExpiredSerializer: JsonPersister[SessionExpired, V2] =
+    json.persister[SessionExpired, V2](
+      "session-expired",
+      from[V1].to[V2](
+        _.update(
+          "context" ! modify[JsObject](MakeEventSerializer.setIpAddressAndHash(securityConfiguration.secureHashSalt))
+        )
+      )
+    )
 
-  private val logSessionStartSequenceEventSerializer: JsonPersister[LogSessionStartSequenceEvent, V2] =
-    json.persister[LogSessionStartSequenceEvent, V2](
+  private val logSessionStartSequenceEventSerializer: JsonPersister[LogSessionStartSequenceEvent, V3] =
+    json.persister[LogSessionStartSequenceEvent, V3](
       "session-history-start-sequence",
-      from[V1].to[V2](_.update("context" / "customData" ! set[Map[String, String]](Map.empty)))
+      from[V1]
+        .to[V2](_.update("context" / "customData" ! set[Map[String, String]](Map.empty)))
+        .to[V3](
+          _.update(
+            "context" ! modify[JsObject](MakeEventSerializer.setIpAddressAndHash(securityConfiguration.secureHashSalt))
+          )
+        )
     )
 
-  private val SessionHistorySerializer: JsonPersister[SessionHistory, V3] =
-    json.persister[SessionHistory, V3](
+  private val SessionHistorySerializer: JsonPersister[SessionHistory, V4] =
+    json.persister[SessionHistory, V4](
       "session-history",
       from[V1]
         .to[V2] { json =>
@@ -102,10 +150,24 @@ object SessionHistorySerializers extends SprayJsonFormatters {
           )
         }
         .to[V3](_.update("events" / * / "context" / "customData" ! set[Map[String, String]](Map.empty)))
+        .to[V4](
+          _.update(
+            "events" / * / "context" ! modify[JsObject](
+              MakeEventSerializer.setIpAddressAndHash(securityConfiguration.secureHashSalt)
+            )
+          )
+        )
     )
 
-  private val saveLastEventDateSerializer: JsonPersister[SaveLastEventDate, V1] =
-    json.persister[SaveLastEventDate]("save-last-event-date")
+  private val saveLastEventDateSerializer: JsonPersister[SaveLastEventDate, V2] =
+    json.persister[SaveLastEventDate, V2](
+      "save-last-event-date",
+      from[V1].to[V2](
+        _.update(
+          "context" ! modify[JsObject](MakeEventSerializer.setIpAddressAndHash(securityConfiguration.secureHashSalt))
+        )
+      )
+    )
 
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(
@@ -120,4 +182,9 @@ object SessionHistorySerializers extends SprayJsonFormatters {
       saveLastEventDateSerializer,
       SessionHistorySerializer
     )
+}
+
+object SessionHistorySerializers {
+  def apply(securityConfiguration: SecurityConfiguration): SessionHistorySerializers =
+    new SessionHistorySerializers(securityConfiguration)
 }

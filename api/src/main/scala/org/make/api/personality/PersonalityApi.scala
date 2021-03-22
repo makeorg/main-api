@@ -27,13 +27,13 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.circe.refined._
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.idea.TopIdeaServiceComponent
 import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
 import org.make.api.question.{QuestionTopIdeaWithAvatarResponse, SimpleQuestionResponse}
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{MakeAuthenticationDirectives}
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.core.Validation._
 import org.make.core._
@@ -157,10 +157,8 @@ trait DefaultPersonalityApiComponent
     extends PersonalityApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors {
-  this: UserServiceComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent
+  this: MakeDirectivesDependencies
+    with UserServiceComponent
     with TopIdeaServiceComponent
     with TopIdeaCommentServiceComponent
     with QuestionPersonalityServiceComponent =>

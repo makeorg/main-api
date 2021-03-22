@@ -24,7 +24,6 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.util.ByteString
 import org.make.api.{MakeApiTestBase, TestUtils}
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation.{
   OperationOfQuestionService,
   OperationOfQuestionServiceComponent,
@@ -32,8 +31,6 @@ import org.make.api.operation.{
   OperationServiceComponent
 }
 import org.make.api.proposal._
-import org.make.api.technical.IdGeneratorComponent
-import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage.{FileType, StorageService, StorageServiceComponent, UploadResponse}
 import org.make.core.operation._
@@ -54,10 +51,6 @@ class ModerationQuestionApiTest
     with DefaultModerationQuestionComponent
     with ProposalServiceComponent
     with QuestionServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with MakeAuthentication
     with StorageServiceComponent
     with OperationOfQuestionServiceComponent
     with OperationServiceComponent {

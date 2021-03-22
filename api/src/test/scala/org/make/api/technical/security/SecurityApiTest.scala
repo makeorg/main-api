@@ -24,9 +24,7 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import com.typesafe.config.ConfigFactory
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeAuthenticationDirectives
 import org.make.api.{ActorSystemComponent, MakeApiTestBase}
 import org.make.core.user.UserId
 
@@ -34,11 +32,7 @@ class SecurityApiTest
     extends MakeApiTestBase
     with MakeAuthenticationDirectives
     with DefaultSecurityApiComponent
-    with DefaultSecurityConfigurationComponent
-    with ActorSystemComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent {
+    with ActorSystemComponent {
 
   override val actorSystem: ActorSystem = SecurityApiTest.system
 

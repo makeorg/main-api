@@ -21,11 +21,10 @@ package org.make.api.sequence
 import akka.http.scaladsl.server._
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.MakeAuthenticationDirectives
 import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
 import org.make.core.question.QuestionId
@@ -95,12 +94,7 @@ trait DefaultAdminSequenceApiComponent
     with MakeAuthenticationDirectives
     with Logging {
 
-  this: SequenceServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with SequenceConfigurationComponent =>
+  this: MakeDirectivesDependencies with SequenceServiceComponent with SequenceConfigurationComponent =>
 
   override lazy val adminSequenceApi: AdminSequenceApi = new DefaultAdminSequenceApi
 

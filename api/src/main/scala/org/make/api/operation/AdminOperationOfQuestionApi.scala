@@ -21,8 +21,8 @@ package org.make.api.operation
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
-import grizzled.slf4j.Logging
 import eu.timepit.refined.types.numeric.NonNegInt
+import grizzled.slf4j.Logging
 import io.circe.generic.semiauto._
 import io.circe.refined._
 import eu.timepit.refined.auto._
@@ -30,11 +30,9 @@ import io.circe.Codec
 import io.swagger.annotations._
 
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.keyword.KeywordServiceComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.MakeAuthenticationDirectives
 import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.keyword.Keyword
@@ -110,12 +108,7 @@ trait DefaultAdminOperationOfQuestionApiComponent
     with Logging
     with ParameterExtractors {
 
-  this: MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with OperationOfQuestionServiceComponent
-    with KeywordServiceComponent =>
+  this: MakeDirectivesDependencies with OperationOfQuestionServiceComponent with KeywordServiceComponent =>
 
   val questionId: PathMatcher1[QuestionId] = Segment.map(id => QuestionId(id))
 

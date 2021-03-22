@@ -24,10 +24,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import cats.data.NonEmptyList
 import org.make.api.MakeApiTestBase
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
-import org.make.api.technical.IdGeneratorComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.DateHelper
 import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery, IdeaStatus}
@@ -40,11 +37,8 @@ import scala.concurrent.Future
 class ModerationIdeaApiTest
     extends MakeApiTestBase
     with DefaultModerationIdeaApiComponent
-    with IdGeneratorComponent
-    with MakeDataHandlerComponent
     with QuestionServiceComponent
-    with IdeaServiceComponent
-    with MakeSettingsComponent {
+    with IdeaServiceComponent {
 
   override val ideaService: IdeaService = mock[IdeaService]
   override val questionService: QuestionService = mock[QuestionService]

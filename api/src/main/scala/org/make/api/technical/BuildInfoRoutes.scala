@@ -23,16 +23,10 @@ import akka.http.scaladsl.server.Route
 import buildinfo.BuildInfo
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 
 trait BuildInfoRoutes extends MakeDirectives {
-  this: MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with MakeAuthentication
-    with SessionHistoryCoordinatorServiceComponent =>
+  this: MakeDirectivesDependencies =>
 
   val buildRoutes: Route = buildInfo
 

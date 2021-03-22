@@ -23,9 +23,8 @@ import akka.http.scaladsl.model.headers.{Authorization, HttpChallenges}
 import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsMissing
 import akka.http.scaladsl.server.directives.Credentials
 import akka.http.scaladsl.server.{AuthenticationFailedRejection, Directive1}
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeDirectives, ShortenedNames}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{MakeDirectives, ShortenedNames}
 import org.make.core.ApplicationName
 import org.make.core.auth.UserRights
 import scalaoauth2.provider._
@@ -36,10 +35,7 @@ import scala.concurrent.Future
   * Mostly taken from https://github.com/nulab/akka-http-oauth2-provider with added support for redirect
   */
 trait MakeAuthentication extends ShortenedNames with MakeDirectives {
-  self: MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent =>
+  self: MakeDirectivesDependencies =>
 
   val realm = "make.org API"
 

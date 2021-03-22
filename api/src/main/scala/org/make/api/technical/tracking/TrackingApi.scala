@@ -26,16 +26,9 @@ import akka.http.scaladsl.server.{Directives, Route}
 import grizzled.slf4j.Logging
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.monitoring.MonitoringServiceComponent
-import org.make.api.technical.{
-  EndpointType,
-  EventBusServiceComponent,
-  IdGeneratorComponent,
-  MakeAuthenticationDirectives,
-  MakeDirectives
-}
+import org.make.api.technical.{EndpointType, EventBusServiceComponent, MakeAuthenticationDirectives, MakeDirectives}
 import org.make.core.{HttpCodes, RequestContext}
 import org.make.core.auth.UserRights
 import org.slf4j.event.Level
@@ -98,11 +91,9 @@ trait TrackingApiComponent {
 }
 
 trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectives {
-  this: EventBusServiceComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
+  this: MakeDirectivesDependencies
+    with EventBusServiceComponent
     with MakeAuthenticationDirectives
-    with SessionHistoryCoordinatorServiceComponent
     with MonitoringServiceComponent
     with Logging =>
 

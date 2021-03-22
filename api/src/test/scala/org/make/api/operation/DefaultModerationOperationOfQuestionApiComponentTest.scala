@@ -26,9 +26,7 @@ import cats.data.NonEmptyList
 import eu.timepit.refined.auto._
 import io.circe.syntax._
 import org.make.api.MakeApiTestBase
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
-import org.make.api.technical.IdGeneratorComponent
 import org.make.core.operation.OperationKind.GreatCause
 import org.make.core.{Order, ValidationError}
 import org.make.core.operation._
@@ -41,8 +39,6 @@ import org.make.core.technical.Pagination.{End, Start}
 class DefaultModerationOperationOfQuestionApiComponentTest
     extends MakeApiTestBase
     with DefaultModerationOperationOfQuestionApiComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
     with OperationOfQuestionServiceComponent
     with QuestionServiceComponent
     with OperationServiceComponent {

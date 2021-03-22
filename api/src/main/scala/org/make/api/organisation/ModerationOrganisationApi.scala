@@ -21,21 +21,20 @@ package org.make.api.organisation
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
-import grizzled.slf4j.Logging
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.boolean.And
 import eu.timepit.refined.collection.MaxSize
 import eu.timepit.refined.string.Url
+import grizzled.slf4j.Logging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.circe.refined._
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.api.user.{ProfileRequest, ProfileResponse}
 import org.make.core.Validation.{validateOptional, _}
 import org.make.core.auth.UserRights
@@ -134,11 +133,7 @@ trait DefaultModerationOrganisationApiComponent
     with MakeAuthenticationDirectives
     with Logging
     with ParameterExtractors {
-  this: OrganisationServiceComponent
-    with MakeDataHandlerComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent =>
+  this: MakeDirectivesDependencies with OrganisationServiceComponent =>
 
   override lazy val moderationOrganisationApi: ModerationOrganisationApi = new DefaultModerationOrganisationApi
 

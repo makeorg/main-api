@@ -22,7 +22,6 @@ package org.make.api.personality
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
-import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.user.{PersonalityRegisterData, UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.RequestContext
@@ -34,8 +33,7 @@ import scala.concurrent.Future
 class AdminPersonalityApiTest
     extends MakeApiTestBase
     with DefaultAdminPersonalityApiComponent
-    with UserServiceComponent
-    with MakeDataHandlerComponent {
+    with UserServiceComponent {
 
   override val userService: UserService = mock[UserService]
 

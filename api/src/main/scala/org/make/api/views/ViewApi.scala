@@ -23,13 +23,13 @@ import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation._
 import org.make.api.organisation.{OrganisationServiceComponent, OrganisationsSearchResultResponse}
 import org.make.api.proposal.ProposalServiceComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.MakeAuthenticationDirectives
 import org.make.core.auth.UserRights
 import org.make.core.operation._
 import org.make.core.proposal.{CountrySearchFilter, LanguageSearchFilter, SearchQuery}
@@ -103,12 +103,10 @@ trait DefaultViewApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors
     with Logging {
-  this: SessionHistoryCoordinatorServiceComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with ProposalServiceComponent
-    with OperationOfQuestionServiceComponent
+  this: MakeDirectivesDependencies
     with HomeViewServiceComponent
+    with OperationOfQuestionServiceComponent
+    with ProposalServiceComponent
     with OrganisationServiceComponent =>
 
   override lazy val viewApi: ViewApi = new DefaultViewApi

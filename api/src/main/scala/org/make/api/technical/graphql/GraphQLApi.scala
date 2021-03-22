@@ -25,11 +25,9 @@ import caliban.AkkaHttpAdapter.ContextWrapper
 import caliban.interop.circe.AkkaHttpCirceAdapter
 import caliban.{CalibanError, GraphQLInterpreter}
 import org.make.api.ActorSystemComponent
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeAuthentication
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.graphql.GraphQLRuntimeComponent.{EnvType, RuntimeType}
-import org.make.api.technical.{IdGeneratorComponent, MakeDirectives}
+import org.make.api.technical.MakeDirectives
 import org.make.core.RequestContext
 import zio.clock.Clock
 import zio.internal.Platform
@@ -49,12 +47,7 @@ trait GraphQLApiComponent {
 }
 
 trait DefaultGraphQLApiComponent extends GraphQLApiComponent with MakeDirectives {
-  self: GraphQLRuntimeComponent
-    with ActorSystemComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with MakeAuthentication
-    with SessionHistoryCoordinatorServiceComponent =>
+  self: MakeDirectivesDependencies with GraphQLRuntimeComponent with ActorSystemComponent =>
 
   override lazy val graphQLApi: GraphQLApi = new DefaultGraphQLApi
 

@@ -25,9 +25,7 @@ import akka.http.scaladsl.server.Route
 import eu.timepit.refined.auto._
 import io.circe.syntax._
 import org.make.api.MakeApiTestBase
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.keyword.{KeywordService, KeywordServiceComponent}
-import org.make.api.technical.IdGeneratorComponent
 import org.make.core.ValidationError
 import org.make.core.keyword.Keyword
 import org.make.core.operation._
@@ -38,8 +36,6 @@ import scala.concurrent.Future
 class DefaultAdminOperationOfQuestionApiComponentTest
     extends MakeApiTestBase
     with DefaultAdminOperationOfQuestionApiComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
     with OperationOfQuestionServiceComponent
     with KeywordServiceComponent {
 

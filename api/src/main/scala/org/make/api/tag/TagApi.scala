@@ -21,12 +21,11 @@ package org.make.api.tag
 
 import akka.http.scaladsl.server._
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.QuestionServiceComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.MakeAuthenticationDirectives
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
 import org.make.core.{tag, HttpCodes, ParameterExtractors}
@@ -65,12 +64,7 @@ trait TagApiComponent {
 }
 
 trait DefaultTagApiComponent extends TagApiComponent with MakeAuthenticationDirectives with ParameterExtractors {
-  this: TagServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with QuestionServiceComponent =>
+  this: MakeDirectivesDependencies with TagServiceComponent with QuestionServiceComponent =>
 
   override lazy val tagApi: TagApi = new DefaultTagApi
 

@@ -23,14 +23,13 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sequence.SequenceServiceComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.tag.TagServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.api.technical.CsvReceptacle._
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.operation._
@@ -135,11 +134,8 @@ trait DefaultModerationOperationApiComponent
     with Logging
     with ParameterExtractors {
 
-  this: OperationServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with MakeSettingsComponent
+  this: MakeDirectivesDependencies
+    with OperationServiceComponent
     with OperationServiceComponent
     with SequenceServiceComponent
     with TagServiceComponent

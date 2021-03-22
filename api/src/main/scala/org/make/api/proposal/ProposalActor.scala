@@ -141,6 +141,7 @@ object ProposalActor {
                   question = contextChanges.question.orElse(proposal.creationContext.question),
                   hostname = contextChanges.hostname.orElse(proposal.creationContext.hostname),
                   ipAddress = contextChanges.ipAddress.orElse(proposal.creationContext.ipAddress),
+                  ipAddressHash = contextChanges.ipAddressHash.orElse(proposal.creationContext.ipAddressHash),
                   getParameters = contextChanges.getParameters.orElse(proposal.creationContext.getParameters),
                   userAgent = contextChanges.userAgent.orElse(proposal.creationContext.userAgent),
                   questionId = contextChanges.questionId.orElse(proposal.creationContext.questionId),

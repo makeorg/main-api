@@ -23,7 +23,6 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
-import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRole, PersonalityRoleId}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
@@ -36,8 +35,7 @@ class AdminQuestionPersonalityApiTest
     extends MakeApiTestBase
     with DefaultAdminQuestionPersonalityApiComponent
     with PersonalityRoleServiceComponent
-    with QuestionPersonalityServiceComponent
-    with MakeDataHandlerComponent {
+    with QuestionPersonalityServiceComponent {
 
   override val questionPersonalityService: QuestionPersonalityService = mock[QuestionPersonalityService]
   override val personalityRoleService: PersonalityRoleService = mock[PersonalityRoleService]

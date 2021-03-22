@@ -22,12 +22,9 @@ package org.make.api.widget
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import cats.data.NonEmptyList
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.proposal._
 import org.make.api.question.{PersistentQuestionService, SearchQuestionRequest}
-import org.make.api.technical.IdGeneratorComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeApiTestBase}
 import org.make.core.RequestContext
@@ -43,9 +40,6 @@ class WidgetApiTest
     extends MakeApiTestBase
     with DefaultWidgetApiComponent
     with WidgetServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
     with ProposalServiceComponent
     with ActorSystemComponent
     with UserServiceComponent

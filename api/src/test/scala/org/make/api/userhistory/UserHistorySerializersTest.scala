@@ -19,14 +19,15 @@
 
 package org.make.api.userhistory
 
-import java.time.{LocalDate, ZonedDateTime}
-
+import akka.actor.ActorSystem
+import com.typesafe.config.ConfigFactory
 import org.make.api.proposal.PublishedProposalEvent.{
   ProposalAccepted,
   ProposalLocked,
   ProposalPostponed,
   ProposalRefused
 }
+import org.make.api.technical.security.SecurityConfiguration
 import org.make.api.userhistory
 import org.make.api.userhistory.UserHistoryActor.{UserHistory, UserVotesAndQualifications}
 import org.make.core.RequestContext
@@ -34,8 +35,8 @@ import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
-import org.make.core.proposal._
 import org.make.core.proposal.ProposalActionType._
+import org.make.core.proposal._
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.sequence.{SearchQuery, SequenceId, SequenceStatus}
 import org.make.core.tag.TagId
@@ -44,9 +45,12 @@ import org.scalatest.wordspec.AnyWordSpec
 import stamina.testkit.StaminaTestKit
 import stamina.{Persisters, V1, V2}
 
+import java.time.{LocalDate, ZonedDateTime}
+
 class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
 
-  val persisters = Persisters(UserHistorySerializers.serializers.toList)
+  val conf = SecurityConfiguration(UserHistorySerializersTest.system)
+  val persisters = Persisters(UserHistorySerializers(conf).serializers.toList)
   val userId = UserId("my-user-id")
   val requestContext: RequestContext =
     RequestContext.empty
@@ -512,5 +516,17 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
         Some("italian user history")
       )
     )
+  }
+}
+
+object UserHistorySerializersTest {
+  val configuration: String =
+    """
+      |make-api.security.secure-hash-salt = "salt-secure"
+      |make-api.security.secure-vote-salt = "vote-secure"     """.stripMargin
+
+  val system: ActorSystem = {
+    val config = ConfigFactory.load(ConfigFactory.parseString(configuration))
+    ActorSystem(classOf[UserHistorySerializersTest].getSimpleName, config)
   }
 }

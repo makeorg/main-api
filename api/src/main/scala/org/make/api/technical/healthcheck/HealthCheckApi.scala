@@ -20,11 +20,10 @@
 package org.make.api.technical.healthcheck
 import akka.http.scaladsl.server.{Directives, Route}
 import io.swagger.annotations.{Api, _}
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.MakeAuthenticationDirectives
 import org.make.core.HttpCodes
 
 @Api(value = "Health Check")
@@ -46,11 +45,7 @@ trait HealthCheckApiComponent {
 }
 
 trait DefaultHealthCheckApiComponent extends HealthCheckApiComponent with MakeAuthenticationDirectives {
-  this: MakeSettingsComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with HealthCheckServiceComponent =>
+  this: MakeDirectivesDependencies with HealthCheckServiceComponent =>
 
   override lazy val healthCheckApi: HealthCheckApi = new DefaultHealthCheckApi
 

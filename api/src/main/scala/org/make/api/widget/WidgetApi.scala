@@ -22,13 +22,12 @@ package org.make.api.widget
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvSeq
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal._
 import org.make.api.question.{PersistentQuestionServiceComponent, SearchQuestionRequest}
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.MakeAuthenticationDirectives
 import org.make.core.auth.UserRights
 import org.make.core.tag.TagId
 import org.make.core.{HttpCodes, ParameterExtractors}
@@ -74,12 +73,7 @@ trait DefaultWidgetApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors
     with PersistentQuestionServiceComponent {
-  this: MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with WidgetServiceComponent
-    with SessionHistoryCoordinatorServiceComponent =>
-
+  this: MakeDirectivesDependencies with WidgetServiceComponent =>
   override lazy val widgetApi: WidgetApi = new DefaultWidgetApi
 
   class DefaultWidgetApi extends WidgetApi {

@@ -22,7 +22,6 @@ package org.make.api.user
 import java.io.File
 import java.nio.file.Files
 import java.time.{LocalDate, ZonedDateTime}
-
 import akka.http.scaladsl.model.ContentType
 import com.github.t3hnar.bcrypt._
 import grizzled.slf4j.Logging

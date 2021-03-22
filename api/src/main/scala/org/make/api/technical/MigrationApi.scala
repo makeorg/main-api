@@ -21,7 +21,6 @@ package org.make.api.technical
 
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
-
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.persistence.cassandra.reconciler.{Reconciliation, ReconciliationSettings}
@@ -31,14 +30,14 @@ import grizzled.slf4j.Logging
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations.{Authorization, _}
+
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
-import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
+import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.operation.{OperationServiceComponent, PersistentOperationOfQuestionServiceComponent}
 import org.make.api.proposal.{KillProposalShard, ProposalCoordinatorComponent}
 import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.crm.QuestionResolver
 import org.make.api.technical.job.{JobActor, JobCoordinatorComponent}
 import org.make.api.technical.storage.StorageConfigurationComponent
@@ -117,11 +116,8 @@ trait MigrationApiComponent {
 }
 
 trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthenticationDirectives with Logging {
-  this: MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
+  this: MakeDirectivesDependencies
     with ActorSystemComponent
-    with SessionHistoryCoordinatorServiceComponent
     with MailJetConfigurationComponent
     with UserServiceComponent
     with ReadJournalComponent

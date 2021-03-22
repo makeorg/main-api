@@ -24,11 +24,10 @@ import akka.http.scaladsl.server._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
-import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId}
 import org.make.core.question.QuestionId
@@ -145,11 +144,7 @@ trait DefaultAdminActiveFeatureApiComponent
     extends AdminActiveFeatureApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors {
-  this: ActiveFeatureServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with MakeSettingsComponent =>
+  this: MakeDirectivesDependencies with ActiveFeatureServiceComponent =>
 
   override lazy val adminActiveFeatureApi: AdminActiveFeatureApi = new DefaultAdminActiveFeatureApi
 

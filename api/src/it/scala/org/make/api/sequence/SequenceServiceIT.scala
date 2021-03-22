@@ -83,6 +83,7 @@ import org.make.api.technical.{
 import org.make.api.technical.auth.{
   DefaultTokenGeneratorComponent,
   DefaultUserTokenGeneratorComponent,
+  MakeAuthentication,
   MakeDataHandler,
   MakeDataHandlerComponent
 }
@@ -189,6 +190,7 @@ class SequenceServiceIT
     with DownloadServiceComponent
     with IdeaServiceComponent
     with JobCoordinatorComponent
+    with MakeAuthentication
     with MakeDataHandlerComponent
     with MakeSettingsComponent
     with PersistentSequenceConfigurationComponent
@@ -469,6 +471,8 @@ object SequenceServiceIT {
        |  }
        |
        |  cookie-session.lifetime = "600 milliseconds"
+       |  security.secure-hash-salt = "salt-secure"
+       |  security.secure-vote-salt = "vote-secure"
        |}
     """.stripMargin
 
