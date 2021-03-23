@@ -127,7 +127,7 @@ trait AdminProposalApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "body", paramType = "body", dataType = "list[org.make.api.proposal.KeywordRequest]")
+      new ApiImplicitParam(name = "body", paramType = "body", dataType = "[Lorg.make.api.operation.KeywordRequest;")
     )
   )
   @Path(value = "/keywords")
