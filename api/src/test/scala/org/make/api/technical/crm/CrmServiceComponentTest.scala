@@ -23,6 +23,7 @@ import java.io.{BufferedReader, InputStreamReader}
 import java.nio.file.Path
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
+
 import akka.NotUsed
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem, SpawnProtocol}
@@ -58,6 +59,7 @@ import org.make.core.proposal.indexed.Zone.Limbo
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.session.SessionId
 import org.make.core.user.{Role, User, UserId, UserType}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.Mockito.clearInvocations
@@ -156,7 +158,11 @@ class CrmServiceComponentTest
       daysOfActivity = None,
       daysOfActivity30d = None,
       userType = None,
-      accountType = None
+      accountType = None,
+      daysBeforeDeletion = None,
+      lastActivityDate = None,
+      sessionsCount = None,
+      eventsCount = None
     )
   }
 
@@ -367,7 +373,11 @@ class CrmServiceComponentTest
     daysOfActivity = None,
     daysOfActivity30d = None,
     userType = None,
-    accountType = None
+    accountType = None,
+    daysBeforeDeletion = None,
+    lastActivityDate = None,
+    sessionsCount = None,
+    eventsCount = None
   )
 
   val registerCitizenEventEnvelope = EventEnvelope(
@@ -379,6 +389,7 @@ class CrmServiceComponentTest
       requestContext = RequestContext.empty.copy(
         source = Some("core"),
         operationId = Some(OperationId("999-99-99")),
+        sessionId = SessionId("id1"),
         country = Some(Country("FR")),
         language = Some(Language("fr"))
       ),
@@ -407,6 +418,7 @@ class CrmServiceComponentTest
       requestContext = RequestContext.empty.copy(
         source = Some("core"),
         operationId = Some(OperationId("vff")),
+        sessionId = SessionId("id1"),
         country = Some(Country("IT")),
         language = Some(Language("it"))
       ),
@@ -425,8 +437,12 @@ class CrmServiceComponentTest
     sequenceNr = Long.MaxValue,
     event = LogUserVoteEvent(
       userId = UserId("1"),
-      requestContext =
-        RequestContext.empty.copy(source = Some("vff"), country = Some(Country("GB")), language = Some(Language("uk"))),
+      requestContext = RequestContext.empty.copy(
+        source = Some("vff"),
+        sessionId = SessionId("id1"),
+        country = Some(Country("GB")),
+        language = Some(Language("uk"))
+      ),
       action = UserAction(
         date = zonedDateTimeInThePast,
         actionType = ProposalVoteAction.value,
@@ -445,6 +461,7 @@ class CrmServiceComponentTest
       requestContext = RequestContext.empty.copy(
         source = Some("culture"),
         operationId = Some(OperationId("culture")),
+        sessionId = SessionId("id2"),
         country = Some(Country("FR")),
         language = Some(Language("fr"))
       ),
@@ -466,6 +483,7 @@ class CrmServiceComponentTest
       requestContext = RequestContext.empty.copy(
         source = Some("culture"),
         operationId = Some(OperationId("culture")),
+        sessionId = SessionId("id3"),
         country = Some(Country("FR")),
         language = Some(Language("fr"))
       ),
@@ -487,6 +505,7 @@ class CrmServiceComponentTest
       requestContext = RequestContext.empty.copy(
         source = Some("culture"),
         operationId = Some(OperationId("invalidoperation")),
+        sessionId = SessionId("id3"),
         country = Some(Country("FR")),
         language = Some(Language("fr"))
       ),
@@ -508,6 +527,7 @@ class CrmServiceComponentTest
       requestContext = RequestContext.empty.copy(
         source = Some("culture"),
         operationId = Some(OperationId("200-20-11")),
+        sessionId = SessionId("id4"),
         country = Some(Country("FR")),
         language = Some(Language("fr"))
       ),
@@ -515,6 +535,28 @@ class CrmServiceComponentTest
         date = zonedDateTimeInThePastAt31daysBefore.plusDays(2),
         actionType = ProposalVoteAction.value,
         arguments = UserVote(proposalId = ProposalId("proposalId"), voteKey = VoteKey.Agree, trust = Trusted)
+      )
+    ),
+    timestamp = DateHelper.now().toEpochSecond
+  )
+
+  val userConnectedEventEnvelope = EventEnvelope(
+    offset = Offset.noOffset,
+    persistenceId = "bar-persistance-id",
+    sequenceNr = Long.MaxValue,
+    event = LogUserConnectedEvent(
+      userId = UserId("1"),
+      requestContext = RequestContext.empty.copy(
+        source = Some("culture"),
+        operationId = Some(OperationId("200-20-11")),
+        sessionId = SessionId("id5"),
+        country = Some(Country("FR")),
+        language = Some(Language("fr"))
+      ),
+      action = UserAction(
+        date = zonedDateTimeInThePastAt31daysBefore.plusDays(15),
+        actionType = UserHasConnected.actionType,
+        arguments = UserHasConnected()
       )
     ),
     timestamp = DateHelper.now().toEpochSecond
@@ -530,7 +572,8 @@ class CrmServiceComponentTest
           userVoteEventEnvelope2,
           userVoteEventEnvelope3,
           userVoteEventEnvelope4,
-          userVoteEventEnvelope5
+          userVoteEventEnvelope5,
+          userConnectedEventEnvelope
         )
       )
     )
@@ -579,6 +622,13 @@ class CrmServiceComponentTest
           DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
         )
         updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe true
+        val lastActivityDate = ZonedDateTime.parse(
+          maybeProperties.lastActivityDate.getOrElse(""),
+          DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
+        )
+        lastActivityDate.isEqual(zonedDateTimeInThePast) shouldBe true
+        maybeProperties.sessionsCount shouldBe Some(0)
+        maybeProperties.eventsCount shouldBe Some(0)
       }
     }
 
@@ -622,6 +672,13 @@ class CrmServiceComponentTest
           DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
         )
         updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe true
+        val lastActivityDate = ZonedDateTime.parse(
+          maybeProperties.lastActivityDate.getOrElse(""),
+          DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
+        )
+        lastActivityDate.isEqual(zonedDateTimeInThePast) shouldBe true
+        maybeProperties.sessionsCount shouldBe Some(0)
+        maybeProperties.eventsCount shouldBe Some(0)
       }
     }
   }
@@ -722,6 +779,14 @@ class CrmServiceComponentTest
           DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
         )
         updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe true
+        val lastActivityDate = ZonedDateTime.parse(
+          maybeProperties.lastActivityDate.getOrElse(""),
+          DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
+        )
+        lastActivityDate.isBefore(zonedDateTimeInThePastAt31daysBefore.plusDays(15).plusSeconds(1)) && lastActivityDate
+          .isAfter(zonedDateTimeInThePastAt31daysBefore.plusDays(15).minusSeconds(1)) shouldBe true
+        maybeProperties.sessionsCount shouldBe Some(5)
+        maybeProperties.eventsCount shouldBe Some(8)
       }
     }
   }
@@ -1376,13 +1441,17 @@ class CrmServiceComponentTest
             daysOfActivity30 = None,
             userType = None,
             accountType = None,
-            updatedAt = Some("2019-10-06 02:00:00")
+            updatedAt = Some("2019-10-06 02:00:00"),
+            daysBeforeDeletion = None,
+            lastActivityDate = None,
+            sessionsCount = None,
+            eventsCount = None
           )
         )
       )
 
       contact.toStringCsv should be(
-        s""""test@exemple.com","user","test",,"1992-01-01 00:00:00","true","false","false","2019-10-07 10:45:10",,,,"FR","search-page","FR","FR","42","1337","2019-04-15 15:24:17","2019-10-07 10:47:42",,,,,,,"2019-10-06 02:00:00"${String
+        s""""test@exemple.com","user","test",,"1992-01-01 00:00:00","true","false","false","2019-10-07 10:45:10",,,,"FR","search-page","FR","FR","42","1337","2019-04-15 15:24:17","2019-10-07 10:47:42",,,,,,,"2019-10-06 02:00:00",,,,${String
           .format("%n")}"""
       )
     }
@@ -1428,7 +1497,7 @@ class CrmServiceComponentTest
         val firstLine = fileToSeq.head
         lineCount should be(2)
         firstLine should be(
-          s""""foo@example.com","user-id","Foo",,,"true","false","false",,,,,,,,"FR","42","1337",,,,,,,,,"$formattedDate""""
+          s""""foo@example.com","user-id","Foo",,,"true","false","false",,,,,,,,"FR","42","1337",,,,,,,,,"$formattedDate",,,,"""
         )
         bufferedFile.close()
       }

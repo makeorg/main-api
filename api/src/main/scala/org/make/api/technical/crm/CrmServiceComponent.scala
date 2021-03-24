@@ -22,6 +22,7 @@ package org.make.api.technical.crm
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Executors, ThreadFactory}
@@ -58,12 +59,14 @@ import org.make.core.DateHelper.isLast30daysDate
 import org.make.core.Validation.emailRegex
 import org.make.core.job.Job.JobId.SyncCrmData
 import org.make.core.question.Question
+import org.make.core.session.SessionId
 import org.make.core.user.{User, UserId, UserType}
 import org.make.core.{DateHelper, Order}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.jdk.CollectionConverters._
+import scala.math.Ordering.Implicits.infixOrderingOps
 import scala.util.{Failure, Success, Try}
 
 trait CrmService {
@@ -538,8 +541,16 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
         lastCountryActivity = Some(user.country.value),
         countriesActivity = Seq(user.country.value),
         accountCreationSlug = question.map(_.slug),
-        accountType = Some(user.userType.value)
+        accountType = Some(user.userType.value),
+        lastActivityDate = user.lastConnection,
+        sessionsIds = Set.empty,
+        eventsCount = 0
       )
+    }
+
+    private def getDaysBeforeDeletionFromLastActivityDate(lastActivityDate: ZonedDateTime): Int = {
+      val deletionDate = lastActivityDate.plusYears(2).plusMonths(11)
+      ChronoUnit.DAYS.between(ZonedDateTime.now(), deletionDate).toInt
     }
 
     private def contactPropertiesFromUserProperties(userProperty: UserProperties): ContactProperties = {
@@ -573,15 +584,22 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
           Some("B2C")
         },
         accountType = userProperty.accountType,
-        updatedAt = userProperty.updatedAt.map(_.format(dateFormatter))
+        updatedAt = userProperty.updatedAt.map(_.format(dateFormatter)),
+        daysBeforeDeletion = Some(getDaysBeforeDeletionFromLastActivityDate(userProperty.lastActivityDate)),
+        lastActivityDate = Some(userProperty.lastActivityDate.format(dateFormatter)),
+        sessionsCount = Some(userProperty.sessionsIds.size),
+        eventsCount = Some(userProperty.eventsCount)
       )
     }
+
     private def accumulateEvent(
       accumulator: UserProperties,
       envelope: EventEnvelope,
       questionResolver: QuestionResolver
     ): Future[UserProperties] = {
       envelope.event match {
+        case event: LogUserConnectedEvent =>
+          Future.successful(accumulateLogUserConnectedEvent(accumulator, event))
         case event: LogRegisterCitizenEvent =>
           Future.successful(accumulateLogRegisterCitizenEvent(accumulator, event, questionResolver))
         case event: LogUserProposalEvent =>
@@ -594,8 +612,22 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
           accumulateLogUserQualificationEvent(accumulator, event, questionResolver)
         case event: LogUserUnqualificationEvent =>
           accumulateLogUserUnqualificationEvent(accumulator, event, questionResolver)
+        case event: LogUserStartSequenceEvent =>
+          Future.successful(accumulateLogUserStartSequenceEvent(accumulator, event))
         case _ => Future.successful(accumulator)
       }
+    }
+
+    private def accumulateLogUserConnectedEvent(
+      accumulator: UserProperties,
+      event: LogUserConnectedEvent
+    ): UserProperties = {
+
+      accumulator.copy(
+        lastActivityDate = accumulator.lastActivityDate.max(event.action.date),
+        sessionsIds = accumulator.sessionsIds ++ Set(event.requestContext.sessionId),
+        eventsCount = accumulator.eventsCount + 1
+      )
     }
 
     private def accumulateLogUserUnqualificationEvent(
@@ -622,7 +654,10 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
             accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
           } else {
             accumulator.daysOfActivity
-          }
+          },
+          lastActivityDate = accumulator.lastActivityDate.max(event.action.date),
+          sessionsIds = accumulator.sessionsIds ++ Set(event.requestContext.sessionId),
+          eventsCount = accumulator.eventsCount + 1
         )
       }
     }
@@ -652,7 +687,10 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
             accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
           } else {
             accumulator.daysOfActivity30d
-          }
+          },
+          lastActivityDate = accumulator.lastActivityDate.max(event.action.date),
+          sessionsIds = accumulator.sessionsIds ++ Set(event.requestContext.sessionId),
+          eventsCount = accumulator.eventsCount + 1
         )
       }
     }
@@ -681,7 +719,10 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
             accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
           } else {
             accumulator.daysOfActivity30d
-          }
+          },
+          lastActivityDate = accumulator.lastActivityDate.max(event.action.date),
+          sessionsIds = accumulator.sessionsIds ++ Set(event.requestContext.sessionId),
+          eventsCount = accumulator.eventsCount + 1
         )
       }
     }
@@ -711,7 +752,10 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
             accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
           } else {
             accumulator.daysOfActivity30d
-          }
+          },
+          lastActivityDate = accumulator.lastActivityDate.max(event.action.date),
+          sessionsIds = accumulator.sessionsIds ++ Set(event.requestContext.sessionId),
+          eventsCount = accumulator.eventsCount + 1
         )
       }
     }
@@ -743,7 +787,10 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
             accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
           } else {
             accumulator.daysOfActivity30d
-          }
+          },
+          lastActivityDate = accumulator.lastActivityDate.max(event.action.date),
+          sessionsIds = accumulator.sessionsIds ++ Set(event.requestContext.sessionId),
+          eventsCount = accumulator.eventsCount + 1
         )
       }
     }
@@ -767,7 +814,21 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
         accountCreationLocation = event.requestContext.location,
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
         questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toList,
-        sourceActivity = accumulator.sourceActivity ++ event.requestContext.source
+        sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
+        lastActivityDate = accumulator.lastActivityDate.max(event.action.date),
+        sessionsIds = accumulator.sessionsIds ++ Set(event.requestContext.sessionId),
+        eventsCount = accumulator.eventsCount + 1
+      )
+    }
+
+    private def accumulateLogUserStartSequenceEvent(
+      accumulator: UserProperties,
+      event: LogUserStartSequenceEvent
+    ): UserProperties = {
+      accumulator.copy(
+        lastActivityDate = accumulator.lastActivityDate.max(event.action.date),
+        sessionsIds = accumulator.sessionsIds ++ Set(event.requestContext.sessionId),
+        eventsCount = accumulator.eventsCount + 1
       )
     }
 
@@ -806,7 +867,10 @@ final case class UserProperties(
   daysOfActivity: Seq[String] = Seq.empty,
   daysOfActivity30d: Seq[String] = Seq.empty,
   accountType: Option[String] = None,
-  updatedAt: Option[ZonedDateTime]
+  updatedAt: Option[ZonedDateTime],
+  lastActivityDate: ZonedDateTime,
+  sessionsIds: Set[SessionId],
+  eventsCount: Int
 ) {
 
   def normalize(): UserProperties = {

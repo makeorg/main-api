@@ -71,16 +71,20 @@ trait DefaultPersistentCrmUserServiceComponent extends PersistentCrmUserServiceC
                   PersistentCrmUser.column.accountCreationLocation -> user.accountCreationLocation,
                   PersistentCrmUser.column.countriesActivity -> user.countriesActivity,
                   PersistentCrmUser.column.dateOfBirth -> user.dateOfBirth,
+                  PersistentCrmUser.column.daysBeforeDeletion -> user.daysBeforeDeletion,
                   PersistentCrmUser.column.daysOfActivity -> user.daysOfActivity,
                   PersistentCrmUser.column.daysOfActivity30d -> user.daysOfActivity30d,
                   PersistentCrmUser.column.email -> user.email,
                   PersistentCrmUser.column.emailHardbounceStatus -> user.emailHardbounceStatus,
                   PersistentCrmUser.column.emailValidationStatus -> user.emailValidationStatus,
+                  PersistentCrmUser.column.eventsCount -> user.eventsCount,
                   PersistentCrmUser.column.firstContributionDate -> user.firstContributionDate,
                   PersistentCrmUser.column.firstname -> user.firstname,
+                  PersistentCrmUser.column.lastActivityDate -> user.lastActivityDate,
                   PersistentCrmUser.column.lastContributionDate -> user.lastContributionDate,
                   PersistentCrmUser.column.lastCountryActivity -> user.lastCountryActivity,
                   PersistentCrmUser.column.operationActivity -> user.operationActivity,
+                  PersistentCrmUser.column.sessionsCount -> user.sessionsCount,
                   PersistentCrmUser.column.sourceActivity -> user.sourceActivity,
                   PersistentCrmUser.column.totalNumberProposals -> user.totalNumberProposals,
                   PersistentCrmUser.column.totalNumberVotes -> user.totalNumberVotes,
@@ -159,7 +163,11 @@ object PersistentCrmUser extends SQLSyntaxSupport[PersistentCrmUser] with Shorte
       "days_of_activity",
       "days_of_activity30d",
       "user_type",
-      "account_type"
+      "account_type",
+      "days_before_deletion",
+      "last_activity_date",
+      "sessions_count",
+      "events_count"
     )
 
   override val tableName: String = "crm_user"
@@ -196,7 +204,11 @@ object PersistentCrmUser extends SQLSyntaxSupport[PersistentCrmUser] with Shorte
       daysOfActivity = resultSet.intOpt(resultName.daysOfActivity),
       daysOfActivity30d = resultSet.intOpt(resultName.daysOfActivity30d),
       userType = resultSet.stringOpt(resultName.userType),
-      accountType = resultSet.stringOpt(resultName.accountType)
+      accountType = resultSet.stringOpt(resultName.accountType),
+      daysBeforeDeletion = resultSet.intOpt(resultName.daysBeforeDeletion),
+      lastActivityDate = resultSet.stringOpt(resultName.lastActivityDate),
+      sessionsCount = resultSet.intOpt(resultName.sessionsCount),
+      eventsCount = resultSet.intOpt(resultName.eventsCount)
     )
   }
 
@@ -228,7 +240,11 @@ object PersistentCrmUser extends SQLSyntaxSupport[PersistentCrmUser] with Shorte
       daysOfActivity = contactProperties.daysOfActivity,
       daysOfActivity30d = contactProperties.daysOfActivity30,
       userType = contactProperties.userType,
-      accountType = contactProperties.accountType
+      accountType = contactProperties.accountType,
+      daysBeforeDeletion = contactProperties.daysBeforeDeletion,
+      lastActivityDate = contactProperties.lastActivityDate,
+      sessionsCount = contactProperties.sessionsCount,
+      eventsCount = contactProperties.eventsCount
     )
   }
 }
@@ -260,7 +276,11 @@ final case class PersistentCrmUser(
   daysOfActivity: Option[Int],
   daysOfActivity30d: Option[Int],
   userType: Option[String],
-  accountType: Option[String]
+  accountType: Option[String],
+  daysBeforeDeletion: Option[Int],
+  lastActivityDate: Option[String],
+  sessionsCount: Option[Int],
+  eventsCount: Option[Int]
 ) {
 
   def toContactProperties(updatedAt: Option[String]): ContactProperties = {
@@ -290,7 +310,11 @@ final case class PersistentCrmUser(
       daysOfActivity30 = this.daysOfActivity30d,
       userType = this.userType,
       accountType = this.accountType,
-      updatedAt = updatedAt
+      updatedAt = updatedAt,
+      daysBeforeDeletion = this.daysBeforeDeletion,
+      lastActivityDate = this.lastActivityDate,
+      sessionsCount = this.sessionsCount,
+      eventsCount = this.eventsCount
     )
   }
 }
