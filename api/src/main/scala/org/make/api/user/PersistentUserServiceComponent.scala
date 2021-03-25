@@ -100,7 +100,8 @@ object PersistentUserServiceComponent {
     politicalParty: Option[String],
     website: Option[String],
     legalMinorConsent: Option[Boolean],
-    legalAdvisorApproval: Option[Boolean]
+    legalAdvisorApproval: Option[Boolean],
+    privacyPolicyApprovalDate: Option[ZonedDateTime]
   ) {
     def toUser: User = {
       User(
@@ -132,7 +133,8 @@ object PersistentUserServiceComponent {
         organisationName = organisationName,
         publicProfile = publicProfile,
         availableQuestions = availableQuestions.toSeq.map(QuestionId.apply),
-        anonymousParticipation = anonymousParticipation
+        anonymousParticipation = anonymousParticipation,
+        privacyPolicyApprovalDate = privacyPolicyApprovalDate
       )
     }
 
@@ -229,7 +231,8 @@ object PersistentUserServiceComponent {
       "available_questions",
       "reconnect_token",
       "reconnect_token_created_at",
-      "anonymous_participation"
+      "anonymous_participation",
+      "privacy_policy_approval_date"
     )
 
     override val columnNames: Seq[String] = userColumnNames ++ profileColumnNames
@@ -295,7 +298,8 @@ object PersistentUserServiceComponent {
         politicalParty = resultSet.stringOpt(userResultName.politicalParty),
         website = resultSet.stringOpt(userResultName.website),
         legalMinorConsent = resultSet.booleanOpt(userResultName.legalMinorConsent),
-        legalAdvisorApproval = resultSet.booleanOpt(userResultName.legalAdvisorApproval)
+        legalAdvisorApproval = resultSet.booleanOpt(userResultName.legalAdvisorApproval),
+        privacyPolicyApprovalDate = resultSet.zonedDateTimeOpt(userResultName.privacyPolicyApprovalDate)
       )
     }
   }
@@ -791,7 +795,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.politicalParty -> user.profile.flatMap(_.politicalParty),
               column.website -> user.profile.flatMap(_.website),
               column.legalMinorConsent -> user.profile.flatMap(_.legalMinorConsent),
-              column.legalAdvisorApproval -> user.profile.flatMap(_.legalAdvisorApproval)
+              column.legalAdvisorApproval -> user.profile.flatMap(_.legalAdvisorApproval),
+              column.privacyPolicyApprovalDate -> user.privacyPolicyApprovalDate
             )
         }.execute().apply()
       }).map(_ => user)
@@ -877,7 +882,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.politicalParty -> user.profile.flatMap(_.politicalParty),
               column.website -> user.profile.flatMap(_.website),
               column.legalMinorConsent -> user.profile.flatMap(_.legalMinorConsent),
-              column.legalAdvisorApproval -> user.profile.flatMap(_.legalAdvisorApproval)
+              column.legalAdvisorApproval -> user.profile.flatMap(_.legalAdvisorApproval),
+              column.privacyPolicyApprovalDate -> user.privacyPolicyApprovalDate
             )
             .where(
               sqls

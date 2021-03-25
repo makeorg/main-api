@@ -95,7 +95,8 @@ final case class User(
   organisationName: Option[String] = None,
   publicProfile: Boolean = false,
   availableQuestions: Seq[QuestionId],
-  anonymousParticipation: Boolean
+  anonymousParticipation: Boolean,
+  privacyPolicyApprovalDate: Option[ZonedDateTime] = None
 ) extends MakeSerializable
     with Timestamped {
 

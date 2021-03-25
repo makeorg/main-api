@@ -689,6 +689,30 @@ class UserApiTest
         )
       }
     }
+
+    Scenario("validation failed for invalid approvePrivacyPolicy") {
+      val request =
+        """
+          |{
+          | "email": "foo@bar.baz",
+          | "firstName": "olive",
+          | "lastName": "tom",
+          | "password": "mypassss",
+          | "country": "FR",
+          | "language": "fr",
+          | "approvePrivacyPolicy": false
+          |}
+        """.stripMargin
+
+      Post("/user", HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val policyError = errors.find(_.field == "approvePrivacyPolicy")
+        policyError should be(
+          Some(ValidationError("approvePrivacyPolicy", "invalid_value", Some("Privacy policy must be approved.")))
+        )
+      }
+    }
   }
 
   Feature("login user from social") {

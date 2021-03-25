@@ -1,0 +1,5 @@
+BEGIN;
+
+ALTER TABLE make_user ADD COLUMN IF NOT EXISTS privacy_policy_approval_date TIMESTAMP WITH TIME ZONE NULL;
+
+COMMIT;

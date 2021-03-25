@@ -118,7 +118,8 @@ trait EntitiesGen extends CoreEntitiesGen with DateGenerators { self: IdGenerato
       availableQuestions = questionId.toList,
       politicalParty = politicalParty,
       website = None,
-      publicProfile = publicProfile
+      publicProfile = publicProfile,
+      privacyPolicyApprovalDate = None
     )
 
   def genOrganisationRegisterData: Gen[OrganisationRegisterData] =

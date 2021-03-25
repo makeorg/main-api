@@ -620,7 +620,8 @@ trait DefaultAdminUserApiComponent
                           roles = request.roles
                             .map(_.map(Role.apply))
                             .getOrElse(Seq(Role.RoleModerator, Role.RoleCitizen)),
-                          availableQuestions = request.availableQuestions
+                          availableQuestions = request.availableQuestions,
+                          privacyPolicyApprovalDate = Some(DateHelper.now())
                         ),
                         requestContext
                       )
