@@ -26,6 +26,7 @@ import java.time.{Duration => JavaDuration}
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Interval
 import eu.timepit.refined.{refineV, W}
+import io.circe.{Decoder, Encoder, Json}
 import org.make.core.SprayJsonFormatters._
 import org.make.core.job.Job.JobStatus.Running
 import org.make.core.job.Job.{missableHeartbeats, JobId, JobStatus}
@@ -84,8 +85,12 @@ object Job {
     val Reindex: JobId = JobId("Reindex")
     val ReindexPosts: JobId = JobId("ReindexPosts")
     val SyncCrmData: JobId = JobId("SyncCrmData")
+    val AnonymizeInactiveUsers: JobId = JobId("AnonymizeInactiveUsers")
 
     implicit val jobIdFormatter: JsonFormat[JobId] = SprayJsonFormatters.forStringValue(JobId.apply)
+
+    implicit lazy val jobIdEncoder: Encoder[JobId] = (a: JobId) => Json.fromString(a.value)
+    implicit lazy val jobIdDecoder: Decoder[JobId] = Decoder.decodeString.map(JobId(_))
   }
 
   sealed abstract class JobStatus extends Product with Serializable

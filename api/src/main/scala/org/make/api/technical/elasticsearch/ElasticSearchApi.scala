@@ -118,9 +118,9 @@ trait DefaultElasticSearchApiComponent extends ElasticSearchApiComponent with Ma
                     )
                   ) { acceptance =>
                     if (acceptance.isAccepted) {
-                      complete(StatusCodes.Accepted)
+                      complete(StatusCodes.Accepted -> Reindex)
                     } else {
-                      complete(StatusCodes.Conflict)
+                      complete(StatusCodes.Conflict -> Reindex)
                     }
                   }
                 }
@@ -139,9 +139,9 @@ trait DefaultElasticSearchApiComponent extends ElasticSearchApiComponent with Ma
               // Do not wait until the reindexation job is over to give an answer
               provideAsync(indexationService.reindexPostsData()) { acceptance =>
                 if (acceptance.isAccepted) {
-                  complete(StatusCodes.Accepted)
+                  complete(StatusCodes.Accepted -> ReindexPosts)
                 } else {
-                  complete(StatusCodes.Conflict)
+                  complete(StatusCodes.Conflict -> ReindexPosts)
                 }
               }
             }

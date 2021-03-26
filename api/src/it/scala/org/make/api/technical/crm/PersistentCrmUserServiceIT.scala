@@ -170,5 +170,56 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
       }
 
     }
+
+    Scenario("list inactive users") {
+
+      val insertUsers =
+        persistentCrmUserService.persist(
+          Seq(
+            defaultUser.copy(
+              userId = "inserted-6",
+              emailHardbounceStatus = true,
+              unsubscribeStatus = true,
+              accountCreationDate = Some("2019-07-01T01:01:01Z"),
+              daysBeforeDeletion = Some(0)
+            ),
+            defaultUser.copy(
+              userId = "inserted-7",
+              emailHardbounceStatus = true,
+              unsubscribeStatus = true,
+              accountCreationDate = Some("2019-07-01T03:03:013")
+            ),
+            defaultUser.copy(
+              userId = "inserted-8",
+              emailHardbounceStatus = true,
+              unsubscribeStatus = true,
+              accountCreationDate = Some("2019-07-01T02:02:02Z"),
+              daysBeforeDeletion = Some(-42)
+            ),
+            defaultUser.copy(
+              userId = "inserted-9",
+              emailHardbounceStatus = true,
+              unsubscribeStatus = false,
+              accountCreationDate = Some("2019-07-01T01:01:01Z"),
+              daysBeforeDeletion = Some(0)
+            ),
+            defaultUser.copy(
+              userId = "inserted-10",
+              emailHardbounceStatus = true,
+              unsubscribeStatus = false,
+              accountCreationDate = Some("2019-07-01T02:02:02Z")
+            )
+          )
+        )
+
+      whenReady(insertUsers, Timeout(5.seconds)) { _ =>
+        ()
+      }
+
+      whenReady(persistentCrmUserService.findInactiveUsers(0, 5), Timeout(5.seconds)) { results =>
+        results.map(_.userId) should be(Seq("inserted-6", "inserted-8", "inserted-9"))
+      }
+
+    }
   }
 }

@@ -25,12 +25,12 @@ import akka.http.scaladsl.server.directives.Credentials.Provided
 import akka.http.scaladsl.server.{Directives, Route}
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
-
 import javax.ws.rs.Path
 import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.{EventBusServiceComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
+import org.make.core.job.Job
 import org.make.core.job.Job.JobId.SyncCrmData
 import org.make.core.{DateHelper, HttpCodes, Validation}
 import scalaoauth2.provider.AuthInfo
@@ -214,9 +214,9 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
                 // so it's better to leave it in the background
                 provideAsync(crmService.synchronizeContactsWithCrm()) { acceptance =>
                   if (acceptance.isAccepted) {
-                    complete(StatusCodes.Accepted)
+                    complete(StatusCodes.Accepted -> Job.JobId.SyncCrmData)
                   } else {
-                    complete(StatusCodes.Conflict)
+                    complete(StatusCodes.Conflict -> Job.JobId.SyncCrmData)
                   }
                 }
               }

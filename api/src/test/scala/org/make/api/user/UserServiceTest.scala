@@ -26,7 +26,12 @@ import java.time.{LocalDate, ZonedDateTime}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentType, MediaTypes}
 import com.github.t3hnar.bcrypt._
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.extensions.{
+  MailJetConfiguration,
+  MailJetConfigurationComponent,
+  MakeSettings,
+  MakeSettingsComponent
+}
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.proposal.{
   ProposalResponse,
@@ -38,7 +43,14 @@ import org.make.api.question.AuthorRequest
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
-import org.make.api.technical.crm.{CrmService, CrmServiceComponent}
+import org.make.api.technical.crm.{
+  CrmService,
+  CrmServiceComponent,
+  PersistentCrmUser,
+  PersistentCrmUserService,
+  PersistentCrmUserServiceComponent
+}
+import org.make.api.technical.job.{JobCoordinatorService, JobCoordinatorServiceComponent}
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage.{StorageService, StorageServiceComponent}
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
@@ -73,6 +85,7 @@ class UserServiceTest
     with UserHistoryCoordinatorServiceComponent
     with PersistentUserServiceComponent
     with PersistentUserToAnonymizeServiceComponent
+    with PersistentCrmUserServiceComponent
     with ProposalServiceComponent
     with CrmServiceComponent
     with TokenGeneratorComponent
@@ -81,6 +94,8 @@ class UserServiceTest
     with UserRegistrationValidatorComponent
     with StorageServiceComponent
     with DownloadServiceComponent
+    with JobCoordinatorServiceComponent
+    with MailJetConfigurationComponent
     with DateHelperComponent {
 
   override val actorSystem: ActorSystem = ActorSystem()
@@ -92,6 +107,7 @@ class UserServiceTest
   override val crmService: CrmService = mock[CrmService]
   override val persistentUserToAnonymizeService: PersistentUserToAnonymizeService =
     mock[PersistentUserToAnonymizeService]
+  override val persistentCrmUserService: PersistentCrmUserService = mock[PersistentCrmUserService]
   override val eventBusService: EventBusService = mock[EventBusService]
   override val tokenGenerator: TokenGenerator = mock[TokenGenerator]
   override val makeSettings: MakeSettings = mock[MakeSettings]
@@ -99,6 +115,8 @@ class UserServiceTest
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val storageService: StorageService = mock[StorageService]
   override val downloadService: DownloadService = mock[DownloadService]
+  override val jobCoordinatorService: JobCoordinatorService = mock[JobCoordinatorService]
+  override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
 
   val currentDate: ZonedDateTime = DateHelper.now()
 
@@ -111,6 +129,8 @@ class UserServiceTest
   when(makeSettings.validationTokenExpiresIn).thenReturn(Duration("30 days"))
   when(makeSettings.resetTokenExpiresIn).thenReturn(Duration("1 days"))
   when(makeSettings.resetTokenB2BExpiresIn).thenReturn(Duration("3 days"))
+
+  when(mailJetConfiguration.userListBatchSize).thenReturn(1000)
 
   when(persistentUserToAnonymizeService.create(any[String])).thenReturn(Future.unit)
 
@@ -966,6 +986,102 @@ class UserServiceTest
         verify(eventBusService, times(1))
           .publish(argThat[UserAnonymizedEvent] { event =>
             event.userId == johnDoeUser.userId && event.adminId == adminId
+          })
+      }
+    }
+  }
+
+  Feature("anonymize inactive users") {
+    Scenario("anonymize inactive users") {
+      clearInvocations(eventBusService)
+      val fooCrmUser = PersistentCrmUser(
+        userId = "1",
+        email = "foo@example.com",
+        fullName = "Foo John",
+        firstname = "Foo",
+        zipcode = None,
+        dateOfBirth = None,
+        emailValidationStatus = true,
+        emailHardbounceStatus = false,
+        unsubscribeStatus = false,
+        accountCreationDate = None,
+        accountCreationSource = None,
+        accountCreationOrigin = None,
+        accountCreationOperation = None,
+        accountCreationCountry = None,
+        accountCreationLocation = None,
+        countriesActivity = None,
+        lastCountryActivity = Some("FR"),
+        totalNumberProposals = Some(42),
+        totalNumberVotes = Some(1337),
+        firstContributionDate = None,
+        lastContributionDate = None,
+        operationActivity = None,
+        sourceActivity = None,
+        daysOfActivity = None,
+        daysOfActivity30d = None,
+        userType = None,
+        accountType = None,
+        daysBeforeDeletion = None,
+        lastActivityDate = None,
+        sessionsCount = None,
+        eventsCount = None
+      )
+
+      val johnDoeCrmUser = PersistentCrmUser(
+        userId = "AAA-BBB-CCC-DDD",
+        email = "johndoe@example.com",
+        fullName = "john doe",
+        firstname = "john",
+        zipcode = None,
+        dateOfBirth = None,
+        emailValidationStatus = true,
+        emailHardbounceStatus = false,
+        unsubscribeStatus = false,
+        accountCreationDate = None,
+        accountCreationSource = None,
+        accountCreationOrigin = None,
+        accountCreationOperation = None,
+        accountCreationCountry = None,
+        accountCreationLocation = None,
+        countriesActivity = None,
+        lastCountryActivity = Some("FR"),
+        totalNumberProposals = Some(42),
+        totalNumberVotes = Some(1337),
+        firstContributionDate = None,
+        lastContributionDate = None,
+        operationActivity = None,
+        sourceActivity = None,
+        daysOfActivity = None,
+        daysOfActivity30d = None,
+        userType = None,
+        accountType = None,
+        daysBeforeDeletion = None,
+        lastActivityDate = None,
+        sessionsCount = None,
+        eventsCount = None
+      )
+
+      when(persistentCrmUserService.findInactiveUsers(any[Int], any[Int]))
+        .thenReturn(Future.successful(Seq(fooCrmUser, johnDoeCrmUser)))
+      when(persistentUserService.findAllByUserIds(Seq(UserId(fooCrmUser.userId), UserId(johnDoeCrmUser.userId))))
+        .thenReturn(Future.successful(Seq(fooUser, johnDoeUser)))
+      when(proposalService.deleteByUserId(any[UserId])).thenReturn(Future.unit)
+      when(persistentUserService.removeAnonymizedUserFromFollowedUserTable(any[UserId]))
+        .thenReturn(Future.unit)
+      when(userHistoryCoordinatorService.delete(fooUser.userId)).thenReturn(Future.unit)
+      when(userHistoryCoordinatorService.delete(johnDoeUser.userId)).thenReturn(Future.unit)
+
+      When("I anonymize inactive users")
+      val adminId = UserId("admin")
+      val futureAnonymizeUser =
+        userService.anonymize(fooUser, adminId, RequestContext.empty, Anonymization.Automatic)
+
+      Then("an event is sent")
+      whenReady(futureAnonymizeUser, Timeout(3.seconds)) { _ =>
+        verify(eventBusService, times(1))
+          .publish(argThat[UserAnonymizedEvent] { event =>
+            event.userId == fooUser.userId && event.adminId == adminId
           })
       }
     }

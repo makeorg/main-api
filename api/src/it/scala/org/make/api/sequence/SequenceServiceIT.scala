@@ -26,7 +26,12 @@ import akka.testkit.TestKit
 import com.typesafe.config.{Config, ConfigFactory}
 import org.make.api.{ActorSystemComponent, ActorSystemTypedComponent, DatabaseTest, DefaultConfigComponent}
 import org.make.api.docker.{DockerCassandraService, DockerElasticsearchService}
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.extensions.{
+  MailJetConfiguration,
+  MailJetConfigurationComponent,
+  MakeSettings,
+  MakeSettingsComponent
+}
 import org.make.api.feature.{
   DefaultActiveFeatureServiceComponent,
   DefaultFeatureServiceComponent,
@@ -87,7 +92,12 @@ import org.make.api.technical.auth.{
   MakeDataHandler,
   MakeDataHandlerComponent
 }
-import org.make.api.technical.crm.{CrmService, CrmServiceComponent}
+import org.make.api.technical.crm.{
+  CrmService,
+  CrmServiceComponent,
+  PersistentCrmUserService,
+  PersistentCrmUserServiceComponent
+}
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
   DefaultElasticsearchConfigurationComponent,
@@ -193,6 +203,8 @@ class SequenceServiceIT
     with MakeAuthentication
     with MakeDataHandlerComponent
     with MakeSettingsComponent
+    with MailJetConfigurationComponent
+    with PersistentCrmUserServiceComponent
     with PersistentSequenceConfigurationComponent
     with PersistentTopIdeaCommentServiceComponent
     with PersistentTopIdeaServiceComponent
@@ -231,9 +243,12 @@ class SequenceServiceIT
   when(makeSettings.resetTokenB2BExpiresIn).thenReturn(1.day)
   when(makeSettings.validationTokenExpiresIn).thenReturn(1.day)
 
+  override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
+
   override val semanticService: SemanticService = mock[SemanticService]
   when(semanticService.indexProposals(any)).thenReturn(Future.unit)
 
+  override val persistentCrmUserService: PersistentCrmUserService = mock[PersistentCrmUserService]
   override val persistentSequenceConfigurationService: PersistentSequenceConfigurationService =
     mock[PersistentSequenceConfigurationService]
   when(persistentSequenceConfigurationService.persist(any)).thenReturn(Future.successful(true))
