@@ -407,10 +407,11 @@ class SequenceServiceIT
 
 object SequenceServiceIT {
   val cassandraExposedPort: Int = 15001
+  val port: Int = 15101
   val configuration: String =
     s"""
        |akka {
-       |  cluster.seed-nodes = ["akka://SequenceServiceIT@localhost:25520"]
+       |  cluster.seed-nodes = ["akka://SequenceServiceIT@localhost:$port"]
        |  cluster.jmx.multi-mbeans-in-same-jvm = on
        |
        |  persistence {
@@ -440,7 +441,7 @@ object SequenceServiceIT {
        |  }
        |
        |  remote.artery.canonical {
-       |    port = 25520
+       |    port = $port
        |    hostname = "localhost"
        |  }
        |

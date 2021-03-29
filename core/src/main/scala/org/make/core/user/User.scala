@@ -29,7 +29,7 @@ import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
 import org.make.core.reference.Country
 import org.make.core.technical.enumeratum.FallbackingCirceEnum.FallbackingStringCirceEnum
-import org.make.core.user.UserType.{UserTypeOrganisation, UserTypePersonality, UserTypeUser}
+import org.make.core.user.UserType.{UserTypeAnonymous, UserTypeOrganisation, UserTypePersonality, UserTypeUser}
 import org.make.core.{DateHelper, MakeSerializable, SprayJsonFormatters, StringValue, Timestamped}
 import spray.json.JsonFormat
 
@@ -59,6 +59,7 @@ object UserType extends StringEnum[UserType] with FallbackingStringCirceEnum[Use
 
   override def default(value: String): UserType = UserTypeUser
 
+  case object UserTypeAnonymous extends UserType("ANONYMOUS")
   case object UserTypeUser extends UserType("USER")
   case object UserTypeOrganisation extends UserType("ORGANISATION")
   case object UserTypePersonality extends UserType("PERSONALITY")
@@ -109,6 +110,7 @@ final case class User(
   }
 
   def displayName: Option[String] = this.userType match {
+    case UserTypeAnonymous    => None
     case UserTypeUser         => this.firstName
     case UserTypeOrganisation => this.organisationName
     case UserTypePersonality  => this.fullName

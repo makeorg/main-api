@@ -23,6 +23,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.time.{LocalDate, ZonedDateTime}
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentType, MediaTypes}
 import com.github.t3hnar.bcrypt._
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
@@ -41,10 +42,11 @@ import org.make.api.technical.crm.{CrmService, CrmServiceComponent}
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage.{StorageService, StorageServiceComponent}
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
+import org.make.api.user.UserService.Anonymization
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent, _}
-import org.make.api.{MakeUnitTest, TestUtils}
+import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.core.auth.UserRights
 import org.make.core.profile.Gender.Female
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
@@ -64,6 +66,7 @@ import scala.concurrent.duration.{Duration, DurationInt}
 class UserServiceTest
     extends MakeUnitTest
     with DefaultUserServiceComponent
+    with ActorSystemComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with UserTokenGeneratorComponent
@@ -80,6 +83,7 @@ class UserServiceTest
     with DownloadServiceComponent
     with DateHelperComponent {
 
+  override val actorSystem: ActorSystem = ActorSystem()
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val userTokenGenerator: UserTokenGenerator = mock[UserTokenGenerator]
@@ -946,14 +950,16 @@ class UserServiceTest
     Scenario("anonymize user") {
       clearInvocations(eventBusService)
 
-      when(proposalService.anonymizeByUserId(any[UserId])).thenReturn(Future.unit)
+      when(proposalService.deleteByUserId(any[UserId])).thenReturn(Future.unit)
       when(persistentUserService.removeAnonymizedUserFromFollowedUserTable(any[UserId]))
         .thenReturn(Future.unit)
+      when(userHistoryCoordinatorService.delete(johnDoeUser.userId)).thenReturn(Future.unit)
 
       Given("a user")
       When("I anonymize this user")
       val adminId = UserId("admin")
-      val futureAnonymizeUser = userService.anonymize(johnDoeUser, adminId, RequestContext.empty)
+      val futureAnonymizeUser =
+        userService.anonymize(johnDoeUser, adminId, RequestContext.empty, Anonymization.Explicit)
 
       Then("an event is sent")
       whenReady(futureAnonymizeUser, Timeout(3.seconds)) { _ =>

@@ -25,6 +25,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import akka.http.scaladsl.model.ContentType
 import com.github.t3hnar.bcrypt._
 import grizzled.slf4j.Logging
+import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
@@ -37,6 +38,7 @@ import org.make.api.technical.security.SecurityHelper
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage.StorageServiceComponent
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
+import org.make.api.user.UserService.Anonymization
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
 import org.make.api.user.validation.UserRegistrationValidatorComponent
@@ -110,7 +112,7 @@ trait UserService extends ShortenedNames {
     limit: Int
   ): Future[Seq[User]]
   def getUsersWithoutRegisterQuestion: Future[Seq[User]]
-  def anonymize(user: User, adminId: UserId, requestContext: RequestContext): Future[Unit]
+  def anonymize(user: User, adminId: UserId, requestContext: RequestContext, mode: Anonymization): Future[Unit]
   def getFollowedUsers(userId: UserId): Future[Seq[UserId]]
   def followUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId]
   def unfollowUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId]
@@ -131,6 +133,14 @@ trait UserService extends ShortenedNames {
     eventDate: ZonedDateTime
   ): Future[Unit]
   def adminUpdateUserEmail(user: User, email: String): Future[Unit]
+}
+
+object UserService {
+  sealed abstract class Anonymization
+  object Anonymization {
+    final case object Automatic extends Anonymization
+    final case object Explicit extends Anonymization
+  }
 }
 
 final case class UserRegisterData(
@@ -171,7 +181,8 @@ final case class PersonalityRegisterData(
 )
 
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames with Logging {
-  this: IdGeneratorComponent
+  this: ActorSystemComponent
+    with IdGeneratorComponent
     with MakeDataHandlerComponent
     with UserTokenGeneratorComponent
     with PersistentUserServiceComponent
@@ -804,10 +815,15 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       } yield updatedUser
     }
 
-    override def anonymize(user: User, adminId: UserId, requestContext: RequestContext): Future[Unit] = {
+    override def anonymize(
+      user: User,
+      adminId: UserId,
+      requestContext: RequestContext,
+      mode: Anonymization
+    ): Future[Unit] = {
       val anonymizedUser: User = user.copy(
         email = s"yopmail+${user.userId.value}@make.org",
-        firstName = Some("DELETE_REQUESTED"),
+        firstName = if (mode == Anonymization.Explicit) Some("DELETE_REQUESTED") else user.firstName,
         lastName = Some("DELETE_REQUESTED"),
         lastIp = None,
         hashedPassword = None,
@@ -823,15 +839,17 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         isHardBounce = true,
         lastMailingError = None,
         organisationName = None,
-        userType = UserType.UserTypeUser,
+        userType = if (mode == Anonymization.Explicit) UserType.UserTypeAnonymous else UserType.UserTypeUser,
         createdAt = Some(dateHelper.now()),
         publicProfile = false
       )
+
       val futureDelete: Future[Unit] = for {
         _ <- persistentUserToAnonymizeService.create(user.email)
         _ <- persistentUserService.updateUser(anonymizedUser)
         _ <- persistentUserService.removeAnonymizedUserFromFollowedUserTable(user.userId)
-        _ <- proposalService.anonymizeByUserId(user.userId)
+        _ <- userHistoryCoordinatorService.delete(user.userId)
+        _ <- if (mode == Anonymization.Explicit) proposalService.deleteByUserId(user.userId) else Future.unit
       } yield {}
       futureDelete.map { _ =>
         eventBusService.publish(

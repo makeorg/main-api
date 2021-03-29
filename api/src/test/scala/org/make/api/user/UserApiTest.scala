@@ -51,6 +51,7 @@ import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage._
 import org.make.api.user.SocialProvider.Google
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
+import org.make.api.user.UserService.Anonymization
 import org.make.api.user.social._
 import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
 import org.make.api.userhistory.{ResetPasswordEvent, UserHistoryCoordinatorServiceComponent}
@@ -1592,7 +1593,7 @@ class UserApiTest
 
       when(
         userService
-          .anonymize(any[User], any[UserId], any[RequestContext])
+          .anonymize(any[User], any[UserId], any[RequestContext], eqTo(Anonymization.Explicit))
       ).thenReturn(Future.unit)
 
       when(oauth2DataHandler.removeTokenByUserId(any[UserId]))

@@ -214,7 +214,7 @@ trait ProposalService {
     minScore: Option[Double]
   ): Future[Option[ModerationProposalResponse]]
 
-  def anonymizeByUserId(userId: UserId): Future[Unit]
+  def deleteByUserId(userId: UserId): Future[Unit]
 
   def createInitialProposal(
     content: String,
@@ -1136,7 +1136,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    override def anonymizeByUserId(userId: UserId): Future[Unit] = {
+    override def deleteByUserId(userId: UserId): Future[Unit] = {
       search(
         None,
         SearchQuery(
@@ -1149,9 +1149,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           limit = Some(10000)
         ),
         RequestContext.empty
-      ).map(_.results.foreach { proposal =>
-        proposalCoordinatorService.anonymize(proposal.id)
-      })
+      ).map(_.results.foreach(proposal => proposalCoordinatorService.delete(proposal.id, RequestContext.empty)))
     }
 
     override def getTagsForProposal(proposal: Proposal): Future[TagsForProposalResponse] = {

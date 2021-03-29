@@ -87,7 +87,8 @@ final case class GetProposal(
   replyTo: ActorRef[ProposalActorResponse[ProposalNotFound, Proposal]]
 ) extends ProposalCommand
 
-final case class KillProposalShard(proposalId: ProposalId, requestContext: RequestContext) extends ProposalCommand
+final case class Stop(proposalId: ProposalId, requestContext: RequestContext, replyTo: ActorRef[Envelope[Unit]])
+    extends ProposalCommand
 
 final case class AcceptProposalCommand(
   moderator: UserId,
@@ -177,9 +178,6 @@ final case class PatchProposalCommand(
   requestContext: RequestContext,
   replyTo: ActorRef[ProposalActorResponse[ProposalNotFound, Proposal]]
 ) extends ProposalCommand
-
-final case class AnonymizeProposalCommand(proposalId: ProposalId, requestContext: RequestContext = RequestContext.empty)
-    extends ProposalCommand
 
 final case class SetKeywordsCommand(
   proposalId: ProposalId,

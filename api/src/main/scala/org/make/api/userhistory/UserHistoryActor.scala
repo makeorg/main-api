@@ -81,6 +81,7 @@ class UserHistoryActor
         ()
       }
     case _: ReloadState => reloadState()
+    case Stop(_)        => sender() ! self
   }
 
   private def persistEvent[Event <: UserHistoryEvent[_]](event: Event)(andThen: Event => Unit): Unit = {
@@ -313,6 +314,8 @@ object UserHistoryActor {
   final case class InjectSessionEvents(userId: UserId, events: Seq[UserHistoryEvent[_]]) extends UserRelatedEvent
 
   final case class ReloadState(userId: UserId) extends UserRelatedEvent
+
+  final case class Stop(userId: UserId) extends UserRelatedEvent
 
   case object SessionEventsInjected extends UserHistoryActorProtocol
 

@@ -20,18 +20,19 @@
 package org.make.api.userhistory
 
 import akka.actor.ActorRef
-import akka.pattern.ask
+import akka.pattern.{ask, gracefulStop}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.Timeout
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.Futures._
-import org.make.api.technical.{StreamUtils, TimeSettings}
+import org.make.api.technical.{MakePersistentActor, StreamUtils, TimeSettings}
 import org.make.api.userhistory.UserHistoryActor.{
   ReloadState,
   RequestUserVotedProposals,
   RequestUserVotedProposalsPaginate,
-  RequestVoteValues
+  RequestVoteValues,
+  Stop
 }
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.ProposalId
@@ -50,6 +51,7 @@ trait UserHistoryCoordinatorService {
   def retrieveVoteAndQualifications(request: RequestVoteValues): Future[Map[ProposalId, VoteAndQualifications]]
   def retrieveVotedProposals(request: RequestUserVotedProposals): Future[Seq[ProposalId]]
   def reloadHistory(userId: UserId): Unit
+  def delete(userId: UserId): Future[Unit]
 }
 
 trait UserHistoryCoordinatorServiceComponent {
@@ -116,6 +118,13 @@ trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinat
 
     override def reloadHistory(userId: UserId): Unit = {
       userHistoryCoordinator ! ReloadState(userId)
+    }
+
+    override def delete(userId: UserId): Future[Unit] = {
+      (userHistoryCoordinator ? Stop(userId))
+        .mapTo[ActorRef]
+        .flatMap(ref => gracefulStop(ref, timeout.duration))
+        .flatMap(_ => MakePersistentActor.delete(userId, ShardedUserHistory.readJournal))
     }
   }
 }

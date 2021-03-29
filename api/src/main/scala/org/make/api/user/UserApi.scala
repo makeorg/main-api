@@ -34,6 +34,7 @@ import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.directives.ClientDirectives
 import org.make.api.technical.storage._
+import org.make.api.user.UserService.Anonymization
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.user.validation.UserRegistrationValidatorComponent
 import org.make.api.userhistory.{UserHistoryCoordinatorServiceComponent, _}
@@ -1147,7 +1148,9 @@ trait DefaultUserApiComponent
                 } else {
                   provideAsync(userService.getUserByUserIdAndPassword(userId, request.password)) {
                     case Some(user) =>
-                      provideAsync(userService.anonymize(user, userAuth.user.userId, requestContext)) { _ =>
+                      provideAsync(
+                        userService.anonymize(user, userAuth.user.userId, requestContext, Anonymization.Explicit)
+                      ) { _ =>
                         provideAsync(oauth2DataHandler.removeTokenByUserId(userId)) { _ =>
                           addCookies(requestContext.applicationName, logoutCookies()) { complete(StatusCodes.OK) }
                         }

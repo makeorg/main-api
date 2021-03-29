@@ -33,6 +33,7 @@ import javax.ws.rs.Path
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.storage.{Content, StorageConfigurationComponent, StorageServiceComponent, UploadResponse}
 import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
+import org.make.api.user.UserService.Anonymization
 import org.make.core.Validation.{validateField, _}
 import org.make.core._
 import org.make.core.auth.UserRights
@@ -695,10 +696,11 @@ trait DefaultAdminUserApiComponent
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireAdminRole(userAuth.user) {
               provideAsyncOrNotFound(userService.getUser(userId)) { user =>
-                provideAsync(userService.anonymize(user, userAuth.user.userId, requestContext)) { _ =>
-                  provideAsync(oauth2DataHandler.removeTokenByUserId(userId)) { _ =>
-                    complete(StatusCodes.OK)
-                  }
+                provideAsync(userService.anonymize(user, userAuth.user.userId, requestContext, Anonymization.Automatic)) {
+                  _ =>
+                    provideAsync(oauth2DataHandler.removeTokenByUserId(userId)) { _ =>
+                      complete(StatusCodes.OK)
+                    }
                 }
               }
             }
@@ -715,7 +717,9 @@ trait DefaultAdminUserApiComponent
               decodeRequest {
                 entity(as[AnonymizeUserRequest]) { request =>
                   provideAsyncOrNotFound(userService.getUserByEmail(request.email)) { user =>
-                    provideAsync(userService.anonymize(user, userAuth.user.userId, requestContext)) { _ =>
+                    provideAsync(
+                      userService.anonymize(user, userAuth.user.userId, requestContext, Anonymization.Automatic)
+                    ) { _ =>
                       provideAsync(oauth2DataHandler.removeTokenByUserId(user.userId)) { _ =>
                         complete(StatusCodes.OK)
                       }
