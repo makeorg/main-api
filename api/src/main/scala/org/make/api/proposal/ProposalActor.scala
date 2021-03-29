@@ -26,6 +26,7 @@ import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.persistence.typed.{PersistenceId, SnapshotAdapter}
 import akka.persistence.typed.scaladsl.{Effect, EffectBuilder, EventSourcedBehavior, ReplyEffect, RetentionCriteria}
+import grizzled.slf4j.Logging
 import org.make.api.proposal.ProposalEvent._
 import org.make.api.proposal.ProposalActorResponse._
 import org.make.api.proposal.ProposalActorResponse.Error._
@@ -48,7 +49,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.{Deadline, FiniteDuration}
 import scala.util.{Failure, Success}
 
-object ProposalActor {
+object ProposalActor extends Logging {
 
   val JournalPluginId: String = "make-api.event-sourcing.proposals.journal"
   val SnapshotPluginId: String = "make-api.event-sourcing.proposals.snapshot"
@@ -791,7 +792,7 @@ object ProposalActor {
           "idea" -> event.idea.map(_.value).getOrElse(""),
           "operation" -> event.operation.map(_.value).getOrElse("")
         ).filter {
-          case (_, value) => !value.isEmpty
+          case (_, value) => value.nonEmpty
         }
         @SuppressWarnings(Array("org.wartremover.warts.Throw"))
         val moderator: UserId = event.moderator match {
@@ -861,7 +862,7 @@ object ProposalActor {
           "idea" -> event.idea.map(_.value).getOrElse(""),
           "operation" -> event.operation.map(_.value).getOrElse("")
         ).filter {
-          case (_, value) => !value.isEmpty
+          case (_, value) => value.nonEmpty
         }
         val action =
           ProposalAction(
@@ -892,7 +893,7 @@ object ProposalActor {
       def applyProposalRefused(state: Proposal, event: ProposalRefused): Proposal = {
         val arguments: Map[String, String] =
           Map("refusalReason" -> event.refusalReason.getOrElse("")).filter {
-            case (_, value) => !value.isEmpty
+            case (_, value) => value.nonEmpty
           }
         val action =
           ProposalAction(date = event.eventDate, user = event.moderator, actionType = "refuse", arguments = arguments)
@@ -910,23 +911,34 @@ object ProposalActor {
         state.copy(events = action :: state.events, status = Postponed, updatedAt = Some(event.eventDate))
       }
 
+      val increaseCountIf: (Int, Boolean) => Int = {
+        case (newCount, true) => newCount + 1
+        case (newCount, _)    => newCount
+      }
+
+      def decreaseCountIf(logError: () => Unit): (Int, Boolean) => Int = {
+        case (0, true) =>
+          logError()
+          0
+        case (newCount, true) => newCount - 1
+        case (newCount, _)    => newCount
+      }
+
       def applyProposalVoted(state: Proposal, event: ProposalVoted): Proposal = {
         state.copy(
-          votes = state.votes.map {
-            case vote if vote.key == event.voteKey =>
-              var voteIncreased = vote.copy(count = vote.count + 1)
-              if (event.voteTrust.isInSegment) {
-                voteIncreased = voteIncreased.copy(countSegment = voteIncreased.countSegment + 1)
-              }
-              if (event.voteTrust.isInSequence) {
-                voteIncreased = voteIncreased.copy(countSequence = voteIncreased.countSequence + 1)
-              }
-              if (event.voteTrust.isTrusted) {
-                voteIncreased = voteIncreased.copy(countVerified = vote.countVerified + 1)
-              }
-              voteIncreased
-
-            case vote => vote
+          votes = state.votes.map { vote =>
+            if (vote.key == event.voteKey) {
+              Vote(
+                key = event.voteKey,
+                count = increaseCountIf(vote.count, true),
+                countSegment = increaseCountIf(vote.countSegment, event.voteTrust.isInSegment),
+                countSequence = increaseCountIf(vote.countSequence, event.voteTrust.isInSequence),
+                countVerified = increaseCountIf(vote.countVerified, event.voteTrust.isTrusted),
+                qualifications = vote.qualifications
+              )
+            } else {
+              vote
+            }
           },
           organisationIds = event.maybeOrganisationId match {
             case Some(organisationId)
@@ -941,20 +953,18 @@ object ProposalActor {
       def applyProposalUnvoted(state: Proposal, event: ProposalUnvoted): Proposal = {
         state.copy(
           votes = state.votes.map {
-            case vote if vote.key == event.voteKey =>
-              var voteDecreased = vote.copy(count = vote.count - 1)
-              if (event.voteTrust.isInSegment) {
-                voteDecreased = voteDecreased.copy(countSegment = voteDecreased.countSegment - 1)
-              }
-              if (event.voteTrust.isInSequence) {
-                voteDecreased = voteDecreased.copy(countSequence = voteDecreased.countSequence - 1)
-              }
-              if (event.voteTrust.isTrusted) {
-                voteDecreased = voteDecreased.copy(countVerified = vote.countVerified - 1)
-              }
-
-              voteDecreased.copy(qualifications = voteDecreased.qualifications
-                .map(qualification => applyUnqualifVote(qualification, event.selectedQualifications, event.voteTrust))
+            case Vote(event.voteKey, count, countVerified, countSequence, countSegment, qualifications) =>
+              val logError = () =>
+                logger.error(
+                  s"Prevented vote [${event.voteKey}] count to be set to -1 for proposal: $state. Caused by event: $event"
+                )
+              Vote(
+                key = event.voteKey,
+                count = decreaseCountIf(logError)(count, true),
+                countSegment = decreaseCountIf(logError)(countSegment, event.voteTrust.isInSegment),
+                countSequence = decreaseCountIf(logError)(countSequence, event.voteTrust.isInSequence),
+                countVerified = decreaseCountIf(logError)(countVerified, event.voteTrust.isTrusted),
+                qualifications = qualifications.map(qualification => applyUnqualifVote(state, qualification, event))
               )
             case vote => vote
           },
@@ -966,58 +976,51 @@ object ProposalActor {
         )
       }
 
-      def applyUnqualifVote(
-        qualification: Qualification,
-        selectedQualifications: Seq[QualificationKey],
-        voteTrust: VoteTrust
-      ): Qualification = {
-        if (selectedQualifications.contains(qualification.key)) {
-          var qualificationDecreased = qualification.copy(count = qualification.count - 1)
-          if (voteTrust.isTrusted) {
-            qualificationDecreased = qualificationDecreased.copy(countVerified = qualification.countVerified - 1)
-          }
-          if (voteTrust.isInSequence) {
-            qualificationDecreased = qualificationDecreased.copy(countSequence = qualification.countSequence - 1)
-          }
-          if (voteTrust.isInSegment) {
-            qualificationDecreased = qualificationDecreased.copy(countSegment = qualification.countSegment - 1)
-          }
-          qualificationDecreased
-
+      def applyUnqualifVote[T: Unvoted](state: Proposal, qualification: Qualification, event: T): Qualification = {
+        if (event.selectedQualifications.contains(qualification.key)) {
+          val logError = () =>
+            logger.error(
+              s"Prevented qualification [${qualification.key}] count to be set to -1 for proposal: $state. Caused by event: $event"
+            )
+          Qualification(
+            key = qualification.key,
+            count = decreaseCountIf(logError)(qualification.count, true),
+            countVerified = decreaseCountIf(logError)(qualification.countVerified, event.voteTrust.isTrusted),
+            countSequence = decreaseCountIf(logError)(qualification.countSequence, event.voteTrust.isInSequence),
+            countSegment = decreaseCountIf(logError)(qualification.countSegment, event.voteTrust.isInSegment)
+          )
         } else {
           qualification
         }
       }
 
       def applyProposalQualified(state: Proposal, event: ProposalQualified): Proposal = {
-        state.copy(votes = state.votes.map {
-          case vote if vote.key == event.voteKey =>
+        state.copy(votes = state.votes.map { vote =>
+          if (vote.key == event.voteKey) {
             vote.copy(qualifications = vote.qualifications.map {
-              case qualification if qualification.key == event.qualificationKey =>
-                var qualificationIncreased = qualification.copy(count = qualification.count + 1)
-                if (event.voteTrust.isTrusted) {
-                  qualificationIncreased = qualificationIncreased.copy(countVerified = qualification.countVerified + 1)
+              qualification =>
+                if (qualification.key == event.qualificationKey) {
+                  Qualification(
+                    key = qualification.key,
+                    count = increaseCountIf(qualification.count, true),
+                    countVerified = increaseCountIf(qualification.countVerified, event.voteTrust.isTrusted),
+                    countSequence = increaseCountIf(qualification.countSequence, event.voteTrust.isInSequence),
+                    countSegment = increaseCountIf(qualification.countSegment, event.voteTrust.isInSegment)
+                  )
+                } else {
+                  qualification
                 }
-                if (event.voteTrust.isInSequence) {
-                  qualificationIncreased = qualificationIncreased.copy(countSequence = qualification.countSequence + 1)
-                }
-                if (event.voteTrust.isInSegment) {
-                  qualificationIncreased = qualificationIncreased.copy(countSegment = qualification.countSegment + 1)
-                }
-                qualificationIncreased
-
-              case qualification => qualification
             })
-          case vote => vote
+          } else {
+            vote
+          }
         })
       }
 
       def applyProposalUnqualified(state: Proposal, event: ProposalUnqualified): Proposal = {
         state.copy(votes = state.votes.map {
-          case vote if vote.key == event.voteKey =>
-            vote.copy(qualifications =
-              vote.qualifications.map(applyUnqualifVote(_, Seq(event.qualificationKey), event.voteTrust))
-            )
+          case vote @ Vote(event.voteKey, _, _, _, _, _) =>
+            vote.copy(qualifications = vote.qualifications.map(applyUnqualifVote(state, _, event)))
           case vote => vote
         })
       }
@@ -1025,7 +1028,7 @@ object ProposalActor {
       def applyProposalLocked(state: Proposal, event: ProposalLocked): Proposal = {
         val arguments: Map[String, String] =
           Map("moderatorName" -> event.moderatorName.getOrElse("<unknown>")).filter {
-            case (_, value) => !value.isEmpty
+            case (_, value) => value.nonEmpty
           }
         val action =
           ProposalAction(date = event.eventDate, user = event.moderatorId, actionType = "lock", arguments = arguments)
@@ -1187,4 +1190,29 @@ object ProposalActor {
       effect.thenRun(_ => context.system.eventStream ! EventStream.Publish(event))
   }
 
+  implicit class UnvotedOps[T](val event: T) extends AnyVal {
+    def selectedQualifications(implicit unvoted: Unvoted[T]): Seq[QualificationKey] = unvoted.qualifications(event)
+    def voteTrust(implicit unvoted: Unvoted[T]): VoteTrust = unvoted.trust(event)
+  }
+}
+
+trait Unvoted[T] {
+  def qualifications(event: T): Seq[QualificationKey]
+  def trust(event: T): VoteTrust
+}
+
+object Unvoted {
+  implicit val qualification: Unvoted[ProposalUnqualified] = new Unvoted[ProposalUnqualified] {
+    def qualifications(event: ProposalUnqualified): Seq[QualificationKey] =
+      Seq(event.qualificationKey)
+    def trust(event: ProposalUnqualified): VoteTrust =
+      event.voteTrust
+  }
+
+  implicit val vote: Unvoted[ProposalUnvoted] = new Unvoted[ProposalUnvoted] {
+    def qualifications(event: ProposalUnvoted): Seq[QualificationKey] =
+      event.selectedQualifications
+    def trust(event: ProposalUnvoted): VoteTrust =
+      event.voteTrust
+  }
 }
