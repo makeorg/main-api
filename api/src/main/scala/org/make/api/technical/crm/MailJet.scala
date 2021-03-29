@@ -397,7 +397,7 @@ object ContactProperties {
     }
 
   val getCsvHeader: String = {
-    ("email" :+ Field.fieldsList.map(_.fieldName)).map(name => s"""\"$name\"""").mkString("[", ",", "]")
+    ("email" +: Field.fieldsList.map(_.fieldName)).map(name => s"""\"$name\"""").mkString("[", ",", "]")
   }
 }
 
