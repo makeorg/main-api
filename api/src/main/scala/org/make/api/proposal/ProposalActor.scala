@@ -942,16 +942,17 @@ object ProposalActor extends Logging {
         state.copy(
           votes = state.votes.map {
             case Vote(event.voteKey, count, countVerified, countSequence, countSegment, qualifications) =>
-              val logError = () =>
-                logger.error(
-                  s"Prevented vote [${event.voteKey}] count to be set to -1 for proposal: $state. Caused by event: $event"
-                )
+              def logError(voteType: String): () => Unit =
+                () =>
+                  logger.error(
+                    s"Prevented $voteType [${event.voteKey}] count to be set to -1 for proposal: $state. Caused by event: $event"
+                  )
               Vote(
                 key = event.voteKey,
-                count = decreaseCountIf(logError)(count, true),
-                countSegment = decreaseCountIf(logError)(countSegment, event.voteTrust.isInSegment),
-                countSequence = decreaseCountIf(logError)(countSequence, event.voteTrust.isInSequence),
-                countVerified = decreaseCountIf(logError)(countVerified, event.voteTrust.isTrusted),
+                count = decreaseCountIf(logError("count"))(count, true),
+                countSegment = decreaseCountIf(logError("countSegment"))(countSegment, event.voteTrust.isInSegment),
+                countSequence = decreaseCountIf(logError("countSequence"))(countSequence, event.voteTrust.isInSequence),
+                countVerified = decreaseCountIf(logError("countVerified"))(countVerified, event.voteTrust.isTrusted),
                 qualifications = qualifications.map(qualification => applyUnqualifVote(state, qualification, event))
               )
             case vote => vote
@@ -966,16 +967,20 @@ object ProposalActor extends Logging {
 
       def applyUnqualifVote[T: Unvoted](state: Proposal, qualification: Qualification, event: T): Qualification = {
         if (event.selectedQualifications.contains(qualification.key)) {
-          val logError = () =>
-            logger.error(
-              s"Prevented qualification [${qualification.key}] count to be set to -1 for proposal: $state. Caused by event: $event"
-            )
+          def logError(qualifType: String): () => Unit =
+            () =>
+              logger.error(
+                s"Prevented $qualifType [${qualification.key}] count to be set to -1 for proposal: $state. Caused by event: $event"
+              )
           Qualification(
             key = qualification.key,
-            count = decreaseCountIf(logError)(qualification.count, true),
-            countVerified = decreaseCountIf(logError)(qualification.countVerified, event.voteTrust.isTrusted),
-            countSequence = decreaseCountIf(logError)(qualification.countSequence, event.voteTrust.isInSequence),
-            countSegment = decreaseCountIf(logError)(qualification.countSegment, event.voteTrust.isInSegment)
+            count = decreaseCountIf(logError("count"))(qualification.count, true),
+            countVerified =
+              decreaseCountIf(logError("countVerified"))(qualification.countVerified, event.voteTrust.isTrusted),
+            countSequence =
+              decreaseCountIf(logError("countSequence"))(qualification.countSequence, event.voteTrust.isInSequence),
+            countSegment =
+              decreaseCountIf(logError("countSegment"))(qualification.countSegment, event.voteTrust.isInSegment)
           )
         } else {
           qualification
