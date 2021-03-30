@@ -108,6 +108,8 @@ trait ProposalSearchEngine {
   def computeTop20ConsensusThreshold(questionIds: NonEmptyList[QuestionId]): Future[Map[QuestionId, Double]]
 
   def getFeaturedProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult]
+
+  def delete(id: ProposalId): Future[Unit]
 }
 
 object ProposalSearchEngine {
@@ -509,6 +511,15 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
           .toMap
       }
 
+    }
+
+    override def delete(id: ProposalId): Future[Unit] = {
+      client
+        .executeAsFuture(deleteIn(proposalAlias).by(idsQuery(id.value)))
+        .map(
+          r =>
+            if (r.deleted != 1) logger.error(s"Got ${r.deleted} deletion when deleting proposal ${id.value} from index")
+        )
     }
   }
 
