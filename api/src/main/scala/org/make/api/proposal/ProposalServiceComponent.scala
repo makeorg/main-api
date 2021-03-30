@@ -1149,7 +1149,14 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           limit = Some(10000)
         ),
         RequestContext.empty
-      ).map(_.results.foreach(proposal => proposalCoordinatorService.delete(proposal.id, RequestContext.empty)))
+      ).map(
+        _.results.foreach(
+          proposal =>
+            proposalCoordinatorService
+              .delete(proposal.id, RequestContext.empty)
+              .flatMap(_ => elasticsearchProposalAPI.delete(proposal.id))
+        )
+      )
     }
 
     override def getTagsForProposal(proposal: Proposal): Future[TagsForProposalResponse] = {
