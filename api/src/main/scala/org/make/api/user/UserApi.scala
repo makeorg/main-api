@@ -786,6 +786,10 @@ trait DefaultUserApiComponent
               }
 
               provideAsync(futureMaybeQuestion) { maybeQuestion =>
+                val privacyPolicyApprovalDate = request.approvePrivacyPolicy match {
+                  case Some(true) => Some(DateHelper.now())
+                  case _          => None
+                }
                 onSuccess(
                   userService
                     .register(
@@ -807,7 +811,8 @@ trait DefaultUserApiComponent
                         politicalParty = request.politicalParty,
                         website = request.website.map(_.value),
                         legalMinorConsent = request.legalMinorConsent,
-                        legalAdvisorApproval = request.legalAdvisorApproval
+                        legalAdvisorApproval = request.legalAdvisorApproval,
+                        privacyPolicyApprovalDate = privacyPolicyApprovalDate
                       ),
                       requestContext
                     )

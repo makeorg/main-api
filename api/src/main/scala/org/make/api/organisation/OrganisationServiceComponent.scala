@@ -218,7 +218,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
         ),
         publicProfile = true,
         availableQuestions = Seq.empty,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        privacyPolicyApprovalDate = Some(DateHelper.now())
       )
       persistentUserService.persist(user)
     }

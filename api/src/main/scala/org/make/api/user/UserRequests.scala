@@ -204,7 +204,8 @@ final case class RegisterUserRequest(
     String Refined Url
   ],
   @(ApiModelProperty @field)(dataType = "boolean") legalMinorConsent: Option[Boolean],
-  @(ApiModelProperty @field)(dataType = "boolean") legalAdvisorApproval: Option[Boolean]
+  @(ApiModelProperty @field)(dataType = "boolean") legalAdvisorApproval: Option[Boolean],
+  @(ApiModelProperty @field)(dataType = "boolean") approvePrivacyPolicy: Option[Boolean]
 ) extends UserProfileRequestValidation {
 
   validate(
@@ -224,7 +225,13 @@ final case class RegisterUserRequest(
     validateOptionalUserInput("profession", profession, None),
     validateOptionalUserInput("postalCode", postalCode, None),
     mandatoryField("country", country),
-    validateAge("dateOfBirth", dateOfBirth)
+    validateAge("dateOfBirth", dateOfBirth),
+    validateField(
+      "approvePrivacyPolicy",
+      "invalid_value",
+      approvePrivacyPolicy.forall(identity),
+      "Privacy policy must be approved."
+    )
   )
   validateOptional(postalCode.map(value => validatePostalCode("postalCode", value, None)))
 }

@@ -51,7 +51,7 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.Country
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
-import org.make.core.{DateHelperComponent, Order, RequestContext, ValidationError, ValidationFailedError}
+import org.make.core.{DateHelper, DateHelperComponent, Order, RequestContext, ValidationError, ValidationFailedError}
 import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -164,7 +164,8 @@ final case class UserRegisterData(
   website: Option[String] = None,
   publicProfile: Boolean = false,
   legalMinorConsent: Option[Boolean] = None,
-  legalAdvisorApproval: Option[Boolean] = None
+  legalAdvisorApproval: Option[Boolean] = None,
+  privacyPolicyApprovalDate: Option[ZonedDateTime] = None
 )
 
 final case class PersonalityRegisterData(
@@ -246,7 +247,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       profile: Option[Profile],
       hashedVerificationToken: String
     ): Future[User] = {
-
       val user = User(
         userId = idGenerator.nextUserId(),
         email = lowerCasedEmail,
@@ -267,7 +267,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         availableQuestions = userRegisterData.availableQuestions,
         anonymousParticipation = makeSettings.defaultUserAnonymousParticipation,
         userType = UserType.UserTypeUser,
-        publicProfile = userRegisterData.publicProfile
+        publicProfile = userRegisterData.publicProfile,
+        privacyPolicyApprovalDate = userRegisterData.privacyPolicyApprovalDate
       )
 
       persistentUserService.persist(user)
@@ -300,7 +301,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         availableQuestions = Seq.empty,
         anonymousParticipation = makeSettings.defaultUserAnonymousParticipation,
         userType = UserType.UserTypePersonality,
-        publicProfile = true
+        publicProfile = true,
+        privacyPolicyApprovalDate = Some(DateHelper.now())
       )
 
       persistentUserService.persist(user)

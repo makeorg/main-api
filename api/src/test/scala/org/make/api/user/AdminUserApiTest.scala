@@ -290,28 +290,22 @@ class AdminUserApiTest
       Post("/admin/moderators", HttpEntity(ContentTypes.`application/json`, request))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.Created)
-        verify(userService).register(
-          eqTo(
-            UserRegisterData(
-              email = "mod.erator@modo.com",
-              firstName = Some("Mod"),
-              lastName = Some("Erator"),
-              password = None,
-              lastIp = None,
-              dateOfBirth = None,
-              profession = None,
-              postalCode = None,
-              country = Country("FR"),
-              gender = None,
-              socioProfessionalCategory = None,
-              optIn = Some(false),
-              optInPartner = Some(false),
-              questionId = None,
-              roles = Seq(Role.RoleModerator, Role.RolePolitical)
-            )
-          ),
-          any[RequestContext]
-        )
+        verify(userService).register(argThat[UserRegisterData] { data =>
+          data.email == "mod.erator@modo.com" &&
+          data.firstName.contains("Mod") &&
+          data.lastName.contains("Erator") &&
+          data.password.isEmpty &&
+          data.lastIp.isEmpty &&
+          data.dateOfBirth.isEmpty &&
+          data.profession.isEmpty &&
+          data.postalCode.isEmpty &&
+          data.country == Country("FR") &&
+          data.gender.isEmpty &&
+          data.socioProfessionalCategory.isEmpty &&
+          data.optIn.contains(false) &&
+          data.optInPartner.contains(false) &&
+          data.questionId.isEmpty
+        }, any[RequestContext])
       }
     }
 
