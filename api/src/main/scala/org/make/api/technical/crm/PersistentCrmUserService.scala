@@ -41,6 +41,7 @@ trait PersistentCrmUserService {
     page: Int,
     numberPerPage: Int
   ): Future[Seq[PersistentCrmUser]]
+  def findInactiveUsers(offset: Int, numberPerPage: Int): Future[Seq[PersistentCrmUser]]
   def truncateCrmUsers(): Future[Unit]
 
 }
@@ -118,6 +119,20 @@ trait DefaultPersistentCrmUserServiceComponent extends PersistentCrmUserServiceC
                 )
             )
             .orderBy(PersistentCrmUser.alias.accountCreationDate.asc, PersistentCrmUser.alias.email.asc)
+            .limit(numberPerPage)
+            .offset(offset)
+        }.map(PersistentCrmUser.apply()).list().apply()
+      })
+    }
+
+    override def findInactiveUsers(offset: Int, numberPerPage: Int): Future[Seq[PersistentCrmUser]] = {
+      implicit val cxt: EC = readExecutionContext
+      Future(NamedDB("READ").retryableTx { implicit session =>
+        withSQL {
+          select.all
+            .from(PersistentCrmUser.as(PersistentCrmUser.alias))
+            .where(sqls.le(PersistentCrmUser.alias.daysBeforeDeletion, 0))
+            .orderBy(PersistentCrmUser.alias.email.asc)
             .limit(numberPerPage)
             .offset(offset)
         }.map(PersistentCrmUser.apply()).list().apply()

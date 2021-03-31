@@ -22,18 +22,24 @@ package org.make.api.user
 import java.io.File
 import java.nio.file.Files
 import java.time.{LocalDate, ZonedDateTime}
+
 import akka.http.scaladsl.model.ContentType
+import akka.stream.scaladsl.Sink
 import com.github.t3hnar.bcrypt._
+import eu.timepit.refined.auto._
 import grizzled.slf4j.Logging
 import org.make.api.ActorSystemComponent
-import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
 import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.question.AuthorRequest
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenGeneratorComponent, UserTokenGeneratorComponent}
-import org.make.api.technical.crm.CrmServiceComponent
+import org.make.api.technical.crm.{CrmServiceComponent, PersistentCrmUserServiceComponent}
+import org.make.api.technical.Futures._
+import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
+import org.make.api.technical.job.JobCoordinatorServiceComponent
 import org.make.api.technical.security.SecurityHelper
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage.StorageServiceComponent
@@ -44,6 +50,7 @@ import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
 import org.make.api.user.validation.UserRegistrationValidatorComponent
 import org.make.api.userhistory._
 import org.make.core.auth.UserRights
+import org.make.core.job.Job.JobId.AnonymizeInactiveUsers
 import org.make.core.profile.Gender.{Female, Male, Other}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
@@ -57,6 +64,8 @@ import scalaoauth2.provider.AuthInfo
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import org.make.core.technical.Pagination.{End, Start}
+
+import scala.util.{Failure, Success}
 
 trait UserServiceComponent {
   def userService: UserService
@@ -113,6 +122,7 @@ trait UserService extends ShortenedNames {
   ): Future[Seq[User]]
   def getUsersWithoutRegisterQuestion: Future[Seq[User]]
   def anonymize(user: User, adminId: UserId, requestContext: RequestContext, mode: Anonymization): Future[Unit]
+  def anonymizeInactiveUsers(adminId: UserId, requestContext: RequestContext): Future[JobAcceptance]
   def getFollowedUsers(userId: UserId): Future[Seq[UserId]]
   def followUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId]
   def unfollowUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId]
@@ -188,6 +198,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     with UserTokenGeneratorComponent
     with PersistentUserServiceComponent
     with PersistentUserToAnonymizeServiceComponent
+    with PersistentCrmUserServiceComponent
     with ProposalServiceComponent
     with CrmServiceComponent
     with EventBusServiceComponent
@@ -197,6 +208,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     with StorageServiceComponent
     with DownloadServiceComponent
     with UserHistoryCoordinatorServiceComponent
+    with JobCoordinatorServiceComponent
+    with MailJetConfigurationComponent
     with DateHelperComponent =>
 
   override lazy val userService: UserService = new DefaultUserService
@@ -206,6 +219,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     val validationTokenExpiresIn: Long = makeSettings.validationTokenExpiresIn.toSeconds
     val resetTokenExpiresIn: Long = makeSettings.resetTokenExpiresIn.toSeconds
     val resetTokenB2BExpiresIn: Long = makeSettings.resetTokenB2BExpiresIn.toSeconds
+
+    private lazy val batchSize: Int = mailJetConfiguration.userListBatchSize
 
     override def getUser(userId: UserId): Future[Option[User]] = {
       persistentUserService.get(userId)
@@ -823,6 +838,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       requestContext: RequestContext,
       mode: Anonymization
     ): Future[Unit] = {
+
       val anonymizedUser: User = user.copy(
         email = s"yopmail+${user.userId.value}@make.org",
         firstName = if (mode == Anonymization.Explicit) Some("DELETE_REQUESTED") else user.firstName,
@@ -841,7 +857,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         isHardBounce = true,
         lastMailingError = None,
         organisationName = None,
-        userType = if (mode == Anonymization.Explicit) UserType.UserTypeAnonymous else UserType.UserTypeUser,
+        userType = if (mode == Anonymization.Explicit) UserType.UserTypeAnonymous else user.userType,
         createdAt = Some(dateHelper.now()),
         publicProfile = false
       )
@@ -865,6 +881,33 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             eventId = Some(idGenerator.nextEventId())
           )
         )
+      }
+    }
+
+    override def anonymizeInactiveUsers(adminId: UserId, requestContext: RequestContext): Future[JobAcceptance] = {
+      val startTime: Long = System.currentTimeMillis()
+
+      jobCoordinatorService.start(AnonymizeInactiveUsers) { _ =>
+        val anonymizeUsers = StreamUtils
+          .asyncPageToPageSource(persistentCrmUserService.findInactiveUsers(_, batchSize))
+          .mapAsync(1) { crmUsers =>
+            persistentUserService.findAllByUserIds(crmUsers.map(user => UserId(user.userId)))
+          }
+          .mapConcat(identity)
+          .mapAsync(1) { user =>
+            anonymize(user, adminId, requestContext, Anonymization.Automatic)
+          }
+          .runWith(Sink.ignore)
+          .toUnit
+
+        anonymizeUsers.onComplete {
+          case Failure(exception) =>
+            logger.error(s"Inactive users anonymization failed:", exception)
+          case Success(_) =>
+            logger.info(s"Inactive users anonymization succeeded in ${System.currentTimeMillis() - startTime}ms")
+        }
+
+        anonymizeUsers
       }
     }
 

@@ -28,7 +28,6 @@ import io.circe.refined._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiImplicitParam, _}
-
 import javax.ws.rs.Path
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.storage.{Content, StorageConfigurationComponent, StorageServiceComponent, UploadResponse}
@@ -37,6 +36,7 @@ import org.make.api.user.UserService.Anonymization
 import org.make.core.Validation.{validateField, _}
 import org.make.core._
 import org.make.core.auth.UserRights
+import org.make.core.job.Job.JobId
 import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
 import org.make.core.reference.Country
@@ -367,9 +367,24 @@ trait AdminUserApi extends Directives {
   @Path(value = "/users/update-user-roles")
   def updateUserRoles: Route
 
+  @ApiOperation(
+    value = "anonymize-users",
+    httpMethod = "DELETE",
+    code = HttpCodes.Accepted,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Accepted")))
+  @Path(value = "/users")
+  def anonymizeUsers: Route
+
   def routes: Route =
     getUsers ~ getUser ~ updateUser ~ getModerator ~ getModerators ~ createModerator ~ updateModerator ~
-      anonymizeUser ~ anonymizeUserByEmail ~ adminUploadAvatar ~ updateUserEmail ~ updateUserRoles
+      anonymizeUser ~ anonymizeUserByEmail ~ adminUploadAvatar ~ updateUserEmail ~ updateUserRoles ~ anonymizeUsers
 
 }
 
@@ -702,6 +717,24 @@ trait DefaultAdminUserApiComponent
                     provideAsync(oauth2DataHandler.removeTokenByUserId(userId)) { _ =>
                       complete(StatusCodes.OK)
                     }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def anonymizeUsers: Route = delete {
+      path("admin" / "users") {
+        makeOperation("adminDeleteUsers") { requestContext =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireAdminRole(userAuth.user) {
+              provideAsync(userService.anonymizeInactiveUsers(userAuth.user.userId, requestContext)) { acceptance =>
+                if (acceptance.isAccepted) {
+                  complete(StatusCodes.Accepted -> JobId.AnonymizeInactiveUsers)
+                } else {
+                  complete(StatusCodes.Conflict -> JobId.AnonymizeInactiveUsers)
                 }
               }
             }

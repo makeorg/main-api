@@ -23,11 +23,13 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
+import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage._
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.UserService.Anonymization
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase, TestUtils}
+import org.make.core.job.Job.JobId
 import org.make.core.reference.Country
 import org.make.core.user.Role.{RoleCitizen, RoleModerator, RolePolitical}
 import org.make.core.user._
@@ -577,8 +579,10 @@ class AdminUserApiTest
 
     Scenario("admin user") {
       when(userService.getUser(moderatorId)).thenReturn(Future.successful(Some(newModerator)))
-      when(userService.anonymize(eqTo(newModerator), eqTo(adminId), any[RequestContext], eqTo(Anonymization.Automatic)))
-        .thenReturn(Future.unit)
+      when(
+        userService
+          .anonymize(eqTo(newModerator), eqTo(adminId), any[RequestContext], eqTo(Anonymization.Automatic))
+      ).thenReturn(Future.unit)
       when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
       Delete(s"/admin/users/${moderatorId.value}")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
@@ -622,8 +626,10 @@ class AdminUserApiTest
     }
 
     Scenario("admin user") {
-      when(userService.anonymize(eqTo(newModerator), eqTo(adminId), any[RequestContext], eqTo(Anonymization.Automatic)))
-        .thenReturn(Future.unit)
+      when(
+        userService
+          .anonymize(eqTo(newModerator), eqTo(adminId), any[RequestContext], eqTo(Anonymization.Automatic))
+      ).thenReturn(Future.unit)
       when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
       Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, request))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
@@ -635,6 +641,51 @@ class AdminUserApiTest
       Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, badRequest))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
+      }
+    }
+  }
+
+  Feature("anonymize inactive users") {
+
+    Scenario("unauthenticated user") {
+      Delete("/admin/users") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    Scenario("citizen user") {
+      Delete("/admin/users")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("moderator user") {
+      Delete("/admin/users")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("admin user - job accepted") {
+      when(userService.anonymizeInactiveUsers(eqTo(adminId), any[RequestContext]))
+        .thenReturn(Future.successful(JobAcceptance(true)))
+      Delete("/admin/users")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.Accepted)
+        val response = entityAs[JobId]
+        response should be(JobId.AnonymizeInactiveUsers)
+      }
+    }
+
+    Scenario("admin user - job not accepted") {
+      when(userService.anonymizeInactiveUsers(eqTo(adminId), any[RequestContext]))
+        .thenReturn(Future.successful(JobAcceptance(false)))
+      Delete("/admin/users")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.Conflict)
+        val response = entityAs[JobId]
+        response should be(JobId.AnonymizeInactiveUsers)
       }
     }
   }
