@@ -76,6 +76,7 @@ trait UserService extends ShortenedNames {
   def getPersonality(id: UserId): Future[Option[User]]
   def getUserByEmail(email: String): Future[Option[User]]
   def getUserByUserIdAndPassword(userId: UserId, password: Option[String]): Future[Option[User]]
+  def getUserByEmailAndPassword(email: String, password: String): Future[Option[User]]
   def getUsersByUserIds(ids: Seq[UserId]): Future[Seq[User]]
   def adminFindUsers(
     start: Start,
@@ -236,6 +237,10 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def getUserByUserIdAndPassword(userId: UserId, password: Option[String]): Future[Option[User]] = {
       persistentUserService.findByUserIdAndPassword(userId, password)
+    }
+
+    override def getUserByEmailAndPassword(email: String, password: String): Future[Option[User]] = {
+      persistentUserService.findByEmailAndPassword(email, password)
     }
 
     override def getUsersByUserIds(ids: Seq[UserId]): Future[Seq[User]] = {

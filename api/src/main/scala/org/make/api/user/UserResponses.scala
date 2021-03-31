@@ -20,9 +20,8 @@
 package org.make.api.user
 
 import java.time.{LocalDate, ZonedDateTime}
-
-import io.circe.{Decoder, Encoder}
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Codec, Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.core.CirceFormatters
@@ -261,4 +260,10 @@ object SocialLoginResponse {
       )
     }
 
+}
+
+final case class UserPrivacyPolicyResponse(privacyPolicyApprovalDate: Option[ZonedDateTime])
+
+object UserPrivacyPolicyResponse {
+  implicit val codec: Codec[UserPrivacyPolicyResponse] = deriveCodec
 }
