@@ -27,7 +27,7 @@ import akka.http.scaladsl.{Http, HttpExt}
 import grizzled.slf4j.Logging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import org.make.api.ActorSystemComponent
-import org.make.api.user.social.models.google.{PeopleInfo, UserInfo => GoogleUserInfo}
+import org.make.api.user.social.models.google.PeopleInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -37,7 +37,6 @@ trait GoogleApiComponent {
 }
 
 trait GoogleApi {
-  def getUserInfo(idToken: String): Future[GoogleUserInfo]
   def peopleInfo(userToken: String): Future[PeopleInfo]
 }
 
@@ -48,15 +47,6 @@ trait DefaultGoogleApiComponent extends GoogleApiComponent with ErrorAccumulatin
 
   class DefaultGoogleApi extends GoogleApi with Logging {
     private val http: HttpExt = Http()
-
-    def getUserInfo(idToken: String): Future[GoogleUserInfo] = {
-      val url =
-        s"https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=$idToken"
-
-      http
-        .singleRequest(HttpRequest(method = HttpMethods.GET, uri = url))
-        .flatMap(unmarshal[GoogleUserInfo](_))
-    }
 
     override def peopleInfo(userToken: String): Future[PeopleInfo] = {
       val apiKey = socialProvidersConfiguration.google.apiKey

@@ -46,7 +46,7 @@ import org.make.api.technical.storage.StorageServiceComponent
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
 import org.make.api.user.UserService.Anonymization
 import org.make.api.user.social.models.UserInfo
-import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
+import org.make.api.user.social.models.google.PeopleInfo
 import org.make.api.user.validation.UserRegistrationValidatorComponent
 import org.make.api.userhistory._
 import org.make.core.auth.UserRights
@@ -104,6 +104,7 @@ trait UserService extends ShortenedNames {
   def createOrUpdateUserFromSocial(
     userInfo: UserInfo,
     questionId: Option[QuestionId],
+    country: Country,
     requestContext: RequestContext
   ): Future[(User, Boolean)]
   def requestPasswordReset(userId: UserId): Future[Boolean]
@@ -454,6 +455,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     override def createOrUpdateUserFromSocial(
       userInfo: UserInfo,
       questionId: Option[QuestionId],
+      country: Country,
       requestContext: RequestContext
     ): Future[(User, Boolean)] = {
 
@@ -462,9 +464,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         .map(_.toLowerCase())
         .map { lowerCasedEmail =>
           persistentUserService.findByEmail(lowerCasedEmail).flatMap {
-            case Some(user) => updateUserFromSocial(user, userInfo, requestContext.ipAddress).map((_, false))
+            case Some(user) => updateUserFromSocial(user, userInfo, country, requestContext.ipAddress).map((_, false))
             case None =>
-              createUserFromSocial(lowerCasedEmail, requestContext, userInfo, questionId).map((_, true))
+              createUserFromSocial(lowerCasedEmail, requestContext, userInfo, country, questionId).map((_, true))
           }
         }
         .getOrElse {
@@ -480,6 +482,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       lowerCasedEmail: String,
       requestContext: RequestContext,
       userInfo: UserInfo,
+      country: Country,
       questionId: Option[QuestionId]
     ): Future[User] = {
 
@@ -513,7 +516,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = getRolesFromSocial(userInfo),
-        country = userInfo.country,
+        country = country,
         profile = profile,
         availableQuestions = Seq.empty,
         anonymousParticipation = makeSettings.defaultUserAnonymousParticipation,
@@ -526,7 +529,12 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
-    private def updateUserFromSocial(user: User, userInfo: UserInfo, clientIp: Option[String]): Future[User] = {
+    private def updateUserFromSocial(
+      user: User,
+      userInfo: UserInfo,
+      country: Country,
+      clientIp: Option[String]
+    ): Future[User] = {
       val hashedPassword = if (!user.emailVerified) None else user.hashedPassword
 
       val profile: Option[Profile] = user.profile.orElse(Profile.parseProfile())
@@ -541,7 +549,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         user.copy(
           firstName = userInfo.firstName,
           lastIp = clientIp,
-          country = userInfo.country,
+          country = country,
           profile = updatedProfile,
           hashedPassword = hashedPassword,
           emailVerified = true
@@ -555,7 +563,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     // @todo: Add a unit test to check role by domain
     private def getRolesFromSocial(userInfo: UserInfo): Seq[Role] = {
       var roles: Seq[Role] = Seq(Role.RoleCitizen)
-      if (userInfo.domain.contains(GoogleUserInfo.MODERATOR_DOMAIN)) {
+      if (userInfo.domain.contains(PeopleInfo.MODERATOR_DOMAIN)) {
         roles = roles ++ Seq(Role.RoleAdmin, Role.RoleModerator)
       }
 

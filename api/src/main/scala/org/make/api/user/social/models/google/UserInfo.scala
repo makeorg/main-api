@@ -26,73 +26,6 @@ import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import org.make.api.user.social.models
 import org.make.core.CirceFormatters
-import org.make.core.reference.Country
-
-final case class UserInfo(
-  azp: Option[String],
-  aud: Option[String],
-  sub: Option[String],
-  hd: Option[String],
-  email: Option[String],
-  emailVerified: String,
-  atHash: Option[String],
-  iss: Option[String],
-  iat: Option[String],
-  exp: Option[String],
-  name: Option[String],
-  picture: Option[String],
-  givenName: Option[String],
-  familyName: Option[String],
-  local: Option[String],
-  alg: Option[String],
-  kid: Option[String]
-) {
-  def pictureUrl: Option[String] = {
-    val end = "/photo.jpg"
-    picture.map {
-      case pic if pic.endsWith(end) => s"${pic.dropRight(end.length)}-s512$end"
-      case pic                      => s"$pic-s512"
-    }
-  }
-
-  def toUserInfo(country: Country): models.UserInfo = {
-    models.UserInfo(
-      email = email,
-      firstName = givenName,
-      country = country,
-      googleId = iat,
-      picture = pictureUrl,
-      domain = hd,
-      dateOfBirth = None
-    )
-  }
-}
-
-object UserInfo {
-
-  val MODERATOR_DOMAIN = "make.org"
-
-  implicit val decoder: Decoder[UserInfo] =
-    Decoder.forProduct17(
-      "azp",
-      "aud",
-      "sub",
-      "hd",
-      "email",
-      "email_verified",
-      "at_hash",
-      "iss",
-      "iat",
-      "exp",
-      "name",
-      "picture",
-      "given_name",
-      "family_name",
-      "locale",
-      "alg",
-      "kid"
-    )(UserInfo.apply)
-}
 
 final case class MetadataSource(`type`: String, id: String)
 
@@ -157,12 +90,11 @@ final case class PeopleInfo(
   emailAddresses: Seq[PeopleEmailAddress],
   birthdays: Option[Seq[Birthday]] // make it optional until all the fronts use the right scopes
 ) {
-  def toUserInfo(country: Country): models.UserInfo = {
+  def toUserInfo(): models.UserInfo = {
     val maybeEmail = emailAddresses.find(_.metadata.isPrimary).map(_.value)
     models.UserInfo(
       email = maybeEmail,
       firstName = names.find(_.metadata.isPrimary).map(_.givenName),
-      country = country,
       gender = None,
       googleId = Some(resourceName.split("/").last),
       facebookId = None,
@@ -175,4 +107,6 @@ final case class PeopleInfo(
 
 object PeopleInfo {
   implicit val decoder: Decoder[PeopleInfo] = deriveDecoder
+
+  val MODERATOR_DOMAIN = "make.org"
 }

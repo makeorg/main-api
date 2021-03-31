@@ -49,7 +49,7 @@ import org.make.api.technical.auth._
 import org.make.api.technical.directives.ClientDirectives
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage._
-import org.make.api.user.SocialProvider.Google
+import org.make.api.user.SocialProvider.GooglePeople
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.UserService.Anonymization
 import org.make.api.user.social._
@@ -748,7 +748,7 @@ class UserApiTest
       val request =
         """
           |{
-          | "provider": "google",
+          | "provider": "google_people",
           | "token": "ABCDEFGHIJK",
           | "country": "FR",
           | "language": "fr"
@@ -761,7 +761,7 @@ class UserApiTest
         status should be(StatusCodes.Created)
         header("Set-Cookie").get.value should include("cookie-secure")
         verify(socialService).login(
-          eqTo(Google),
+          eqTo(GooglePeople),
           eqTo("ABCDEFGHIJK"),
           eqTo(Country("FR")),
           eqTo(None),
@@ -775,7 +775,7 @@ class UserApiTest
       val request =
         """
           |{
-          | "provider": "google",
+          | "provider": "google_people",
           | "clientId": "client-id"
           |}
         """.stripMargin
@@ -791,7 +791,7 @@ class UserApiTest
       val token = "login with a specific client"
       val request =
         s""" {
-          | "provider": "google",
+          | "provider": "google_people",
           | "token": "$token",
           | "country": "FR",
           | "language": "fr"
@@ -808,7 +808,7 @@ class UserApiTest
 
       when(
         socialService.login(
-          eqTo(Google),
+          eqTo(GooglePeople),
           eqTo(token),
           eqTo(Country("FR")),
           any[Option[QuestionId]],
@@ -841,7 +841,7 @@ class UserApiTest
 
         status should be(StatusCodes.Created)
         verify(socialService).login(
-          eqTo(Google),
+          eqTo(GooglePeople),
           eqTo(token),
           eqTo(Country("FR")),
           eqTo(None),
@@ -855,7 +855,7 @@ class UserApiTest
       val token = "login with a bad client"
       val request =
         s""" {
-           | "provider": "google",
+           | "provider": "google_people",
            | "token": "$token",
            | "country": "FR",
            | "language": "fr"
@@ -869,7 +869,7 @@ class UserApiTest
 
       when(
         socialService.login(
-          eqTo(Google),
+          eqTo(GooglePeople),
           eqTo(token),
           eqTo(Country("FR")),
           any[Option[QuestionId]],
@@ -2094,6 +2094,31 @@ class UserApiTest
         response.privacyPolicyApprovalDate shouldBe sylvain.privacyPolicyApprovalDate
       }
     }
+  }
 
+  Feature("get social privacy policy acceptance date") {
+    Scenario("No user found") {
+      when(socialService.getUserByProviderAndToken(any[SocialProvider], any[String]))
+        .thenReturn(Future.successful(None))
+
+      val entity = """{"provider": "google_people", "token": "token"}"""
+      Post("/user/social/privacy-policy").withEntity(HttpEntity(ContentTypes.`application/json`, entity)) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val response = entityAs[UserPrivacyPolicyResponse]
+        response.privacyPolicyApprovalDate should be(None)
+      }
+    }
+
+    Scenario("Some user") {
+      when(socialService.getUserByProviderAndToken(any[SocialProvider], any[String]))
+        .thenReturn(Future.successful(Some(sylvain)))
+
+      val entity = """{"provider": "google_people", "token": "token"}"""
+      Post("/user/social/privacy-policy").withEntity(HttpEntity(ContentTypes.`application/json`, entity)) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val response = entityAs[UserPrivacyPolicyResponse]
+        response.privacyPolicyApprovalDate should be(sylvain.privacyPolicyApprovalDate)
+      }
+    }
   }
 }

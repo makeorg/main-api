@@ -544,6 +544,22 @@ trait UserApi extends Directives {
   )
   def getPrivacyPolicy: Route
 
+  @Path(value = "/social/privacy-policy")
+  @ApiOperation(value = "get-social-privacy-policy-approval-date", httpMethod = "POST")
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.user.SocialPrivacyPolicyRequest"
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserPrivacyPolicyResponse]))
+  )
+  def getSocialPrivacyPolicy: Route
+
   def routes: Route =
     getMe ~
       currentUser ~
@@ -568,7 +584,8 @@ trait UserApi extends Directives {
       uploadAvatar ~
       getUserProfile ~
       modifyUserProfile ~
-      getPrivacyPolicy
+      getPrivacyPolicy ~
+      getSocialPrivacyPolicy
 
   val userId: PathMatcher1[UserId] =
     Segment.map(id => UserId(id))
@@ -1381,5 +1398,20 @@ trait DefaultUserApiComponent
       }
     }
 
+    override def getSocialPrivacyPolicy: Route = {
+      post {
+        path("user" / "social" / "privacy-policy") {
+          makeOperation("GetSocialPrivacyPolicy") { requestContext =>
+            decodeRequest {
+              entity(as[SocialPrivacyPolicyRequest]) { request =>
+                provideAsync(socialService.getUserByProviderAndToken(request.provider, request.token)) { maybeUser =>
+                  complete(UserPrivacyPolicyResponse(maybeUser.flatMap(_.privacyPolicyApprovalDate)))
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
