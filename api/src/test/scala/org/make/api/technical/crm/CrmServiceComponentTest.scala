@@ -208,12 +208,7 @@ class CrmServiceComponentTest
       .lines()
       .map[Object] { line =>
         val splitted = line.split(":", 3)
-        StaminaTestUtils.deserializeEventFromJson[Object](
-          actorSystemTyped.classicSystem,
-          splitted(0),
-          splitted(2),
-          splitted(1).toInt
-        )
+        StaminaTestUtils.deserializeEventFromJson[Object](actorSystemTyped, splitted(0), splitted(2), splitted(1).toInt)
       }
       .toArray
       .toIndexedSeq

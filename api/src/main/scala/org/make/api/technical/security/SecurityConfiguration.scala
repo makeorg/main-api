@@ -19,21 +19,20 @@
 
 package org.make.api.technical.security
 
-import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.Actor
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
+import akka.actor.typed.{ActorSystem, Extension, ExtensionId}
 import com.typesafe.config.Config
-import org.make.api.ActorSystemComponent
+import org.make.api.ActorSystemTypedComponent
 
 class SecurityConfiguration(config: Config) extends Extension {
   val secureHashSalt: String = config.getString("secure-hash-salt")
   val secureVoteSalt: String = config.getString("secure-vote-salt")
 }
 
-object SecurityConfiguration extends ExtensionId[SecurityConfiguration] with ExtensionIdProvider {
-  override def createExtension(system: ExtendedActorSystem): SecurityConfiguration =
+object SecurityConfiguration extends ExtensionId[SecurityConfiguration] {
+  override def createExtension(system: ActorSystem[_]): SecurityConfiguration =
     new SecurityConfiguration(system.settings.config.getConfig("make-api.security"))
-
-  override def lookup: ExtensionId[SecurityConfiguration] = SecurityConfiguration
-  override def get(system: ActorSystem): SecurityConfiguration = super.get(system)
 }
 
 trait SecurityConfigurationComponent {
@@ -41,10 +40,12 @@ trait SecurityConfigurationComponent {
 }
 
 trait SecurityConfigurationExtension extends SecurityConfigurationComponent { this: Actor =>
-  override val securityConfiguration: SecurityConfiguration = SecurityConfiguration(context.system)
+  override val securityConfiguration: SecurityConfiguration = {
+    SecurityConfiguration(context.system.toTyped)
+  }
 }
 
 trait DefaultSecurityConfigurationComponent extends SecurityConfigurationComponent {
-  this: ActorSystemComponent =>
-  override lazy val securityConfiguration: SecurityConfiguration = SecurityConfiguration(actorSystem)
+  this: ActorSystemTypedComponent =>
+  override lazy val securityConfiguration: SecurityConfiguration = SecurityConfiguration(actorSystemTyped)
 }

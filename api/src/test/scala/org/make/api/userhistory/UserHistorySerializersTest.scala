@@ -19,7 +19,8 @@
 
 package org.make.api.userhistory
 
-import akka.actor.ActorSystem
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
 import org.make.api.proposal.PublishedProposalEvent.{
   ProposalAccepted,
@@ -525,8 +526,8 @@ object UserHistorySerializersTest {
       |make-api.security.secure-hash-salt = "salt-secure"
       |make-api.security.secure-vote-salt = "vote-secure"     """.stripMargin
 
-  val system: ActorSystem = {
+  val system: ActorSystem[Nothing] = {
     val config = ConfigFactory.load(ConfigFactory.parseString(configuration))
-    ActorSystem(classOf[UserHistorySerializersTest].getSimpleName, config)
+    ActorSystem[Nothing](Behaviors.empty, classOf[UserHistorySerializersTest].getSimpleName, config)
   }
 }

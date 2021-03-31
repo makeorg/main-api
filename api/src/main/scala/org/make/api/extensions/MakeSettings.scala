@@ -19,17 +19,17 @@
 
 package org.make.api.extensions
 
-import java.util.concurrent.TimeUnit
-
-import akka.actor.{Actor, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.Actor
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
+import akka.actor.typed.{ActorSystem, Extension, ExtensionId}
 import com.typesafe.config.Config
-import org.make.api.ActorSystemComponent
+import org.make.api.ActorSystemTypedComponent
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.jdk.CollectionConverters._
 
 class MakeSettings(config: Config) extends Extension {
-
   val passivateTimeout: Duration = Duration(config.getString("passivate-timeout"))
   val maxUserHistoryEvents: Int = config.getInt("max-user-history-events")
   val mandatoryConnection: Boolean = config.getBoolean("mandatory-connection")
@@ -92,16 +92,13 @@ class MakeSettings(config: Config) extends Extension {
   val environment: String = config.getString("environment")
 }
 
-object MakeSettings extends ExtensionId[MakeSettings] with ExtensionIdProvider {
-  override def createExtension(system: ExtendedActorSystem): MakeSettings =
+object MakeSettings extends ExtensionId[MakeSettings] {
+  override def createExtension(system: ActorSystem[_]): MakeSettings =
     new MakeSettings(system.settings.config.getConfig("make-api"))
-
-  override def lookup: ExtensionId[MakeSettings] = MakeSettings
 }
 
 trait MakeSettingsExtension { self: Actor =>
-
-  val settings: MakeSettings = MakeSettings(context.system)
+  val settings: MakeSettings = MakeSettings(context.system.toTyped)
 }
 
 trait MakeSettingsComponent {
@@ -109,7 +106,7 @@ trait MakeSettingsComponent {
 }
 
 trait DefaultMakeSettingsComponent extends MakeSettingsComponent {
-  self: ActorSystemComponent =>
+  self: ActorSystemTypedComponent =>
 
-  override lazy val makeSettings: MakeSettings = MakeSettings(actorSystem)
+  override lazy val makeSettings: MakeSettings = MakeSettings(actorSystemTyped)
 }

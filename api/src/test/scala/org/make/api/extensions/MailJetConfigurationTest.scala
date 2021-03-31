@@ -20,6 +20,7 @@
 package org.make.api.extensions
 
 import akka.actor.ActorSystem
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
 import org.make.api.MakeUnitTest
@@ -64,7 +65,7 @@ class MailJetConfigurationTest
     TestKit.shutdownActorSystem(system)
   }
 
-  val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(system)
+  val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(system.toTyped)
 
   Scenario("Register user and create proposal") {
     mailJetConfiguration.apiKey shouldBe ("apikey")

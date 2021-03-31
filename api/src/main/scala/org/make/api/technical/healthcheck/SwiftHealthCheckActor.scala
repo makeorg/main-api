@@ -19,10 +19,12 @@
 
 package org.make.api.technical.healthcheck
 
-import akka.actor.{ActorSystem, Props}
-import org.make.api.ActorSystemComponent
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
+import akka.actor.{typed, Props}
+import org.make.api.ActorSystemTypedComponent
 import org.make.api.technical.ShortenedNames
 import org.make.api.technical.storage.DefaultSwiftClientComponent
+import org.make.swift.SwiftClient
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -31,13 +33,13 @@ class SwiftHealthCheckActor(healthCheckExecutionContext: ExecutionContext)
     extends HealthCheck
     with ShortenedNames
     with DefaultSwiftClientComponent
-    with ActorSystemComponent {
+    with ActorSystemTypedComponent {
 
   override val techno: String = "swift"
 
-  override def actorSystem: ActorSystem = context.system
+  override val actorSystemTyped: typed.ActorSystem[_] = context.system.toTyped
 
-  lazy val client = swiftClient
+  lazy val client: SwiftClient = swiftClient
 
   override def preStart(): Unit = {
     Await.result(client.init(), atMost = 30.seconds)

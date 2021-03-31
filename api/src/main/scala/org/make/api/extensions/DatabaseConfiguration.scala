@@ -19,10 +19,10 @@
 
 package org.make.api.extensions
 
+import akka.actor.typed.{ActorSystem, Extension, ExtensionId}
+
 import java.sql.Connection
 import java.util.concurrent.{Executors, ThreadPoolExecutor}
-
-import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.github.t3hnar.bcrypt._
 import com.typesafe.config.Config
 import grizzled.slf4j.Logging
@@ -153,10 +153,8 @@ class DatabaseConfiguration(override protected val configuration: Config)
   }
 }
 
-object DatabaseConfiguration extends ExtensionId[DatabaseConfiguration] with ExtensionIdProvider {
-  override def createExtension(system: ExtendedActorSystem): DatabaseConfiguration =
+object DatabaseConfiguration extends ExtensionId[DatabaseConfiguration] {
+  override def createExtension(system: ActorSystem[_]): DatabaseConfiguration =
     new DatabaseConfiguration(system.settings.config.getConfig("make-api"))
 
-  override def lookup: ExtensionId[DatabaseConfiguration] =
-    DatabaseConfiguration
 }

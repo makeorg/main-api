@@ -19,9 +19,10 @@
 
 package org.make.api.extensions
 
-import akka.actor.{Actor, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.Actor
+import akka.actor.typed.{ActorSystem, Extension, ExtensionId}
 import com.typesafe.config.Config
-import org.make.api.ActorSystemComponent
+import org.make.api.ActorSystemTypedComponent
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
@@ -47,11 +48,9 @@ class MailJetConfiguration(config: Config) extends Extension {
   def delayBeforeResend: FiniteDuration = 15.seconds
 }
 
-object MailJetConfiguration extends ExtensionId[MailJetConfiguration] with ExtensionIdProvider {
-  override def createExtension(system: ExtendedActorSystem): MailJetConfiguration =
+object MailJetConfiguration extends ExtensionId[MailJetConfiguration] {
+  override def createExtension(system: ActorSystem[_]): MailJetConfiguration =
     new MailJetConfiguration(system.settings.config.getConfig("make-api.mail-jet"))
-
-  override def lookup: ExtensionId[MailJetConfiguration] = MailJetConfiguration
 }
 
 trait MailJetConfigurationComponent {
@@ -59,9 +58,10 @@ trait MailJetConfigurationComponent {
 }
 
 trait MailJetConfigurationExtension extends MailJetConfigurationComponent { this: Actor =>
-  override val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(context.system)
+  override val mailJetConfiguration: MailJetConfiguration =
+    new MailJetConfiguration(context.system.settings.config.getConfig("make-api.mail-jet"))
 }
 
-trait DefaultMailJetConfigurationComponent extends MailJetConfigurationComponent { this: ActorSystemComponent =>
-  override lazy val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(actorSystem)
+trait DefaultMailJetConfigurationComponent extends MailJetConfigurationComponent { this: ActorSystemTypedComponent =>
+  override lazy val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(actorSystemTyped)
 }

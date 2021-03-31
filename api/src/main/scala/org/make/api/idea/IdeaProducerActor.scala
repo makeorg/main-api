@@ -21,7 +21,7 @@ package org.make.api.idea
 
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import org.make.api.technical.{BasicProducerActor, ProducerActorCompanion}
+import org.make.api.technical.BasicProducerActor
 
 class IdeaProducerActor extends BasicProducerActor[IdeaEventWrapper, IdeaEvent] {
   override protected lazy val eventClass: Class[IdeaEvent] = classOf[IdeaEvent]
@@ -40,8 +40,8 @@ class IdeaProducerActor extends BasicProducerActor[IdeaEventWrapper, IdeaEvent] 
   }
 }
 
-object IdeaProducerActor extends ProducerActorCompanion {
+object IdeaProducerActor {
   val props: Props = Props[IdeaProducerActor]()
-  override val name: String = "kafka-idea-event-writer"
-  override val topicKey: String = "ideas"
+  val name: String = "kafka-idea-event-writer"
+  val topicKey: String = "ideas"
 }
