@@ -25,7 +25,7 @@ import akka.actor.typed.ActorRef
 import akka.util.Timeout
 import grizzled.slf4j.Logging
 import org.make.api.ActorSystemTypedComponent
-import org.make.api.technical.{MakePersistentActor, TimeSettings}
+import org.make.api.technical.TimeSettings
 import org.make.api.technical.BetterLoggingActors._
 import org.make.core.history.HistoryActions.{VoteAndQualifications, VoteTrust}
 import org.make.core.idea.IdeaId
@@ -160,8 +160,6 @@ trait ProposalCoordinatorService {
     keywords: Seq[ProposalKeyword],
     requestContext: RequestContext
   ): Future[Option[Proposal]]
-
-  def delete(proposalId: ProposalId, requestContext: RequestContext): Future[Unit]
 }
 
 trait ProposalCoordinatorServiceComponent {
@@ -402,11 +400,6 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
       requestContext: RequestContext
     ): Future[Option[Proposal]] = {
       (proposalCoordinator ?? (SetKeywordsCommand(proposalId, keywords, requestContext, _))).map(asOption)
-    }
-
-    override def delete(proposalId: ProposalId, requestContext: RequestContext): Future[Unit] = {
-      (proposalCoordinator ?? (Stop(proposalId, requestContext, _)))
-        .flatMap(_ => MakePersistentActor.delete(proposalId, ProposalActor.JournalPluginId))
     }
 
     private def asOption[E, T](response: ProposalActorResponse[E, T]): Option[T] = response match {

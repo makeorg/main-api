@@ -1838,16 +1838,4 @@ class ProposalSearchEngineIT
     }
   }
 
-  Feature("delete a proposal by id") {
-    Scenario("it works") {
-      val id = ProposalId("3bd7ae66-d2b4-42c2-96dd-46dbdb477797")
-      whenReady(elasticsearchProposalAPI.delete(id), Timeout(10.seconds)) {
-        _ shouldBe ()
-      }
-      whenReady(elasticsearchProposalAPI.findProposalById(id), Timeout(10.seconds)) {
-        _ shouldBe None
-      }
-    }
-  }
-
 }

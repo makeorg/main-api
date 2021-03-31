@@ -970,7 +970,6 @@ class UserServiceTest
     Scenario("anonymize user") {
       clearInvocations(eventBusService)
 
-      when(proposalService.deleteByUserId(any[UserId])).thenReturn(Future.unit)
       when(persistentUserService.removeAnonymizedUserFromFollowedUserTable(any[UserId]))
         .thenReturn(Future.unit)
       when(userHistoryCoordinatorService.delete(johnDoeUser.userId)).thenReturn(Future.unit)
@@ -1066,7 +1065,6 @@ class UserServiceTest
         .thenReturn(Future.successful(Seq(fooCrmUser, johnDoeCrmUser)))
       when(persistentUserService.findAllByUserIds(Seq(UserId(fooCrmUser.userId), UserId(johnDoeCrmUser.userId))))
         .thenReturn(Future.successful(Seq(fooUser, johnDoeUser)))
-      when(proposalService.deleteByUserId(any[UserId])).thenReturn(Future.unit)
       when(persistentUserService.removeAnonymizedUserFromFollowedUserTable(any[UserId]))
         .thenReturn(Future.unit)
       when(userHistoryCoordinatorService.delete(fooUser.userId)).thenReturn(Future.unit)

@@ -872,7 +872,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         _ <- persistentUserService.updateUser(anonymizedUser)
         _ <- persistentUserService.removeAnonymizedUserFromFollowedUserTable(user.userId)
         _ <- userHistoryCoordinatorService.delete(user.userId)
-        _ <- if (mode == Anonymization.Explicit) proposalService.deleteByUserId(user.userId) else Future.unit
       } yield {}
       futureDelete.map { _ =>
         eventBusService.publish(

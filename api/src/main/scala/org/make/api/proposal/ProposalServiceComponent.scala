@@ -214,8 +214,6 @@ trait ProposalService {
     minScore: Option[Double]
   ): Future[Option[ModerationProposalResponse]]
 
-  def deleteByUserId(userId: UserId): Future[Unit]
-
   def createInitialProposal(
     content: String,
     question: Question,
@@ -1134,29 +1132,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           recursiveLock(results.results.map(_.id).toList)
         }
       }
-    }
-
-    override def deleteByUserId(userId: UserId): Future[Unit] = {
-      search(
-        None,
-        SearchQuery(
-          filters = Some(
-            SearchFilters(
-              users = Some(UserSearchFilter(Seq(userId))),
-              status = Some(StatusSearchFilter(ProposalStatus.values))
-            )
-          ),
-          limit = Some(10000)
-        ),
-        RequestContext.empty
-      ).map(
-        _.results.foreach(
-          proposal =>
-            proposalCoordinatorService
-              .delete(proposal.id, RequestContext.empty)
-              .flatMap(_ => elasticsearchProposalAPI.delete(proposal.id))
-        )
-      )
     }
 
     override def getTagsForProposal(proposal: Proposal): Future[TagsForProposalResponse] = {
