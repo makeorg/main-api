@@ -109,7 +109,9 @@ final case class CurrentUserResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")
-  avatarUrl: Option[String]
+  avatarUrl: Option[String],
+  @(ApiModelProperty @field)(dataType = "dateTime")
+  privacyPolicyApprovalDate: Option[ZonedDateTime]
 )
 
 object CurrentUserResponse {

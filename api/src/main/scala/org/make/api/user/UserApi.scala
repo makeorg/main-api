@@ -668,7 +668,8 @@ trait DefaultUserApiComponent
                     enabled = user.enabled,
                     emailVerified = user.emailVerified,
                     country = user.country,
-                    avatarUrl = user.profile.flatMap(_.avatarUrl)
+                    avatarUrl = user.profile.flatMap(_.avatarUrl),
+                    privacyPolicyApprovalDate = user.privacyPolicyApprovalDate
                   )
                 )
               }
