@@ -21,26 +21,36 @@ package org.make.api.technical.auth
 
 import java.time.Instant
 import java.util.{Date, UUID}
-
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{FormData, StatusCodes}
 import akka.http.scaladsl.model.headers.{`Set-Cookie`, Authorization, Cookie, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.technical._
+import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.core.RequestContext
 import org.make.core.auth.UserRights
 import org.make.core.session.SessionId
-import org.make.core.user.UserId
-import scalaoauth2.provider.{AccessToken, AuthInfo, TokenEndpoint}
+import org.make.core.user.{User, UserId}
+import scalaoauth2.provider.{
+  AccessToken,
+  AuthInfo,
+  AuthorizationHandler,
+  AuthorizationRequest,
+  GrantHandlerResult,
+  OAuthError,
+  TokenEndpoint
+}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class AuthenticationApiTest
     extends MakeApiTestBase
     with MakeAuthenticationDirectives
-    with DefaultAuthenticationApiComponent {
+    with DefaultAuthenticationApiComponent
+    with UserServiceComponent {
 
   override val tokenEndpoint: TokenEndpoint = mock[TokenEndpoint]
+  override val userService: UserService = mock[UserService]
 
   when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId], any[RequestContext]))
     .thenReturn(Future.unit)
@@ -78,22 +88,89 @@ class AuthenticationApiTest
         status should be(StatusCodes.OK)
       }
     }
+
+    Scenario("unauthorize an empty authentication") {
+      Given("an invalid authentication")
+      val invalidToken: String = "FAULTY_TOKEN"
+      when(oauth2DataHandler.findAccessToken(same(invalidToken)))
+        .thenReturn(Future.successful(None))
+
+      When("access token is called")
+      val getAccessTokenRoute: RouteTestResult = Get("/oauth/access_token").withHeaders(
+        Authorization(OAuth2BearerToken(invalidToken))
+      ) ~> routes
+
+      Then("the service must return unauthorized")
+      getAccessTokenRoute ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
   }
 
-  Scenario("unauthorize an empty authentication") {
-    Given("an invalid authentication")
-    val invalidToken: String = "FAULTY_TOKEN"
-    when(oauth2DataHandler.findAccessToken(same(invalidToken)))
-      .thenReturn(Future.successful(None))
+  Feature("create access token") {
+    Scenario("create token") {
+      val authInfo: AuthInfo[UserRights] =
+        AuthInfo(
+          UserRights(
+            userId = UserId("ABCD-privacy-policy"),
+            roles = Seq.empty,
+            availableQuestions = Seq.empty,
+            emailVerified = true
+          ),
+          None,
+          None,
+          None
+        )
+      val grantResult: GrantHandlerResult[UserRights] =
+        GrantHandlerResult[UserRights](authInfo, "password", "token", None, None, None, Map.empty)
+      val result: Either[OAuthError, GrantHandlerResult[UserRights]] = Right(grantResult)
 
-    When("access token is called")
-    val getAccessTokenRoute: RouteTestResult = Get("/oauth/access_token").withHeaders(
-      Authorization(OAuth2BearerToken(invalidToken))
-    ) ~> routes
+      when(
+        tokenEndpoint
+          .handleRequest(any[AuthorizationRequest], any[AuthorizationHandler[UserRights]])(any[ExecutionContext])
+      ).thenReturn(Future.successful(result))
 
-    Then("the service must return unauthorized")
-    getAccessTokenRoute ~> check {
-      status should be(StatusCodes.Unauthorized)
+      Post(
+        "/oauth/access_token",
+        FormData("username" -> "yopmail@make.org", "password" -> "p4ssW0Rd", "grant_type" -> "password")
+      ) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+
+    Scenario("create token and set privacy policy approval date") {
+      val authInfo: AuthInfo[UserRights] =
+        AuthInfo(
+          UserRights(userId = UserId("ABCD"), roles = Seq.empty, availableQuestions = Seq.empty, emailVerified = true),
+          None,
+          None,
+          None
+        )
+      val grantResult: GrantHandlerResult[UserRights] =
+        GrantHandlerResult[UserRights](authInfo, "password", "token", None, None, None, Map.empty)
+      val result: Either[OAuthError, GrantHandlerResult[UserRights]] = Right(grantResult)
+
+      when(
+        tokenEndpoint
+          .handleRequest(any[AuthorizationRequest], any[AuthorizationHandler[UserRights]])(any[ExecutionContext])
+      ).thenReturn(Future.successful(result))
+
+      when(userService.getUser(eqTo(authInfo.user.userId)))
+        .thenReturn(Future.successful(Some(user(id = authInfo.user.userId))))
+      when(userService.update(any[User], any[RequestContext]))
+        .thenReturn(Future.successful(user(id = authInfo.user.userId)))
+
+      Post(
+        "/oauth/access_token",
+        FormData(
+          "username" -> "yopmail@make.org",
+          "password" -> "p4ssW0Rd",
+          "grant_type" -> "password",
+          "approvePrivacyPolicy" -> "true"
+        )
+      ) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
     }
   }
 
