@@ -532,6 +532,18 @@ trait UserApi extends Directives {
   @Path(value = "/{userId}/profile")
   def modifyUserProfile: Route
 
+  @Path(value = "/privacy-policy")
+  @ApiOperation(value = "get-privacy-policy-approval-date", httpMethod = "POST")
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.PrivacyPolicyRequest")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserPrivacyPolicyResponse]))
+  )
+  def getPrivacyPolicy: Route
+
   def routes: Route =
     getMe ~
       currentUser ~
@@ -555,7 +567,8 @@ trait UserApi extends Directives {
       resendValidationEmail ~
       uploadAvatar ~
       getUserProfile ~
-      modifyUserProfile
+      modifyUserProfile ~
+      getPrivacyPolicy
 
   val userId: PathMatcher1[UserId] =
     Segment.map(id => UserId(id))
@@ -668,7 +681,8 @@ trait DefaultUserApiComponent
                     enabled = user.enabled,
                     emailVerified = user.emailVerified,
                     country = user.country,
-                    avatarUrl = user.profile.flatMap(_.avatarUrl)
+                    avatarUrl = user.profile.flatMap(_.avatarUrl),
+                    privacyPolicyApprovalDate = user.privacyPolicyApprovalDate
                   )
                 )
               }
@@ -1349,5 +1363,23 @@ trait DefaultUserApiComponent
         }
       }
     }
+
+    override def getPrivacyPolicy: Route = {
+      post {
+        path("user" / "privacy-policy") {
+          makeOperation("GetPrivacyPolicy") { requestContext =>
+            decodeRequest {
+              entity(as[PrivacyPolicyRequest]) { request =>
+                provideAsync(userService.getUserByEmailAndPassword(request.email, request.password)) {
+                  case None       => complete(StatusCodes.Unauthorized)
+                  case Some(user) => complete(UserPrivacyPolicyResponse(user.privacyPolicyApprovalDate))
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
   }
 }

@@ -2069,4 +2069,31 @@ class UserApiTest
       }
     }
   }
+
+  Feature("get privacy policy") {
+    Scenario("invalid email-password") {
+      when(userService.getUserByEmailAndPassword(eqTo("fake@mail.com"), eqTo("fake")))
+        .thenReturn(Future.successful(None))
+
+      val entity = """{"email": "fake@mail.com", "password": "fake"}"""
+      Post("/user/privacy-policy")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, entity)) ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    Scenario("some user") {
+      when(userService.getUserByEmailAndPassword(eqTo("valid@mail.com"), eqTo("P4ssw0Rd")))
+        .thenReturn(Future.successful(Some(sylvain)))
+
+      val entity = """{"email": "valid@mail.com", "password": "P4ssw0Rd"}"""
+      Post("/user/privacy-policy")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, entity)) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val response = entityAs[UserPrivacyPolicyResponse]
+        response.privacyPolicyApprovalDate shouldBe sylvain.privacyPolicyApprovalDate
+      }
+    }
+
+  }
 }

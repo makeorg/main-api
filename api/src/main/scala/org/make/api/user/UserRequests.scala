@@ -20,15 +20,14 @@
 package org.make.api.user
 
 import java.time.LocalDate
-
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.boolean.{And, Or}
 import eu.timepit.refined.collection.{Empty, MaxSize}
 import eu.timepit.refined.string.Url
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
+import io.circe.{Codec, Decoder, Encoder}
 import io.circe.refined._
 import io.swagger.annotations.ApiModelProperty
 import org.make.api.technical.RequestHelper
@@ -443,4 +442,14 @@ final case class ResendValidationEmailRequest(
 
 object ResendValidationEmailRequest {
   implicit val decoder: Decoder[ResendValidationEmailRequest] = deriveDecoder[ResendValidationEmailRequest]
+}
+
+final case class PrivacyPolicyRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org")
+  email: String,
+  password: String
+)
+
+object PrivacyPolicyRequest {
+  implicit val codec: Codec[PrivacyPolicyRequest] = deriveCodec
 }
