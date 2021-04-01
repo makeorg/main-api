@@ -19,12 +19,12 @@
 
 package org.make.api.user
 
-import java.time.LocalDate
+import java.time.{LocalDate, ZonedDateTime}
+
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
-
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse, ProposalsResultSeededResponse}
@@ -721,6 +721,10 @@ trait DefaultUserApiComponent
                   case Some(questionId) => questionService.getQuestion(questionId)
                   case _                => Future.successful(None)
                 }
+                val privacyPolicyApprovalDate: Option[ZonedDateTime] = request.approvePrivacyPolicy match {
+                  case Some(true) => Some(DateHelper.now())
+                  case _          => None
+                }
                 provideAsync(futureMaybeQuestion) { maybeQuestion =>
                   onSuccess(
                     socialService
@@ -730,7 +734,8 @@ trait DefaultUserApiComponent
                         country,
                         maybeQuestion.map(_.questionId),
                         requestContext,
-                        client.clientId
+                        client.clientId,
+                        privacyPolicyApprovalDate
                       )
                       .flatMap {
                         case (userId, social) =>

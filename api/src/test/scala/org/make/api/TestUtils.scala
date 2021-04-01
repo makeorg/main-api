@@ -323,7 +323,8 @@ trait TestUtils {
     lastMailingError: Option[MailingErrorLog] = None,
     organisationName: Option[String] = None,
     availableQuestions: Seq[QuestionId] = Seq.empty,
-    userType: UserType = UserType.UserTypeUser
+    userType: UserType = UserType.UserTypeUser,
+    privacyPolicyApprovalDate: Option[ZonedDateTime] = None
   ): User = {
     User(
       userId = id,
@@ -348,7 +349,8 @@ trait TestUtils {
       organisationName = organisationName,
       availableQuestions = availableQuestions,
       anonymousParticipation = anonymousParticipation,
-      userType = userType
+      userType = userType,
+      privacyPolicyApprovalDate = privacyPolicyApprovalDate
     )
   }
 

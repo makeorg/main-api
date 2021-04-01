@@ -21,23 +21,14 @@ package org.make.api.user.social
 
 import java.net.URL
 import java.text.SimpleDateFormat
-import java.time.LocalDate
+import java.time.{LocalDate, ZonedDateTime}
 import java.util.Date
 
 import org.make.api.technical.auth._
 import org.make.api.user.SocialProvider.{Facebook, GooglePeople}
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.facebook.{UserInfo => FacebookUserInfos}
-import org.make.api.user.social.models.google.{
-  Birthday,
-  GoogleDate,
-  ItemMetadata,
-  MetadataSource,
-  PeopleEmailAddress,
-  PeopleInfo,
-  PeopleName,
-  PeoplePhoto
-}
+import org.make.api.user.social.models.google._
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.core.RequestContext
@@ -122,7 +113,8 @@ class SocialServiceComponentTest
           argThat[UserInfo](_.email.contains(email)),
           eqTo(None),
           eqTo(Country("FR")),
-          eqTo(RequestContext.empty)
+          eqTo(RequestContext.empty),
+          any[Option[ZonedDateTime]]
         )
       ).thenReturn(Future.successful((user(id = userId1, email = email), false)))
 
@@ -130,7 +122,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(AccessToken("token", None, None, None, new Date())))
 
       whenReady(
-        socialService.login(GooglePeople, token, Country("FR"), None, RequestContext.empty, ClientId("default")),
+        socialService.login(GooglePeople, token, Country("FR"), None, RequestContext.empty, ClientId("default"), None),
         Timeout(3.seconds)
       ) {
         case (userId, response) =>
@@ -142,7 +134,7 @@ class SocialServiceComponentTest
             userInfo.domain.contains("example.com") &&
             userInfo.googleId.contains(googleId) &&
             userInfo.picture.contains("https://example.com/avatar")
-          }, eqTo(None), eqTo(Country("FR")), eqTo(RequestContext.empty))
+          }, eqTo(None), eqTo(Country("FR")), eqTo(RequestContext.empty), eqTo(None))
       }
 
     }
@@ -194,7 +186,8 @@ class SocialServiceComponentTest
           argThat[UserInfo](_.email.contains(email)),
           eqTo(None),
           eqTo(Country("FR")),
-          eqTo(RequestContext.empty)
+          eqTo(RequestContext.empty),
+          any[Option[ZonedDateTime]]
         )
       ).thenReturn(Future.successful((user(id = userId1, email = email), false)))
 
@@ -202,7 +195,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(AccessToken("token", None, None, None, new Date())))
 
       whenReady(
-        socialService.login(GooglePeople, token, Country("FR"), None, RequestContext.empty, ClientId("default")),
+        socialService.login(GooglePeople, token, Country("FR"), None, RequestContext.empty, ClientId("default"), None),
         Timeout(3.seconds)
       ) {
         case (userId, response) =>
@@ -214,7 +207,7 @@ class SocialServiceComponentTest
             userInfo.domain.contains("example.com") &&
             userInfo.googleId.contains(googleId) &&
             userInfo.picture.contains("https://example.com/avatar")
-          }, eqTo(None), eqTo(Country("FR")), eqTo(RequestContext.empty))
+          }, eqTo(None), eqTo(Country("FR")), eqTo(RequestContext.empty), eqTo(None))
       }
 
     }
@@ -276,7 +269,8 @@ class SocialServiceComponentTest
           argThat[UserInfo](_.email.contains(email)),
           eqTo(None),
           eqTo(Country("FR")),
-          eqTo(RequestContext.empty)
+          eqTo(RequestContext.empty),
+          any[Option[ZonedDateTime]]
         )
       ).thenReturn(Future.successful((user(id = userId1, email = email), false)))
 
@@ -284,7 +278,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(AccessToken("token", None, None, None, new Date())))
 
       whenReady(
-        socialService.login(GooglePeople, token, Country("FR"), None, RequestContext.empty, ClientId("default")),
+        socialService.login(GooglePeople, token, Country("FR"), None, RequestContext.empty, ClientId("default"), None),
         Timeout(3.seconds)
       ) {
         case (userId, response) =>
@@ -296,7 +290,7 @@ class SocialServiceComponentTest
             userInfo.domain.contains("example.com") &&
             userInfo.googleId.contains(googleId) &&
             userInfo.picture.contains("https://example.com/avatar")
-          }, eqTo(None), eqTo(Country("FR")), eqTo(RequestContext.empty))
+          }, eqTo(None), eqTo(Country("FR")), eqTo(RequestContext.empty), eqTo(None))
       }
 
     }
@@ -337,8 +331,15 @@ class SocialServiceComponentTest
       when(facebookApi.getUserInfo(eqTo("facebookToken-444444")))
         .thenReturn(Future.successful(facebookData))
 
-      when(userService.createOrUpdateUserFromSocial(eqTo(info), eqTo(None), eqTo(Country("FR")), any[RequestContext]))
-        .thenReturn(Future.successful((userFromFacebook, true)))
+      when(
+        userService.createOrUpdateUserFromSocial(
+          eqTo(info),
+          eqTo(None),
+          eqTo(Country("FR")),
+          any[RequestContext],
+          any[Option[ZonedDateTime]]
+        )
+      ).thenReturn(Future.successful((userFromFacebook, true)))
 
       when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
         .thenReturn(Future.successful(accessToken))
@@ -351,7 +352,8 @@ class SocialServiceComponentTest
           Country("FR"),
           None,
           RequestContext.empty,
-          ClientId("client")
+          ClientId("client"),
+          None
         )
 
       Then("my program call getOrCreateUserFromSocial with facebook data")
@@ -371,7 +373,8 @@ class SocialServiceComponentTest
           eqTo(userInfoFromFacebook),
           eqTo(None),
           eqTo(Country("FR")),
-          any[RequestContext]
+          any[RequestContext],
+          eqTo(None)
         )
       }
 
@@ -408,7 +411,13 @@ class SocialServiceComponentTest
 
       when(
         userService
-          .createOrUpdateUserFromSocial(eqTo(info), any[Option[QuestionId]], eqTo(Country("FR")), any[RequestContext])
+          .createOrUpdateUserFromSocial(
+            eqTo(info),
+            any[Option[QuestionId]],
+            eqTo(Country("FR")),
+            any[RequestContext],
+            any[Option[ZonedDateTime]]
+          )
       ).thenReturn(Future.successful((userFromFacebook, true)))
 
       when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
@@ -422,7 +431,8 @@ class SocialServiceComponentTest
           Country("FR"),
           None,
           RequestContext.empty,
-          ClientId("client")
+          ClientId("client"),
+          None
         )
 
       Then("my program call getOrCreateUserFromSocial with facebook data")
@@ -442,7 +452,8 @@ class SocialServiceComponentTest
           eqTo(userInfoFromFacebook),
           eqTo(None),
           eqTo(Country("FR")),
-          any[RequestContext]
+          any[RequestContext],
+          eqTo(None)
         )
       }
 
@@ -475,7 +486,13 @@ class SocialServiceComponentTest
 
       when(
         userService
-          .createOrUpdateUserFromSocial(any[UserInfo], any[Option[QuestionId]], any[Country], any[RequestContext])
+          .createOrUpdateUserFromSocial(
+            any[UserInfo],
+            any[Option[QuestionId]],
+            any[Country],
+            any[RequestContext],
+            any[Option[ZonedDateTime]]
+          )
       ).thenReturn(Future.successful((userFromFacebook, false)))
 
       when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
@@ -489,7 +506,8 @@ class SocialServiceComponentTest
           Country("FR"),
           None,
           RequestContext.empty,
-          ClientId("fake-client")
+          ClientId("fake-client"),
+          None
         )
 
       Then("my program should return a token response")
@@ -511,7 +529,15 @@ class SocialServiceComponentTest
 
       When("login user from google")
       val futureTokenResposnse =
-        socialService.login(Facebook, "facebookToken3", Country("FR"), None, RequestContext.empty, ClientId("client"))
+        socialService.login(
+          Facebook,
+          "facebookToken3",
+          Country("FR"),
+          None,
+          RequestContext.empty,
+          ClientId("client"),
+          None
+        )
 
       whenReady(futureTokenResposnse.failed, Timeout(3.seconds)) { exception =>
         exception.getMessage should be("invalid token from facebook")

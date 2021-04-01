@@ -19,6 +19,8 @@
 
 package org.make.api.user.social
 
+import java.time.ZonedDateTime
+
 import grizzled.slf4j.Logging
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.MakeDataHandlerComponent
@@ -47,7 +49,8 @@ trait SocialService {
     country: Country,
     questionId: Option[QuestionId],
     requestContext: RequestContext,
-    validatedClientId: ClientId
+    validatedClientId: ClientId,
+    privacyPolicyApprovalDate: Option[ZonedDateTime]
   ): Future[(UserId, SocialLoginResponse)]
   def getUserByProviderAndToken(provider: SocialProvider, token: String): Future[Option[User]]
 }
@@ -72,7 +75,8 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
       country: Country,
       questionId: Option[QuestionId],
       requestContext: RequestContext,
-      validatedClientId: ClientId
+      validatedClientId: ClientId,
+      privacyPolicyApprovalDate: Option[ZonedDateTime]
     ): Future[(UserId, SocialLoginResponse)] = {
 
       for {
@@ -81,7 +85,8 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
           userInfo,
           questionId,
           country,
-          requestContext
+          requestContext,
+          privacyPolicyApprovalDate
         )
         accessToken <- oauth2DataHandler.createAccessToken(authInfo = AuthInfo(
           user = UserRights(user.userId, user.roles, user.availableQuestions, user.emailVerified),
