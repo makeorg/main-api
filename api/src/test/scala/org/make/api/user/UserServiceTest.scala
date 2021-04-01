@@ -973,6 +973,8 @@ class UserServiceTest
       when(persistentUserService.removeAnonymizedUserFromFollowedUserTable(any[UserId]))
         .thenReturn(Future.unit)
       when(userHistoryCoordinatorService.delete(johnDoeUser.userId)).thenReturn(Future.unit)
+      when(proposalService.searchForUser(any, any, any))
+        .thenReturn(Future.successful(ProposalsResultSeededResponse.empty))
 
       Given("a user")
       When("I anonymize this user")

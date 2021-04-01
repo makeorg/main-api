@@ -749,7 +749,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           query = SearchQuery(filters = Some(
             SearchFilters(
               users = Some(UserSearchFilter(userIds = Seq(user.userId))),
-              status = Some(StatusSearchFilter(ProposalStatus.values.filter(_ != ProposalStatus.Archived)))
+              status = Some(StatusSearchFilter(ProposalStatus.values))
             )
           )
           ),
@@ -872,6 +872,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         _ <- persistentUserService.updateUser(anonymizedUser)
         _ <- persistentUserService.removeAnonymizedUserFromFollowedUserTable(user.userId)
         _ <- userHistoryCoordinatorService.delete(user.userId)
+        _ <- updateProposalsSubmitByUser(user, requestContext)
       } yield {}
       futureDelete.map { _ =>
         eventBusService.publish(
