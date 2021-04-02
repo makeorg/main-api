@@ -52,7 +52,7 @@ import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage._
 import org.make.api.user.SocialProvider.GooglePeople
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
-import org.make.api.user.UserService.Anonymization
+import org.make.api.user.Anonymization
 import org.make.api.user.social._
 import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
 import org.make.api.userhistory.{ResetPasswordEvent, UserHistoryCoordinatorServiceComponent}

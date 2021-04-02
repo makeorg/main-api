@@ -29,6 +29,7 @@ import org.make.api.proposal.PublishedProposalEvent.{
   ProposalRefused
 }
 import org.make.api.technical.security.SecurityConfiguration
+import org.make.api.user.Anonymization
 import org.make.api.userhistory
 import org.make.api.userhistory.UserHistoryActor.{UserHistory, UserVotesAndQualifications}
 import org.make.core.RequestContext
@@ -44,7 +45,7 @@ import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.scalatest.wordspec.AnyWordSpec
 import stamina.testkit.StaminaTestKit
-import stamina.{Persisters, V1, V2}
+import stamina.{Persisters, V1, V2, V4}
 
 import java.time.{LocalDate, ZonedDateTime}
 
@@ -355,14 +356,17 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
       )
     )
 
-    val userAnonymizedEvent = LogUserAnonymizedEvent(
+    val automaticUserAnonymizedEvent = LogUserAnonymizedEvent(
       userId = userId,
       requestContext = requestContext,
       action = UserAction(
         date = eventDate,
         actionType = UserAnonymized.actionType,
-        arguments = UserAnonymized(userId = UserId("anoned"), adminId = UserId("admin"))
+        arguments = UserAnonymized(userId = UserId("anoned"), adminId = UserId("admin"), mode = Anonymization.Automatic)
       )
+    )
+    val explicitUserAnonymizedEvent = automaticUserAnonymizedEvent.copy(action = automaticUserAnonymizedEvent.action
+      .copy(arguments = automaticUserAnonymizedEvent.action.arguments.copy(mode = Anonymization.Explicit))
     )
 
     val userOptInNewsletterEvent = LogUserOptInNewsletterEvent(
@@ -462,7 +466,8 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
         multipleVoteAndQualifications,
         Some("to validate source migration with old votes and multiple proposals")
       ),
-      sample(userAnonymizedEvent),
+      sample(automaticUserAnonymizedEvent),
+      PersistableSample[V4]("explicit", explicitUserAnonymizedEvent, Some("with explicit anonymization")),
       sample(userOptInNewsletterEvent),
       sample(userOptOutNewsletterEvent),
       sample(userUserConnectedEvent),

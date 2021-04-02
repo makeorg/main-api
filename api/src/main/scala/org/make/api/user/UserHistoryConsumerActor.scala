@@ -150,7 +150,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
         action = UserAction(
           date = event.eventDate,
           actionType = LogUserAnonymizedEvent.action,
-          arguments = UserAnonymized(userId = event.userId, adminId = event.adminId)
+          arguments = UserAnonymized(userId = event.userId, adminId = event.adminId, mode = event.mode)
         )
       )
     )

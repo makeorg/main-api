@@ -54,7 +54,7 @@ import org.make.api.technical.job.{JobCoordinatorService, JobCoordinatorServiceC
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage.{StorageService, StorageServiceComponent}
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
-import org.make.api.user.UserService.Anonymization
+import org.make.api.user.Anonymization
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent, _}

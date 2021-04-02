@@ -34,7 +34,7 @@ import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.directives.ClientDirectives
 import org.make.api.technical.storage._
-import org.make.api.user.UserService.Anonymization
+import org.make.api.user.Anonymization
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.user.validation.UserRegistrationValidatorComponent
 import org.make.api.userhistory.{UserHistoryCoordinatorServiceComponent, _}
