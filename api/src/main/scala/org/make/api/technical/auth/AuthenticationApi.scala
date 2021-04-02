@@ -26,10 +26,12 @@ import grizzled.slf4j.Logging
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
+import org.make.api.technical.Futures.RichFutures
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.MakeDataHandler.{CreatedAtParameter, RefreshTokenExpirationParameter}
+import org.make.api.user.UserServiceComponent
 import org.make.core.auth.{AuthCode, ClientId, UserRights}
 import org.make.core.{DateHelper, HttpCodes, RequestContext}
 import scalaoauth2.provider._
@@ -60,7 +62,13 @@ trait AuthenticationApi extends Directives {
     value = Array(
       new ApiImplicitParam(name = "username", paramType = "form", dataType = "string"),
       new ApiImplicitParam(name = "password", paramType = "form", dataType = "string"),
-      new ApiImplicitParam(name = "grant_type", paramType = "form", dataType = "string", defaultValue = "password")
+      new ApiImplicitParam(name = "grant_type", paramType = "form", dataType = "string", defaultValue = "password"),
+      new ApiImplicitParam(
+        name = "approvePrivacyPolicy",
+        paramType = "form",
+        dataType = "boolean",
+        defaultValue = "true"
+      )
     )
   )
   @Path(value = "/oauth/make_access_token")
@@ -229,7 +237,7 @@ trait DefaultAuthenticationApiComponent
     with MakeDirectives
     with MakeAuthenticationDirectives
     with Logging {
-  self: MakeDirectivesDependencies =>
+  self: MakeDirectivesDependencies with UserServiceComponent =>
 
   def tokenEndpoint: TokenEndpoint
 
@@ -278,9 +286,22 @@ trait DefaultAuthenticationApiComponent
               }
           ) {
             case Success(Right(grantResult)) =>
-              val tokenResponse = AuthenticationApi.grantResultToTokenResponse(grantResult)
-              setMakeSecure(requestContext.applicationName, tokenResponse, grantResult.authInfo.user.userId) {
-                complete(tokenResponse)
+              val updatePrivacyPolicy: Future[Unit] = fields.get("approvePrivacyPolicy") match {
+                case Some("true") =>
+                  userService.getUser(grantResult.authInfo.user.userId).flatMap {
+                    case Some(user) =>
+                      userService
+                        .update(user.copy(privacyPolicyApprovalDate = Some(DateHelper.now())), requestContext)
+                        .toUnit
+                    case _ => Future.unit
+                  }
+                case _ => Future.unit
+              }
+              provideAsync(updatePrivacyPolicy) { _ =>
+                val tokenResponse = AuthenticationApi.grantResultToTokenResponse(grantResult)
+                setMakeSecure(requestContext.applicationName, tokenResponse, grantResult.authInfo.user.userId) {
+                  complete(tokenResponse)
+                }
               }
             case Success(Left(e)) => failWith(e)
             case Failure(ex)      => failWith(ex)
