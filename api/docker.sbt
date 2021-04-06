@@ -52,7 +52,7 @@ dockerCmd := Seq(
   "-J-XX:MaxGCPauseMillis=100",
   "-J-XX:MaxMetaspaceSize=1G",
   "-J-XX:MetaspaceSize=1G",
-  "-J-Xlog:gc*=debug:file=/var/run/gc/%t-gc.log:utc,uptime,level,tags:filesize=5M"
+  "-J-Xlog:gc*=info,gc+heap*=debug,gc+metaspace*=debug:file=/var/run/gc/%t-gc.log:utc,uptime,level,tags:filesize=5M"
 )
 
 publishLocal := {
