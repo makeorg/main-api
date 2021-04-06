@@ -18,7 +18,7 @@
  */
 
 package org.make.api
-import akka.actor.{ActorSystem, ExtendedActorSystem}
+import akka.actor.typed.ActorSystem
 
 import java.nio.ByteOrder
 import org.make.api.technical.MakeEventSerializer
@@ -41,14 +41,14 @@ object StaminaTestUtils {
   private val initialCharactersToSkip: Int = 2
 
   def deserializeEventFromJson[A](
-    system: ActorSystem,
+    system: ActorSystem[_],
     eventKey: String,
     eventAsJsonString: String,
     version: Int = 1
   ): A = {
     implicit val byteOrder: ByteOrder = java.nio.ByteOrder.LITTLE_ENDIAN
     val makeEventSerializer: MakeEventSerializer =
-      new MakeEventSerializer(system.asInstanceOf[ExtendedActorSystem], "make-serializer")
+      new MakeEventSerializer(system, "make-serializer")
     val bytes: Array[Byte] = ByteString.newBuilder
       .putInt(eventKey.length)
       .putBytes(eventKey.getBytes("UTF-8"))
@@ -60,9 +60,9 @@ object StaminaTestUtils {
     makeEventSerializer.fromBinary(bytes).asInstanceOf[A]
   }
 
-  def deserializeEventFromHexa[A](system: ActorSystem, serialized: String): A = {
+  def deserializeEventFromHexa[A](system: ActorSystem[_], serialized: String): A = {
     val makeEventSerializer: MakeEventSerializer =
-      new MakeEventSerializer(system.asInstanceOf[ExtendedActorSystem], "make-serializer")
+      new MakeEventSerializer(system, "make-serializer")
 
     val bytes: Array[Byte] = parseHexBinary(serialized.substring(initialCharactersToSkip))
 

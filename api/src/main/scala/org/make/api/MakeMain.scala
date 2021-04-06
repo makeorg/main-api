@@ -21,11 +21,10 @@ package org.make.api
 
 import java.net.InetAddress
 import java.nio.file.{Files, Paths}
-
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{ExtendedActorSystem, PoisonPill, ActorSystem => ClassicActorSystem}
-import akka.cluster.Cluster
+import akka.cluster.typed.Cluster
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
@@ -55,7 +54,7 @@ object MakeMain extends App with Logging with MakeApi {
   val envName: Option[String] = Option(System.getenv("ENV_NAME"))
 
   private val resourceName = envName match {
-    case Some(name) if !name.isEmpty => s"$name-application.conf"
+    case Some(name) if name.nonEmpty => s"$name-application.conf"
     case _                           => "default-application.conf"
   }
 
@@ -81,17 +80,16 @@ object MakeMain extends App with Logging with MakeApi {
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   override implicit val actorSystem: ExtendedActorSystem =
     ClassicActorSystem.apply("make-api", configuration).asInstanceOf[ExtendedActorSystem]
-
   override val actorSystemTyped: ActorSystem[Nothing] = actorSystem.toTyped
 
   // Wait until cluster is connected before initializing clustered actors
-  while (Cluster(actorSystem).state.leader.isEmpty) {
+  while (Cluster(actorSystemTyped).state.leader.isEmpty) {
     Thread.sleep(100)
   }
 
   Kamon.init(configuration)
 
-  private val databaseConfiguration = actorSystem.registerExtension(DatabaseConfiguration)
+  private val databaseConfiguration = actorSystemTyped.registerExtension(DatabaseConfiguration)
 
   Await.result(elasticsearchClient.initialize(), 10.seconds)
 
@@ -101,10 +99,10 @@ object MakeMain extends App with Logging with MakeApi {
 
   Await.result(guardian ? Ping, atMost = 5.seconds)
 
-  actorSystem.systemActorOf(ClusterShardingMonitor.props, ClusterShardingMonitor.name)
-  actorSystem.systemActorOf(MemoryMonitoringActor.props, MemoryMonitoringActor.name)
+  actorSystemTyped.systemActorOf(ClusterShardingMonitor(), ClusterShardingMonitor.name)
+  actorSystemTyped.systemActorOf(MemoryMonitoringActor(), MemoryMonitoringActor.name)
   private val threadPoolMonitor =
-    actorSystem.systemActorOf(ThreadPoolMonitoringActor.props, ThreadPoolMonitoringActor.name)
+    actorSystemTyped.systemActorOf(ThreadPoolMonitoringActor(), ThreadPoolMonitoringActor.name)
   threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.readExecutor, "db-read-pool")
   threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.writeExecutor, "db-write-pool")
 
@@ -114,7 +112,7 @@ object MakeMain extends App with Logging with MakeApi {
     sessionHistoryCoordinator ! StartShard(i.toString)
   }
 
-  private val settings = MakeSettings(actorSystem)
+  private val settings = MakeSettings(actorSystemTyped)
 
   // Initialize journals
   actorSystem.actorOf(ShardedUserHistory.props, "fake-user") ! PoisonPill
@@ -123,7 +121,7 @@ object MakeMain extends App with Logging with MakeApi {
   // Ensure database stuff is initialized
   Await.result(userService.getUserByEmail("admin@make.org"), atMost = 20.seconds)
 
-  implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
+  implicit val ec: ExecutionContextExecutor = actorSystemTyped.executionContext
 
   private val host = settings.Http.host
   private val port = settings.Http.port
@@ -136,7 +134,7 @@ object MakeMain extends App with Logging with MakeApi {
   }.onComplete {
     case util.Failure(ex) =>
       logger.error(s"Failed to bind to $host:$port!", ex)
-      actorSystem.terminate()
+      actorSystemTyped.terminate()
     case _ =>
   }
 

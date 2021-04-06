@@ -19,7 +19,9 @@
 
 package org.make.api.technical
 
-import akka.actor.{ActorSystem, ExtendedActorSystem}
+import akka.actor.ExtendedActorSystem
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import grizzled.slf4j.Logging
 import org.make.api.proposal.ProposalSerializers
 import org.make.api.sessionhistory.SessionHistorySerializers
@@ -30,14 +32,17 @@ import org.make.api.userhistory.UserHistorySerializers
 import spray.json.{JsObject, JsString, JsValue}
 import stamina.{Persister, StaminaAkkaSerializer}
 
-class MakeEventSerializer(system: ExtendedActorSystem, serializerName: String)
+class MakeEventSerializer(system: ActorSystem[_], serializerName: String)
     extends StaminaAkkaSerializer(allSerializers(system).toList)
     with Logging {
+
+  def this(system: ExtendedActorSystem, serializerName: String) = this(system.toTyped, serializerName)
+
   logger.debug(s"Creating make event serializer with name $serializerName")
 }
 
 object MakeEventSerializer {
-  def allSerializers(system: ActorSystem): Seq[Persister[_, _]] = {
+  def allSerializers(system: ActorSystem[_]): Seq[Persister[_, _]] = {
     val conf = SecurityConfiguration(system)
     ProposalSerializers(conf).serializers ++
       UserHistorySerializers(conf).serializers ++

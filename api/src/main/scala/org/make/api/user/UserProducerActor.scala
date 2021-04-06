@@ -21,7 +21,7 @@ package org.make.api.user
 
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import org.make.api.technical.{BasicProducerActor, ProducerActorCompanion}
+import org.make.api.technical.BasicProducerActor
 import org.make.api.userhistory.{UserEvent, UserEventWrapper}
 
 class UserProducerActor extends BasicProducerActor[UserEventWrapper, UserEvent] {
@@ -42,8 +42,8 @@ class UserProducerActor extends BasicProducerActor[UserEventWrapper, UserEvent] 
   }
 }
 
-object UserProducerActor extends ProducerActorCompanion {
+object UserProducerActor {
   val props: Props = Props[UserProducerActor]()
-  override val name: String = "kafka-user-event-writer"
-  override val topicKey: String = "users"
+  val name: String = "kafka-user-event-writer"
+  val topicKey: String = "users"
 }

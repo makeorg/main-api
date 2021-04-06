@@ -19,7 +19,7 @@
 
 package org.make.api.technical.storage
 
-import org.make.api.ActorSystemComponent
+import org.make.api.ActorSystemTypedComponent
 import org.make.api.extensions.SwiftClientExtension
 import org.make.swift.SwiftClient
 
@@ -27,6 +27,6 @@ trait SwiftClientComponent {
   def swiftClient: SwiftClient
 }
 
-trait DefaultSwiftClientComponent extends SwiftClientComponent { this: ActorSystemComponent =>
-  override lazy val swiftClient: SwiftClient = SwiftClientExtension(actorSystem).swiftClient
+trait DefaultSwiftClientComponent extends SwiftClientComponent { this: ActorSystemTypedComponent =>
+  override lazy val swiftClient: SwiftClient = SwiftClientExtension(actorSystemTyped).swiftClient
 }

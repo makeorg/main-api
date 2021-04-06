@@ -19,16 +19,16 @@
 
 package org.make.api.proposal
 
-import akka.stream.scaladsl.{Keep, RestartFlow, Sink, Source, SourceQueueWithComplete}
 import akka.stream._
+import akka.stream.scaladsl.{Keep, RestartFlow, Sink, Source, SourceQueueWithComplete}
 import org.make.api
-import org.make.api.ActorSystemComponent
+import org.make.api.ActorSystemTypedComponent
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, ProposalIndexationStream}
 import org.make.core.proposal.ProposalId
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.ExecutionContext.Implicits.global
 
 trait ProposalIndexerServiceComponent {
   def proposalIndexerService: ProposalIndexerService
@@ -42,7 +42,7 @@ trait DefaultProposalIndexerServiceComponent
     extends ProposalIndexerServiceComponent
     with ElasticsearchConfigurationComponent
     with ProposalIndexationStream {
-  this: ActorSystemComponent =>
+  this: ActorSystemTypedComponent =>
 
   override lazy val proposalIndexerService: DefaultProposalIndexerService = new DefaultProposalIndexerService
 

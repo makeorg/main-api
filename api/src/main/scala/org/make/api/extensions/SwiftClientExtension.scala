@@ -19,15 +19,13 @@
 
 package org.make.api.extensions
 
-import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
+import akka.actor.typed.{ActorSystem, Extension, ExtensionId}
 import org.make.swift.SwiftClient
 
 class SwiftClientExtension(val swiftClient: SwiftClient) extends Extension
 
-object SwiftClientExtension extends ExtensionId[SwiftClientExtension] with ExtensionIdProvider {
-  override def createExtension(system: ExtendedActorSystem): SwiftClientExtension =
-    new SwiftClientExtension(SwiftClient.create(system))
-
-  override def lookup: ExtensionId[SwiftClientExtension] =
-    SwiftClientExtension
+object SwiftClientExtension extends ExtensionId[SwiftClientExtension] {
+  override def createExtension(system: ActorSystem[_]): SwiftClientExtension =
+    new SwiftClientExtension(SwiftClient.create(system.toClassic))
 }

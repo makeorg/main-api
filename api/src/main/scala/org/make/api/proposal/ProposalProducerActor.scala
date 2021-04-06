@@ -22,7 +22,7 @@ package org.make.api.proposal
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.make.api.proposal.PublishedProposalEvent._
-import org.make.api.technical.{BasicProducerActor, ProducerActorCompanion}
+import org.make.api.technical.BasicProducerActor
 import org.make.core.DateHelper
 
 class ProposalProducerActor extends BasicProducerActor[ProposalEventWrapper, PublishedProposalEvent] {
@@ -43,7 +43,7 @@ class ProposalProducerActor extends BasicProducerActor[ProposalEventWrapper, Pub
   }
 }
 
-object ProposalProducerActor extends ProducerActorCompanion {
+object ProposalProducerActor {
   val props: Props = Props[ProposalProducerActor]()
   val name: String = "kafka-proposals-event-writer"
   val topicKey = "proposals"

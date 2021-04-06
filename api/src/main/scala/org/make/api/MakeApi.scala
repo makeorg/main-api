@@ -330,8 +330,8 @@ trait MakeApi
     atMost = 10.seconds
   )
 
-  override lazy val readExecutionContext: EC = actorSystem.extension(DatabaseConfiguration).readThreadPool
-  override lazy val writeExecutionContext: EC = actorSystem.extension(DatabaseConfiguration).writeThreadPool
+  override lazy val readExecutionContext: EC = DatabaseConfiguration(actorSystemTyped).readThreadPool
+  override lazy val writeExecutionContext: EC = DatabaseConfiguration(actorSystemTyped).writeThreadPool
 
   override lazy val tokenEndpoint: TokenEndpoint = new TokenEndpoint {
 

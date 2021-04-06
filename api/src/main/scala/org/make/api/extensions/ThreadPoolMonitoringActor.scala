@@ -19,59 +19,49 @@
 
 package org.make.api.extensions
 
-import akka.actor.{Actor, Props}
-import akka.pattern.{BackoffOpts, BackoffSupervisor}
+import akka.actor.typed.{Behavior, SupervisorStrategy}
+import akka.actor.typed.scaladsl.Behaviors
 import kamon.Kamon
 import kamon.metric.Gauge
-import org.make.api.extensions.ThreadPoolMonitoringActor.{ExecutorWithGauges, Monitor, MonitorThreadPool}
 import org.make.api.technical.MonitorableExecutionContext
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 
-class ThreadPoolMonitoringActor extends Actor {
-  private var monitoredPools: Map[String, ExecutorWithGauges] = Map.empty
-
-  override def preStart(): Unit = {
-    context.system.scheduler.scheduleWithFixedDelay(1.second, 1.second, self, Monitor)
-    ()
-  }
-
-  override def receive: Receive = {
-    case Monitor =>
-      monitoredPools.foreach {
-        case (_, executorAndGauges) =>
-          val executor = executorAndGauges.executor
-          executorAndGauges.activeTasks.update(executor.activeTasks)
-          executorAndGauges.currentTasks.update(executor.currentTasks)
-          executorAndGauges.maxTasks.update(executor.maxTasks)
-          executorAndGauges.waitingTasks.update(executor.waitingTasks)
-      }
-    case MonitorThreadPool(newExecutor, name) =>
-      monitoredPools += name -> ExecutorWithGauges(
-        newExecutor,
-        Kamon.gauge("executors-active-threads").withTag("name", name),
-        Kamon.gauge("executors-core-size").withTag("name", name),
-        Kamon.gauge("executors-max-threads").withTag("name", name),
-        Kamon.gauge("executors-waiting").withTag("name", name)
-      )
-  }
-}
-
 object ThreadPoolMonitoringActor {
-  val innerName: String = "ThreadPoolMonitoringActor"
-  val innerProps: Props = Props[ThreadPoolMonitoringActor]()
+  def apply(): Behavior[Protocol] = {
+    Behaviors.supervise(monitorThreadPools()).onFailure(SupervisorStrategy.resume)
+  }
 
-  val name: String = "BackoffThreadPoolMonitoringActor"
-  private val maxNrOfRetries = 50
-  val props: Props = BackoffSupervisor.props(
-    BackoffOpts
-      .onStop(innerProps, childName = innerName, minBackoff = 3.seconds, maxBackoff = 30.seconds, randomFactor = 0.2)
-      .withMaxNrOfRetries(maxNrOfRetries)
-  )
-
-  case object Monitor
-  final case class MonitorThreadPool(pool: MonitorableExecutionContext, name: String)
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+  private def monitorThreadPools(executors: Map[String, ExecutorWithGauges] = Map.empty): Behavior[Protocol] = {
+    Behaviors.withTimers { timers =>
+      timers.startTimerAtFixedRate(Monitor, 1.second)
+      Behaviors.receiveMessage {
+        case Monitor =>
+          executors.foreach {
+            case (_, executorAndGauges) =>
+              val executor = executorAndGauges.executor
+              executorAndGauges.activeTasks.update(executor.activeTasks)
+              executorAndGauges.currentTasks.update(executor.currentTasks)
+              executorAndGauges.maxTasks.update(executor.maxTasks)
+              executorAndGauges.waitingTasks.update(executor.waitingTasks)
+          }
+          Behaviors.same
+        case MonitorThreadPool(newExecutor, name) =>
+          val executorWithGauges = ExecutorWithGauges(
+            newExecutor,
+            Kamon.gauge("executors-active-threads").withTag("name", name),
+            Kamon.gauge("executors-core-size").withTag("name", name),
+            Kamon.gauge("executors-max-threads").withTag("name", name),
+            Kamon.gauge("executors-waiting").withTag("name", name)
+          )
+          monitorThreadPools(executors + (name -> executorWithGauges))
+      }
+    }
+  }
+  sealed trait Protocol
+  case object Monitor extends Protocol
+  final case class MonitorThreadPool(pool: MonitorableExecutionContext, name: String) extends Protocol
 
   final case class ExecutorWithGauges(
     executor: MonitorableExecutionContext,
@@ -80,4 +70,7 @@ object ThreadPoolMonitoringActor {
     maxTasks: Gauge,
     waitingTasks: Gauge
   )
+
+  val name: String = "ThreadPoolMonitoringActor"
+
 }

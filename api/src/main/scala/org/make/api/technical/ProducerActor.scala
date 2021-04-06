@@ -19,14 +19,14 @@
 
 package org.make.api.technical
 
-import java.util.{Properties, UUID}
-import akka.actor.{Actor, ActorLogging, ActorSystem}
+import akka.actor.{Actor, ActorLogging}
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.apache.kafka.clients.producer.{KafkaProducer, _}
 import org.apache.kafka.common.serialization.{Serializer, StringSerializer}
-import org.make.api.extensions.{KafkaConfiguration, KafkaConfigurationExtension}
+import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.core.{AvroSerializers, WithEventId}
 
+import java.util.{Properties, UUID}
 import scala.util.{Failure, Success, Try}
 
 abstract class ProducerActor[Wrapper, Event]
@@ -98,11 +98,4 @@ abstract class ProducerActor[Wrapper, Event]
       case Failure(e) => log.error(e, s"Kafka producer actor ${this.getClass} failed to stop producer: ")
     }
   }
-}
-
-trait ProducerActorCompanion {
-  val name: String
-  val topicKey: String
-  def kafkaTopic(actorSystem: ActorSystem): String =
-    KafkaConfiguration(actorSystem).topics(topicKey)
 }

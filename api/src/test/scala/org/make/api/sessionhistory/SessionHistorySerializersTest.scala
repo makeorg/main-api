@@ -19,7 +19,8 @@
 
 package org.make.api.sessionhistory
 
-import akka.actor.ActorSystem
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
 import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
 import org.make.api.technical.security.SecurityConfiguration
@@ -160,8 +161,8 @@ object SessionHistorySerializersTest {
       |make-api.security.secure-hash-salt = "salt-secure"
       |make-api.security.secure-vote-salt = "vote-secure"     """.stripMargin
 
-  val system: ActorSystem = {
+  val system: ActorSystem[Nothing] = {
     val config = ConfigFactory.load(ConfigFactory.parseString(configuration))
-    ActorSystem(classOf[SessionHistorySerializersTest].getSimpleName, config)
+    ActorSystem[Nothing](Behaviors.empty, classOf[SessionHistorySerializersTest].getSimpleName, config)
   }
 }

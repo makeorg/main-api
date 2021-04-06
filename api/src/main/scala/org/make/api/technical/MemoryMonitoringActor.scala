@@ -19,51 +19,40 @@
 
 package org.make.api.technical
 
-import akka.actor.{Actor, Props}
-import akka.pattern.{BackoffOpts, BackoffSupervisor}
+import akka.actor.typed.{Behavior, SupervisorStrategy}
+import akka.actor.typed.scaladsl.Behaviors
 import kamon.Kamon
 import kamon.metric.Gauge
-import org.make.api.technical.MemoryMonitoringActor.Monitor
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 
-class MemoryMonitoringActor extends Actor {
-  val memoryMax: Gauge = Kamon.gauge("jvm-memory-max").withoutTags()
-  val memoryFree: Gauge = Kamon.gauge("jvm-memory-free").withoutTags()
-  val memoryTotal: Gauge = Kamon.gauge("jvm-memory-total").withoutTags()
-
-  override def preStart(): Unit = {
-    context.system.scheduler.scheduleWithFixedDelay(1.second, 1.second, self, Monitor)
-    ()
-  }
-
-  override def receive: Receive = {
-    case Monitor =>
-      memoryFree.update(Runtime.getRuntime.freeMemory().toDouble)
-      memoryMax.update(Runtime.getRuntime.maxMemory().toDouble)
-      memoryTotal.update(Runtime.getRuntime.totalMemory().toDouble)
-      ()
-    case _ =>
-  }
-}
-
 object MemoryMonitoringActor {
+  def apply(): Behavior[Monitor.type] = {
+    Behaviors
+      .supervise(monitorMemory())
+      .onFailure(
+        SupervisorStrategy.restartWithBackoff(minBackoff = 3.seconds, maxBackoff = 30.seconds, randomFactor = 0.2)
+      )
+  }
+
+  private def monitorMemory(): Behavior[Monitor.type] = {
+    val memoryMax: Gauge = Kamon.gauge("jvm-memory-max").withoutTags()
+    val memoryFree: Gauge = Kamon.gauge("jvm-memory-free").withoutTags()
+    val memoryTotal: Gauge = Kamon.gauge("jvm-memory-total").withoutTags()
+
+    Behaviors.withTimers { timers =>
+      timers.startTimerAtFixedRate(Monitor, 1.second)
+      Behaviors.receiveMessage {
+        case Monitor =>
+          memoryFree.update(Runtime.getRuntime.freeMemory().toDouble)
+          memoryMax.update(Runtime.getRuntime.maxMemory().toDouble)
+          memoryTotal.update(Runtime.getRuntime.totalMemory().toDouble)
+          Behaviors.same
+      }
+    }
+  }
+
   case object Monitor
 
   val name = "memory-monitor-backoff"
-  val props: Props = {
-    val maxNrOfRetries = 50
-    BackoffSupervisor.props(
-      BackoffOpts
-        .onStop(
-          Props[MemoryMonitoringActor](),
-          childName = "memory-monitor",
-          minBackoff = 3.seconds,
-          maxBackoff = 30.seconds,
-          randomFactor = 0.2
-        )
-        .withMaxNrOfRetries(maxNrOfRetries)
-    )
-  }
 }

@@ -19,7 +19,8 @@
 
 package org.make.api.proposal
 
-import akka.actor.ActorSystem
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
 import org.make.api.proposal.ProposalActor.State
 import org.make.api.proposal.ProposalEvent.{SimilarProposalRemoved, SimilarProposalsCleared}
@@ -414,8 +415,8 @@ object ProposalSerializersTest {
       |make-api.security.secure-hash-salt = "salt-secure"
       |make-api.security.secure-vote-salt = "vote-secure"     """.stripMargin
 
-  val system: ActorSystem = {
+  val system: ActorSystem[Nothing] = {
     val config = ConfigFactory.load(ConfigFactory.parseString(configuration))
-    ActorSystem(classOf[ProposalSerializersTest].getSimpleName, config)
+    ActorSystem[Nothing](Behaviors.empty, classOf[ProposalSerializersTest].getSimpleName, config)
   }
 }
