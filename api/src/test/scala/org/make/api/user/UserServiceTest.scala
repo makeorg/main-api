@@ -307,7 +307,8 @@ class UserServiceTest
         lastConnection = DateHelper.now(),
         verificationToken = Some("Token"),
         verificationTokenExpiresAt = Some(DateHelper.now()),
-        profile = returnedProfile
+        profile = returnedProfile,
+        privacyPolicyApprovalDate = Some(DateHelper.now())
       )
 
       when(persistentUserService.persist(any[User]))
@@ -319,7 +320,8 @@ class UserServiceTest
         info,
         Some(QuestionId("question")),
         Country("FR"),
-        RequestContext.empty
+        RequestContext.empty,
+        Some(DateHelper.now())
       )
 
       whenReady(futureUser, Timeout(2.seconds)) {
@@ -328,6 +330,7 @@ class UserServiceTest
           user.firstName should be(info.firstName)
           user.profile.get.facebookId should be(info.facebookId)
           user.profile.flatMap(_.registerQuestionId) should be(Some(QuestionId("question")))
+          user.privacyPolicyApprovalDate shouldBe defined
           accountCreation should be(true)
 
           verify(eventBusService, times(1))
@@ -371,14 +374,21 @@ class UserServiceTest
         lastConnection = DateHelper.now(),
         verificationToken = Some("Token"),
         verificationTokenExpiresAt = Some(DateHelper.now()),
-        profile = returnedProfileWithGender
+        profile = returnedProfileWithGender,
+        privacyPolicyApprovalDate = Some(DateHelper.now())
       )
 
       when(persistentUserService.persist(any[User]))
         .thenReturn(Future.successful(returnedUserWithGender))
 
       val futureUserWithGender =
-        userService.createOrUpdateUserFromSocial(infoWithGender, None, Country("FR"), RequestContext.empty)
+        userService.createOrUpdateUserFromSocial(
+          infoWithGender,
+          None,
+          Country("FR"),
+          RequestContext.empty,
+          Some(DateHelper.now())
+        )
 
       whenReady(futureUserWithGender, Timeout(2.seconds)) {
         case (user, accountCreation) =>
@@ -387,6 +397,7 @@ class UserServiceTest
           user.profile.get.facebookId should be(infoWithGender.facebookId)
           user.profile.get.gender should be(Some(Female))
           user.profile.get.genderName should be(Some("female"))
+          user.privacyPolicyApprovalDate shouldBe defined
           accountCreation should be(true)
 
           verify(eventBusService, times(1))
@@ -397,7 +408,7 @@ class UserServiceTest
       }
     }
 
-    Scenario("successful update user from social") {
+    Scenario("successful update user from social without updating privacy policy date") {
       clearInvocations(eventBusService)
       clearInvocations(persistentUserService)
 
@@ -427,7 +438,8 @@ class UserServiceTest
         lastConnection = DateHelper.now(),
         verificationToken = Some("Token"),
         verificationTokenExpiresAt = Some(DateHelper.now()),
-        profile = returnedProfile
+        profile = returnedProfile,
+        privacyPolicyApprovalDate = Some(DateHelper.now().minusMonths(1))
       )
 
       when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
@@ -435,8 +447,9 @@ class UserServiceTest
       val futureUser = userService.createOrUpdateUserFromSocial(
         info,
         None,
-        Country("FR"),
-        RequestContext.empty.copy(ipAddress = Some("NEW 127.0.0.1"))
+        (Country("FR")),
+        RequestContext.empty.copy(ipAddress = Some("NEW 127.0.0.1")),
+        None
       )
 
       whenReady(futureUser, Timeout(2.seconds)) {
@@ -447,6 +460,67 @@ class UserServiceTest
           accountCreation should be(false)
 
           verify(persistentUserService, times(1)).updateSocialUser(any[User])
+          user.privacyPolicyApprovalDate should be(returnedUser.privacyPolicyApprovalDate)
+          user.profile.map(_.dateOfBirth) should be(returnedProfile.map(_.dateOfBirth))
+          user.lastIp should be(Some("NEW 127.0.0.1"))
+
+      }
+    }
+
+    Scenario("successful update user from social with privacy policy date updated") {
+      clearInvocations(eventBusService)
+      clearInvocations(persistentUserService)
+
+      val info = UserInfo(
+        email = Some("facebook@make.org"),
+        firstName = Some("facebook"),
+        gender = None,
+        googleId = None,
+        facebookId = Some("444444"),
+        picture = Some("facebook.com/picture"),
+        dateOfBirth = None
+      )
+
+      val returnedProfile = Profile
+        .parseProfile(
+          dateOfBirth = Some(LocalDate.parse("1984-10-11")),
+          avatarUrl = Some("facebook.com/picture"),
+          facebookId = Some("444444")
+        )
+
+      val returnedUser = TestUtils.user(
+        id = UserId("AAA-BBB-CCC-DDD"),
+        email = info.email.getOrElse(""),
+        firstName = info.firstName,
+        lastIp = Some("127.0.0.1"),
+        hashedPassword = Some("passpass"),
+        lastConnection = DateHelper.now(),
+        verificationToken = Some("Token"),
+        verificationTokenExpiresAt = Some(DateHelper.now()),
+        profile = returnedProfile,
+        privacyPolicyApprovalDate = Some(DateHelper.now().minusMonths(1))
+      )
+
+      when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
+      when(persistentUserService.updateSocialUser(any[User])).thenReturn(Future.successful(true))
+      val futureUser = userService.createOrUpdateUserFromSocial(
+        info,
+        None,
+        Country("FR"),
+        RequestContext.empty.copy(ipAddress = Some("NEW 127.0.0.1")),
+        Some(DateHelper.now())
+      )
+
+      whenReady(futureUser, Timeout(2.seconds)) {
+        case (user, accountCreation) =>
+          user.email should be(info.email.getOrElse(""))
+          user.firstName should be(info.firstName)
+          user.profile.get.facebookId should be(info.facebookId)
+          accountCreation should be(false)
+
+          verify(persistentUserService, times(1)).updateSocialUser(any[User])
+          user.privacyPolicyApprovalDate should not be returnedUser.privacyPolicyApprovalDate
+          user.privacyPolicyApprovalDate should be > returnedUser.privacyPolicyApprovalDate
           user.profile.map(_.dateOfBirth) should be(returnedProfile.map(_.dateOfBirth))
           user.lastIp should be(Some("NEW 127.0.0.1"))
 
@@ -465,7 +539,8 @@ class UserServiceTest
 
       when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUserNoDoB)))
       when(persistentUserService.updateSocialUser(any[User])).thenReturn(Future.successful(true))
-      val futureUserNoDoB = userService.createOrUpdateUserFromSocial(info, None, Country("FR"), RequestContext.empty)
+      val futureUserNoDoB =
+        userService.createOrUpdateUserFromSocial(info, None, Country("FR"), RequestContext.empty, None)
 
       whenReady(futureUserNoDoB, Timeout(2.seconds)) {
         case (user, _) =>
@@ -490,7 +565,7 @@ class UserServiceTest
 
       when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
       when(persistentUserService.updateSocialUser(any[User])).thenReturn(Future.successful(true))
-      val futureUser = userService.createOrUpdateUserFromSocial(info, None, Country("FR"), RequestContext.empty)
+      val futureUser = userService.createOrUpdateUserFromSocial(info, None, Country("FR"), RequestContext.empty, None)
 
       whenReady(futureUser, Timeout(2.seconds)) {
         case (user, _) =>
@@ -542,7 +617,8 @@ class UserServiceTest
         info,
         None,
         Country("FR"),
-        RequestContext.empty.copy(ipAddress = returnedUser.lastIp)
+        RequestContext.empty.copy(ipAddress = returnedUser.lastIp),
+        None
       )
 
       whenReady(futureUser, Timeout(2.seconds)) {
@@ -597,7 +673,7 @@ class UserServiceTest
       )
 
       whenReady(
-        userService.createOrUpdateUserFromSocial(info, None, Country("FR"), RequestContext.empty),
+        userService.createOrUpdateUserFromSocial(info, None, Country("FR"), RequestContext.empty, None),
         Timeout(3.seconds)
       ) {
         case (user, accountCreation) =>
@@ -638,7 +714,7 @@ class UserServiceTest
       )
 
       whenReady(
-        userService.createOrUpdateUserFromSocial(info, None, Country("FR"), RequestContext.empty),
+        userService.createOrUpdateUserFromSocial(info, None, Country("FR"), RequestContext.empty, None),
         Timeout(3.seconds)
       ) {
         case (user, accountCreation) =>

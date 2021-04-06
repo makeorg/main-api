@@ -105,7 +105,8 @@ trait UserService extends ShortenedNames {
     userInfo: UserInfo,
     questionId: Option[QuestionId],
     country: Country,
-    requestContext: RequestContext
+    requestContext: RequestContext,
+    privacyPolicyApprovalDate: Option[ZonedDateTime]
   ): Future[(User, Boolean)]
   def requestPasswordReset(userId: UserId): Future[Boolean]
   def updatePassword(userId: UserId, resetToken: Option[String], password: String): Future[Boolean]
@@ -456,7 +457,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       userInfo: UserInfo,
       questionId: Option[QuestionId],
       country: Country,
-      requestContext: RequestContext
+      requestContext: RequestContext,
+      privacyPolicyApprovalDate: Option[ZonedDateTime]
     ): Future[(User, Boolean)] = {
 
       userInfo.email
@@ -464,9 +466,18 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         .map(_.toLowerCase())
         .map { lowerCasedEmail =>
           persistentUserService.findByEmail(lowerCasedEmail).flatMap {
-            case Some(user) => updateUserFromSocial(user, userInfo, country, requestContext.ipAddress).map((_, false))
+            case Some(user) =>
+              updateUserFromSocial(user, userInfo, country, requestContext.ipAddress, privacyPolicyApprovalDate)
+                .map((_, false))
             case None =>
-              createUserFromSocial(lowerCasedEmail, requestContext, userInfo, country, questionId).map((_, true))
+              createUserFromSocial(
+                lowerCasedEmail,
+                requestContext,
+                userInfo,
+                country,
+                questionId,
+                privacyPolicyApprovalDate
+              ).map((_, true))
           }
         }
         .getOrElse {
@@ -483,7 +494,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       requestContext: RequestContext,
       userInfo: UserInfo,
       country: Country,
-      questionId: Option[QuestionId]
+      questionId: Option[QuestionId],
+      privacyPolicyApprovalDate: Option[ZonedDateTime]
     ): Future[User] = {
 
       val profile: Option[Profile] =
@@ -520,7 +532,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         profile = profile,
         availableQuestions = Seq.empty,
         anonymousParticipation = makeSettings.defaultUserAnonymousParticipation,
-        userType = UserType.UserTypeUser
+        userType = UserType.UserTypeUser,
+        privacyPolicyApprovalDate = privacyPolicyApprovalDate
       )
 
       persistentUserService.persist(user).map { user =>
@@ -533,7 +546,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       user: User,
       userInfo: UserInfo,
       country: Country,
-      clientIp: Option[String]
+      clientIp: Option[String],
+      privacyPolicyApprovalDate: Option[ZonedDateTime]
     ): Future[User] = {
       val hashedPassword = if (!user.emailVerified) None else user.hashedPassword
 
@@ -552,7 +566,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           country = country,
           profile = updatedProfile,
           hashedPassword = hashedPassword,
-          emailVerified = true
+          emailVerified = true,
+          privacyPolicyApprovalDate = privacyPolicyApprovalDate.orElse(user.privacyPolicyApprovalDate)
         )
 
       persistentUserService.updateSocialUser(updatedUser).map { userUpdated =>

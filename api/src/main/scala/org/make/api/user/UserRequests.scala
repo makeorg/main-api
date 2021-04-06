@@ -356,9 +356,18 @@ final case class SocialLoginRequest(
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "facebook,google,google_people")
   provider: SocialProvider,
   token: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country]
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
+  approvePrivacyPolicy: Option[Boolean]
 ) {
-  validate(mandatoryField("country", country))
+  validate(
+    mandatoryField("country", country),
+    validateField(
+      "approvePrivacyPolicy",
+      key = "invalid_value",
+      condition = approvePrivacyPolicy.forall(identity),
+      message = "Privacy policy must be approved."
+    )
+  )
 }
 
 object SocialLoginRequest {

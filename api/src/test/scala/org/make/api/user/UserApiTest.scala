@@ -20,8 +20,9 @@
 package org.make.api.user
 
 import java.net.InetAddress
-import java.time.{Instant, LocalDate}
+import java.time.{Instant, LocalDate, ZonedDateTime}
 import java.util.Date
+
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{
   `Set-Cookie`,
@@ -725,7 +726,8 @@ class UserApiTest
             any[Country],
             any[Option[QuestionId]],
             any[RequestContext],
-            any[ClientId]
+            any[ClientId],
+            any[Option[ZonedDateTime]]
           )
       ).thenReturn(
         Future.successful(
@@ -751,7 +753,7 @@ class UserApiTest
           | "provider": "google_people",
           | "token": "ABCDEFGHIJK",
           | "country": "FR",
-          | "language": "fr"
+          | "approvePrivacyPolicy": true
           |}
         """.stripMargin
 
@@ -766,7 +768,29 @@ class UserApiTest
           eqTo(Country("FR")),
           eqTo(None),
           any[RequestContext],
-          any[ClientId]
+          any[ClientId],
+          any[Option[ZonedDateTime]]
+        )
+      }
+    }
+
+    Scenario("validation failed for invalid approvePrivacyPolicy") {
+      val request =
+        """
+          |{
+          | "provider": "google_people",
+          | "token": "ABCDEFGHIJK",
+          | "country": "FR",
+          | "approvePrivacyPolicy": false
+          |}
+        """.stripMargin
+
+      Post("/user/login/social", HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val policyError = errors.find(_.field == "approvePrivacyPolicy")
+        policyError should be(
+          Some(ValidationError("approvePrivacyPolicy", "invalid_value", Some("Privacy policy must be approved.")))
         )
       }
     }
@@ -793,8 +817,7 @@ class UserApiTest
         s""" {
           | "provider": "google_people",
           | "token": "$token",
-          | "country": "FR",
-          | "language": "fr"
+          | "country": "FR"
           | }
           |""".stripMargin
 
@@ -813,7 +836,8 @@ class UserApiTest
           eqTo(Country("FR")),
           any[Option[QuestionId]],
           any[RequestContext],
-          eqTo(specificClient.clientId)
+          eqTo(specificClient.clientId),
+          any[Option[ZonedDateTime]]
         )
       ).thenReturn(
         Future.successful(
@@ -846,7 +870,8 @@ class UserApiTest
           eqTo(Country("FR")),
           eqTo(None),
           any[RequestContext],
-          eqTo(specificClient.clientId)
+          eqTo(specificClient.clientId),
+          any[Option[ZonedDateTime]]
         )
       }
     }
@@ -857,8 +882,7 @@ class UserApiTest
         s""" {
            | "provider": "google_people",
            | "token": "$token",
-           | "country": "FR",
-           | "language": "fr"
+           | "country": "FR"
            | }
            |""".stripMargin
 
@@ -874,7 +898,8 @@ class UserApiTest
           eqTo(Country("FR")),
           any[Option[QuestionId]],
           any[RequestContext],
-          eqTo(clientId)
+          eqTo(clientId),
+          any[Option[ZonedDateTime]]
         )
       ).thenReturn(
         Future.successful(
