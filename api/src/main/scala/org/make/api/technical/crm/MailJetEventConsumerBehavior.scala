@@ -19,25 +19,19 @@
 
 package org.make.api.technical.crm
 
-import java.time.ZonedDateTime
-
-import akka.actor.{ActorLogging, Props}
-import com.sksamuel.avro4s.RecordFormat
-import org.make.api.extensions.KafkaConfigurationExtension
-import org.make.api.technical.KafkaConsumerActor
+import akka.actor.typed.Behavior
+import org.make.api.technical.KafkaConsumerBehavior
 import org.make.api.user.UserService
 import org.make.core.user.MailingErrorLog
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import java.time.ZonedDateTime
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class MailJetEventConsumerActor(userService: UserService)
-    extends KafkaConsumerActor[MailJetEventWrapper]
-    with KafkaConfigurationExtension
-    with ActorLogging {
-  override protected val kafkaTopic: String = MailJetCallbackProducerActor.topicKey
-  override protected val format: RecordFormat[MailJetEventWrapper] = MailJetEventWrapper.recordFormat
-  override def groupId: String = "mailJet-event-consumer"
+class MailJetEventConsumerBehavior(userService: UserService) extends KafkaConsumerBehavior[MailJetEventWrapper] {
+
+  override protected val topicKey: String = MailJetEventProducerBehavior.topicKey
+  override val groupId: String = "mailJet-event-consumer"
 
   override def handleMessage(message: MailJetEventWrapper): Future[_] = {
     message.event match {
@@ -80,7 +74,8 @@ class MailJetEventConsumerActor(userService: UserService)
   }
 }
 
-object MailJetEventConsumerActor {
-  def props(userService: UserService): Props = Props(new MailJetEventConsumerActor(userService))
+object MailJetEventConsumerBehavior {
+  def apply(userService: UserService): Behavior[KafkaConsumerBehavior.Protocol] =
+    new MailJetEventConsumerBehavior(userService).createBehavior(name)
   val name: String = "mailJet-event-consumer"
 }

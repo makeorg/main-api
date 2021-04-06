@@ -19,24 +19,22 @@
 
 package org.make.api.proposal
 
-import akka.actor.{ActorLogging, Props}
+import akka.actor.typed.Behavior
 import akka.util.Timeout
-import com.sksamuel.avro4s.RecordFormat
-import org.make.api.extensions.KafkaConfigurationExtension
+import grizzled.slf4j.Logging
 import org.make.api.proposal.PublishedProposalEvent._
-import org.make.api.technical.KafkaConsumerActor
+import org.make.api.technical.KafkaConsumerBehavior
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class ProposalConsumerActor(proposalIndexerService: ProposalIndexerService)
-    extends KafkaConsumerActor[ProposalEventWrapper]
-    with KafkaConfigurationExtension
-    with ActorLogging {
+class ProposalConsumerBehavior(proposalIndexerService: ProposalIndexerService)
+    extends KafkaConsumerBehavior[ProposalEventWrapper]
+    with Logging {
 
-  override protected lazy val kafkaTopic: String = ProposalProducerActor.topicKey
-  override protected val format: RecordFormat[ProposalEventWrapper] = ProposalEventWrapper.recordFormat
+  override protected val topicKey: String = ProposalKafkaProducerBehavior.topicKey
+  override val groupId = "proposal-consumer"
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
@@ -69,16 +67,15 @@ class ProposalConsumerActor(proposalIndexerService: ProposalIndexerService)
   def onCreateOrUpdate(event: ProposalEvent): Future[Unit] = {
     proposalIndexerService.offer(event.id).recover {
       case ex =>
-        log.error(s"Error presenting proposal to indexation queue: ${ex.getMessage}")
+        error(s"Error presenting proposal to indexation queue: ${ex.getMessage}")
     }
   }
 
-  override val groupId = "proposal-consumer"
 }
 
-object ProposalConsumerActor {
-  def props(proposalIndexerService: ProposalIndexerService): Props = {
-    Props(new ProposalConsumerActor(proposalIndexerService))
+object ProposalConsumerBehavior {
+  def apply(proposalIndexerService: ProposalIndexerService): Behavior[KafkaConsumerBehavior.Protocol] = {
+    new ProposalConsumerBehavior(proposalIndexerService).createBehavior(name)
   }
   val name: String = "proposal-consumer"
 }

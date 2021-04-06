@@ -19,26 +19,26 @@
 
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
-
-import akka.actor.{ActorRef, ActorSystem, PoisonPill}
-import akka.testkit.{ImplicitSender, TestKit, TestProbe}
-import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, ActorSystem, Scheduler}
 import com.typesafe.config.ConfigFactory
+import org.apache.kafka.clients.producer.KafkaProducer
 import org.make.api.proposal.PublishedProposalEvent._
+import org.make.api.technical.KafkaConsumerBehavior
 import org.make.api.userhistory._
-import org.make.api.{KafkaConsumerTest, KafkaTestConsumerActor}
+import org.make.api.{KafkaConsumerTest, KafkaTestConsumerBehavior}
 import org.make.core.proposal.ProposalId
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, MakeSerializable, RequestContext}
 
-import scala.concurrent.duration.DurationInt
+import java.time.ZonedDateTime
 import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
 
-class ProposalUserHistoryConsumerActorIT
-    extends TestKit(ProposalUserHistoryConsumerActorIT.actorSystem)
+class ProposalUserHistoryConsumerBehaviorIT
+    extends ScalaTestWithActorTestKit(ProposalUserHistoryConsumerBehaviorIT.actorSystem)
     with KafkaConsumerTest[ProposalEventWrapper]
-    with ImplicitSender
     with UserHistoryCoordinatorServiceComponent {
 
   // If wou want to change ports and names to avoid collisions, just override them
@@ -50,30 +50,31 @@ class ProposalUserHistoryConsumerActorIT
   override val zookeeperExposedPort: Int = 32184
 
   override val topic: String = "proposals"
-
-  override val format: RecordFormat[ProposalEventWrapper] = ProposalEventWrapper.recordFormat
-  override val schema: SchemaFor[ProposalEventWrapper] = ProposalEventWrapper.schemaFor
+  override val producer: KafkaProducer[String, ProposalEventWrapper] = createProducer
 
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService =
     mock[UserHistoryCoordinatorService]
 
-  val consumer: ActorRef =
-    system.actorOf(ProposalUserHistoryConsumerActor.props(userHistoryCoordinatorService), "ProposalEvent")
+  val consumer: ActorRef[KafkaConsumerBehavior.Protocol] =
+    testKit.spawn(ProposalUserHistoryConsumerBehavior(userHistoryCoordinatorService), "ProposalEvent")
+
+  implicit val scheduler: Scheduler = testKit.system.scheduler
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    Await.result(KafkaTestConsumerActor.waitUntilReady(consumer), atMost = 2.minutes)
+    Await.result(KafkaTestConsumerBehavior.waitUntilReady(consumer), atMost = 2.minutes)
   }
 
   override def afterAll(): Unit = {
-    consumer ! PoisonPill
+    testKit.system.terminate()
+    Await.result(testKit.system.whenTerminated, atMost = 10.seconds)
     super.afterAll()
   }
 
   Feature("consume Proposal event") {
 
     Scenario("Reacting to ProposalProposed") {
-      val probe = TestProbe()
+      val probe = testKit.createTestProbe[String]()
       val now: ZonedDateTime = DateHelper.now()
 
       when(
@@ -120,12 +121,12 @@ class ProposalUserHistoryConsumerActorIT
 
       send(wrappedProposalProposed)
 
-      probe.expectMsg(500.millis, "LogUserProposalProposedEvent called")
+      probe.expectMessage(2.seconds, "LogUserProposalProposedEvent called")
 
     }
 
     Scenario("Reacting to ProposalAccepted") {
-      val probe = TestProbe()
+      val probe = testKit.createTestProbe[String]()
       val now: ZonedDateTime = DateHelper.now()
 
       val eventAccepted: ProposalAccepted = ProposalAccepted(
@@ -169,12 +170,12 @@ class ProposalUserHistoryConsumerActorIT
 
       send(wrappedProposalAccepted)
 
-      probe.expectMsg(500.millis, "LogUserProposalAcceptedEvent called")
+      probe.expectMessage(2.seconds, "LogUserProposalAcceptedEvent called")
 
     }
 
     Scenario("Reacting to ProposalRefused") {
-      val probe = TestProbe()
+      val probe = testKit.createTestProbe[String]()
       val now: ZonedDateTime = DateHelper.now()
 
       val eventRefused: ProposalRefused = ProposalRefused(
@@ -212,12 +213,12 @@ class ProposalUserHistoryConsumerActorIT
 
       send(wrappedProposalRefused)
 
-      probe.expectMsg(500.millis, "LogUserProposalRefusedEvent called")
+      probe.expectMessage(2.seconds, "LogUserProposalRefusedEvent called")
 
     }
 
     Scenario("Reacting to ProposalPostponed") {
-      val probe = TestProbe()
+      val probe = testKit.createTestProbe[String]()
       val now: ZonedDateTime = DateHelper.now()
 
       val eventPostponed: ProposalPostponed = ProposalPostponed(
@@ -252,12 +253,12 @@ class ProposalUserHistoryConsumerActorIT
 
       send(wrappedProposalPostponed)
 
-      probe.expectMsg(500.millis, "LogUserProposalPostponedEvent called")
+      probe.expectMessage(2.seconds, "LogUserProposalPostponedEvent called")
 
     }
 
     Scenario("Reacting to ProposalLocked") {
-      val probe = TestProbe()
+      val probe = testKit.createTestProbe[String]()
       val now: ZonedDateTime = DateHelper.now()
 
       val eventLocked: ProposalLocked = ProposalLocked(
@@ -294,14 +295,14 @@ class ProposalUserHistoryConsumerActorIT
 
       send(wrappedProposalLocked)
 
-      probe.expectMsg(500.millis, "LogUserProposalLockedEvent called")
+      probe.expectMessage(2.seconds, "LogUserProposalLockedEvent called")
 
     }
 
   }
 }
 
-object ProposalUserHistoryConsumerActorIT {
+object ProposalUserHistoryConsumerBehaviorIT {
   // This configuration cannot be dynamic, port values _must_ match reality
   val configuration: String =
     """
@@ -322,9 +323,21 @@ object ProposalUserHistoryConsumerActorIT {
       |      ideas = "ideas"
       |      predictions = "predictions"
       |    }
+      |    dispatcher {
+      |      type = Dispatcher
+      |      executor = "thread-pool-executor"
+      |      thread-pool-executor {
+      |        fixed-pool-size = 32
+      |      }
+      |      throughput = 1
+      |    }
       |  }
       |}
     """.stripMargin
 
-  val actorSystem = ActorSystem("ProposalUserHistoryConsumerActorIT", ConfigFactory.parseString(configuration))
+  val actorSystem: ActorSystem[Nothing] = ActorSystem[Nothing](
+    Behaviors.empty,
+    "ProposalUserHistoryConsumerActorIT",
+    ConfigFactory.parseString(configuration)
+  )
 }

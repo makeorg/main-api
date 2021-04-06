@@ -19,25 +19,24 @@
 
 package org.make.api.technical.crm
 
-import java.time.ZonedDateTime
-
-import akka.actor.{ActorRef, ActorSystem, PoisonPill}
-import akka.testkit.{ImplicitSender, TestKit, TestProbe}
-import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, ActorSystem, Scheduler}
 import com.typesafe.config.ConfigFactory
-import org.make.api.user.{UserService, UserServiceComponent}
-import org.make.api.{KafkaConsumerTest, KafkaTestConsumerActor}
+import org.apache.kafka.clients.producer.KafkaProducer
+import org.make.api.technical.KafkaConsumerBehavior.Protocol
+import org.make.api.user.UserService
+import org.make.api.{KafkaConsumerTest, KafkaTestConsumerBehavior}
 import org.make.core.user.MailingErrorLog
 import org.make.core.{DateHelper, MakeSerializable}
 
+import java.time.ZonedDateTime
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
-class MailJetEventConsumerActorIT
-    extends TestKit(MailJetEventConsumerActorIT.actorSystem)
-    with KafkaConsumerTest[MailJetEventWrapper]
-    with ImplicitSender
-    with UserServiceComponent {
+class MailJetEventConsumerBehaviorIT
+    extends ScalaTestWithActorTestKit(MailJetEventConsumerBehaviorIT.actorSystem)
+    with KafkaConsumerTest[MailJetEventWrapper] {
 
 // If wou want to change ports and names to avoid collisions, just override them
   override val kafkaName: String = "kafkamailjeteventconsumer"
@@ -46,28 +45,28 @@ class MailJetEventConsumerActorIT
   override val registryExposedPort: Int = 28082
   override val zookeeperName: String = "zookeepermailjeteventconsumer"
   override val zookeeperExposedPort: Int = 22183
-  override val userService: UserService = mock[UserService]
-
-  override val format: RecordFormat[MailJetEventWrapper] = MailJetEventWrapper.recordFormat
-  override val schema: SchemaFor[MailJetEventWrapper] = MailJetEventWrapper.schemaFor
-
+  val userService: UserService = mock[UserService]
+  override val producer: KafkaProducer[String, MailJetEventWrapper] = createProducer[MailJetEventWrapper]
   override val topic: String = "mailjet-events"
 
-  val consumer: ActorRef =
-    system.actorOf(MailJetEventConsumerActor.props(userService = userService), "MailJetBounceEvent")
+  implicit val scheduler: Scheduler = testKit.scheduler
+
+  val consumer: ActorRef[Protocol] =
+    testKit.spawn(MailJetEventConsumerBehavior(userService = userService), "MailJetBounceEvent")
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    Await.result(KafkaTestConsumerActor.waitUntilReady(consumer), atMost = 2.minutes)
+    Await.result(KafkaTestConsumerBehavior.waitUntilReady(consumer), atMost = 2.minutes)
   }
 
   override def afterAll(): Unit = {
-    consumer ! PoisonPill
+    testKit.system.terminate()
+    Await.result(testKit.system.whenTerminated, atMost = 10.seconds)
     super.afterAll()
   }
 
   Feature("consume MailJet event") {
-    val probe = TestProbe()
+    val probe = testKit.createTestProbe[String]()
     val now: ZonedDateTime = DateHelper.now()
 
     Scenario("Reacting to MailJetBounceEvent") {
@@ -105,8 +104,8 @@ class MailJetEventConsumerActorIT
       send(wrappedBounceEventBounce)
 
       Then("message is consumed and userService is called to update data")
-      probe.expectMsg(500.millis, "userService.updateIsHardBounce called")
-      probe.expectMsg(500.millis, "userService.updateLastMailingError called")
+      probe.expectMessage(500.millis, "userService.updateIsHardBounce called")
+      probe.expectMessage(500.millis, "userService.updateLastMailingError called")
     }
 
     Scenario("Reacting to MailJetSpamEvent") {
@@ -139,7 +138,7 @@ class MailJetEventConsumerActorIT
       send(wrappedSpamEventBounce)
 
       Then("Message is consumed and userService is called to update data")
-      probe.expectMsg(500.millis, "userService.updateOptInNewsletter called")
+      probe.expectMessage(500.millis, "userService.updateOptInNewsletter called")
     }
 
     Scenario("Reacting to MailJetUnsubscribeEvent") {
@@ -177,12 +176,12 @@ class MailJetEventConsumerActorIT
       send(wrappedUnsubscribeEventBounce)
 
       Then("Message is consumed and userService is called to update data")
-      probe.expectMsg(500.millis, "userService.updateOptInNewsletter called for unsubscribe event")
+      probe.expectMessage(500.millis, "userService.updateOptInNewsletter called for unsubscribe event")
     }
   }
 }
 
-object MailJetEventConsumerActorIT {
+object MailJetEventConsumerBehaviorIT {
   // This configuration cannot be dynamic, port values _must_ match reality
   val configuration: String =
     """
@@ -203,9 +202,18 @@ object MailJetEventConsumerActorIT {
       |      ideas = "ideas"
       |      predictions = "predictions"
       |    }
+      |    dispatcher {
+      |      type = Dispatcher
+      |      executor = "thread-pool-executor"
+      |      thread-pool-executor {
+      |        fixed-pool-size = 32
+      |      }
+      |      throughput = 1
+      |    }
       |  }
       |}
     """.stripMargin
 
-  val actorSystem = ActorSystem("MailJetEventConsumerActorIT", ConfigFactory.parseString(configuration))
+  val actorSystem: ActorSystem[Nothing] =
+    ActorSystem[Nothing](Behaviors.empty, "MailJetEventConsumerActorIT", ConfigFactory.parseString(configuration))
 }

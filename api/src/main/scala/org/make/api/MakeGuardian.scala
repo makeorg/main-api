@@ -22,18 +22,18 @@ package org.make.api
 import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{typed, Actor, ActorLogging, Props}
 import org.make.api.MakeGuardian.{Ping, Pong}
-import org.make.api.idea.{IdeaConsumerActor, IdeaProducerActor}
+import org.make.api.idea.{IdeaConsumerBehavior, IdeaProducerBehavior}
 import org.make.api.proposal.ProposalSupervisor
-import org.make.api.semantic.{SemanticPredictionsProducerActor, SemanticProducerActor}
+import org.make.api.semantic.{SemanticPredictionsProducerBehavior, SemanticProducerBehavior}
 import org.make.api.sequence.SequenceConfigurationActor
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.technical.crm._
 import org.make.api.technical.healthcheck.HealthCheckSupervisor
 import org.make.api.technical.job.JobCoordinator
-import org.make.api.technical.tracking.TrackingProducerActor
-import org.make.api.technical.{DeadLettersListenerActor, MakeDowningActor}
+import org.make.api.technical.tracking.TrackingProducerBehavior
+import org.make.api.technical.{ActorSystemHelper, DeadLettersListenerActor, MakeDowningActor}
 import org.make.api.user.UserSupervisor
 import org.make.api.userhistory.UserHistoryCoordinator
 import org.make.core.job.Job
@@ -64,51 +64,80 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
     )
 
     context.watch(
-      context.actorOf(ProposalSupervisor.props(makeApi, makeApi.makeSettings.lockDuration), ProposalSupervisor.name)
+      context.spawn[Nothing](ProposalSupervisor(makeApi, makeApi.makeSettings.lockDuration), ProposalSupervisor.name)
     )
-    context.watch(context.actorOf(UserSupervisor.props(makeApi), UserSupervisor.name))
 
-    context.watch(context.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name))
-    context.watch(context.actorOf(MailJetProducerActor.props, MailJetProducerActor.name))
+    context.watch(context.spawn[Nothing](UserSupervisor(makeApi), UserSupervisor.name))
 
-    context.watch(context.actorOf(SemanticProducerActor.props, SemanticProducerActor.name))
-    context.watch(context.actorOf(SemanticPredictionsProducerActor.props, SemanticPredictionsProducerActor.name))
+    context.watch(
+      context.spawn(
+        MailJetEventProducerBehavior(),
+        MailJetEventProducerBehavior.name,
+        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+      )
+    )
+    context.watch(
+      context.spawn(
+        MailJetProducerBehavior(),
+        MailJetProducerBehavior.name,
+        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+      )
+    )
 
-    context.watch {
-      val (props, name) =
-        MakeBackoffSupervisor.propsAndName(MailJetConsumerActor.props(makeApi.crmService), MailJetConsumerActor.name)
-      context.actorOf(props, name)
-    }
+    context.watch(
+      context.spawn(
+        SemanticProducerBehavior(),
+        SemanticProducerBehavior.name,
+        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+      )
+    )
+    context.watch(
+      context.spawn(
+        SemanticPredictionsProducerBehavior(),
+        SemanticPredictionsProducerBehavior.name,
+        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+      )
+    )
 
-    context.watch {
-      val (props, name) =
-        MakeBackoffSupervisor.propsAndName(
-          MailJetEventConsumerActor.props(makeApi.userService).withDispatcher(kafkaDispatcher),
-          MailJetEventConsumerActor.name
-        )
-      context.actorOf(props, name)
-    }
+    context.watch(
+      context.spawn(
+        ActorSystemHelper.superviseWithBackoff(MailJetConsumerBehavior(makeApi.crmService)),
+        MailJetConsumerBehavior.name,
+        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+      )
+    )
 
-    context.watch {
-      val (props, name) = MakeBackoffSupervisor.propsAndName(TrackingProducerActor.props, TrackingProducerActor.name)
-      context.actorOf(props, name)
-    }
+    context.watch(
+      context.spawn(
+        ActorSystemHelper.superviseWithBackoff(MailJetEventConsumerBehavior(makeApi.userService)),
+        MailJetEventConsumerBehavior.name,
+        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+      )
+    )
 
-    context.watch {
-      val (props, name) =
-        MakeBackoffSupervisor.propsAndName(IdeaProducerActor.props, IdeaProducerActor.name)
+    context.watch(
+      context.spawn(
+        ActorSystemHelper.superviseWithBackoff(TrackingProducerBehavior()),
+        TrackingProducerBehavior.name,
+        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+      )
+    )
 
-      context.actorOf(props, name)
-    }
+    context.watch(
+      context.spawn(
+        ActorSystemHelper.superviseWithBackoff(IdeaProducerBehavior()),
+        IdeaProducerBehavior.name,
+        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+      )
+    )
 
-    context.watch {
-      val (props, name) =
-        MakeBackoffSupervisor.propsAndName(
-          IdeaConsumerActor.props(makeApi.ideaService, makeApi.elasticsearchConfiguration, makeApi.elasticsearchClient),
-          IdeaConsumerActor.name
-        )
-      context.actorOf(props, name)
-    }
+    context.watch(
+      context.spawn(
+        ActorSystemHelper.superviseWithBackoff(IdeaConsumerBehavior(makeApi.ideaService, makeApi.elasticsearchIdeaAPI)),
+        IdeaConsumerBehavior.name,
+        akka.actor.typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+      )
+    )
 
     context.watch(context.actorOf(HealthCheckSupervisor.props, HealthCheckSupervisor.name))
 

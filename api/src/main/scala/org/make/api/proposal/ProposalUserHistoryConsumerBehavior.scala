@@ -19,22 +19,21 @@
 
 package org.make.api.proposal
 
-import akka.actor.{ActorLogging, Props}
+import akka.actor.typed.Behavior
 import akka.util.Timeout
-import com.sksamuel.avro4s.RecordFormat
+import grizzled.slf4j.Logging
 import org.make.api.proposal.PublishedProposalEvent._
-import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
+import org.make.api.technical.KafkaConsumerBehavior.Protocol
+import org.make.api.technical.{KafkaConsumerBehavior, TimeSettings}
 import org.make.api.userhistory._
 
 import scala.concurrent.Future
 
-class ProposalUserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordinatorService)
-    extends KafkaConsumerActor[ProposalEventWrapper]
-    with ActorEventBusServiceComponent
-    with ActorLogging {
+class ProposalUserHistoryConsumerBehavior(userHistoryCoordinatorService: UserHistoryCoordinatorService)
+    extends KafkaConsumerBehavior[ProposalEventWrapper]
+    with Logging {
 
-  override protected lazy val kafkaTopic: String = ProposalProducerActor.topicKey
-  override protected val format: RecordFormat[ProposalEventWrapper] = ProposalEventWrapper.recordFormat
+  override protected val topicKey: String = ProposalKafkaProducerBehavior.topicKey
   override val groupId = "proposal-user-history"
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
@@ -126,8 +125,9 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinatorService: UserHistor
   }
 }
 
-object ProposalUserHistoryConsumerActor {
-  val name: String = "proposal-events-user-history-consumer"
-  def props(userHistoryCoordinatorService: UserHistoryCoordinatorService): Props =
-    Props(new ProposalUserHistoryConsumerActor(userHistoryCoordinatorService))
+object ProposalUserHistoryConsumerBehavior {
+  val name: String = "proposal-user-history-consumer"
+
+  def apply(userHistoryCoordinatorService: UserHistoryCoordinatorService): Behavior[Protocol] =
+    new ProposalUserHistoryConsumerBehavior(userHistoryCoordinatorService).createBehavior(name)
 }

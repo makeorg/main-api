@@ -19,29 +19,26 @@
 
 package org.make.api.user
 
-import java.util.Properties
-
-import akka.actor.Props
+import akka.actor.typed.Behavior
 import akka.util.Timeout
-import com.sksamuel.avro4s.RecordFormat
 import grizzled.slf4j.Logging
 import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
+import org.make.api.technical.{KafkaConsumerBehavior, TimeSettings}
 import org.make.api.userhistory._
 import org.make.core.AvroSerializers
 
+import java.util.Properties
+import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future}
 
-class UserImageConsumerActor(userService: UserService)
-    extends KafkaConsumerActor[UserEventWrapper]
-    with ActorEventBusServiceComponent
+class UserImageConsumerBehavior(userService: UserService)
+    extends KafkaConsumerBehavior[UserEventWrapper]
     with AvroSerializers
     with Logging {
 
-  override protected lazy val kafkaTopic: String = UserProducerActor.topicKey
-  override protected val format: RecordFormat[UserEventWrapper] = UserEventWrapper.recordFormat
+  override protected val topicKey: String = UserProducerBehavior.topicKey
   override val groupId = "user-images"
+
   override def customProperties: Properties = {
     val props = new Properties()
 // Fetch a batch of events only in order to handle some downloads but not all at once
@@ -50,7 +47,6 @@ class UserImageConsumerActor(userService: UserService)
   }
   override def handleMessagesTimeout: FiniteDuration = 5.minutes
 
-  implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
   override def handleMessage(message: UserEventWrapper): Future[_] = {
@@ -80,8 +76,8 @@ class UserImageConsumerActor(userService: UserService)
   }
 }
 
-object UserImageConsumerActor {
-  def props(userService: UserService): Props =
-    Props(new UserImageConsumerActor(userService))
-  val name: String = "user-events-image-consumer"
+object UserImageConsumerBehavior {
+  def apply(userService: UserService): Behavior[KafkaConsumerBehavior.Protocol] =
+    new UserImageConsumerBehavior(userService).createBehavior(name)
+  val name: String = "user-image-consumer"
 }

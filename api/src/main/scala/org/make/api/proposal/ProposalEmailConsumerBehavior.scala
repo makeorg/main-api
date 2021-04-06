@@ -19,19 +19,18 @@
 
 package org.make.api.proposal
 
-import akka.actor.Props
+import akka.actor.typed.Behavior
 import akka.util.Timeout
-import com.sksamuel.avro4s.RecordFormat
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.technical.crm.SendMailPublisherService
-import org.make.api.technical.{KafkaConsumerActor, TimeSettings}
+import org.make.api.technical.{KafkaConsumerBehavior, TimeSettings}
 
 import scala.concurrent.Future
 
-class ProposalEmailConsumer(sendMailPublisherService: SendMailPublisherService)
-    extends KafkaConsumerActor[ProposalEventWrapper] {
-  override protected lazy val kafkaTopic: String = ProposalProducerActor.topicKey
-  override protected val format: RecordFormat[ProposalEventWrapper] = ProposalEventWrapper.recordFormat
+class ProposalEmailConsumerBehavior(sendMailPublisherService: SendMailPublisherService)
+    extends KafkaConsumerBehavior[ProposalEventWrapper] {
+
+  override protected val topicKey: String = ProposalKafkaProducerBehavior.topicKey
   override val groupId = "proposal-email"
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
@@ -79,7 +78,7 @@ class ProposalEmailConsumer(sendMailPublisherService: SendMailPublisherService)
 }
 
 object ProposalEmailConsumerActor {
-  val name: String = "proposal-events-emails-consumer"
-  def props(sendMailPublisherService: SendMailPublisherService): Props =
-    Props(new ProposalEmailConsumer(sendMailPublisherService))
+  val name: String = "proposal-emails-consumer"
+  def apply(sendMailPublisherService: SendMailPublisherService): Behavior[KafkaConsumerBehavior.Protocol] =
+    new ProposalEmailConsumerBehavior(sendMailPublisherService).createBehavior(name)
 }

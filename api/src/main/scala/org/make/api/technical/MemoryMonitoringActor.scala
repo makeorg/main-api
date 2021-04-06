@@ -19,7 +19,7 @@
 
 package org.make.api.technical
 
-import akka.actor.typed.{Behavior, SupervisorStrategy}
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import kamon.Kamon
 import kamon.metric.Gauge
@@ -28,11 +28,7 @@ import scala.concurrent.duration.DurationInt
 
 object MemoryMonitoringActor {
   def apply(): Behavior[Monitor.type] = {
-    Behaviors
-      .supervise(monitorMemory())
-      .onFailure(
-        SupervisorStrategy.restartWithBackoff(minBackoff = 3.seconds, maxBackoff = 30.seconds, randomFactor = 0.2)
-      )
+    ActorSystemHelper.superviseWithBackoff(monitorMemory())
   }
 
   private def monitorMemory(): Behavior[Monitor.type] = {

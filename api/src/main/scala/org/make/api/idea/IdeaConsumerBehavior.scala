@@ -20,17 +20,11 @@
 package org.make.api.idea
 
 import akka.Done
-import akka.actor.{ActorLogging, Props}
+import akka.actor.typed.Behavior
 import akka.util.Timeout
-import com.sksamuel.avro4s.RecordFormat
-import org.make.api.extensions.KafkaConfigurationExtension
-import org.make.api.technical.KafkaConsumerActor
-import org.make.api.technical.elasticsearch.{
-  ElasticsearchClient,
-  ElasticsearchClientComponent,
-  ElasticsearchConfiguration,
-  ElasticsearchConfigurationComponent
-}
+import grizzled.slf4j.Logging
+import org.make.api.technical.KafkaConsumerBehavior
+import org.make.api.technical.KafkaConsumerBehavior.Protocol
 import org.make.core.idea.IdeaId
 import org.make.core.idea.indexed.IndexedIdea
 
@@ -38,20 +32,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class IdeaConsumerActor(
-  ideaService: IdeaService,
-  override val elasticsearchConfiguration: ElasticsearchConfiguration,
-  override val elasticsearchClient: ElasticsearchClient
-) extends KafkaConsumerActor[IdeaEventWrapper]
-    with KafkaConfigurationExtension
-    with DefaultIdeaSearchEngineComponent
-    with ElasticsearchConfigurationComponent
-    with ElasticsearchClientComponent
-    with ActorLogging {
+class IdeaConsumerBehavior(ideaService: IdeaService, elasticsearchIdeaAPI: IdeaSearchEngine)
+    extends KafkaConsumerBehavior[IdeaEventWrapper]
+    with Logging {
 
-  override protected lazy val kafkaTopic: String = IdeaProducerActor.topicKey
-  override protected val format: RecordFormat[IdeaEventWrapper] = IdeaEventWrapper.recordFormat
-
+  override protected val topicKey: String = IdeaProducerBehavior.topicKey
   implicit val timeout: Timeout = Timeout(5.seconds)
 
   override def handleMessage(message: IdeaEventWrapper): Future[_] = {
@@ -66,7 +51,7 @@ class IdeaConsumerActor(
   }
 
   def indexOrUpdate(idea: IndexedIdea): Future[Done] = {
-    log.debug(s"Indexing $idea")
+    debug(s"Indexing $idea")
     elasticsearchIdeaAPI
       .findIdeaById(idea.ideaId)
       .flatMap {
@@ -85,12 +70,8 @@ class IdeaConsumerActor(
   override val groupId = "idea-consumer"
 }
 
-object IdeaConsumerActor {
-  def props(
-    ideaService: IdeaService,
-    elasticsearchConfiguration: ElasticsearchConfiguration,
-    elasticsearchClient: ElasticsearchClient
-  ): Props =
-    Props(new IdeaConsumerActor(ideaService, elasticsearchConfiguration, elasticsearchClient))
+object IdeaConsumerBehavior {
+  def apply(ideaService: IdeaService, elasticsearchIdeaAPI: IdeaSearchEngine): Behavior[Protocol] =
+    new IdeaConsumerBehavior(ideaService, elasticsearchIdeaAPI).createBehavior(name)
   val name: String = "idea-consumer"
 }

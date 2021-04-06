@@ -19,11 +19,12 @@
 
 package org.make.api.user
 
-import akka.actor.Props
+import akka.actor.typed.Behavior
 import akka.util.Timeout
-import com.sksamuel.avro4s.RecordFormat
+import grizzled.slf4j.Logging
+import org.make.api.technical.KafkaConsumerBehavior.Protocol
 import org.make.api.technical.crm.SendMailPublisherService
-import org.make.api.technical.{KafkaConsumerActor, TimeSettings}
+import org.make.api.technical.{KafkaConsumerBehavior, TimeSettings}
 import org.make.api.userhistory._
 import org.make.core.user.{User, UserId}
 import org.make.core.user.UserType._
@@ -31,11 +32,11 @@ import org.make.core.user.UserType._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class UserEmailConsumerActor(userService: UserService, sendMailPublisherService: SendMailPublisherService)
-    extends KafkaConsumerActor[UserEventWrapper] {
+class UserEmailConsumerBehavior(userService: UserService, sendMailPublisherService: SendMailPublisherService)
+    extends KafkaConsumerBehavior[UserEventWrapper]
+    with Logging {
 
-  override protected lazy val kafkaTopic: String = UserProducerActor.topicKey
-  override protected val format: RecordFormat[UserEventWrapper] = UserEventWrapper.recordFormat
+  override protected val topicKey: String = UserProducerBehavior.topicKey
   override val groupId = "user-email"
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
@@ -131,18 +132,18 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
   private def getUserWithValidEmail(userId: UserId): Future[Option[User]] = {
     userService.getUser(userId).map {
       case Some(user) if user.isHardBounce =>
-        log.info(s"a hardbounced user (${user.userId}) will be ignored by email consumer")
+        info(s"a hardbounced user (${user.userId}) will be ignored by email consumer")
         None
       case Some(user) => Some(user)
       case None =>
-        log.warning(s"can't find user with id $userId")
+        warn(s"can't find user with id $userId")
         None
     }
   }
 }
 
-object UserEmailConsumerActor {
-  def props(userService: UserService, sendMailPublisherService: SendMailPublisherService): Props =
-    Props(new UserEmailConsumerActor(userService, sendMailPublisherService))
-  val name: String = "user-events-consumer"
+object UserEmailConsumerBehavior {
+  def apply(userService: UserService, sendMailPublisherService: SendMailPublisherService): Behavior[Protocol] =
+    new UserEmailConsumerBehavior(userService, sendMailPublisherService).createBehavior(name)
+  val name: String = "user-consumer"
 }

@@ -19,81 +19,17 @@
 
 package org.make.api.proposal
 
-import akka.actor.{typed, Actor, ActorLogging, Props}
-import akka.actor.typed.ActorRef
+import akka.actor.typed
 import akka.actor.typed.receptionist.Receptionist
-import akka.actor.typed.scaladsl.adapter._
-import org.make.api.proposal.ProposalSupervisor.ProposalSupervisorDependencies
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, Behavior}
+import org.make.api.kafkaDispatcher
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
+import org.make.api.technical.{ActorSystemHelper, IdGeneratorComponent}
 import org.make.api.technical.crm.SendMailPublisherServiceComponent
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
-import org.make.api.{kafkaDispatcher, ActorSystemTypedComponent, MakeBackoffSupervisor}
 
 import scala.concurrent.duration.FiniteDuration
-
-class ProposalSupervisor(dependencies: ProposalSupervisorDependencies, lockDuration: FiniteDuration)
-    extends Actor
-    with ActorLogging
-    with ShortenedNames
-    with ActorSystemTypedComponent
-    with DefaultProposalCoordinatorServiceComponent
-    with ProposalCoordinatorComponent {
-
-  override implicit val actorSystemTyped: typed.ActorSystem[_] = context.system.toTyped
-
-  override val proposalCoordinator: ActorRef[ProposalCommand] = ProposalCoordinator(
-    system = actorSystemTyped,
-    sessionHistoryCoordinatorService = dependencies.sessionHistoryCoordinatorService,
-    lockDuration = lockDuration,
-    idGenerator = dependencies.idGenerator
-  )
-  context.watch(proposalCoordinator)
-  actorSystemTyped.receptionist ! Receptionist.Register(ProposalCoordinator.Key, proposalCoordinator)
-
-  override def preStart(): Unit = {
-    context.watch {
-      val (props, name) = MakeBackoffSupervisor.propsAndName(ProposalProducerActor.props, ProposalProducerActor.name)
-      context.actorOf(props, name)
-    }
-
-    context.watch {
-      val (props, name) = MakeBackoffSupervisor.propsAndName(
-        ProposalUserHistoryConsumerActor
-          .props(dependencies.userHistoryCoordinatorService)
-          .withDispatcher(kafkaDispatcher),
-        ProposalUserHistoryConsumerActor.name
-      )
-      context.actorOf(props, name)
-    }
-
-    context.watch {
-      val (props, name) = MakeBackoffSupervisor.propsAndName(
-        ProposalEmailConsumerActor
-          .props(dependencies.sendMailPublisherService)
-          .withDispatcher(kafkaDispatcher),
-        ProposalEmailConsumerActor.name
-      )
-      context.actorOf(props, name)
-    }
-    context.watch {
-      val (props, name) = MakeBackoffSupervisor.propsAndName(
-        ProposalConsumerActor
-          .props(dependencies.proposalIndexerService)
-          .withDispatcher(kafkaDispatcher),
-        ProposalConsumerActor.name
-      )
-      context.actorOf(props, name)
-    }
-
-    ()
-  }
-
-  override def receive: Receive = {
-    case x => log.info(s"received $x")
-  }
-
-}
 
 object ProposalSupervisor {
 
@@ -105,6 +41,52 @@ object ProposalSupervisor {
       with IdGeneratorComponent
 
   val name: String = "proposal"
-  def props(dependencies: ProposalSupervisorDependencies, lockDuration: FiniteDuration): Props =
-    Props(new ProposalSupervisor(dependencies, lockDuration))
+  def apply(dependencies: ProposalSupervisorDependencies, lockDuration: FiniteDuration): Behavior[Nothing] = {
+
+    Behaviors.setup[Nothing] { context =>
+      val proposalCoordinator: ActorRef[ProposalCommand] = ProposalCoordinator(
+        system = context.system,
+        sessionHistoryCoordinatorService = dependencies.sessionHistoryCoordinatorService,
+        lockDuration = lockDuration,
+        idGenerator = dependencies.idGenerator
+      )
+      context.watch(proposalCoordinator)
+      context.system.receptionist ! Receptionist.Register(ProposalCoordinator.Key, proposalCoordinator)
+
+      context.watch(
+        context.spawn(
+          ActorSystemHelper.superviseWithBackoff(ProposalKafkaProducerBehavior()),
+          ProposalKafkaProducerBehavior.name,
+          typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+        )
+      )
+
+      context.watch(
+        context.spawn(
+          ActorSystemHelper
+            .superviseWithBackoff(ProposalUserHistoryConsumerBehavior(dependencies.userHistoryCoordinatorService)),
+          ProposalUserHistoryConsumerBehavior.name,
+          typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+        )
+      )
+
+      context.watch(
+        context.spawn(
+          ActorSystemHelper.superviseWithBackoff(ProposalEmailConsumerActor(dependencies.sendMailPublisherService)),
+          ProposalEmailConsumerActor.name,
+          typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+        )
+      )
+
+      context.watch(
+        context.spawn(
+          ActorSystemHelper.superviseWithBackoff(ProposalConsumerBehavior(dependencies.proposalIndexerService)),
+          ProposalConsumerBehavior.name,
+          akka.actor.typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+        )
+      )
+
+      Behaviors.empty
+    }
+  }
 }

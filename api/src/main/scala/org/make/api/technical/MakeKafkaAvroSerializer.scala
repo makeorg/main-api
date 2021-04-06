@@ -19,19 +19,21 @@
 
 package org.make.api.technical
 
-import java.util
-
-import com.sksamuel.avro4s.{DefaultFieldMapper, RecordFormat, SchemaFor}
+import com.sksamuel.avro4s.{DefaultFieldMapper, Encoder, FieldMapper, SchemaFor}
 import grizzled.slf4j.Logging
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
 import io.confluent.kafka.serializers.KafkaAvroSerializer
 import org.apache.kafka.common.serialization.Serializer
 
+import java.util
 import scala.jdk.CollectionConverters._
 
-class MakeKafkaAvroSerializer[T](registryUrl: String, schema: SchemaFor[T], format: RecordFormat[T])
+class MakeKafkaAvroSerializer[T: Encoder: SchemaFor](registryUrl: String, fieldMapper: FieldMapper = DefaultFieldMapper)
     extends Serializer[T]
     with Logging {
+
+  private val schema: SchemaFor[T] = SchemaFor[T]
+  private val encoder: Encoder[T] = Encoder[T]
 
   private val identityMapCapacity = 1000
   private val delegate: Serializer[Object] = new KafkaAvroSerializer(
@@ -44,7 +46,8 @@ class MakeKafkaAvroSerializer[T](registryUrl: String, schema: SchemaFor[T], form
   }
 
   override def serialize(topic: String, data: T): Array[Byte] = {
-    delegate.serialize(topic, format.to(data))
+
+    delegate.serialize(topic, encoder.encode(data, schema.schema(fieldMapper), fieldMapper))
   }
 
   override def close(): Unit = {

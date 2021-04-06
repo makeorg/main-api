@@ -19,91 +19,65 @@
 
 package org.make.api.user
 
-import akka.actor.{Actor, ActorLogging, Props}
-import org.make.api.extensions.KafkaConfigurationExtension
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{Behavior, Props}
+import org.make.api.kafkaDispatcher
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.organisation.{
-  OrganisationConsumerActor,
+  OrganisationConsumerBehavior,
   OrganisationSearchEngineComponent,
   OrganisationServiceComponent
 }
+import org.make.api.technical.ActorSystemHelper.superviseWithBackoff
 import org.make.api.technical.crm.SendMailPublisherServiceComponent
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationComponent
-import org.make.api.technical.ShortenedNames
-import org.make.api.user.UserSupervisor.UserSupervisorDependencies
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
-import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
-import org.make.core.AvroSerializers
-
-class UserSupervisor(dependencies: UserSupervisorDependencies)
-    extends Actor
-    with ActorLogging
-    with AvroSerializers
-    with ShortenedNames
-    with KafkaConfigurationExtension {
-
-  override def preStart(): Unit = {
-    context.watch(
-      context
-        .actorOf(UserProducerActor.props, UserProducerActor.name)
-    )
-
-    context.watch {
-      val (props, name) =
-        MakeBackoffSupervisor.propsAndName(
-          UserEmailConsumerActor
-            .props(dependencies.userService, dependencies.sendMailPublisherService),
-          UserEmailConsumerActor.name
-        )
-      context.actorOf(props, name)
-    }
-
-    context.watch {
-      val (props, name) =
-        MakeBackoffSupervisor.propsAndName(
-          UserHistoryConsumerActor
-            .props(dependencies.userHistoryCoordinatorService, dependencies.userService)
-            .withDispatcher(kafkaDispatcher),
-          UserHistoryConsumerActor.name
-        )
-      context.actorOf(props, name)
-    }
-
-    context.watch {
-      val (props, name) =
-        MakeBackoffSupervisor.propsAndName(
-          UserImageConsumerActor
-            .props(dependencies.userService)
-            .withDispatcher(kafkaDispatcher),
-          UserImageConsumerActor.name
-        )
-      context.actorOf(props, name)
-    }
-
-    context.watch {
-      val (props, name) =
-        MakeBackoffSupervisor.propsAndName(
-          OrganisationConsumerActor
-            .props(
-              dependencies.organisationService,
-              dependencies.elasticsearchOrganisationAPI,
-              dependencies.elasticsearchConfiguration
-            )
-            .withDispatcher(kafkaDispatcher),
-          OrganisationConsumerActor.name
-        )
-      context.actorOf(props, name)
-    }
-
-    ()
-  }
-
-  override def receive: Receive = {
-    case x => log.info(s"received $x")
-  }
-}
 
 object UserSupervisor {
+
+  def apply(dependencies: UserSupervisorDependencies): Behavior[Nothing] = {
+    Behaviors.setup[Nothing] { context =>
+      context.watch(context.spawn(UserProducerBehavior(), UserProducerBehavior.name))
+
+      context.watch(
+        context.spawn(
+          superviseWithBackoff(
+            UserEmailConsumerBehavior(dependencies.userService, dependencies.sendMailPublisherService)
+          ),
+          UserEmailConsumerBehavior.name,
+          Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+        )
+      )
+
+      context.watch(
+        context.spawn(
+          superviseWithBackoff(
+            UserHistoryConsumerBehavior(dependencies.userHistoryCoordinatorService, dependencies.userService)
+          ),
+          UserHistoryConsumerBehavior.name,
+          Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+        )
+      )
+
+      context.watch(
+        context.spawn(
+          superviseWithBackoff(UserImageConsumerBehavior(dependencies.userService)),
+          UserImageConsumerBehavior.name,
+          Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+        )
+      )
+
+      context.spawn(
+        superviseWithBackoff(
+          OrganisationConsumerBehavior(dependencies.organisationService, dependencies.elasticsearchOrganisationAPI)
+        ),
+        OrganisationConsumerBehavior.name,
+        Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+      )
+
+      Behaviors.empty
+    }
+  }
 
   type UserSupervisorDependencies = UserServiceComponent
     with OperationServiceComponent
@@ -115,6 +89,4 @@ object UserSupervisor {
     with UserHistoryCoordinatorServiceComponent
 
   val name: String = "users"
-  def props(dependencies: UserSupervisorDependencies): Props =
-    Props(new UserSupervisor(dependencies))
 }

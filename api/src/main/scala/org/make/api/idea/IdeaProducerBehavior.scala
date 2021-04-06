@@ -19,17 +19,12 @@
 
 package org.make.api.idea
 
-import akka.actor.Props
-import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import org.make.api.technical.BasicProducerActor
+import akka.actor.typed.Behavior
+import org.make.api.technical.KafkaProducerBehavior
 
-class IdeaProducerActor extends BasicProducerActor[IdeaEventWrapper, IdeaEvent] {
-  override protected lazy val eventClass: Class[IdeaEvent] = classOf[IdeaEvent]
-  override protected lazy val format: RecordFormat[IdeaEventWrapper] = IdeaEventWrapper.recordFormat
-  override protected lazy val schema: SchemaFor[IdeaEventWrapper] = IdeaEventWrapper.schemaFor
-  override val kafkaTopic: String = kafkaConfiguration.topics(IdeaProducerActor.topicKey)
-
-  override protected def convert(event: IdeaEvent): IdeaEventWrapper = {
+class IdeaProducerBehavior extends KafkaProducerBehavior[IdeaEvent, IdeaEventWrapper] {
+  override protected val topicKey: String = IdeaProducerBehavior.topicKey
+  override protected def wrapEvent(event: IdeaEvent): IdeaEventWrapper = {
     IdeaEventWrapper(
       version = event.version(),
       id = event.ideaId.value,
@@ -40,8 +35,8 @@ class IdeaProducerActor extends BasicProducerActor[IdeaEventWrapper, IdeaEvent] 
   }
 }
 
-object IdeaProducerActor {
-  val props: Props = Props[IdeaProducerActor]()
-  val name: String = "kafka-idea-event-writer"
+object IdeaProducerBehavior {
+  def apply(): Behavior[IdeaEvent] = new IdeaProducerBehavior().createBehavior(name)
+  val name: String = "idea-producer"
   val topicKey: String = "ideas"
 }

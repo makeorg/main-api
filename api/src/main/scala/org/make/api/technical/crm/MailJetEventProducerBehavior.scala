@@ -19,20 +19,16 @@
 
 package org.make.api.technical.crm
 
-import java.time.{Instant, ZoneOffset, ZonedDateTime}
-
-import akka.actor.Props
-import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
+import akka.actor.typed.Behavior
 import grizzled.slf4j.Logging
-import org.make.api.technical.BasicProducerActor
+import org.make.api.technical.KafkaProducerBehavior
 import org.make.core.{DateHelper, MakeSerializable}
 
-class MailJetCallbackProducerActor extends BasicProducerActor[MailJetEventWrapper, MailJetEvent] with Logging {
-  override protected lazy val eventClass: Class[MailJetEvent] = classOf[MailJetEvent]
-  override protected lazy val format: RecordFormat[MailJetEventWrapper] = MailJetEventWrapper.recordFormat
-  override protected lazy val schema: SchemaFor[MailJetEventWrapper] = MailJetEventWrapper.schemaFor
-  override val kafkaTopic: String = kafkaConfiguration.topics(MailJetCallbackProducerActor.topicKey)
-  override protected def convert(event: MailJetEvent): MailJetEventWrapper = {
+import java.time.{Instant, ZoneOffset, ZonedDateTime}
+
+class MailJetEventProducerBehavior extends KafkaProducerBehavior[MailJetEvent, MailJetEventWrapper] with Logging {
+  override protected val topicKey: String = MailJetEventProducerBehavior.topicKey
+  override protected def wrapEvent(event: MailJetEvent): MailJetEventWrapper = {
     logger.debug(s"Produce MailJetEvent: ${event.toString}")
     MailJetEventWrapper(version = MakeSerializable.V1, id = event.email, date = event.time.map { timestamp =>
       ZonedDateTime.from(Instant.ofEpochMilli(timestamp * 1000).atZone(ZoneOffset.UTC))
@@ -40,8 +36,9 @@ class MailJetCallbackProducerActor extends BasicProducerActor[MailJetEventWrappe
   }
 }
 
-object MailJetCallbackProducerActor {
-  val name: String = "mailjet-callback-event-producer"
-  val props: Props = Props[MailJetCallbackProducerActor]()
+object MailJetEventProducerBehavior {
+  def apply(): Behavior[MailJetEvent] = new MailJetEventProducerBehavior().createBehavior(name)
+
+  val name: String = "mailjet-events-producer"
   val topicKey: String = "mailjet-events"
 }

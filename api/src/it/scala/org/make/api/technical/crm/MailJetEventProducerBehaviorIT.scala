@@ -19,47 +19,39 @@
 
 package org.make.api.technical.crm
 
-import java.time.ZonedDateTime
-
-import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
-import akka.testkit.{ImplicitSender, TestKit, TestProbe}
-import com.sksamuel.avro4s.RecordFormat
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.eventstream.EventStream.Publish
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorSystem, Scheduler}
 import com.typesafe.config.ConfigFactory
-import org.make.api.{KafkaTest, KafkaTestConsumerActor}
+import org.make.api.{KafkaTest, KafkaTestConsumerBehavior}
 import org.make.core.AvroSerializers
 
+import java.time.ZonedDateTime
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 
-class MailJetCallbackProducerActorIT
-    extends TestKit(MailJetCallbackProducerActorIT.actorSystem)
+class MailJetEventProducerBehaviorIT
+    extends ScalaTestWithActorTestKit(MailJetEventProducerBehaviorIT.actorSystem)
     with KafkaTest
-    with ImplicitSender
     with AvroSerializers {
+
+  implicit val scheduler: Scheduler = testKit.system.scheduler
 
   Feature("MailJetCallback producer") {
     Scenario("send wrapped event into kafka") {
       Given("a producer on the Mailjet event topic and a consumer on the same topic")
-      val actorSystem = system
-      val producer: ActorRef =
-        actorSystem.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name)
+      testKit.spawn(MailJetEventProducerBehavior(), MailJetEventProducerBehavior.name)
 
-      val probe = TestProbe()
-      val consumer = {
-        val (name: String, props: Props) =
-          KafkaTestConsumerActor.propsAndName(
-            RecordFormat[MailJetEventWrapper],
-            MailJetCallbackProducerActor.topicKey,
-            probe.ref
-          )
-        actorSystem.actorOf(props, name)
-      }
+      val probe = testKit.createTestProbe[MailJetEventWrapper]()
+
+      val consumer = testKit.spawn(
+        KafkaTestConsumerBehavior(MailJetEventProducerBehavior.topicKey, getClass.getSimpleName, probe.ref)
+      )
 
       // Wait for actors to init
-      Await.result(KafkaTestConsumerActor.waitUntilReady(consumer), atMost = 2.minutes)
+      Await.result(KafkaTestConsumerBehavior.waitUntilReady(consumer), atMost = 2.minutes)
       logger.info("Consumer is ready")
-      KafkaTestConsumerActor.waitUntilReady(producer)
-      logger.info("Producer is ready")
 
       val bounceEvent: MailJetBounceEvent = MailJetBounceEvent(
         email = "test@make.org",
@@ -76,32 +68,27 @@ class MailJetCallbackProducerActorIT
       )
       When("I send a message to the producer")
 
-      actorSystem.eventStream.publish(bounceEvent)
+      testKit.system.eventStream ! Publish(bounceEvent)
 
       Then("I should receive the wrapped version of it in the consumer")
-      val wrapped = probe.expectMsgType[MailJetEventWrapper](2.minutes)
+      val wrapped = probe.expectMessageType[MailJetEventWrapper](2.minutes)
+
       wrapped.id shouldBe "test@make.org"
       wrapped.version > 0 shouldBe true
       wrapped.event shouldBe bounceEvent
       wrapped.date shouldBe ZonedDateTime.parse("2015-05-05T07:49:55Z")
-
-      // Clean up stuff
-      producer ! PoisonPill
-      consumer ! PoisonPill
-
-      // sleep to wait for consumer / producer to be gracefully stopped
-      Thread.sleep(2000)
     }
   }
 
   override def afterAll(): Unit = {
-    system.terminate()
+    testKit.system.terminate()
+    Await.result(testKit.system.whenTerminated, atMost = 10.seconds)
     super.afterAll()
   }
 
 }
 
-object MailJetCallbackProducerActorIT {
+object MailJetEventProducerBehaviorIT {
   val configuration: String =
     """
       |akka.log-dead-letters-during-shutdown = off
@@ -121,9 +108,18 @@ object MailJetCallbackProducerActorIT {
       |      ideas = "ideas"
       |      predictions = "predictions"
       |    }
+      |    dispatcher {
+      |      type = Dispatcher
+      |      executor = "thread-pool-executor"
+      |      thread-pool-executor {
+      |        fixed-pool-size = 32
+      |      }
+      |      throughput = 1
+      |    }
       |  }
       |}
     """.stripMargin
 
-  val actorSystem = ActorSystem("MailJetCallbackProducerIT", ConfigFactory.parseString(configuration))
+  val actorSystem: ActorSystem[Nothing] =
+    ActorSystem[Nothing](Behaviors.empty, "MailJetCallbackProducerIT", ConfigFactory.parseString(configuration))
 }

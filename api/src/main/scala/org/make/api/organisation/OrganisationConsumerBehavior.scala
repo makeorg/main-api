@@ -20,15 +20,13 @@
 package org.make.api.organisation
 
 import akka.Done
-import akka.actor.{ActorLogging, Props}
+import akka.actor.typed.Behavior
 import akka.util.Timeout
-import com.sksamuel.avro4s.RecordFormat
-import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
-import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor}
-import org.make.api.user.UserProducerActor
-import org.make.api.userhistory.UserEvent
-import org.make.api.userhistory.UserEventWrapper
-import org.make.api.userhistory.{OrganisationRegisteredEvent, OrganisationUpdatedEvent}
+import grizzled.slf4j.Logging
+import org.make.api.technical.KafkaConsumerBehavior
+import org.make.api.technical.KafkaConsumerBehavior.Protocol
+import org.make.api.user.UserProducerBehavior
+import org.make.api.userhistory.{OrganisationRegisteredEvent, OrganisationUpdatedEvent, UserEvent, UserEventWrapper}
 import org.make.core.AvroSerializers
 import org.make.core.user.UserId
 import org.make.core.user.indexed.IndexedOrganisation
@@ -37,19 +35,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class OrganisationConsumerActor(
+class OrganisationConsumerBehavior(
   organisationService: OrganisationService,
-  override val elasticsearchOrganisationAPI: OrganisationSearchEngine,
-  override val elasticsearchConfiguration: ElasticsearchConfiguration
-) extends KafkaConsumerActor[UserEventWrapper]
-    with ActorEventBusServiceComponent
+  elasticsearchOrganisationAPI: OrganisationSearchEngine
+) extends KafkaConsumerBehavior[UserEventWrapper]
     with AvroSerializers
-    with ElasticsearchConfigurationComponent
-    with OrganisationSearchEngineComponent
-    with ActorLogging {
+    with Logging {
 
-  override protected lazy val kafkaTopic: String = UserProducerActor.topicKey
-  override protected val format: RecordFormat[UserEventWrapper] = UserEventWrapper.recordFormat
+  override protected val topicKey: String = UserProducerBehavior.topicKey
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
@@ -66,7 +59,7 @@ class OrganisationConsumerActor(
   }
 
   def indexOrUpdate(organisation: IndexedOrganisation): Future[Done] = {
-    log.debug(s"Indexing $organisation")
+    debug(s"Indexing $organisation")
     elasticsearchOrganisationAPI
       .findOrganisationById(organisation.organisationId)
       .flatMap {
@@ -86,12 +79,13 @@ class OrganisationConsumerActor(
   override val groupId = "organisation-consumer"
 }
 
-object OrganisationConsumerActor {
-  def props(
+object OrganisationConsumerBehavior {
+  def apply(
     organisationService: OrganisationService,
-    elasticsearchOrganisationAPI: OrganisationSearchEngine,
-    elasticsearchConfiguration: ElasticsearchConfiguration
-  ): Props =
-    Props(new OrganisationConsumerActor(organisationService, elasticsearchOrganisationAPI, elasticsearchConfiguration))
+    elasticsearchOrganisationAPI: OrganisationSearchEngine
+  ): Behavior[Protocol] =
+    new OrganisationConsumerBehavior(organisationService, elasticsearchOrganisationAPI)
+      .createBehavior(name)
+
   val name: String = "organisation-consumer"
 }

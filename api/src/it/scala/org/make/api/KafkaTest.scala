@@ -19,16 +19,16 @@
 
 package org.make.api
 
-import java.util.Properties
-
-import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
+import com.sksamuel.avro4s.{Encoder, SchemaFor}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig}
 import org.apache.kafka.common.serialization.{Serializer, StringSerializer}
 import org.make.api.docker.DockerKafkaService
 import org.make.api.technical.MakeKafkaAvroSerializer
 
+import java.util.Properties
+
 trait KafkaTest extends ItMakeTest with DockerKafkaService {
-  def createProducer[T](schema: SchemaFor[T], format: RecordFormat[T]): KafkaProducer[String, T] = {
+  def createProducer[T: SchemaFor: Encoder]: KafkaProducer[String, T] = {
     val registryUrl = s"http://localhost:$registryExposedPort"
     val props = new Properties()
     props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, s"localhost:$kafkaExposedPort")
@@ -37,7 +37,7 @@ trait KafkaTest extends ItMakeTest with DockerKafkaService {
     props.put(ProducerConfig.BATCH_SIZE_CONFIG, "16384")
     props.put(ProducerConfig.LINGER_MS_CONFIG, "1")
     props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, "33554432")
-    val serializer: Serializer[T] = new MakeKafkaAvroSerializer[T](registryUrl, schema, format)
+    val serializer: Serializer[T] = new MakeKafkaAvroSerializer[T](registryUrl)
     new KafkaProducer(props, new StringSerializer(), serializer)
   }
 

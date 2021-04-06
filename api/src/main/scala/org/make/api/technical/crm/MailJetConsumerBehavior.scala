@@ -17,26 +17,27 @@
  *
  */
 
-package org.make.api.technical
+package org.make.api.technical.crm
 
-import org.make.api.technical.KafkaConsumerActor.{CheckState, Ready, Waiting}
-import org.make.core.Sharded
+import akka.actor.typed.Behavior
+import org.make.api.technical.KafkaConsumerBehavior
 
-abstract class BasicProducerActor[Wrapper <: Sharded, Event] extends ProducerActor[Wrapper, Event] {
+import scala.concurrent.Future
 
-  def kafkaTopic: String
+class MailJetConsumerBehavior(crmService: CrmService) extends KafkaConsumerBehavior[SendEmail] {
 
-  override def receive: Receive = {
-    case CheckState =>
-      if (producer.partitionsFor(kafkaConfiguration.topics(kafkaTopic)).size > 0) {
-        sender() ! Ready
-      } else {
-        sender() ! Waiting
-      }
-    case event if eventClass.isAssignableFrom(event.getClass) =>
-      sendRecord(kafkaTopic, convert(eventClass.cast(event)))
-    case other => log.warning("Unknown event {}", other)
+  override protected val topicKey: String = MailJetProducerBehavior.topicKey
+
+  override def handleMessage(message: SendEmail): Future[_] = {
+    crmService.sendEmail(message)
   }
 
-  protected def convert(event: Event): Wrapper
+  override val groupId = "send-email-consumer"
+}
+
+object MailJetConsumerBehavior {
+  def apply(crmService: CrmService): Behavior[KafkaConsumerBehavior.Protocol] =
+    new MailJetConsumerBehavior(crmService).createBehavior(name)
+  val name: String = "send-email-consumer"
+
 }

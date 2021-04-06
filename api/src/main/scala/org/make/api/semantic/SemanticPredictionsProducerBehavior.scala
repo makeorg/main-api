@@ -19,18 +19,13 @@
 
 package org.make.api.semantic
 
-import akka.actor.Props
-import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import org.make.api.technical.BasicProducerActor
+import akka.actor.typed.Behavior
+import org.make.api.technical.KafkaProducerBehavior
 import org.make.core.{DateHelper, MakeSerializable}
 
-class SemanticPredictionsProducerActor extends BasicProducerActor[PredictionsEventWrapper, PredictedTagsEvent] {
-  override protected lazy val eventClass: Class[PredictedTagsEvent] = classOf[PredictedTagsEvent]
-  override protected lazy val format: RecordFormat[PredictionsEventWrapper] =
-    PredictionsEventWrapper.recordFormat
-  override protected lazy val schema: SchemaFor[PredictionsEventWrapper] = PredictionsEventWrapper.schemaFor
-  override val kafkaTopic: String = kafkaConfiguration.topics(SemanticPredictionsProducerActor.topicKey)
-  override protected def convert(trackingEvent: PredictedTagsEvent): PredictionsEventWrapper =
+class SemanticPredictionsProducerBehavior extends KafkaProducerBehavior[PredictedTagsEvent, PredictionsEventWrapper] {
+  override protected val topicKey: String = SemanticPredictionsProducerBehavior.topicKey
+  override protected def wrapEvent(trackingEvent: PredictedTagsEvent): PredictionsEventWrapper =
     PredictionsEventWrapper(
       version = MakeSerializable.V1,
       id = trackingEvent.proposalId.value,
@@ -39,8 +34,9 @@ class SemanticPredictionsProducerActor extends BasicProducerActor[PredictionsEve
       event = trackingEvent
     )
 }
-object SemanticPredictionsProducerActor {
+
+object SemanticPredictionsProducerBehavior {
+  def apply(): Behavior[PredictedTagsEvent] = new SemanticPredictionsProducerBehavior().createBehavior(name)
   val name: String = "predictions-producer"
-  val props: Props = Props[SemanticPredictionsProducerActor]()
   val topicKey: String = "predictions"
 }

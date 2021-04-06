@@ -19,18 +19,13 @@
 
 package org.make.api.user
 
-import akka.actor.Props
-import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import org.make.api.technical.BasicProducerActor
+import akka.actor.typed.Behavior
+import org.make.api.technical.KafkaProducerBehavior
 import org.make.api.userhistory.{UserEvent, UserEventWrapper}
 
-class UserProducerActor extends BasicProducerActor[UserEventWrapper, UserEvent] {
-  override protected lazy val eventClass: Class[UserEvent] = classOf[UserEvent]
-  override protected lazy val format: RecordFormat[UserEventWrapper] = UserEventWrapper.recordFormat
-  override protected lazy val schema: SchemaFor[UserEventWrapper] = UserEventWrapper.schemaFor
-  override val kafkaTopic: String = kafkaConfiguration.topics(UserProducerActor.topicKey)
-
-  override protected def convert(event: UserEvent): UserEventWrapper = {
+class UserProducerBehavior extends KafkaProducerBehavior[UserEvent, UserEventWrapper] {
+  override protected val topicKey: String = UserProducerBehavior.topicKey
+  override protected def wrapEvent(event: UserEvent): UserEventWrapper = {
     UserEventWrapper(
       version = event.version(),
       id = event.userId.value,
@@ -42,8 +37,8 @@ class UserProducerActor extends BasicProducerActor[UserEventWrapper, UserEvent] 
   }
 }
 
-object UserProducerActor {
-  val props: Props = Props[UserProducerActor]()
-  val name: String = "kafka-user-event-writer"
+object UserProducerBehavior {
+  def apply(): Behavior[UserEvent] = new UserProducerBehavior().createBehavior(name)
+  val name: String = "users-producer"
   val topicKey: String = "users"
 }
