@@ -346,7 +346,6 @@ object UpdateUserRequest extends CirceFormatters {
 sealed abstract class SocialProvider(val value: String) extends StringEnumEntry
 
 object SocialProvider extends StringEnum[SocialProvider] with StringCirceEnum[SocialProvider] {
-  case object Google extends SocialProvider("google")
   case object GooglePeople extends SocialProvider("google_people")
   case object Facebook extends SocialProvider("facebook")
 
@@ -452,4 +451,14 @@ final case class PrivacyPolicyRequest(
 
 object PrivacyPolicyRequest {
   implicit val codec: Codec[PrivacyPolicyRequest] = deriveCodec
+}
+
+final case class SocialPrivacyPolicyRequest(
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "facebook,google,google_people")
+  provider: SocialProvider,
+  token: String
+)
+
+object SocialPrivacyPolicyRequest {
+  implicit val decoder: Decoder[SocialPrivacyPolicyRequest] = deriveDecoder[SocialPrivacyPolicyRequest]
 }

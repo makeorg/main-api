@@ -22,14 +22,14 @@ package org.make.api.user.social
 import grizzled.slf4j.Logging
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.user.SocialProvider.{Facebook, Google, GooglePeople}
+import org.make.api.user.SocialProvider.{Facebook, GooglePeople}
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.{SocialLoginResponse, SocialProvider, UserServiceComponent}
 import org.make.core.RequestContext
 import org.make.core.auth.{ClientId, UserRights}
 import org.make.core.question.QuestionId
 import org.make.core.reference.Country
-import org.make.core.user.UserId
+import org.make.core.user.{User, UserId}
 import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -49,6 +49,7 @@ trait SocialService {
     requestContext: RequestContext,
     validatedClientId: ClientId
   ): Future[(UserId, SocialLoginResponse)]
+  def getUserByProviderAndToken(provider: SocialProvider, token: String): Future[Option[User]]
 }
 
 trait DefaultSocialServiceComponent extends SocialServiceComponent {
@@ -57,6 +58,13 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
   override lazy val socialService: SocialService = new DefaultSocialService
 
   class DefaultSocialService extends SocialService {
+
+    private def getUserInfo(provider: SocialProvider, token: String): Future[UserInfo] = {
+      provider match {
+        case GooglePeople => googleApi.peopleInfo(token).map(_.toUserInfo())
+        case Facebook     => facebookApi.getUserInfo(token).map(_.toUserInfo())
+      }
+    }
 
     override def login(
       provider: SocialProvider,
@@ -67,15 +75,14 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
       validatedClientId: ClientId
     ): Future[(UserId, SocialLoginResponse)] = {
 
-      val futureUserInfo: Future[UserInfo] = provider match {
-        case Google       => googleApi.getUserInfo(token).map(_.toUserInfo(country))
-        case GooglePeople => googleApi.peopleInfo(token).map(_.toUserInfo(country))
-        case Facebook     => facebookApi.getUserInfo(token).map(_.toUserInfo(country))
-      }
-
       for {
-        userInfo                <- futureUserInfo
-        (user, accountCreation) <- userService.createOrUpdateUserFromSocial(userInfo, questionId, requestContext)
+        userInfo <- getUserInfo(provider, token)
+        (user, accountCreation) <- userService.createOrUpdateUserFromSocial(
+          userInfo,
+          questionId,
+          country,
+          requestContext
+        )
         accessToken <- oauth2DataHandler.createAccessToken(authInfo = AuthInfo(
           user = UserRights(user.userId, user.roles, user.availableQuestions, user.emailVerified),
           clientId = Some(validatedClientId.value),
@@ -88,6 +95,14 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
           user.userId,
           SocialLoginResponse(token = TokenResponse.fromAccessToken(accessToken), accountCreation = accountCreation)
         )
+      }
+    }
+
+    override def getUserByProviderAndToken(provider: SocialProvider, token: String): Future[Option[User]] = {
+      val userEmail: Future[Option[String]] = getUserInfo(provider, token).map(_.email)
+      userEmail.flatMap {
+        case None        => Future.successful(None)
+        case Some(email) => userService.getUserByEmail(email)
       }
     }
 

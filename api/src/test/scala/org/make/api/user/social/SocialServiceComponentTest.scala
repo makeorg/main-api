@@ -25,7 +25,7 @@ import java.time.LocalDate
 import java.util.Date
 
 import org.make.api.technical.auth._
-import org.make.api.user.SocialProvider.{Facebook, Google, GooglePeople}
+import org.make.api.user.SocialProvider.{Facebook, GooglePeople}
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.facebook.{UserInfo => FacebookUserInfos}
 import org.make.api.user.social.models.google.{
@@ -36,8 +36,7 @@ import org.make.api.user.social.models.google.{
   PeopleEmailAddress,
   PeopleInfo,
   PeopleName,
-  PeoplePhoto,
-  UserInfo => GoogleUserInfos
+  PeoplePhoto
 }
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{MakeUnitTest, TestUtils}
@@ -74,226 +73,6 @@ class SocialServiceComponentTest
   val expireInSeconds = 123000
   var refreshTokenValue = "my_refresh_token"
   var accessTokenValue = "my_access_token"
-
-  Feature("login user from google provider") {
-    Scenario("successful create UserInfo Object") {
-      Given("a user logged via google")
-      val googleData = GoogleUserInfos(
-        azp = None,
-        aud = None,
-        sub = None,
-        hd = Some("make.org"),
-        email = Some("google@make.org"),
-        emailVerified = "true",
-        atHash = None,
-        iss = None,
-        iat = Some("123456789"),
-        exp = None,
-        name = Some("google user"),
-        picture = Some("picture_url/photo.jpg"),
-        givenName = Some("google"),
-        familyName = Some("user"),
-        local = None,
-        alg = None,
-        kid = None
-      )
-
-      val userFromGoogle =
-        TestUtils.user(id = UserId("boo"), email = "google@make.org", firstName = None, lastName = None)
-
-      val accessToken = AccessToken(
-        accessTokenValue,
-        Some(refreshTokenValue),
-        None,
-        Some(expireInSeconds),
-        new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2018-07-13 12:00:00"),
-        Map.empty
-      )
-
-      when(googleApi.getUserInfo(eqTo("googleToken-a user logged via google")))
-        .thenReturn(Future.successful(googleData))
-
-      when(userService.createOrUpdateUserFromSocial(any[UserInfo], any[Option[QuestionId]], any[RequestContext]))
-        .thenReturn(Future.successful((userFromGoogle, true)))
-
-      when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
-        .thenReturn(Future.successful(accessToken))
-
-      When("login google user")
-      val tokenResposnse =
-        socialService.login(
-          Google,
-          "googleToken-a user logged via google",
-          Country("FR"),
-          None,
-          RequestContext.empty,
-          ClientId("client")
-        )
-
-      whenReady(tokenResposnse, Timeout(3.seconds)) { _ =>
-        Then("my program call getOrCreateUserFromSocial with google data")
-        val userInfoFromGoogle =
-          UserInfo(
-            email = googleData.email,
-            firstName = googleData.givenName,
-            country = Country("FR"),
-            googleId = googleData.iat,
-            domain = googleData.hd,
-            facebookId = None,
-            picture = Some("picture_url-s512/photo.jpg"),
-            dateOfBirth = None
-          )
-
-        verify(userService).createOrUpdateUserFromSocial(eqTo(userInfoFromGoogle), eqTo(None), any[RequestContext])
-      }
-    }
-
-    Scenario("successful create UserInfo Object without name") {
-      Given("a user logged via google")
-      val googleData = GoogleUserInfos(
-        azp = None,
-        aud = None,
-        sub = None,
-        hd = Some("make.org"),
-        email = Some("google@make.org"),
-        emailVerified = "true",
-        atHash = None,
-        iss = None,
-        iat = Some("123456789"),
-        exp = None,
-        name = Some("google user"),
-        picture = Some("picture_url"),
-        givenName = None,
-        familyName = None,
-        local = None,
-        alg = None,
-        kid = None
-      )
-
-      val userFromGoogle =
-        TestUtils.user(id = UserId("boo"), email = "google@make.org", firstName = None, lastName = None)
-
-      val accessToken = AccessToken(
-        accessTokenValue,
-        Some(refreshTokenValue),
-        None,
-        Some(expireInSeconds),
-        new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2018-07-13 12:00:00"),
-        Map.empty
-      )
-
-      when(googleApi.getUserInfo(eqTo("googleToken-a user logged via google")))
-        .thenReturn(Future.successful(googleData))
-
-      when(userService.createOrUpdateUserFromSocial(any[UserInfo], any[Option[QuestionId]], any[RequestContext]))
-        .thenReturn(Future.successful((userFromGoogle, true)))
-
-      when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
-        .thenReturn(Future.successful(accessToken))
-
-      When("login google user")
-      val tokenResposnse =
-        socialService.login(
-          Google,
-          "googleToken-a user logged via google",
-          Country("FR"),
-          None,
-          RequestContext.empty,
-          ClientId("client")
-        )
-
-      whenReady(tokenResposnse, Timeout(3.seconds)) { _ =>
-        Then("my program call getOrCreateUserFromSocial with google data")
-        val userInfoFromGoogle =
-          UserInfo(
-            email = googleData.email,
-            firstName = googleData.givenName,
-            country = Country("FR"),
-            googleId = googleData.iat,
-            domain = googleData.hd,
-            facebookId = None,
-            picture = Some("picture_url-s512"),
-            dateOfBirth = None
-          )
-
-        verify(userService).createOrUpdateUserFromSocial(eqTo(userInfoFromGoogle), eqTo(None), any[RequestContext])
-      }
-    }
-
-    Scenario("successfully create access token for persistent user") {
-      Given("a user logged via google")
-      val googleData = GoogleUserInfos(
-        azp = None,
-        aud = None,
-        sub = None,
-        hd = None,
-        email = Some("google@make.org"),
-        emailVerified = "true",
-        atHash = None,
-        iss = None,
-        iat = Some("333333"),
-        exp = None,
-        name = Some("google user"),
-        picture = None,
-        givenName = Some("google"),
-        familyName = Some("user"),
-        local = None,
-        alg = None,
-        kid = None
-      )
-
-      val userId = UserId("boo")
-      val userFromGoogle =
-        TestUtils.user(id = userId, email = "google@make.org", firstName = None, lastName = None)
-
-      val accessToken = AccessToken(
-        accessTokenValue,
-        Some(refreshTokenValue),
-        None,
-        Some(expireInSeconds),
-        new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2018-07-13 12:00:00"),
-        Map.empty
-      )
-
-      when(googleApi.getUserInfo(any[String]))
-        .thenReturn(Future.successful(googleData))
-
-      when(userService.createOrUpdateUserFromSocial(any[UserInfo], any[Option[QuestionId]], any[RequestContext]))
-        .thenReturn(Future.successful((userFromGoogle, false)))
-
-      when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
-        .thenReturn(Future.successful(accessToken))
-
-      When("login user from google")
-      val futureTokenResposnse =
-        socialService.login(Google, "token", Country("FR"), None, RequestContext.empty, ClientId("client"))
-
-      Then("my program should return a token response")
-      whenReady(futureTokenResposnse, Timeout(2.seconds)) {
-        case (id, socialLoginResponse) =>
-          id should be(userId)
-          socialLoginResponse.accessToken should be(accessTokenValue)
-          socialLoginResponse.refreshToken should contain(refreshTokenValue)
-          socialLoginResponse.tokenType should be("Bearer")
-          socialLoginResponse.accountCreation should be(false)
-      }
-    }
-
-    Scenario("social user has a bad token") {
-      Given("a user logged via google")
-
-      when(googleApi.getUserInfo(any[String]))
-        .thenReturn(Future.failed(new Exception("invalid token from google")))
-
-      When("login user from google")
-      val futureTokenResposnse =
-        socialService.login(Google, "token", Country("FR"), None, RequestContext.empty, ClientId("client"))
-
-      whenReady(futureTokenResposnse.failed, Timeout(3.seconds)) { exception =>
-        exception.getMessage should be("invalid token from google")
-      }
-    }
-  }
 
   Feature("login user from google_people provider") {
     Scenario("user with a birth date") {
@@ -342,6 +121,7 @@ class SocialServiceComponentTest
         userService.createOrUpdateUserFromSocial(
           argThat[UserInfo](_.email.contains(email)),
           eqTo(None),
+          eqTo(Country("FR")),
           eqTo(RequestContext.empty)
         )
       ).thenReturn(Future.successful((user(id = userId1, email = email), false)))
@@ -362,7 +142,7 @@ class SocialServiceComponentTest
             userInfo.domain.contains("example.com") &&
             userInfo.googleId.contains(googleId) &&
             userInfo.picture.contains("https://example.com/avatar")
-          }, eqTo(None), eqTo(RequestContext.empty))
+          }, eqTo(None), eqTo(Country("FR")), eqTo(RequestContext.empty))
       }
 
     }
@@ -413,6 +193,7 @@ class SocialServiceComponentTest
         userService.createOrUpdateUserFromSocial(
           argThat[UserInfo](_.email.contains(email)),
           eqTo(None),
+          eqTo(Country("FR")),
           eqTo(RequestContext.empty)
         )
       ).thenReturn(Future.successful((user(id = userId1, email = email), false)))
@@ -433,7 +214,7 @@ class SocialServiceComponentTest
             userInfo.domain.contains("example.com") &&
             userInfo.googleId.contains(googleId) &&
             userInfo.picture.contains("https://example.com/avatar")
-          }, eqTo(None), eqTo(RequestContext.empty))
+          }, eqTo(None), eqTo(Country("FR")), eqTo(RequestContext.empty))
       }
 
     }
@@ -494,6 +275,7 @@ class SocialServiceComponentTest
         userService.createOrUpdateUserFromSocial(
           argThat[UserInfo](_.email.contains(email)),
           eqTo(None),
+          eqTo(Country("FR")),
           eqTo(RequestContext.empty)
         )
       ).thenReturn(Future.successful((user(id = userId1, email = email), false)))
@@ -514,7 +296,7 @@ class SocialServiceComponentTest
             userInfo.domain.contains("example.com") &&
             userInfo.googleId.contains(googleId) &&
             userInfo.picture.contains("https://example.com/avatar")
-          }, eqTo(None), eqTo(RequestContext.empty))
+          }, eqTo(None), eqTo(Country("FR")), eqTo(RequestContext.empty))
       }
 
     }
@@ -546,7 +328,6 @@ class SocialServiceComponentTest
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
-        country = Country("FR"),
         googleId = None,
         facebookId = Some("444444"),
         picture = Some("https://graph.facebook.com/v7.0/444444/picture?width=512&height=512"),
@@ -556,7 +337,7 @@ class SocialServiceComponentTest
       when(facebookApi.getUserInfo(eqTo("facebookToken-444444")))
         .thenReturn(Future.successful(facebookData))
 
-      when(userService.createOrUpdateUserFromSocial(eqTo(info), eqTo(None), any[RequestContext]))
+      when(userService.createOrUpdateUserFromSocial(eqTo(info), eqTo(None), eqTo(Country("FR")), any[RequestContext]))
         .thenReturn(Future.successful((userFromFacebook, true)))
 
       when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
@@ -580,14 +361,18 @@ class SocialServiceComponentTest
           UserInfo(
             email = facebookData.email,
             firstName = facebookData.firstName,
-            country = Country("FR"),
             googleId = None,
             facebookId = Some(facebookData.id),
             picture = Some(s"https://graph.facebook.com/v7.0/${facebookData.id}/picture?width=512&height=512"),
             dateOfBirth = None
           )
 
-        verify(userService).createOrUpdateUserFromSocial(eqTo(userInfoFromFacebook), eqTo(None), any[RequestContext])
+        verify(userService).createOrUpdateUserFromSocial(
+          eqTo(userInfoFromFacebook),
+          eqTo(None),
+          eqTo(Country("FR")),
+          any[RequestContext]
+        )
       }
 
     }
@@ -612,7 +397,6 @@ class SocialServiceComponentTest
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = None,
-        country = Country("FR"),
         googleId = None,
         facebookId = Some("444444"),
         picture = Some("https://graph.facebook.com/v7.0/444444/picture?width=512&height=512"),
@@ -624,7 +408,7 @@ class SocialServiceComponentTest
 
       when(
         userService
-          .createOrUpdateUserFromSocial(eqTo(info), any[Option[QuestionId]], any[RequestContext])
+          .createOrUpdateUserFromSocial(eqTo(info), any[Option[QuestionId]], eqTo(Country("FR")), any[RequestContext])
       ).thenReturn(Future.successful((userFromFacebook, true)))
 
       when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
@@ -648,14 +432,18 @@ class SocialServiceComponentTest
           UserInfo(
             email = facebookData.email,
             firstName = facebookData.firstName,
-            country = Country("FR"),
             googleId = None,
             facebookId = Some(facebookData.id),
             picture = Some(s"https://graph.facebook.com/v7.0/${facebookData.id}/picture?width=512&height=512"),
             dateOfBirth = None
           )
 
-        verify(userService).createOrUpdateUserFromSocial(eqTo(userInfoFromFacebook), eqTo(None), any[RequestContext])
+        verify(userService).createOrUpdateUserFromSocial(
+          eqTo(userInfoFromFacebook),
+          eqTo(None),
+          eqTo(Country("FR")),
+          any[RequestContext]
+        )
       }
 
     }
@@ -685,8 +473,10 @@ class SocialServiceComponentTest
       when(facebookApi.getUserInfo(eqTo("facebookToken2")))
         .thenReturn(Future.successful(facebookData))
 
-      when(userService.createOrUpdateUserFromSocial(any[UserInfo], any[Option[QuestionId]], any[RequestContext]))
-        .thenReturn(Future.successful((userFromFacebook, false)))
+      when(
+        userService
+          .createOrUpdateUserFromSocial(any[UserInfo], any[Option[QuestionId]], any[Country], any[RequestContext])
+      ).thenReturn(Future.successful((userFromFacebook, false)))
 
       when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
         .thenReturn(Future.successful(accessToken))
