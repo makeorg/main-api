@@ -133,10 +133,11 @@ trait MakeApiTestBase
   final protected val tokenAdmin = "my-valid-admin-access-token"
 
   final protected val defaultCitizenUser: User =
-    TestUtils.user(id = UserId("my-citizen-user-id"), roles = Seq(RoleCitizen))
+    TestUtils.user(id = UserId("my-citizen-user-id"), email = "yopmail+citizen@make.org", roles = Seq(RoleCitizen))
   final protected val defaultModeratorUser: User =
-    TestUtils.user(id = UserId("my-moderator-user-id"), roles = Seq(RoleModerator))
-  final protected val defaultAdminUser: User = TestUtils.user(id = UserId("my-admin-user-id"), roles = Seq(RoleAdmin))
+    TestUtils.user(id = UserId("my-moderator-user-id"), email = "mod.erator@modo.com", roles = Seq(RoleModerator))
+  final protected val defaultAdminUser: User =
+    TestUtils.user(id = UserId("my-admin-user-id"), email = "yopmail+admin@make.org", roles = Seq(RoleAdmin))
 
   private val defaultUsersByToken: Map[String, User] =
     Map(tokenCitizen -> defaultCitizenUser, tokenModerator -> defaultModeratorUser, tokenAdmin -> defaultAdminUser)

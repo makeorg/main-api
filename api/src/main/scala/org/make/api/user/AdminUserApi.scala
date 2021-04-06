@@ -24,32 +24,30 @@ import akka.http.scaladsl.server._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Url
 import grizzled.slf4j.Logging
-import io.circe.refined._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.refined._
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiImplicitParam, _}
-import javax.ws.rs.Path
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.storage.{Content, StorageConfigurationComponent, StorageServiceComponent, UploadResponse}
 import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
-import org.make.api.user.Anonymization
-import org.make.core.Validation.{validateField, _}
+import org.make.core.Validation._
 import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.job.Job.JobId
 import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
 import org.make.core.reference.Country
-import org.make.core.user.Role.RoleAdmin
+import org.make.core.technical.Pagination._
 import org.make.core.user._
 import scalaoauth2.provider.AuthInfo
 
+import javax.ws.rs.Path
 import scala.annotation.meta.field
 import scala.concurrent.Future
-import org.make.core.technical.Pagination._
 
 @Api(value = "Admin Users")
-@Path(value = "/admin")
+@Path(value = "/admin/users")
 trait AdminUserApi extends Directives {
 
   @ApiOperation(
@@ -89,7 +87,7 @@ trait AdminUserApi extends Directives {
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[AdminUserResponse]]))
   )
-  @Path(value = "/users")
+  @Path(value = "/")
   def getUsers: Route
 
   @ApiOperation(
@@ -117,35 +115,8 @@ trait AdminUserApi extends Directives {
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[AdminUserResponse]))
   )
-  @Path(value = "/users/{userId}")
+  @Path(value = "/{userId}")
   def updateUser: Route
-
-  @ApiOperation(
-    value = "get-moderator",
-    httpMethod = "GET",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
-      )
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModeratorResponse]))
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        name = "moderatorId",
-        paramType = "path",
-        dataType = "string",
-        example = "d22c8e70-f709-42ff-8a52-9398d159c753"
-      )
-    )
-  )
-  @Path(value = "/moderators/{moderatorId}")
-  def getModerator: Route
 
   @ApiOperation(
     value = "get-user",
@@ -171,88 +142,8 @@ trait AdminUserApi extends Directives {
       )
     )
   )
-  @Path(value = "/users/{userId}")
+  @Path(value = "/{userId}")
   def getUser: Route
-
-  @ApiOperation(
-    value = "get-moderators",
-    httpMethod = "GET",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
-      )
-    )
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
-      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "email", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "firstName", paramType = "query", dataType = "string")
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[ModeratorResponse]]))
-  )
-  @Path(value = "/moderators")
-  def getModerators: Route
-
-  @ApiOperation(
-    value = "create-moderator",
-    httpMethod = "POST",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
-      )
-    )
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.CreateModeratorRequest")
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModeratorResponse]))
-  )
-  @Path(value = "/moderators")
-  def createModerator: Route
-
-  @ApiOperation(
-    value = "update-moderator",
-    httpMethod = "PUT",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        name = "moderatorId",
-        paramType = "path",
-        dataType = "string",
-        example = "d22c8e70-f709-42ff-8a52-9398d159c753"
-      ),
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.UpdateModeratorRequest")
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModeratorResponse]))
-  )
-  @Path(value = "/moderators/{moderatorId}")
-  def updateModerator: Route
 
   @ApiOperation(
     value = "admin-anonymize-user",
@@ -276,7 +167,7 @@ trait AdminUserApi extends Directives {
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
-  @Path(value = "/users/{userId}")
+  @Path(value = "/{userId}")
   def anonymizeUser: Route
 
   @ApiOperation(
@@ -296,7 +187,7 @@ trait AdminUserApi extends Directives {
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
-  @Path(value = "/users/anonymize")
+  @Path(value = "/anonymize")
   def anonymizeUserByEmail: Route
 
   @ApiOperation(
@@ -324,7 +215,7 @@ trait AdminUserApi extends Directives {
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UploadResponse])))
-  @Path(value = "/users/upload-avatar/{userType}")
+  @Path(value = "/upload-avatar/{userType}")
   def adminUploadAvatar: Route
 
   @ApiOperation(
@@ -344,7 +235,7 @@ trait AdminUserApi extends Directives {
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
-  @Path(value = "/users/update-user-email")
+  @Path(value = "/update-user-email")
   def updateUserEmail: Route
 
   @ApiOperation(
@@ -364,7 +255,7 @@ trait AdminUserApi extends Directives {
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
-  @Path(value = "/users/update-user-roles")
+  @Path(value = "/update-user-roles")
   def updateUserRoles: Route
 
   @ApiOperation(
@@ -379,12 +270,11 @@ trait AdminUserApi extends Directives {
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Accepted")))
-  @Path(value = "/users")
+  @Path(value = "/")
   def anonymizeUsers: Route
 
   def routes: Route =
-    getUsers ~ getUser ~ updateUser ~ getModerator ~ getModerators ~ createModerator ~ updateModerator ~
-      anonymizeUser ~ anonymizeUserByEmail ~ adminUploadAvatar ~ updateUserEmail ~ updateUserRoles ~ anonymizeUsers
+    getUsers ~ getUser ~ updateUser ~ anonymizeUser ~ anonymizeUserByEmail ~ adminUploadAvatar ~ updateUserEmail ~ updateUserRoles ~ anonymizeUsers
 
 }
 
@@ -408,7 +298,6 @@ trait DefaultAdminUserApiComponent
 
   class DefaultAdminUserApi extends AdminUserApi {
 
-    val moderatorId: PathMatcher1[UserId] = Segment.map(UserId.apply)
     val userId: PathMatcher1[UserId] = Segment.map(UserId.apply)
 
     override def getUsers: Route = get {
@@ -434,14 +323,13 @@ trait DefaultAdminUserApiComponent
             ) =>
               makeOAuth2 { auth: AuthInfo[UserRights] =>
                 requireAdminRole(auth.user) {
-                  val role: Role =
-                    maybeRole.map(Role.apply).getOrElse(Role.RoleModerator)
+                  val role: Option[Role] = maybeRole.map(Role.apply)
                   provideAsync(
                     userService.adminCountUsers(
                       email = email,
                       firstName = None,
                       lastName = None,
-                      role = Some(role),
+                      role = role,
                       userType = userType
                     )
                   ) { count =>
@@ -454,7 +342,7 @@ trait DefaultAdminUserApiComponent
                         email = email,
                         firstName = None,
                         lastName = None,
-                        role = Some(role),
+                        role = role,
                         userType = userType
                       )
                     ) { users =>
@@ -516,7 +404,7 @@ trait DefaultAdminUserApiComponent
                             requestContext
                           )
                         ) { user: User =>
-                          complete(StatusCodes.OK -> ModeratorResponse(user))
+                          complete(StatusCodes.OK -> AdminUserResponse(user))
                         }
                       }
                     }
@@ -528,28 +416,6 @@ trait DefaultAdminUserApiComponent
           }
         }
       }
-
-    private def isModerator(user: User): Boolean = {
-      user.roles.contains(Role.RoleModerator) || user.roles.contains(Role.RoleAdmin)
-    }
-
-    override def getModerator: Route = get {
-      path("admin" / "moderators" / moderatorId) { moderatorId =>
-        makeOperation("GetModerator") { _ =>
-          makeOAuth2 { auth: AuthInfo[UserRights] =>
-            requireAdminRole(auth.user) {
-              provideAsyncOrNotFound(userService.getUser(moderatorId)) { moderator =>
-                if (!isModerator(moderator)) {
-                  complete(StatusCodes.NotFound)
-                } else {
-                  complete(ModeratorResponse(moderator))
-                }
-              }
-            }
-          }
-        }
-      }
-    }
 
     override def getUser: Route = get {
       path("admin" / "users" / userId) { userId =>
@@ -565,149 +431,8 @@ trait DefaultAdminUserApiComponent
       }
     }
 
-    override def getModerators: Route = get {
-      path("admin" / "moderators") {
-        makeOperation("GetModerators") { _ =>
-          parameters("_start".as[Start].?, "_end".as[End].?, "_sort".?, "_order".as[Order].?, "email".?, "firstName".?) {
-            (
-              start: Option[Start],
-              end: Option[End],
-              sort: Option[String],
-              order: Option[Order],
-              email: Option[String],
-              firstName: Option[String]
-            ) =>
-              makeOAuth2 { auth: AuthInfo[UserRights] =>
-                requireAdminRole(auth.user) {
-                  provideAsync(
-                    userService.adminCountUsers(
-                      email = email,
-                      firstName = firstName,
-                      lastName = None,
-                      role = Some(Role.RoleModerator),
-                      userType = Some(UserType.UserTypeUser)
-                    )
-                  ) { count =>
-                    provideAsync(
-                      userService.adminFindUsers(
-                        start.orZero,
-                        end,
-                        sort,
-                        order,
-                        email = email,
-                        firstName = firstName,
-                        lastName = None,
-                        role = Some(Role.RoleModerator),
-                        userType = Some(UserType.UserTypeUser)
-                      )
-                    ) { users =>
-                      complete(
-                        (StatusCodes.OK, List(`X-Total-Count`(count.toString)), users.map(ModeratorResponse.apply))
-                      )
-                    }
-                  }
-                }
-              }
-          }
-        }
-      }
-    }
-
-    override def createModerator: Route = post {
-      path("admin" / "moderators") {
-        makeOperation("CreateModerator") { requestContext =>
-          makeOAuth2 { auth: AuthInfo[UserRights] =>
-            requireAdminRole(auth.user) {
-              decodeRequest {
-                entity(as[CreateModeratorRequest]) { request: CreateModeratorRequest =>
-                  provideAsync(
-                    userService
-                      .register(
-                        UserRegisterData(
-                          email = request.email,
-                          firstName = request.firstName,
-                          lastName = request.lastName,
-                          password = request.password,
-                          lastIp = None,
-                          country = request.country,
-                          optIn = Some(false),
-                          optInPartner = Some(false),
-                          roles = request.roles
-                            .map(_.map(Role.apply))
-                            .getOrElse(Seq(Role.RoleModerator, Role.RoleCitizen)),
-                          availableQuestions = request.availableQuestions,
-                          privacyPolicyApprovalDate = Some(DateHelper.now())
-                        ),
-                        requestContext
-                      )
-                  ) { result =>
-                    complete(StatusCodes.Created -> ModeratorResponse(result))
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    override def updateModerator: Route =
-      put {
-        path("admin" / "moderators" / moderatorId) { moderatorId =>
-          makeOperation("UpdateModerator") { requestContext =>
-            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-              val isAdmin = userAuth.user.roles.contains(RoleAdmin)
-              authorize(moderatorId == userAuth.user.userId || isAdmin) {
-                decodeRequest {
-                  entity(as[UpdateModeratorRequest]) { request: UpdateModeratorRequest =>
-                    provideAsyncOrNotFound(userService.getUser(moderatorId)) { user =>
-                      val roles =
-                        request.roles.map(_.map(Role.apply)).getOrElse(user.roles)
-                      authorize {
-                        roles != user.roles && isAdmin || roles == user.roles
-                      } {
-                        val lowerCasedEmail: String = request.email.getOrElse(user.email).toLowerCase()
-                        provideAsync(userService.getUserByEmail(lowerCasedEmail)) { maybeUser =>
-                          maybeUser.foreach { userToCheck =>
-                            Validation.validate(
-                              Validation.validateField(
-                                field = "email",
-                                "already_registered",
-                                condition = userToCheck.userId.value == user.userId.value,
-                                message = s"Email $lowerCasedEmail already exists"
-                              )
-                            )
-                          }
-
-                          onSuccess(
-                            userService.update(
-                              user.copy(
-                                email = lowerCasedEmail,
-                                firstName = request.firstName.orElse(user.firstName),
-                                lastName = request.lastName.orElse(user.lastName),
-                                country = request.country.getOrElse(user.country),
-                                roles = roles,
-                                availableQuestions = request.availableQuestions
-                              ),
-                              requestContext
-                            )
-                          ) { user: User =>
-                            complete(StatusCodes.OK -> ModeratorResponse(user))
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-
-            }
-          }
-        }
-      }
-
     override def anonymizeUser: Route = delete {
-      path("admin" / "users" / moderatorId) { userId: UserId =>
+      path("admin" / "users" / userId) { userId: UserId =>
         makeOperation("adminDeleteUser") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireAdminRole(userAuth.user) {
@@ -856,108 +581,12 @@ trait DefaultAdminUserApiComponent
 
 }
 
-final case class CreateModeratorRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org") email: String,
-  firstName: Option[String],
-  lastName: Option[String],
-  @(ApiModelProperty @field)(dataType = "list[string]") roles: Option[Seq[String]],
-  password: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
-  @(ApiModelProperty @field)(dataType = "list[string]", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
-  availableQuestions: Seq[QuestionId]
-) {
-  validate(
-    mandatoryField("firstName", firstName),
-    validateOptionalUserInput("firstName", firstName, None),
-    validateOptionalUserInput("lastName", lastName, None),
-    mandatoryField("email", email),
-    validateEmail("email", email.toLowerCase),
-    validateUserInput("email", email, None),
-    mandatoryField("country", country),
-    validateField(
-      "password",
-      "invalid_password",
-      password.forall(_.length >= 8),
-      "Password must be at least 8 characters"
-    )
-  )
-}
-
-object CreateModeratorRequest {
-  implicit val decoder: Decoder[CreateModeratorRequest] = deriveDecoder[CreateModeratorRequest]
-}
-
-final case class UpdateModeratorRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org") email: Option[String],
-  firstName: Option[String],
-  lastName: Option[String],
-  @(ApiModelProperty @field)(dataType = "list[string]") roles: Option[Seq[String]],
-  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
-  @(ApiModelProperty @field)(dataType = "list[string]", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
-  availableQuestions: Seq[QuestionId]
-) {
-  private val maxCountryLength = 3
-
-  validateOptional(
-    email.map(email     => validateEmail(fieldName = "email", fieldValue = email.toLowerCase)),
-    email.map(email     => validateUserInput("email", email, None)),
-    firstName.map(value => requireNonEmpty("firstName", value, Some("firstName should not be an empty string"))),
-    firstName.map(value => validateUserInput("firstName", value, None)),
-    lastName.map(value  => validateUserInput("lastName", value, None)),
-    country.map(country => maxLength("country", maxCountryLength, country.value))
-  )
-}
-
-object UpdateModeratorRequest {
-  implicit val decoder: Decoder[UpdateModeratorRequest] = deriveDecoder[UpdateModeratorRequest]
-
-  def updateValue(oldValue: Option[String], newValue: Option[String]): Option[String] = {
-    newValue match {
-      case None     => oldValue
-      case Some("") => None
-      case value    => value
-    }
-  }
-}
-
 final case class AnonymizeUserRequest(email: String) {
   validate(validateUserInput("email", email, None), validateEmail("email", email, None))
 }
 
 object AnonymizeUserRequest {
   implicit val decoder: Decoder[AnonymizeUserRequest] = deriveDecoder[AnonymizeUserRequest]
-}
-
-final case class ModeratorResponse(
-  @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753") id: UserId,
-  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org") email: String,
-  firstName: Option[String],
-  lastName: Option[String],
-  @(ApiModelProperty @field)(dataType = "list[string]") roles: Seq[Role],
-  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
-  @(ApiModelProperty @field)(dataType = "list[string]")
-  availableQuestions: Seq[QuestionId]
-) {
-  validate(
-    validateUserInput("email", email, None),
-    validateOptionalUserInput("firstName", firstName, None),
-    validateOptionalUserInput("lastName", lastName, None)
-  )
-}
-
-object ModeratorResponse extends CirceFormatters {
-  implicit val encoder: Encoder[ModeratorResponse] = deriveEncoder[ModeratorResponse]
-  implicit val decoder: Decoder[ModeratorResponse] = deriveDecoder[ModeratorResponse]
-
-  def apply(user: User): ModeratorResponse = ModeratorResponse(
-    id = user.userId,
-    email = user.email,
-    firstName = user.firstName,
-    lastName = user.lastName,
-    roles = user.roles,
-    country = user.country,
-    availableQuestions = user.availableQuestions
-  )
 }
 
 final case class AdminUserResponse(
