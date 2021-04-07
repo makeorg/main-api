@@ -44,7 +44,6 @@ import org.make.api.technical.security.SecurityHelper
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage.StorageServiceComponent
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
-import org.make.api.user.UserService.Anonymization
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.google.PeopleInfo
 import org.make.api.user.validation.UserRegistrationValidatorComponent
@@ -146,14 +145,6 @@ trait UserService extends ShortenedNames {
     eventDate: ZonedDateTime
   ): Future[Unit]
   def adminUpdateUserEmail(user: User, email: String): Future[Unit]
-}
-
-object UserService {
-  sealed abstract class Anonymization
-  object Anonymization {
-    final case object Automatic extends Anonymization
-    final case object Explicit extends Anonymization
-  }
 }
 
 final case class UserRegisterData(
@@ -906,6 +897,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             country = user.country,
             eventDate = dateHelper.now(),
             adminId = adminId,
+            mode = mode,
             eventId = Some(idGenerator.nextEventId())
           )
         )

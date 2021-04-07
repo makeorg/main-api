@@ -24,6 +24,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import com.sksamuel.avro4s
 import com.sksamuel.avro4s.{AvroDefault, AvroSortPriority, DefaultFieldMapper, RecordFormat, SchemaFor}
 import org.make.api.technical.ActorProtocol
+import org.make.api.user.Anonymization
 import org.make.core._
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.profile.{Gender, SocioProfessionalCategory}
@@ -299,9 +300,10 @@ final case class UserAnonymizedEvent(
   override val requestContext: RequestContext,
   @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
   adminId: UserId,
+  @AvroDefault("automatic") mode: Anonymization = Anonymization.Automatic,
   eventId: Option[EventId] = None
 ) extends UserEvent {
-  override def version(): Int = MakeSerializable.V1
+  override def version(): Int = MakeSerializable.V2
 }
 
 @AvroSortPriority(4)

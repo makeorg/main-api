@@ -32,7 +32,7 @@ import javax.ws.rs.Path
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.storage.{Content, StorageConfigurationComponent, StorageServiceComponent, UploadResponse}
 import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
-import org.make.api.user.UserService.Anonymization
+import org.make.api.user.Anonymization
 import org.make.core.Validation.{validateField, _}
 import org.make.core._
 import org.make.core.auth.UserRights

@@ -21,6 +21,7 @@ package org.make.api.userhistory
 
 import org.make.api.technical.MakeEventSerializer
 import org.make.api.technical.security.SecurityConfiguration
+import org.make.api.user.Anonymization
 
 import java.time.ZonedDateTime
 import org.make.api.userhistory.UserHistoryActor.{UserHistory, UserVotesAndQualifications}
@@ -442,8 +443,8 @@ final class UserHistorySerializers(securityConfiguration: SecurityConfiguration)
         )
     )
 
-  private val logUserAnonymizedEventSerializer: JsonPersister[LogUserAnonymizedEvent, V3] =
-    json.persister[LogUserAnonymizedEvent, V3](
+  private val logUserAnonymizedEventSerializer: JsonPersister[LogUserAnonymizedEvent, V4] =
+    json.persister[LogUserAnonymizedEvent, V4](
       "user-anonymized",
       from[V1]
         .to[V2](_.update("context" / "customData" ! set[Map[String, String]](Map.empty)))
@@ -452,6 +453,7 @@ final class UserHistorySerializers(securityConfiguration: SecurityConfiguration)
             "context" ! modify[JsObject](MakeEventSerializer.setIpAddressAndHash(securityConfiguration.secureHashSalt))
           )
         )
+        .to[V4]("action" / "arguments" / "mode" ! set(Anonymization.Automatic.value))
     )
 
   private val logUserOptInNewsletterEventSerializer: JsonPersister[LogUserOptInNewsletterEvent, V3] =

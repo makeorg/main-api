@@ -27,6 +27,7 @@ import org.make.api.proposal.PublishedProposalEvent.{
   ProposalPostponed,
   ProposalRefused
 }
+import org.make.api.user.Anonymization
 import org.make.core.SprayJsonFormatters._
 import org.make.core.history.HistoryActions.VoteTrust
 import org.make.core.operation.OperationId
@@ -575,15 +576,15 @@ object LogUserAnonymizedEvent {
 
 }
 
-final case class UserAnonymized(userId: UserId, adminId: UserId) {
-  def version(): Int = MakeSerializable.V1
+final case class UserAnonymized(userId: UserId, adminId: UserId, mode: Anonymization) {
+  def version(): Int = MakeSerializable.V2
 }
 
 object UserAnonymized {
   val actionType: String = "user-anonymized"
 
   implicit val userAnonymized: RootJsonFormat[UserAnonymized] =
-    DefaultJsonProtocol.jsonFormat2(UserAnonymized.apply)
+    DefaultJsonProtocol.jsonFormat3(UserAnonymized.apply)
 }
 
 final case class LogUserOptInNewsletterEvent(

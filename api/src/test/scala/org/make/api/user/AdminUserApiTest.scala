@@ -27,7 +27,7 @@ import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage._
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
-import org.make.api.user.UserService.Anonymization
+import org.make.api.user.Anonymization
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase, TestUtils}
 import org.make.core.job.Job.JobId
 import org.make.core.reference.Country
