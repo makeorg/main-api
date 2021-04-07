@@ -124,11 +124,11 @@
   }
 
   function onSignIn(googleUser) {
-    var id_token = googleUser.getAuthResponse().id_token;
+    var access_token = googleUser.getAuthResponse().access_token;
 
     var payload = {
                      method: 'POST',
-                     body: JSON.stringify({ provider: 'google', token: id_token, country: 'FR', language: 'fr' }),
+                     body: JSON.stringify({ provider: 'google_people', token: access_token, country: 'FR', language: 'fr' }),
                      headers: {'Content-Type': 'application/json'}
                    };
 
