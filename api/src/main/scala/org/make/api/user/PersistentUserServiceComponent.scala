@@ -1073,7 +1073,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.country -> user.country.value,
               column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory),
               column.emailVerified -> user.emailVerified,
-              column.hashedPassword -> user.hashedPassword
+              column.hashedPassword -> user.hashedPassword,
+              column.privacyPolicyApprovalDate -> user.privacyPolicyApprovalDate
             )
             .where(sqls.eq(column.uuid, user.userId.value))
         }.executeUpdate().apply() match {
