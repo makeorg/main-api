@@ -139,6 +139,7 @@ trait MakeApi
     with DefaultAdminCrmQuestionTemplatesApiComponent
     with DefaultAdminFeatureApiComponent
     with DefaultAdminIdeaMappingApiComponent
+    with DefaultAdminModeratorApiComponent
     with DefaultAdminOperationOfQuestionApiComponent
     with DefaultAdminPartnerApiComponent
     with DefaultAdminPersonalityApiComponent
@@ -375,6 +376,7 @@ trait MakeApi
       classOf[AdminCrmQuestionTemplatesApi],
       classOf[AdminFeatureApi],
       classOf[AdminIdeaMappingApi],
+      classOf[AdminModeratorApi],
       classOf[AdminOperationOfQuestionApi],
       classOf[AdminPartnerApi],
       classOf[AdminPersonalityApi],
@@ -443,6 +445,7 @@ trait MakeApi
       adminCrmQuestionTemplatesApi.routes ~
       adminFeatureApi.routes ~
       adminIdeaMappingApi.routes ~
+      adminModeratorApi.routes ~
       adminOperationOfQuestionApi.routes ~
       adminPartnerApi.routes ~
       adminPersonalityApi.routes ~
