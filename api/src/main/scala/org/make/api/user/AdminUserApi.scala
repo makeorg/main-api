@@ -380,11 +380,20 @@ trait DefaultAdminUserApiComponent
                           )
                         }
                         val profile: Option[Profile] = user.profile
-                          .map(_.copy(website = request.website.map(_.value), politicalParty = request.politicalParty))
+                          .map(
+                            _.copy(
+                              website = request.website.map(_.value),
+                              politicalParty = request.politicalParty,
+                              optInNewsletter = request.optInNewsletter,
+                              avatarUrl = request.avatarUrl.map(_.value)
+                            )
+                          )
                           .orElse(
                             Profile.parseProfile(
                               website = request.website.map(_.value),
-                              politicalParty = request.politicalParty
+                              politicalParty = request.politicalParty,
+                              optInNewsletter = request.optInNewsletter,
+                              avatarUrl = request.avatarUrl.map(_.value)
                             )
                           )
 
@@ -603,7 +612,9 @@ final case class AdminUserResponse(
   availableQuestions: Seq[QuestionId],
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com")
   website: Option[String],
-  politicalParty: Option[String]
+  politicalParty: Option[String],
+  optInNewsletter: Option[Boolean],
+  avatarUrl: Option[String]
 ) {
   validate(validateUserInput("email", email, None))
 }
@@ -623,7 +634,9 @@ object AdminUserResponse extends CirceFormatters {
     country = user.country,
     availableQuestions = user.availableQuestions,
     politicalParty = user.profile.flatMap(_.politicalParty),
-    website = user.profile.flatMap(_.website)
+    website = user.profile.flatMap(_.website),
+    optInNewsletter = user.profile.map(_.optInNewsletter),
+    avatarUrl = user.profile.flatMap(_.avatarUrl)
   )
 }
 
@@ -641,7 +654,11 @@ final case class AdminUpdateUserRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website") website: Option[
     String Refined Url
   ],
-  politicalParty: Option[String]
+  politicalParty: Option[String],
+  optInNewsletter: Boolean,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png") avatarUrl: Option[
+    String Refined Url
+  ]
 ) {
   private val maxCountryLength = 3
 

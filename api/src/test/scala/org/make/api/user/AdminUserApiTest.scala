@@ -28,6 +28,7 @@ import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage._
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase, TestUtils}
 import org.make.core.job.Job.JobId
+import org.make.core.profile.Profile
 import org.make.core.reference.Country
 import org.make.core.technical.Pagination.Start
 import org.make.core.user.Role.{RoleCitizen, RoleModerator, RolePolitical}
@@ -55,12 +56,15 @@ class AdminUserApiTest
     adminUserApi.routes
   })
 
-  val citizenId: UserId = defaultCitizenUser.userId
+  val citizen = defaultCitizenUser.copy(profile =
+    Profile.parseProfile(optInNewsletter = false, avatarUrl = Some("https://example.com/foo.png"))
+  )
+  val citizenId: UserId = citizen.userId
   val moderatorId: UserId = defaultModeratorUser.userId
   val adminId: UserId = defaultAdminUser.userId
 
-  when(userService.getUser(eqTo(citizenId))).thenReturn(Future.successful(Some(defaultCitizenUser)))
-  when(userService.getUserByEmail(defaultCitizenUser.email)).thenReturn(Future.successful(Some(defaultCitizenUser)))
+  when(userService.getUser(eqTo(citizenId))).thenReturn(Future.successful(Some(citizen)))
+  when(userService.getUserByEmail(citizen.email)).thenReturn(Future.successful(Some(citizen)))
   when(userService.getUser(eqTo(moderatorId))).thenReturn(Future.successful(Some(defaultModeratorUser)))
   when(userService.getUserByEmail(defaultModeratorUser.email)).thenReturn(Future.successful(Some(defaultModeratorUser)))
   when(userService.update(any[User], any[RequestContext])).thenReturn(Future.successful(defaultModeratorUser))
@@ -100,6 +104,8 @@ class AdminUserApiTest
         status should be(StatusCodes.OK)
         val user = entityAs[AdminUserResponse]
         user.id should be(citizenId)
+        user.optInNewsletter should be(Some(false))
+        user.avatarUrl should be(Some("https://example.com/foo.png"))
       }
     }
   }
@@ -359,7 +365,9 @@ class AdminUserApiTest
           |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL", "ROLE_CITIZEN"],
           |  "country": "GB",
           |  "language": "en",
-          |  "availableQuestions": []
+          |  "availableQuestions": [],
+          |  "optInNewsletter": true,
+          |  "avatarUrl": "https://example.com/bar.png"
           |}
         """.stripMargin
 
@@ -376,7 +384,9 @@ class AdminUserApiTest
             user.lastIp.isEmpty &&
             user.hashedPassword.isEmpty &&
             user.roles == Seq(RoleModerator, RolePolitical, RoleCitizen) &&
-            user.country == Country("GB")
+            user.country == Country("GB") &&
+            user.profile.exists(_.optInNewsletter) &&
+            user.profile.flatMap(_.avatarUrl).contains("https://example.com/bar.png")
           }, any[RequestContext])
       }
     }
@@ -395,7 +405,8 @@ class AdminUserApiTest
           |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL", "ROLE_CITIZEN"],
           |  "country": "GB",
           |  "language": "en",
-          |  "availableQuestions": []
+          |  "availableQuestions": [],
+          |  "optInNewsletter": true
           |}
         """.stripMargin
 
@@ -420,7 +431,8 @@ class AdminUserApiTest
           |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL", "ROLE_CITIZEN"],
           |  "country": "GB",
           |  "language": "en",
-          |  "availableQuestions": []
+          |  "availableQuestions": [],
+          |  "optInNewsletter": true
           |}
         """.stripMargin
 
@@ -582,7 +594,7 @@ class AdminUserApiTest
 
   Feature("update user email") {
 
-    val request = AdminUpdateUserEmail(defaultCitizenUser.email, "kane@example.com")
+    val request = AdminUpdateUserEmail(citizen.email, "kane@example.com")
     when(userService.adminUpdateUserEmail(any[User], any[String])).thenReturn(Future.unit)
 
     Scenario("anonymously") {
@@ -622,7 +634,7 @@ class AdminUserApiTest
   }
 
   Feature("update user role") {
-    val request = UpdateUserRolesRequest(email = defaultCitizenUser.email, roles = Seq(RoleCitizen, RoleModerator))
+    val request = UpdateUserRolesRequest(email = citizen.email, roles = Seq(RoleCitizen, RoleModerator))
 
     Scenario("unauthorized not connected") {
       Post(s"/admin/users/update-user-roles") ~> routes ~> check {
