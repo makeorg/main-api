@@ -64,20 +64,24 @@ class SecurityApiTest
     }
 
     Scenario("admin with valid value") {
-      Post("/admin/security/secure-hash")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, "{\"value\": \"toto\"}"))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val secureHashResponse: SecureHashResponse = entityAs[SecureHashResponse]
-        SecurityHelper.validateSecureHash(secureHashResponse.hash, "toto", securityConfiguration.secureHashSalt) shouldBe true
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/security/secure-hash")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, "{\"value\": \"toto\"}"))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          val secureHashResponse: SecureHashResponse = entityAs[SecureHashResponse]
+          SecurityHelper.validateSecureHash(secureHashResponse.hash, "toto", securityConfiguration.secureHashSalt) shouldBe true
+        }
       }
     }
 
     Scenario("admin but no value given") {
-      Post("/admin/security/secure-hash")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/security/secure-hash")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+        }
       }
     }
   }

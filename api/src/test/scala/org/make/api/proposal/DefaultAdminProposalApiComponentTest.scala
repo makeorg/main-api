@@ -103,13 +103,15 @@ class DefaultAdminProposalApiComponentTest
         .thenReturn(Future.successful(None))
 
       val verifiedVotesRequest = UpdateProposalVotesRequest(Seq.empty)
-      Put("/admin/proposals/invalid/fix-trolled-proposal")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(HttpEntity(ContentTypes.`application/json`, verifiedVotesRequest.asJson.toString)) ~>
-        routes ~>
-        check {
-          status should be(StatusCodes.NotFound)
-        }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/proposals/invalid/fix-trolled-proposal")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(HttpEntity(ContentTypes.`application/json`, verifiedVotesRequest.asJson.toString)) ~>
+          routes ~>
+          check {
+            status should be(StatusCodes.NotFound)
+          }
+      }
     }
 
     Scenario("allowed admin") {
@@ -281,10 +283,12 @@ class DefaultAdminProposalApiComponentTest
         )
       )
       )
-      Put("/admin/proposals/counts-123/fix-trolled-proposal")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, verifiedVotesRequest.asJson.toString))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/proposals/counts-123/fix-trolled-proposal")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, verifiedVotesRequest.asJson.toString))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+        }
       }
     }
   }
@@ -313,18 +317,22 @@ class DefaultAdminProposalApiComponentTest
     Scenario("allowed admin") {
       when(proposalService.resetVotes(any[UserId], any[RequestContext]))
         .thenReturn(Future.successful(Done))
-      Post("/admin/proposals/reset-votes")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.Accepted)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/proposals/reset-votes")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.Accepted)
+        }
       }
     }
 
     Scenario("allowed admin with a lot of proposals") {
       when(proposalService.resetVotes(any[UserId], any[RequestContext]))
         .thenReturn(Promise[Done]().future)
-      Post("/admin/proposals/reset-votes")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.Accepted)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/proposals/reset-votes")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.Accepted)
+        }
       }
     }
   }
@@ -387,89 +395,103 @@ class DefaultAdminProposalApiComponentTest
     }
 
     Scenario("allowed admin") {
-      Patch("/admin/proposals/patch-proposal-id")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(HttpEntity(ContentTypes.`application/json`, validPatch.asJson.toString)) ~> routes ~> check {
-        status should be(StatusCodes.OK)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Patch("/admin/proposals/patch-proposal-id")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(HttpEntity(ContentTypes.`application/json`, validPatch.asJson.toString)) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+        }
       }
     }
 
     Scenario("proposal does not exist") {
-      Patch("/admin/proposals/fake")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(HttpEntity(ContentTypes.`application/json`, validPatch.asJson.toString)) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Patch("/admin/proposals/fake")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(HttpEntity(ContentTypes.`application/json`, validPatch.asJson.toString)) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
 
     Scenario("idea does not exist") {
-      Patch("/admin/proposals/patch-proposal-id")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(
-          HttpEntity(ContentTypes.`application/json`, validPatch.copy(ideaId = Some(IdeaId("fake"))).asJson.toString)
-        ) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size shouldBe 1
-        errors.head.field shouldBe "ideaId"
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Patch("/admin/proposals/patch-proposal-id")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(
+            HttpEntity(ContentTypes.`application/json`, validPatch.copy(ideaId = Some(IdeaId("fake"))).asJson.toString)
+          ) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size shouldBe 1
+          errors.head.field shouldBe "ideaId"
+        }
       }
     }
 
     Scenario("author does not exist") {
-      Patch("/admin/proposals/patch-proposal-id")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(
-          HttpEntity(ContentTypes.`application/json`, validPatch.copy(author = Some(UserId("fake"))).asJson.toString)
-        ) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size shouldBe 1
-        errors.head.field shouldBe "author"
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Patch("/admin/proposals/patch-proposal-id")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(
+            HttpEntity(ContentTypes.`application/json`, validPatch.copy(author = Some(UserId("fake"))).asJson.toString)
+          ) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size shouldBe 1
+          errors.head.field shouldBe "author"
+        }
       }
     }
 
     Scenario("operation does not exist") {
-      Patch("/admin/proposals/patch-proposal-id")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(
-          HttpEntity(
-            ContentTypes.`application/json`,
-            validPatch.copy(operation = Some(OperationId("fake"))).asJson.toString
-          )
-        ) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size shouldBe 1
-        errors.head.field shouldBe "operation"
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Patch("/admin/proposals/patch-proposal-id")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(
+            HttpEntity(
+              ContentTypes.`application/json`,
+              validPatch.copy(operation = Some(OperationId("fake"))).asJson.toString
+            )
+          ) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size shouldBe 1
+          errors.head.field shouldBe "operation"
+        }
       }
     }
 
     Scenario("question does not exist") {
-      Patch("/admin/proposals/patch-proposal-id")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(
-          HttpEntity(
-            ContentTypes.`application/json`,
-            validPatch.copy(questionId = Some(QuestionId("fake"))).asJson.toString
-          )
-        ) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size shouldBe 1
-        errors.head.field shouldBe "questionId"
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Patch("/admin/proposals/patch-proposal-id")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(
+            HttpEntity(
+              ContentTypes.`application/json`,
+              validPatch.copy(questionId = Some(QuestionId("fake"))).asJson.toString
+            )
+          ) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size shouldBe 1
+          errors.head.field shouldBe "questionId"
+        }
       }
     }
 
     Scenario("ok even if a tag does not exist") {
-      Patch("/admin/proposals/patch-proposal-id")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(
-          HttpEntity(
-            ContentTypes.`application/json`,
-            validPatch.copy(tags = Some(tags :+ TagId("fake"))).asJson.toString
-          )
-        ) ~> routes ~> check {
-        status should be(StatusCodes.OK)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Patch("/admin/proposals/patch-proposal-id")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(
+            HttpEntity(
+              ContentTypes.`application/json`,
+              validPatch.copy(tags = Some(tags :+ TagId("fake"))).asJson.toString
+            )
+          ) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+        }
       }
     }
   }
@@ -510,15 +532,17 @@ class DefaultAdminProposalApiComponentTest
     }
 
     Scenario("it works for admins") {
-      Post("/admin/proposals/keywords")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
-        val response = entityAs[Seq[ProposalKeywordsResponse]]
-        response should contain theSameElementsAs Seq(
-          ProposalKeywordsResponse(ProposalId("123"), ProposalKeywordsResponseStatus.Ok, None),
-          ProposalKeywordsResponse(ProposalId("456"), ProposalKeywordsResponseStatus.Error, Some("warning"))
-        )
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/proposals/keywords")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+          val response = entityAs[Seq[ProposalKeywordsResponse]]
+          response should contain theSameElementsAs Seq(
+            ProposalKeywordsResponse(ProposalId("123"), ProposalKeywordsResponseStatus.Ok, None),
+            ProposalKeywordsResponse(ProposalId("456"), ProposalKeywordsResponseStatus.Error, Some("warning"))
+          )
+        }
       }
     }
 

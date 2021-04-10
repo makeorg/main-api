@@ -81,30 +81,34 @@ class DefaultAdminOperationOfQuestionApiComponentTest
     }
 
     Scenario("update highlights as admin") {
-      Put("/admin/questions/some-question/highlights")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(
-          ContentTypes.`application/json`,
-          UpdateHighlights(proposalsCount = 4200, participantsCount = 8400, votesCount = 45000).asJson.toString()
-        ) ~> routes ~> check {
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/questions/some-question/highlights")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(
+            ContentTypes.`application/json`,
+            UpdateHighlights(proposalsCount = 4200, participantsCount = 8400, votesCount = 45000).asJson.toString()
+          ) ~> routes ~> check {
 
-        status should be(StatusCodes.NoContent)
+          status should be(StatusCodes.NoContent)
+        }
       }
     }
 
     Scenario("update with negative int") {
-      Put("/admin/questions/some-question/highlights")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/questions/some-question/highlights")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(ContentTypes.`application/json`, """{
            | "proposalsCount": -84,
            | "participantsCount": 1000,
            | "votesCount": 1000000
            |}""".stripMargin) ~> routes ~> check {
 
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(1)
-        errors.head.field shouldBe "proposalsCount"
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size should be(1)
+          errors.head.field shouldBe "proposalsCount"
+        }
       }
     }
   }
@@ -143,33 +147,37 @@ class DefaultAdminOperationOfQuestionApiComponentTest
     }
 
     Scenario("update keywords as admin") {
-      Put("/admin/questions/some-question/keywords")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(
-          ContentTypes.`application/json`,
-          UpdateKeywords(Seq(KeywordRequest("key", "label", 0.42f, 14))).asJson.toString()
-        ) ~> routes ~> check {
-        status should be(StatusCodes.NoContent)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/questions/some-question/keywords")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(
+            ContentTypes.`application/json`,
+            UpdateKeywords(Seq(KeywordRequest("key", "label", 0.42f, 14))).asJson.toString()
+          ) ~> routes ~> check {
+          status should be(StatusCodes.NoContent)
+        }
       }
     }
 
     Scenario("duplicate keywords") {
-      Put("/admin/questions/some-question/keywords")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(
-          ContentTypes.`application/json`,
-          UpdateKeywords(
-            Seq(
-              KeywordRequest("key", "label1", 0.42f, 14),
-              KeywordRequest("key", "label2", 0.2f, 4),
-              KeywordRequest("other-key", "label3", 0.2f, 4)
-            )
-          ).asJson.toString()
-        ) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(1)
-        errors.head.message shouldBe Some("keywords contain duplicate keys: key")
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/questions/some-question/keywords")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(
+            ContentTypes.`application/json`,
+            UpdateKeywords(
+              Seq(
+                KeywordRequest("key", "label1", 0.42f, 14),
+                KeywordRequest("key", "label2", 0.2f, 4),
+                KeywordRequest("other-key", "label3", 0.2f, 4)
+              )
+            ).asJson.toString()
+          ) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size should be(1)
+          errors.head.message shouldBe Some("keywords contain duplicate keys: key")
+        }
       }
     }
   }

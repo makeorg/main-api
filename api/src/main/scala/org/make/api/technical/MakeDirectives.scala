@@ -48,8 +48,8 @@ import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
 import org.make.core.reference.Country
 import org.make.core.session.{SessionId, VisitorId}
-import org.make.core.user.Role.{RoleAdmin, RoleModerator}
-import org.make.core.user.UserId
+import org.make.core.user.Role.{RoleAdmin, RoleModerator, RoleSuperAdmin}
+import org.make.core.user.{Role, UserId}
 import org.make.core.{RequestContext, _}
 import scalaoauth2.provider.AuthInfo
 
@@ -697,8 +697,12 @@ object `X-Make-External-Id` extends ModeledCustomHeaderCompanion[`X-Make-Externa
 trait MakeAuthenticationDirectives extends MakeAuthentication {
   this: MakeDirectivesDependencies =>
 
+  private def requireRole(user: UserRights, roles: Role*): Directive0 = {
+    authorize(user.roles.toSet.intersect(roles.toSet).nonEmpty)
+  }
+
   def requireModerationRole(user: UserRights): Directive0 = {
-    authorize(user.roles.contains(RoleModerator) || user.roles.contains(RoleAdmin))
+    requireRole(user, RoleModerator, RoleAdmin, RoleSuperAdmin)
   }
 
   def requireRightsOnQuestion(user: UserRights, maybeQuestionId: Option[QuestionId]): Directive0 = {
@@ -709,7 +713,11 @@ trait MakeAuthenticationDirectives extends MakeAuthentication {
   }
 
   def requireAdminRole(user: UserRights): Directive0 = {
-    authorize(user.roles.contains(RoleAdmin))
+    requireRole(user, RoleAdmin, RoleSuperAdmin)
+  }
+
+  def requireSuperAdminRole(user: UserRights): Directive0 = {
+    requireRole(user, RoleSuperAdmin)
   }
 
   def logoutCookies(): Seq[HttpCookie] = Seq(

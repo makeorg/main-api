@@ -68,9 +68,11 @@ class JobApiTest
           status should be(StatusCodes.Forbidden)
         }
 
-        Get(s"/admin/jobs/${job.id.value}")
-          .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-          entityAs[JobResponse] should be(JobResponse(job))
+        for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+          Get(s"/admin/jobs/${job.id.value}")
+            .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+            entityAs[JobResponse] should be(JobResponse(job))
+          }
         }
       }
     }

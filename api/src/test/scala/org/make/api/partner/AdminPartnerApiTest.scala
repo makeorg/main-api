@@ -65,8 +65,9 @@ class AdminPartnerApiTest extends MakeApiTestBase with DefaultAdminPartnerApiCom
 
       when(partnerService.createPartner(any[CreatePartnerRequest])).thenReturn(Future.successful(partner))
 
-      Post("/admin/partners")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/partners")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
             | "name": "partner name",
             | "logo": "partner logo",
             | "partnerKind": "FOUNDER",
@@ -74,21 +75,24 @@ class AdminPartnerApiTest extends MakeApiTestBase with DefaultAdminPartnerApiCom
             | "questionId": "question-id",
             | "weight": "20.0"
             |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.Created
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.Created
+        }
       }
     }
 
     Scenario("post scenario without logo nor link") {
-      Post("/admin/partners")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/partners")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
           | "name": "partner name",
           | "partnerKind": "FOUNDER",
           | "questionId": "question-id",
           | "weight": "20.0"
           |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.Created
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.Created
+        }
       }
     }
   }
@@ -114,28 +118,32 @@ class AdminPartnerApiTest extends MakeApiTestBase with DefaultAdminPartnerApiCom
       when(partnerService.updatePartner(eqTo(PartnerId("partner-id")), any[UpdatePartnerRequest]))
         .thenReturn(Future.successful(Some(partner)))
 
-      Put("/admin/partners/partner-id")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/partners/partner-id")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
             | "name": "update name",
             | "logo": "logo",
             | "partnerKind": "FOUNDER",
             | "link": "http://link.com",
             | "weight": "20.0"
             |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
 
     Scenario("put partner without logo nor link") {
-      Put("/admin/partners/partner-id")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/partners/partner-id")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
           | "name": "update name",
           | "partnerKind": "FOUNDER",
           | "weight": "20.0"
           |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
 
@@ -143,16 +151,18 @@ class AdminPartnerApiTest extends MakeApiTestBase with DefaultAdminPartnerApiCom
       when(partnerService.updatePartner(eqTo(PartnerId("not-found")), any[UpdatePartnerRequest]))
         .thenReturn(Future.successful(None))
 
-      Put("/admin/partners/not-found")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/partners/not-found")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
           | "name": "update name",
           | "logo": "logo",
           | "partnerKind": "FOUNDER",
           | "link": "http://link.com",
           | "weight": "20.0"
           |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.NotFound
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.NotFound
+        }
       }
     }
   }
@@ -187,9 +197,11 @@ class AdminPartnerApiTest extends MakeApiTestBase with DefaultAdminPartnerApiCom
       when(partnerService.count(questionId = None, organisationId = None, partnerKind = None))
         .thenReturn(Future.successful(1))
 
-      Get("/admin/partners")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/partners")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
   }
@@ -213,9 +225,11 @@ class AdminPartnerApiTest extends MakeApiTestBase with DefaultAdminPartnerApiCom
       when(partnerService.getPartner(eqTo(PartnerId("partner-id"))))
         .thenReturn(Future.successful(Some(partner)))
 
-      Get("/admin/partners/partner-id")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/partners/partner-id")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
 
@@ -224,9 +238,11 @@ class AdminPartnerApiTest extends MakeApiTestBase with DefaultAdminPartnerApiCom
       when(partnerService.getPartner(eqTo(PartnerId("not-found"))))
         .thenReturn(Future.successful(None))
 
-      Get("/admin/partners/not-found")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.NotFound
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/partners/not-found")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.NotFound
+        }
       }
     }
   }

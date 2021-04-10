@@ -189,10 +189,12 @@ class ModerationTagApiTest
            |"display": "INHERIT"
        }""".stripMargin
 
-      Post("/moderation/tags")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequest))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.Created)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/moderation/tags")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequest))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.Created)
+        }
       }
 
       Given("an authenticated user with the admin role")
@@ -206,10 +208,12 @@ class ModerationTagApiTest
            |"display": "INHERIT"
        }""".stripMargin
 
-      Post("/moderation/tags")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequestDuplicate))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/moderation/tags")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequestDuplicate))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+        }
       }
 
       Given("an authenticated user with the admin role")
@@ -222,10 +226,12 @@ class ModerationTagApiTest
            |"display": "INHERIT"
        }""".stripMargin
 
-      Post("/moderation/tags")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequestEmpty))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/moderation/tags")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequestEmpty))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+        }
       }
     }
   }
@@ -353,10 +359,12 @@ class ModerationTagApiTest
       Given("an authenticated user with role admin")
       When("I update non existing tag")
       Then("I get a not found response")
-      Put(s"/moderation/tags/$fakeTagText")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, updateTagRequest))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put(s"/moderation/tags/$fakeTagText")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, updateTagRequest))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
 
@@ -364,9 +372,11 @@ class ModerationTagApiTest
       Given("a registered tag")
       When("I update tag with an invalid body")
       Then("I get a bad request response")
-      Put(s"/moderation/tags/$fakeTagText")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put(s"/moderation/tags/$fakeTagText")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+        }
       }
     }
 
@@ -374,13 +384,15 @@ class ModerationTagApiTest
       Given("a registered tag 'hello-world'")
       When("I update tag label to 'hello-world UPDATED'")
       Then("I get an OK response")
-      Put(s"/moderation/tags/$helloWorldTagId")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, updateTagRequest))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val tag: TagResponse = entityAs[TagResponse]
-        tag.id.value should be(helloWorldTagId)
-        tag.tagTypeId should be(TagTypeId("1234-1234-1234-1234"))
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put(s"/moderation/tags/$helloWorldTagId")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, updateTagRequest))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          val tag: TagResponse = entityAs[TagResponse]
+          tag.id.value should be(helloWorldTagId)
+          tag.tagTypeId should be(TagTypeId("1234-1234-1234-1234"))
+        }
       }
     }
 

@@ -76,13 +76,14 @@ class AdminActiveFeatureApiTest
     }
 
     Scenario("allow authenticated admin") {
-
-      Post("/admin/active-features")
-        .withEntity(
-          HttpEntity(ContentTypes.`application/json`, """{"featureId": "feature", "questionId": "question"}""")
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.Created)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/active-features")
+          .withEntity(
+            HttpEntity(ContentTypes.`application/json`, """{"featureId": "feature", "questionId": "question"}""")
+          )
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.Created)
+        }
       }
     }
   }
@@ -117,20 +118,24 @@ class AdminActiveFeatureApiTest
     }
 
     Scenario("allow authenticated admin on existing activeFeature") {
-      Get("/admin/active-features/hello-active-feature")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val activeFeature: ActiveFeatureResponse = entityAs[ActiveFeatureResponse]
-        activeFeature.id should be(helloActiveFeature.activeFeatureId)
-        activeFeature.featureId should be(helloActiveFeature.featureId)
-        activeFeature.maybeQuestionId should be(helloActiveFeature.maybeQuestionId)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/active-features/hello-active-feature")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          val activeFeature: ActiveFeatureResponse = entityAs[ActiveFeatureResponse]
+          activeFeature.id should be(helloActiveFeature.activeFeatureId)
+          activeFeature.featureId should be(helloActiveFeature.featureId)
+          activeFeature.maybeQuestionId should be(helloActiveFeature.maybeQuestionId)
+        }
       }
     }
 
     Scenario("not found and allow authenticated admin on a non existing activeFeature") {
-      Get("/admin/active-features/fake-active-feature")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/active-features/fake-active-feature")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
   }
@@ -167,16 +172,20 @@ class AdminActiveFeatureApiTest
     }
 
     Scenario("allow authenticated admin on existing activeFeature") {
-      Delete("/admin/active-features/hello-active-feature")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NoContent)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Delete("/admin/active-features/hello-active-feature")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NoContent)
+        }
       }
     }
 
     Scenario("not found and allow authenticated admin on a non existing activeFeature") {
-      Get("/admin/active-features/fake-active-feature")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/active-features/fake-active-feature")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
   }

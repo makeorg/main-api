@@ -75,8 +75,9 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
     }
 
     Scenario("allow authenticated admin") {
-      Post("/admin/clients")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/clients")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
               |  "name" : "client",
               |  "secret" : "secret",
               |  "allowedGrantTypes" : ["grant_type"],
@@ -88,8 +89,9 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
               |  "refreshExpirationSeconds": 400,
               |  "reconnectExpirationSeconds": 900
               |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.Created)
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.Created)
+        }
       }
     }
   }
@@ -121,19 +123,23 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
     }
 
     Scenario("allow authenticated admin on existing oauth client") {
-      Get("/admin/clients/apiclient")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val client: ClientResponse = entityAs[ClientResponse]
-        client.clientId should be(client.clientId)
-        client.name should be(client.name)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/clients/apiclient")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          val client: ClientResponse = entityAs[ClientResponse]
+          client.clientId should be(client.clientId)
+          client.name should be(client.name)
+        }
       }
     }
 
     Scenario("not found and allow authenticated admin on a non existing oauth client") {
-      Get("/admin/clients/fake-client")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/clients/fake-client")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
   }
@@ -207,9 +213,12 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
     }
 
     Scenario("allow authenticated admin on existing oauth client") {
-      Put("/admin/clients/apiclient")
-        .withEntity(
-          HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/clients/apiclient")
+          .withEntity(
+            HttpEntity(
+              ContentTypes.`application/json`,
+              """{
                                                | "name" : "updated client",
                                                |  "secret" : "secret",
                                                |  "allowedGrantTypes" : ["first_grant_type","second_grant_type"],
@@ -220,20 +229,25 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
                                                |  "tokenExpirationSeconds": 300,
                                                |  "refreshExpirationSeconds": 400,
                                                |  "reconnectExpirationSeconds": 900
-                                               |}""".stripMargin)
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val client: ClientResponse = entityAs[ClientResponse]
-        client.clientId should be(updatedClient.clientId)
-        client.name should be(updatedClient.name)
+                                               |}""".stripMargin
+            )
+          )
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          val client: ClientResponse = entityAs[ClientResponse]
+          client.clientId should be(updatedClient.clientId)
+          client.name should be(updatedClient.name)
+        }
       }
     }
 
     Scenario("not found and allow authenticated admin on a non existing oauth client") {
-      Put("/admin/clients/fake-client")
-        .withEntity(
-          HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/clients/fake-client")
+          .withEntity(
+            HttpEntity(
+              ContentTypes.`application/json`,
+              """{
                                                |  "name" : "fake-client",
                                                |  "secret" : "secret",
                                                |  "allowedGrantTypes" : ["first_grant_type","second_grant_type"],
@@ -244,10 +258,12 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
                                                |  "tokenExpirationSeconds": 300,
                                                |  "refreshExpirationSeconds": 400,
                                                |  "reconnectExpirationSeconds": 900
-                                               |}""".stripMargin)
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+                                               |}""".stripMargin
+            )
+          )
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
   }

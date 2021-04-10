@@ -274,73 +274,78 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       when(operationOfQuestionService.findByQuestionSlug("make-the-world-great-again"))
         .thenReturn(Future.successful(None))
 
-      Post("/moderation/operations-of-questions")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(
-          ContentTypes.`application/json`,
-          CreateOperationOfQuestionRequest(
-            operationId = OperationId("some-operation"),
-            startDate = ZonedDateTime.parse("2018-12-01T10:15:30+00:00"),
-            endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
-            operationTitle = "my-operation",
-            countries = NonEmptyList.of(Country("FR")),
-            language = Language("fr"),
-            question = "how to save the world?",
-            shortTitle = None,
-            questionSlug = "make-the-world-great-again",
-            consultationImage = Some("https://example.com/image"),
-            consultationImageAlt = Some("image alternative"),
-            descriptionImage = Some("https://example.com/image-desc"),
-            descriptionImageAlt = Some("image-desc alternative"),
-            actions = None
-          ).asJson.toString()
-        ) ~> routes ~> check {
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/moderation/operations-of-questions")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(
+            ContentTypes.`application/json`,
+            CreateOperationOfQuestionRequest(
+              operationId = OperationId("some-operation"),
+              startDate = ZonedDateTime.parse("2018-12-01T10:15:30+00:00"),
+              endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
+              operationTitle = "my-operation",
+              countries = NonEmptyList.of(Country("FR")),
+              language = Language("fr"),
+              question = "how to save the world?",
+              shortTitle = None,
+              questionSlug = "make-the-world-great-again",
+              consultationImage = Some("https://example.com/image"),
+              consultationImageAlt = Some("image alternative"),
+              descriptionImage = Some("https://example.com/image-desc"),
+              descriptionImageAlt = Some("image-desc alternative"),
+              actions = None
+            ).asJson.toString()
+          ) ~> routes ~> check {
 
-        status should be(StatusCodes.Created)
-        val operationOfQuestion = entityAs[OperationOfQuestionResponse]
-        operationOfQuestion.canPropose shouldBe true
-        operationOfQuestion.featured shouldBe true
+          status should be(StatusCodes.Created)
+          val operationOfQuestion = entityAs[OperationOfQuestionResponse]
+          operationOfQuestion.canPropose shouldBe true
+          operationOfQuestion.featured shouldBe true
+        }
       }
     }
 
     Scenario("slug already exists") {
       when(operationOfQuestionService.findByQuestionSlug("existing-question"))
         .thenReturn(Future.successful(Some(existingQuestion)))
-      Post("/moderation/operations-of-questions")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(
-          ContentTypes.`application/json`,
-          CreateOperationOfQuestionRequest(
-            operationId = OperationId("some-operation"),
-            startDate = ZonedDateTime.parse("2018-12-01T10:15:30+00:00"),
-            endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
-            operationTitle = "my-operation",
-            countries = NonEmptyList.of(Country("FR")),
-            language = Language("fr"),
-            question = "how to save the world?",
-            shortTitle = None,
-            questionSlug = "existing-question",
-            consultationImage = Some("https://example.com/image"),
-            consultationImageAlt = Some("image alternative"),
-            descriptionImage = Some("https://example.com/image-desc"),
-            descriptionImageAlt = Some("image-desc alternative"),
-            actions = None
-          ).asJson.toString()
-        ) ~> routes ~> check {
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/moderation/operations-of-questions")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(
+            ContentTypes.`application/json`,
+            CreateOperationOfQuestionRequest(
+              operationId = OperationId("some-operation"),
+              startDate = ZonedDateTime.parse("2018-12-01T10:15:30+00:00"),
+              endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
+              operationTitle = "my-operation",
+              countries = NonEmptyList.of(Country("FR")),
+              language = Language("fr"),
+              question = "how to save the world?",
+              shortTitle = None,
+              questionSlug = "existing-question",
+              consultationImage = Some("https://example.com/image"),
+              consultationImageAlt = Some("image alternative"),
+              descriptionImage = Some("https://example.com/image-desc"),
+              descriptionImageAlt = Some("image-desc alternative"),
+              actions = None
+            ).asJson.toString()
+          ) ~> routes ~> check {
 
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val contentError = errors.find(_.field == "slug")
-        contentError should be(
-          Some(ValidationError("slug", "non_empty", Some("Slug 'existing-question' already exists")))
-        )
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          val contentError = errors.find(_.field == "slug")
+          contentError should be(
+            Some(ValidationError("slug", "non_empty", Some("Slug 'existing-question' already exists")))
+          )
+        }
       }
     }
 
     Scenario("create as moderator with bad consultationImage format") {
-      Post("/moderation/operations-of-questions")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/moderation/operations-of-questions")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(ContentTypes.`application/json`, """{
             |"operationId": "some-operation",
             |"startDate": "2018-12-01T10:15:30+00:00",
             |"question": "question ?",
@@ -351,7 +356,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             |"consultationImage": "wrongurlformat"
             |}""".stripMargin) ~> routes ~> check {
 
-        status should be(StatusCodes.BadRequest)
+          status should be(StatusCodes.BadRequest)
+        }
       }
     }
 
@@ -359,31 +365,33 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       when(operationService.findOneSimple(eqTo(OperationId("fake")))).thenReturn(Future.successful(None))
       when(operationOfQuestionService.findByQuestionSlug("whatever-question"))
         .thenReturn(Future.successful(None))
-      Post("/moderation/operations-of-questions")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(
-          ContentTypes.`application/json`,
-          CreateOperationOfQuestionRequest(
-            operationId = OperationId("fake"),
-            startDate = ZonedDateTime.parse("2018-12-01T10:15:30+00:00"),
-            endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
-            operationTitle = "my-operation",
-            countries = NonEmptyList.of(Country("FR")),
-            language = Language("fr"),
-            question = "how to save the world?",
-            shortTitle = None,
-            questionSlug = "whatever-question",
-            consultationImage = Some("https://example.com/image"),
-            consultationImageAlt = Some("image alternative"),
-            descriptionImage = Some("https://example.com/image-desc"),
-            descriptionImageAlt = Some("image-desc alternative"),
-            actions = None
-          ).asJson.toString()
-        ) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(1)
-        errors.head.field shouldBe "operationId"
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/moderation/operations-of-questions")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(
+            ContentTypes.`application/json`,
+            CreateOperationOfQuestionRequest(
+              operationId = OperationId("fake"),
+              startDate = ZonedDateTime.parse("2018-12-01T10:15:30+00:00"),
+              endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
+              operationTitle = "my-operation",
+              countries = NonEmptyList.of(Country("FR")),
+              language = Language("fr"),
+              question = "how to save the world?",
+              shortTitle = None,
+              questionSlug = "whatever-question",
+              consultationImage = Some("https://example.com/image"),
+              consultationImageAlt = Some("image alternative"),
+              descriptionImage = Some("https://example.com/image-desc"),
+              descriptionImageAlt = Some("image-desc alternative"),
+              actions = None
+            ).asJson.toString()
+          ) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size should be(1)
+          errors.head.field shouldBe "operationId"
+        }
       }
     }
   }
@@ -420,90 +428,97 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     )
 
     Scenario("update as moderator") {
-      Put("/moderation/operations-of-questions/my-question")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, updateRequest.asJson.toString()) ~> routes ~> check {
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/moderation/operations-of-questions/my-question")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(ContentTypes.`application/json`, updateRequest.asJson.toString()) ~> routes ~> check {
 
-        status should be(StatusCodes.OK)
+          status should be(StatusCodes.OK)
+        }
       }
     }
 
     Scenario("add a country") {
-      Put("/moderation/operations-of-questions/my-question")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(
-          ContentTypes.`application/json`,
-          ModifyOperationOfQuestionRequest(
-            startDate = ZonedDateTime.parse("2018-12-01T10:15:30+00:00"),
-            endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
-            canPropose = true,
-            question = "question ?",
-            operationTitle = "new title",
-            countries = updateRequest.countries :+ Country("DE"),
-            shortTitle = None,
-            sequenceCardsConfiguration = SequenceCardsConfiguration.default,
-            aboutUrl = None,
-            metas = Metas(title = None, description = None, picture = None),
-            theme = QuestionTheme.default,
-            description = None,
-            displayResults = true,
-            consultationImage = None,
-            consultationImageAlt = None,
-            descriptionImage = None,
-            descriptionImageAlt = None,
-            resultsLink =
-              Some(ResultsLinkRequest(ResultsLinkRequest.ResultsLinkKind.External, "https://example.com/results")),
-            actions = Some("some actions"),
-            featured = false,
-            votesTarget = 100_000,
-            timeline = OperationOfQuestionTimelineContract(
-              action = TimelineElementContract(
-                defined = true,
-                date = Some(LocalDate.now()),
-                dateText = Some("in a long time"),
-                description = Some("action description")
-              ),
-              result = TimelineElementContract(
-                defined = false,
-                date = Some(LocalDate.now()),
-                dateText = Some("in a long time"),
-                description = Some("results description")
-              ),
-              workshop = TimelineElementContract(
-                defined = true,
-                date = Some(LocalDate.now()),
-                dateText = Some("in a long time"),
-                description = Some("workshop description")
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/moderation/operations-of-questions/my-question")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(
+            ContentTypes.`application/json`,
+            ModifyOperationOfQuestionRequest(
+              startDate = ZonedDateTime.parse("2018-12-01T10:15:30+00:00"),
+              endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
+              canPropose = true,
+              question = "question ?",
+              operationTitle = "new title",
+              countries = updateRequest.countries :+ Country("DE"),
+              shortTitle = None,
+              sequenceCardsConfiguration = SequenceCardsConfiguration.default,
+              aboutUrl = None,
+              metas = Metas(title = None, description = None, picture = None),
+              theme = QuestionTheme.default,
+              description = None,
+              displayResults = true,
+              consultationImage = None,
+              consultationImageAlt = None,
+              descriptionImage = None,
+              descriptionImageAlt = None,
+              resultsLink =
+                Some(ResultsLinkRequest(ResultsLinkRequest.ResultsLinkKind.External, "https://example.com/results")),
+              actions = Some("some actions"),
+              featured = false,
+              votesTarget = 100_000,
+              timeline = OperationOfQuestionTimelineContract(
+                action = TimelineElementContract(
+                  defined = true,
+                  date = Some(LocalDate.now()),
+                  dateText = Some("in a long time"),
+                  description = Some("action description")
+                ),
+                result = TimelineElementContract(
+                  defined = false,
+                  date = Some(LocalDate.now()),
+                  dateText = Some("in a long time"),
+                  description = Some("results description")
+                ),
+                workshop = TimelineElementContract(
+                  defined = true,
+                  date = Some(LocalDate.now()),
+                  dateText = Some("in a long time"),
+                  description = Some("workshop description")
+                )
               )
-            )
-          ).asJson.toString()
-        ) ~> routes ~> check {
+            ).asJson.toString()
+          ) ~> routes ~> check {
 
-        status should be(StatusCodes.OK)
+          status should be(StatusCodes.OK)
+        }
       }
     }
 
     Scenario("try removing a country") {
-      Put("/moderation/operations-of-questions/my-question")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(
-          ContentTypes.`application/json`,
-          updateRequest.copy(countries = NonEmptyList.of(Country("FR"))).asJson.toString()
-        ) ~> routes ~> check {
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/moderation/operations-of-questions/my-question")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(
+            ContentTypes.`application/json`,
+            updateRequest.copy(countries = NonEmptyList.of(Country("FR"))).asJson.toString()
+          ) ~> routes ~> check {
 
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors shouldBe Seq(
-          ValidationError("countries", "invalid_value", Some("You can not remove existing countries: BE, FR"))
-        )
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors shouldBe Seq(
+            ValidationError("countries", "invalid_value", Some("You can not remove existing countries: BE, FR"))
+          )
+        }
       }
     }
 
     Scenario("update with bad color") {
 
-      Put("/moderation/operations-of-questions/my-question")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/moderation/operations-of-questions/my-question")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(ContentTypes.`application/json`, """{
             | "startDate": "2018-12-01T10:15:30.000Z",
             | "endDate": "2068-12-01T10:15:30.000Z",
             | "canPropose": true,
@@ -551,20 +566,22 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             | }
             |}""".stripMargin) ~> routes ~> check {
 
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(1)
-        errors.head.field shouldBe "fontColor"
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size should be(1)
+          errors.head.field shouldBe "fontColor"
+        }
       }
     }
 
     Scenario("update with bad shortTitle") {
 
-      Put("/moderation/operations-of-questions/my-question")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(
-          ContentTypes.`application/json`,
-          """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/moderation/operations-of-questions/my-question")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(
+            ContentTypes.`application/json`,
+            """{
            | "startDate": "2018-12-01T10:15:30.000Z",
            | "endDate": "2068-12-01T10:15:30.000Z",
            | "canPropose": true,
@@ -606,19 +623,21 @@ class DefaultModerationOperationOfQuestionApiComponentTest
            |   }
            | }
            |}""".stripMargin
-        ) ~> routes ~> check {
+          ) ~> routes ~> check {
 
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(1)
-        errors.head.field shouldBe "shortTitle"
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size should be(1)
+          errors.head.field shouldBe "shortTitle"
+        }
       }
     }
 
     Scenario("update image as moderator with incorrect URL") {
-      Put("/moderation/operations-of-questions/my-question")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/moderation/operations-of-questions/my-question")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(ContentTypes.`application/json`, """{
                                                        | "startDate": "2018-12-01T10:15:30.000Z",
                                                        | "endDate": "2068-12-01T10:15:30.000Z",
                                                        | "canPropose": true,
@@ -660,19 +679,21 @@ class DefaultModerationOperationOfQuestionApiComponentTest
                                                        | }
                                                        |}""".stripMargin) ~> routes ~> check {
 
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(2)
-        errors.head.field shouldBe "consultationImage"
-        errors(1).field shouldBe "descriptionImage"
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size should be(2)
+          errors.head.field shouldBe "consultationImage"
+          errors(1).field shouldBe "descriptionImage"
+        }
       }
     }
 
     Scenario("update with invalid timeline") {
 
-      Put("/moderation/operations-of-questions/my-question")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/moderation/operations-of-questions/my-question")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(ContentTypes.`application/json`, """{
             | "startDate": "2018-12-01T10:15:30.000Z",
             | "endDate": "2068-12-01T10:15:30.000Z",
             | "canPropose": true,
@@ -720,20 +741,23 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             | }
             |}""".stripMargin) ~> routes ~> check {
 
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(1)
-        errors.head.field shouldBe "timeline.description"
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size should be(1)
+          errors.head.field shouldBe "timeline.description"
+        }
       }
     }
   }
 
   Feature("delete operationOfQuestion") {
     Scenario("delete as admin") {
-      Delete("/moderation/operations-of-questions/my-question")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Delete("/moderation/operations-of-questions/my-question")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
 
-        status should be(StatusCodes.NoContent)
+          status should be(StatusCodes.NoContent)
+        }
       }
     }
   }

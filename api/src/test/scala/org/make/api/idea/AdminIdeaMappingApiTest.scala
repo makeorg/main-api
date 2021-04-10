@@ -76,13 +76,15 @@ class AdminIdeaMappingApiTest
           |}
         """.stripMargin
 
-      Post("/admin/idea-mappings")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, entity) ~>
-        routes ~>
-        check {
-          status should be(StatusCodes.Created)
-        }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/idea-mappings")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(ContentTypes.`application/json`, entity) ~>
+          routes ~>
+          check {
+            status should be(StatusCodes.Created)
+          }
+      }
 
     }
 
@@ -110,19 +112,23 @@ class AdminIdeaMappingApiTest
 
     Scenario("access granted for admin") {
 
-      when(
-        ideaMappingService
-          .changeIdea(
-            adminId = UserId("my-admin-user-id"),
-            IdeaMappingId = IdeaMappingId("456"),
-            newIdea = IdeaId("idea-id"),
-            migrateProposals = false
+      for (id <- Seq("my-admin-user-id", "my-super-admin-user-id")) {
+        when(
+          ideaMappingService
+            .changeIdea(
+              adminId = UserId(id),
+              IdeaMappingId = IdeaMappingId("456"),
+              newIdea = IdeaId("idea-id"),
+              migrateProposals = false
+            )
+        ).thenReturn(
+          Future.successful(
+            Some(
+              IdeaMapping(IdeaMappingId("idea-mapping-id"), QuestionId("question-id"), None, None, IdeaId("idea-id"))
+            )
           )
-      ).thenReturn(
-        Future.successful(
-          Some(IdeaMapping(IdeaMappingId("idea-mapping-id"), QuestionId("question-id"), None, None, IdeaId("idea-id")))
         )
-      )
+      }
 
       val entity =
         """
@@ -132,26 +138,30 @@ class AdminIdeaMappingApiTest
           |}
         """.stripMargin
 
-      Put("/admin/idea-mappings/456")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, entity) ~>
-        routes ~>
-        check {
-          status should be(StatusCodes.OK)
-        }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/idea-mappings/456")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(ContentTypes.`application/json`, entity) ~>
+          routes ~>
+          check {
+            status should be(StatusCodes.OK)
+          }
+      }
 
     }
 
     Scenario("No mapping found") {
-      when(
-        ideaMappingService
-          .changeIdea(
-            adminId = UserId("my-admin-user-id"),
-            IdeaMappingId = IdeaMappingId("456"),
-            newIdea = IdeaId("idea-id"),
-            migrateProposals = false
-          )
-      ).thenReturn(Future.successful(None))
+      for (id <- Seq("my-admin-user-id", "my-super-admin-user-id")) {
+        when(
+          ideaMappingService
+            .changeIdea(
+              adminId = UserId(id),
+              IdeaMappingId = IdeaMappingId("456"),
+              newIdea = IdeaId("idea-id"),
+              migrateProposals = false
+            )
+        ).thenReturn(Future.successful(None))
+      }
 
       val entity =
         """
@@ -161,13 +171,15 @@ class AdminIdeaMappingApiTest
           |}
         """.stripMargin
 
-      Put("/admin/idea-mappings/456")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, entity) ~>
-        routes ~>
-        check {
-          status should be(StatusCodes.NotFound)
-        }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/idea-mappings/456")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(ContentTypes.`application/json`, entity) ~>
+          routes ~>
+          check {
+            status should be(StatusCodes.NotFound)
+          }
+      }
     }
 
   }
@@ -201,12 +213,14 @@ class AdminIdeaMappingApiTest
           )
         )
 
-      Get("/admin/idea-mappings/123")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~>
-        routes ~>
-        check {
-          status should be(StatusCodes.OK)
-        }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/idea-mappings/123")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~>
+          routes ~>
+          check {
+            status should be(StatusCodes.OK)
+          }
+      }
 
     }
 
@@ -253,12 +267,14 @@ class AdminIdeaMappingApiTest
           )
       ).thenReturn(Future.successful(Seq.empty))
 
-      Get("/admin/idea-mappings?stakeTagId=None&solutionTypeTagId=solution-tag&questionId=question-id")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~>
-        routes ~>
-        check {
-          status should be(StatusCodes.OK)
-        }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/idea-mappings?stakeTagId=None&solutionTypeTagId=solution-tag&questionId=question-id")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~>
+          routes ~>
+          check {
+            status should be(StatusCodes.OK)
+          }
+      }
 
     }
 

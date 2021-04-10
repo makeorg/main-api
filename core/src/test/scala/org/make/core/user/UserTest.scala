@@ -23,7 +23,7 @@ import java.time.ZonedDateTime
 
 import org.make.core.MakeUnitTest
 import org.make.core.reference.Country
-import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator, RolePolitical}
+import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator, RolePolitical, RoleSuperAdmin}
 import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
 import org.make.core.user.UserType.UserTypeOrganisation
@@ -54,6 +54,14 @@ class UserTest extends MakeUnitTest {
   )
 
   Feature("parse a Role from a String") {
+    Scenario("pass ROLE_SUPER_ADMIN string to matchRole function") {
+      Given("a Role as a string")
+      When("call matchRole with ROLE_SUPER_ADMIN as Role string")
+      val role = Role("ROLE_SUPER_ADMIN")
+      Then("Role object are returned")
+      role shouldBe RoleSuperAdmin
+    }
+
     Scenario("pass ROLE_ADMIN string to matchRole function") {
       Given("a Role as a string")
       When("call matchRole with ROLE_ADMIN as Role string")

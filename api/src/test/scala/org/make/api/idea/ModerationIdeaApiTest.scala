@@ -145,10 +145,12 @@ class ModerationIdeaApiTest
       When("the user wants to create an idea without an operationId nor a themeId")
       Then("Then he should get a bad request (400) return code")
 
-      Post("/moderation/ideas")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/moderation/ideas")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText"}"""))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+        }
       }
     }
 
@@ -157,14 +159,19 @@ class ModerationIdeaApiTest
       When("the user wants to create an idea with an questionId")
       Then("the idea should be saved if valid")
 
-      Post("/moderation/ideas")
-        .withEntity(
-          HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText", "questionId": "vff-fr-question"}""")
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.Created)
-        val idea: IdeaResponse = entityAs[IdeaResponse]
-        idea.id.value should be(fooIdeaId.value)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/moderation/ideas")
+          .withEntity(
+            HttpEntity(
+              ContentTypes.`application/json`,
+              s"""{"name": "$fooIdeaText", "questionId": "vff-fr-question"}"""
+            )
+          )
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.Created)
+          val idea: IdeaResponse = entityAs[IdeaResponse]
+          idea.id.value should be(fooIdeaId.value)
+        }
       }
     }
 
@@ -173,10 +180,12 @@ class ModerationIdeaApiTest
       When("the user wants to create an idea")
       Then("Then he should get a bad request (400) return code")
 
-      Post("/moderation/ideas")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"bibi": "$fooIdeaText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/moderation/ideas")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"bibi": "$fooIdeaText"}"""))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+        }
       }
     }
   }
@@ -222,10 +231,12 @@ class ModerationIdeaApiTest
       When("the user wants to update an idea with the name that already exist")
       Then("he should receive a bad request (400)")
 
-      Put(s"/moderation/ideas/${fooIdeaId.value}")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$otherIdeaText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put(s"/moderation/ideas/${fooIdeaId.value}")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$otherIdeaText"}"""))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+        }
       }
     }
 
@@ -234,12 +245,16 @@ class ModerationIdeaApiTest
       When("the user wants to update an idea")
       Then("the idea should be saved if valid")
 
-      Put(s"/moderation/ideas/${fooIdeaId.value}")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$barIdeaText", "status": "Activated"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val ideaId: IdeaIdResponse = entityAs[IdeaIdResponse]
-        ideaId.ideaId should be(fooIdeaId)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put(s"/moderation/ideas/${fooIdeaId.value}")
+          .withEntity(
+            HttpEntity(ContentTypes.`application/json`, s"""{"name": "$barIdeaText", "status": "Activated"}""")
+          )
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          val ideaId: IdeaIdResponse = entityAs[IdeaIdResponse]
+          ideaId.ideaId should be(fooIdeaId)
+        }
       }
     }
   }
@@ -293,11 +308,13 @@ class ModerationIdeaApiTest
       When("the user wants to get list of ideas")
       Then("the result should be a IdeaSearchResult")
 
-      Get("/moderation/ideas")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val ideas: Seq[IdeaResponse] = entityAs[Seq[IdeaResponse]]
-        ideas should be(Seq.empty)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/moderation/ideas")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          val ideas: Seq[IdeaResponse] = entityAs[Seq[IdeaResponse]]
+          ideas should be(Seq.empty)
+        }
       }
     }
   }

@@ -67,29 +67,33 @@ class AdminPersonalityApiTest
       when(userService.registerPersonality(any[PersonalityRegisterData], any[RequestContext]))
         .thenReturn(Future.successful(personality))
 
-      Post("/admin/personalities")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/personalities")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "email": "perso.nality@make.org",
                                                                   | "firstName": "perso",
                                                                   | "lastName": "nality",
                                                                   | "country": "FR",
                                                                   | "language": "fr"
                                                                   |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.Created
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.Created
+        }
       }
     }
 
     Scenario("post scenario with wrong request") {
-      Post("/admin/personalities")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/personalities")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "firstName": "perso",
                                                                   | "lastName": "nality",
                                                                   | "country": "FR",
                                                                   | "language": "fr"
                                                                   |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.BadRequest
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.BadRequest
+        }
       }
     }
   }
@@ -120,34 +124,40 @@ class AdminPersonalityApiTest
           .updatePersonality(any[User], any[Option[UserId]], any[String], any[RequestContext])
       ).thenReturn(Future.successful(personality))
 
-      Put("/admin/personalities/personality-id")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/personalities/personality-id")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "firstName": "some other firstName"
                                                                   |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
 
     Scenario("put personality with wrong request") {
-      Put("/admin/personalities/personality-id")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/personalities/personality-id")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                    "email": "some other email"
                                                                   |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.BadRequest
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.BadRequest
+        }
       }
     }
 
     Scenario("put non existent personality") {
       when(userService.getUser(any[UserId])).thenReturn(Future.successful(None))
 
-      Put("/admin/personalities/not-found")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/personalities/not-found")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                    "firstName": "some other firstName"
                                                                   |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.NotFound
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.NotFound
+        }
       }
     }
   }
@@ -191,9 +201,11 @@ class AdminPersonalityApiTest
         )
       ).thenReturn(Future.successful(1))
 
-      Get("/admin/personalities")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/personalities")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
   }
@@ -217,9 +229,11 @@ class AdminPersonalityApiTest
       when(userService.getUser(any[UserId]))
         .thenReturn(Future.successful(Some(personality)))
 
-      Get("/admin/personalities/personality-id")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/personalities/personality-id")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
 
@@ -228,9 +242,11 @@ class AdminPersonalityApiTest
       when(userService.getUser(any[UserId]))
         .thenReturn(Future.successful(None))
 
-      Get("/admin/personalities/not-found")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.NotFound
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/personalities/not-found")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.NotFound
+        }
       }
     }
   }

@@ -76,12 +76,14 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
       when(featureService.createFeature(eqTo("valid-feature"), eqTo("Valid Feature")))
         .thenReturn(Future.successful(Feat(FeatureId("featured-id"), "Valid Feature", "valid-feature")))
 
-      Post("/admin/features")
-        .withEntity(
-          HttpEntity(ContentTypes.`application/json`, """{"name": "Valid Feature", "slug": "valid-feature"}""")
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.Created)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/features")
+          .withEntity(
+            HttpEntity(ContentTypes.`application/json`, """{"name": "Valid Feature", "slug": "valid-feature"}""")
+          )
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.Created)
+        }
       }
     }
   }
@@ -114,21 +116,27 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
       }
     }
 
-    Scenario("allow authenticated moderator on existing feature") {
-      Get("/admin/features/hello-feature")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val feature: FeatureResponse = entityAs[FeatureResponse]
-        feature.id should be(helloFeature.featureId)
-        feature.slug should be(helloFeature.slug)
-        feature.name should be(helloFeature.name)
+    Scenario("allow authenticated admin on existing feature") {
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+
+        Get("/admin/features/hello-feature")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          val feature: FeatureResponse = entityAs[FeatureResponse]
+          feature.id should be(helloFeature.featureId)
+          feature.slug should be(helloFeature.slug)
+          feature.name should be(helloFeature.name)
+        }
       }
     }
 
     Scenario("not found and allow authenticated admin on a non existing feature") {
-      Get("/admin/features/fake-feature")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+
+        Get("/admin/features/fake-feature")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
   }
@@ -176,38 +184,46 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
     }
 
     Scenario("allow authenticated admin on existing feature") {
-      Put("/admin/features/hello-feature")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "new-slug", "name": "new name"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val feature: FeatureResponse = entityAs[FeatureResponse]
-        feature.id should be(newHelloFeature.featureId)
-        feature.slug should be(newHelloFeature.slug)
-        feature.name should be(newHelloFeature.name)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/features/hello-feature")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "new-slug", "name": "new name"}"""))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          val feature: FeatureResponse = entityAs[FeatureResponse]
+          feature.id should be(newHelloFeature.featureId)
+          feature.slug should be(newHelloFeature.slug)
+          feature.name should be(newHelloFeature.name)
+        }
       }
     }
 
     Scenario("not found and allow authenticated admin on a non existing feature") {
-      Put("/admin/features/fake-feature")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "new-slug", "name": "new name"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/features/fake-feature")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "new-slug", "name": "new name"}"""))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
 
     Scenario("slug already exists") {
-      Put("/admin/features/same-slug")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "hello-feature", "name": "new name"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/features/same-slug")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "hello-feature", "name": "new name"}"""))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+        }
       }
     }
 
     Scenario("changing only the name") {
-      Put("/admin/features/same-slug")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "same-slug", "name": "new name"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/features/same-slug")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "same-slug", "name": "new name"}"""))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+        }
       }
     }
   }
@@ -243,16 +259,20 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
     }
 
     Scenario("allow authenticated moderator on existing feature") {
-      Delete("/admin/features/hello-feature")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Delete("/admin/features/hello-feature")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+        }
       }
     }
 
     Scenario("not found and allow authenticated admin on a non existing feature") {
-      Get("/admin/features/fake-feature")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/features/fake-feature")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
   }

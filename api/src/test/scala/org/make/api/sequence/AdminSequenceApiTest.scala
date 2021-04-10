@@ -177,10 +177,11 @@ class AdminSequenceApiTest
     testSequenceConfigurationReadAccess("question", "user", "myQuestion", tokenCitizen, StatusCodes.Forbidden)
     testSequenceConfigurationReadAccess("sequence", "moderator", "mySequence", tokenModerator, StatusCodes.Forbidden)
     testSequenceConfigurationReadAccess("question", "moderator", "myQuestion", tokenModerator, StatusCodes.Forbidden)
-    testSequenceConfigurationReadAccess("sequence", "admin", "mySequence", tokenAdmin, StatusCodes.OK)
-    testSequenceConfigurationReadAccess("question", "admin", "myQuestion", tokenAdmin, StatusCodes.OK)
-    testSequenceConfigurationReadAccess("unknown", "admin", "unknown", tokenAdmin, StatusCodes.NotFound)
-
+    for ((token, name) <- Seq((tokenAdmin, "admin"), (tokenSuperAdmin, "superadmin"))) {
+      testSequenceConfigurationReadAccess("sequence", name, "mySequence", token, StatusCodes.OK)
+      testSequenceConfigurationReadAccess("question", name, "myQuestion", token, StatusCodes.OK)
+      testSequenceConfigurationReadAccess("unknown", name, "unknown", token, StatusCodes.NotFound)
+    }
   }
 
   Feature("set sequence configuration") {
@@ -204,14 +205,16 @@ class AdminSequenceApiTest
     // new route using only question id
     testSequenceConfigurationWriteAccess("question", "user", "myQuestion", tokenCitizen, StatusCodes.Forbidden)
     testSequenceConfigurationWriteAccess("question", "moderator", "myQuestion", tokenModerator, StatusCodes.Forbidden)
-    testSequenceConfigurationWriteAccess("question", "admin", "myQuestion", tokenAdmin, StatusCodes.OK)
-    testSequenceConfigurationWriteAccess(
-      "question",
-      "admin with wrong selectionAlgorithmName",
-      "myQuestion",
-      tokenAdmin,
-      StatusCodes.BadRequest,
-      setSequenceConfigurationPayload.replaceFirst("Bandit", "invalid")
-    )
+    for ((token, name) <- Seq((tokenAdmin, "admin"), (tokenSuperAdmin, "superadmin"))) {
+      testSequenceConfigurationWriteAccess("question", name, "myQuestion", token, StatusCodes.OK)
+      testSequenceConfigurationWriteAccess(
+        "question",
+        s"$name with wrong selectionAlgorithmName",
+        "myQuestion",
+        token,
+        StatusCodes.BadRequest,
+        setSequenceConfigurationPayload.replaceFirst("Bandit", "invalid")
+      )
+    }
   }
 }

@@ -80,15 +80,17 @@ class ModerationOrganisationApiTest
       Then("I should get a Created status")
       when(organisationService.register(any[OrganisationRegisterData], any[RequestContext]))
         .thenReturn(Future.successful(fakeOrganisation))
-      Post("/moderation/organisations")
-        .withEntity(
-          HttpEntity(
-            ContentTypes.`application/json`,
-            """{"organisationName": "orga", "email": "bar@foo.com", "password": "azertyui"}"""
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/moderation/organisations")
+          .withEntity(
+            HttpEntity(
+              ContentTypes.`application/json`,
+              """{"organisationName": "orga", "email": "bar@foo.com", "password": "azertyui"}"""
+            )
           )
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.Created
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.Created
+        }
       }
     }
 
@@ -98,12 +100,14 @@ class ModerationOrganisationApiTest
       Then("I should get a Created status")
       when(organisationService.register(any[OrganisationRegisterData], any[RequestContext]))
         .thenReturn(Future.successful(fakeOrganisation))
-      Post("/moderation/organisations")
-        .withEntity(
-          HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga", "email": "bar@foo.com"}""")
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.Created
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/moderation/organisations")
+          .withEntity(
+            HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga", "email": "bar@foo.com"}""")
+          )
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.Created
+        }
       }
     }
 
@@ -111,10 +115,14 @@ class ModerationOrganisationApiTest
       Given("a admin user")
       When("I want to register an organisation")
       Then("I should get a BadRequest status")
-      Post("/moderation/organisations")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"email": "bar@foo.com", "password": "azertyui"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.BadRequest
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/moderation/organisations")
+          .withEntity(
+            HttpEntity(ContentTypes.`application/json`, """{"email": "bar@foo.com", "password": "azertyui"}""")
+          )
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.BadRequest
+        }
       }
     }
 
@@ -123,15 +131,17 @@ class ModerationOrganisationApiTest
       When("I want to register an organisation with a too long avatarUrl")
       Then("I should get a BadRequest status")
       val longAvatarUrl = "http://example.com/" + "a" * 2048
-      Post("/moderation/organisations")
-        .withEntity(
-          HttpEntity(
-            ContentTypes.`application/json`,
-            s"""{"email": "bar@foo.com", "password": "azertyui", "organisationName":"azer","avatarUrl":"$longAvatarUrl"}""".stripMargin
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/moderation/organisations")
+          .withEntity(
+            HttpEntity(
+              ContentTypes.`application/json`,
+              s"""{"email": "bar@foo.com", "password": "azertyui", "organisationName":"azer","avatarUrl":"$longAvatarUrl"}""".stripMargin
+            )
           )
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.BadRequest
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.BadRequest
+        }
       }
     }
   }
@@ -158,18 +168,22 @@ class ModerationOrganisationApiTest
     }
 
     Scenario("get existing organisation") {
-      Get("/moderation/organisations/ABCD")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val organisation: OrganisationResponse = entityAs[OrganisationResponse]
-        organisation.id should be(UserId("ABCD"))
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/moderation/organisations/ABCD")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          val organisation: OrganisationResponse = entityAs[OrganisationResponse]
+          organisation.id should be(UserId("ABCD"))
+        }
       }
     }
 
     Scenario("get non existing organisation") {
-      Get("/moderation/organisations/non-existant")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.NotFound
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/moderation/organisations/non-existant")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.NotFound
+        }
       }
     }
   }
@@ -205,10 +219,12 @@ class ModerationOrganisationApiTest
         organisationService
           .update(any[User], any[Option[UserId]], any[String], any[RequestContext])
       ).thenReturn(Future.successful(fakeOrganisation.userId))
-      Put("/moderation/organisations/ABCD")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/moderation/organisations/ABCD")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga"}"""))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
 
@@ -218,10 +234,12 @@ class ModerationOrganisationApiTest
       Then("I should get a Forbidden status")
       when(organisationService.getOrganisation(any[UserId]))
         .thenReturn(Future.successful(None))
-      Put("/moderation/organisations/ABCD")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.NotFound
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/moderation/organisations/ABCD")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga"}"""))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.NotFound
+        }
       }
     }
 
@@ -231,10 +249,12 @@ class ModerationOrganisationApiTest
       Then("I should get a NotFound status")
       when(organisationService.getOrganisation(any[UserId]))
         .thenReturn(Future.successful(None))
-      Put("/moderation/organisations/ABCD")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.NotFound
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/moderation/organisations/ABCD")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga"}"""))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.NotFound
+        }
       }
     }
   }
@@ -287,9 +307,11 @@ class ModerationOrganisationApiTest
         organisationService
           .find(any[Start], any[Option[End]], any[Option[String]], any[Option[Order]], any[Option[String]])
       ).thenReturn(Future.successful(Seq(fakeOrganisation)))
-      Get("/moderation/organisations")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/moderation/organisations")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
   }

@@ -73,7 +73,7 @@ trait AdminUserApi extends Directives {
         paramType = "query",
         dataType = "string",
         defaultValue = "ROLE_MODERATOR",
-        allowableValues = "ROLE_CITIZEN,ROLE_MODERATOR,ROLE_ADMIN,ROLE_POLITICAL,ROLE_ACTOR"
+        allowableValues = "ROLE_CITIZEN,ROLE_MODERATOR,ROLE_ADMIN,ROLE_SUPER_ADMIN,ROLE_POLITICAL,ROLE_ACTOR"
       ),
       new ApiImplicitParam(
         name = "userType",
@@ -322,7 +322,7 @@ trait DefaultAdminUserApiComponent
               userType: Option[UserType]
             ) =>
               makeOAuth2 { auth: AuthInfo[UserRights] =>
-                requireAdminRole(auth.user) {
+                requireSuperAdminRole(auth.user) {
                   val role: Option[Role] = maybeRole.map(Role.apply)
                   provideAsync(
                     userService.adminCountUsers(
@@ -363,7 +363,7 @@ trait DefaultAdminUserApiComponent
         path("admin" / "users" / userId) { userId =>
           makeOperation("AdminUpdateUser") { requestContext =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-              requireAdminRole(userAuth.user) {
+              requireSuperAdminRole(userAuth.user) {
                 decodeRequest {
                   entity(as[AdminUpdateUserRequest]) { request: AdminUpdateUserRequest =>
                     provideAsyncOrNotFound(userService.getUser(userId)) { user =>
@@ -430,7 +430,7 @@ trait DefaultAdminUserApiComponent
       path("admin" / "users" / userId) { userId =>
         makeOperation("GetUser") { _ =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
-            requireAdminRole(auth.user) {
+            requireSuperAdminRole(auth.user) {
               provideAsyncOrNotFound(userService.getUser(userId)) { user =>
                 complete(AdminUserResponse(user))
               }
@@ -444,7 +444,7 @@ trait DefaultAdminUserApiComponent
       path("admin" / "users" / userId) { userId: UserId =>
         makeOperation("adminDeleteUser") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            requireAdminRole(userAuth.user) {
+            requireSuperAdminRole(userAuth.user) {
               provideAsyncOrNotFound(userService.getUser(userId)) { user =>
                 provideAsync(userService.anonymize(user, userAuth.user.userId, requestContext, Anonymization.Automatic)) {
                   _ =>
@@ -463,7 +463,7 @@ trait DefaultAdminUserApiComponent
       path("admin" / "users") {
         makeOperation("adminDeleteUsers") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            requireAdminRole(userAuth.user) {
+            requireSuperAdminRole(userAuth.user) {
               provideAsync(userService.anonymizeInactiveUsers(userAuth.user.userId, requestContext)) { acceptance =>
                 if (acceptance.isAccepted) {
                   complete(StatusCodes.Accepted -> JobId.AnonymizeInactiveUsers)
@@ -481,7 +481,7 @@ trait DefaultAdminUserApiComponent
       path("admin" / "users" / "anonymize") {
         makeOperation("anonymizeUserByEmail") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            requireAdminRole(userAuth.user) {
+            requireSuperAdminRole(userAuth.user) {
               decodeRequest {
                 entity(as[AnonymizeUserRequest]) { request =>
                   provideAsyncOrNotFound(userService.getUserByEmail(request.email)) { user =>
@@ -527,7 +527,7 @@ trait DefaultAdminUserApiComponent
         path("admin" / "users" / "update-user-email") {
           makeOperation("AdminUserUpdateEmail") { _ =>
             makeOAuth2 { userAuth =>
-              requireAdminRole(userAuth.user) {
+              requireSuperAdminRole(userAuth.user) {
                 decodeRequest {
                   entity(as[AdminUpdateUserEmail]) {
                     case AdminUpdateUserEmail(oldEmail, newEmail) =>
@@ -558,7 +558,7 @@ trait DefaultAdminUserApiComponent
         path("admin" / "users" / "update-user-roles") {
           makeOperation("UpdateUserRoles") { requestContext =>
             makeOAuth2 { userAuth =>
-              requireAdminRole(userAuth.user) {
+              requireSuperAdminRole(userAuth.user) {
                 decodeRequest {
                   entity(as[UpdateUserRolesRequest]) { request =>
                     provideAsync(userService.getUserByEmail(request.email)) {

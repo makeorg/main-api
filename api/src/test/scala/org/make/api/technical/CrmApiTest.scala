@@ -31,6 +31,7 @@ import org.make.api.technical.auth._
 import org.make.api.technical.crm._
 import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.core.session.VisitorId
+import org.mockito.Mockito.clearInvocations
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -180,10 +181,13 @@ class CrmApiTest
     Scenario("admin triggers sync") {
       implicit val timeout: RouteTestTimeout = RouteTestTimeout(15.seconds.dilated)
 
-      Post("/technical/crm/synchronize", HttpEntity(ContentTypes.`application/json`, requestSingleEvent))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.Accepted)
-        verify(crmService, times(1)).synchronizeContactsWithCrm()
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        clearInvocations(crmService)
+        Post("/technical/crm/synchronize", HttpEntity(ContentTypes.`application/json`, requestSingleEvent))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.Accepted)
+          verify(crmService, times(1)).synchronizeContactsWithCrm()
+        }
       }
     }
     Scenario("moderator triggers sync") {

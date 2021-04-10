@@ -75,14 +75,16 @@ class AdminCrmLanguageTemplatesApiTest
         status should be(StatusCodes.Forbidden)
       }
 
-      Get("/admin/crm-templates/languages")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        header("x-total-count").map(_.value) should be(Some("3"))
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/crm-templates/languages")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          header("x-total-count").map(_.value) should be(Some("3"))
 
-        val templates: Seq[CrmLanguageTemplates] = entityAs[Seq[CrmLanguageTemplates]]
-        templates.size should be(3)
-        templates.map(_.id).toSet shouldBe Set(fr, en, it)
+          val templates: Seq[CrmLanguageTemplates] = entityAs[Seq[CrmLanguageTemplates]]
+          templates.size should be(3)
+          templates.map(_.id).toSet shouldBe Set(fr, en, it)
+        }
       }
     }
   }
@@ -106,19 +108,21 @@ class AdminCrmLanguageTemplatesApiTest
         status should be(StatusCodes.Forbidden)
       }
 
-      Get("/admin/crm-templates/languages/de")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-      }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/crm-templates/languages/de")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+        }
 
-      Get("/admin/crm-templates/languages/non")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
-      }
+        Get("/admin/crm-templates/languages/non")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
 
-      Get("/admin/crm-templates/languages/too_long")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+        Get("/admin/crm-templates/languages/too_long")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
   }
@@ -174,43 +178,51 @@ class AdminCrmLanguageTemplatesApiTest
         status should be(StatusCodes.Forbidden)
       }
 
-      Post("/admin/crm-templates/languages")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.Created)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+
+        Post("/admin/crm-templates/languages")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.Created)
+        }
       }
     }
 
     Scenario("invalid") {
-      Post("/admin/crm-templates/languages")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, fakeLanguage.asJson.toString))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(1)
-        errors.head.field should be("id")
-      }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/crm-templates/languages")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, fakeLanguage.asJson.toString))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size should be(1)
+          errors.head.field should be("id")
+        }
 
-      Post("/admin/crm-templates/languages")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, missingTemplates))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+        Post("/admin/crm-templates/languages")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, missingTemplates))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
 
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(10)
-        errors.map(_.field).contains("welcome") shouldBe true
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size should be(10)
+          errors.map(_.field).contains("welcome") shouldBe true
+        }
       }
     }
 
     Scenario("already exists") {
-      Post("/admin/crm-templates/languages")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, languageAlreadyExists.asJson.toString))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
 
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(1)
-        errors.head.field should be("id")
+        Post("/admin/crm-templates/languages")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, languageAlreadyExists.asJson.toString))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size should be(1)
+          errors.head.field should be("id")
+        }
       }
     }
   }
@@ -262,34 +274,39 @@ class AdminCrmLanguageTemplatesApiTest
         status should be(StatusCodes.Forbidden)
       }
 
-      Put("/admin/crm-templates/languages/el")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/crm-templates/languages/el")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+        }
       }
     }
 
     Scenario("invalid") {
-      Put("/admin/crm-templates/languages/el")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, missingTemplates))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
 
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(10)
-        errors.map(_.field).contains("welcome") shouldBe true
-      }
+        Put("/admin/crm-templates/languages/el")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, missingTemplates))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
 
-      Put("/admin/crm-templates/languages/non")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
-      }
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size should be(10)
+          errors.map(_.field).contains("welcome") shouldBe true
+        }
 
-      Put("/admin/crm-templates/languages/too_long")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+        Put("/admin/crm-templates/languages/non")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
+
+        Put("/admin/crm-templates/languages/too_long")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
   }

@@ -36,7 +36,7 @@ import org.make.core.auth.UserRights
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.technical.IdGenerator
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
+import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator, RoleSuperAdmin}
 import org.make.core.user.{User, UserId}
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
@@ -112,9 +112,8 @@ trait MakeApiTestBase
   when(idGenerator.nextTagId()).thenReturn(TagId("some-id"))
   when(idGenerator.nextTagTypeId()).thenReturn(TagTypeId("some-id"))
 
-  private val successful: Future[Unit] = Future.unit
   when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId], any[RequestContext]))
-    .thenReturn(successful)
+    .thenReturn(Future.unit)
 
   when(oauth2DataHandler.refreshIfTokenIsExpired(any[String])).thenReturn(Future.successful(None))
 
@@ -131,6 +130,7 @@ trait MakeApiTestBase
   final protected val tokenCitizen = "my-valid-citizen-access-token"
   final protected val tokenModerator = "my-valid-moderator-access-token"
   final protected val tokenAdmin = "my-valid-admin-access-token"
+  final protected val tokenSuperAdmin = "my-valid-super-admin-access-token"
 
   final protected val defaultCitizenUser: User =
     TestUtils.user(id = UserId("my-citizen-user-id"), email = "yopmail+citizen@make.org", roles = Seq(RoleCitizen))
@@ -138,9 +138,20 @@ trait MakeApiTestBase
     TestUtils.user(id = UserId("my-moderator-user-id"), email = "mod.erator@modo.com", roles = Seq(RoleModerator))
   final protected val defaultAdminUser: User =
     TestUtils.user(id = UserId("my-admin-user-id"), email = "yopmail+admin@make.org", roles = Seq(RoleAdmin))
+  final protected val defaultSuperAdminUser: User =
+    TestUtils.user(
+      id = UserId("my-super-admin-user-id"),
+      email = "yopmail+super-admin@make.org",
+      roles = Seq(RoleSuperAdmin)
+    )
 
   private val defaultUsersByToken: Map[String, User] =
-    Map(tokenCitizen -> defaultCitizenUser, tokenModerator -> defaultModeratorUser, tokenAdmin -> defaultAdminUser)
+    Map(
+      tokenCitizen -> defaultCitizenUser,
+      tokenModerator -> defaultModeratorUser,
+      tokenAdmin -> defaultAdminUser,
+      tokenSuperAdmin -> defaultSuperAdminUser
+    )
 
   // Override this Map to add more users by token if needed
   def customUserByToken: Map[String, User] = Map.empty
