@@ -23,7 +23,6 @@ import org.make.api.MakeUnitTest
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.user.PersistentUserServiceComponent.{FollowedUsers, PersistentUser}
 import org.make.core.DateHelper
-import org.make.core.user.{CustomRole, Role}
 import scalikejdbc.WrappedResultSet
 
 import scala.concurrent.ExecutionContext
@@ -37,34 +36,11 @@ class PersistentUserServiceComponentTest
   override val writeExecutionContext: ExecutionContext = ExecutionContext.Implicits.global
 
   val rs: WrappedResultSet = mock[WrappedResultSet]
-  val roles: String = PersistentUser.alias.resultName.roles.value
-  when(rs.string(eqTo(roles))).thenReturn("ROLE_ADMIN,ROLE_MODERATOR")
   when(rs.stringOpt(any[String])).thenReturn(None)
   when(rs.arrayOpt(any[String])).thenReturn(None)
   when(rs.zonedDateTimeOpt(any[String])).thenReturn(None)
 
   Feature("PersistentUser to User") {
-    Scenario("User should have roles") {
-      Given("a WrappedResultSet with a string column role")
-
-      When("transformed to user")
-      val user = PersistentUser.apply()(rs).toUser
-
-      Then("Role objects are returned")
-      user.roles should be(Seq[Role](Role.RoleAdmin, Role.RoleModerator))
-    }
-
-    Scenario("User should not fail to return roles when custom roles") {
-      Given("a WrappedResultSet with a faulty role")
-      when(rs.string(eqTo(roles))).thenReturn("faulty_role")
-
-      When("transformed to user")
-      val user = PersistentUser.apply()(rs).toUser
-
-      Then("Role must be custom")
-      user.roles should be(Seq(CustomRole("faulty_role")))
-    }
-
     Scenario("User's Profile should be consistent") {
       val exampleUrl = "http://example.com/"
 

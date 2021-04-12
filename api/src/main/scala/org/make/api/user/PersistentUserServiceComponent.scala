@@ -49,8 +49,6 @@ trait PersistentUserServiceComponent {
 
 object PersistentUserServiceComponent {
 
-  val ROLE_SEPARATOR = ","
-
   @SuppressWarnings(Array("org.wartremover.warts.ArrayEquals"))
   final case class PersistentUser(
     uuid: String,
@@ -69,7 +67,7 @@ object PersistentUserServiceComponent {
     verificationTokenExpiresAt: Option[ZonedDateTime],
     resetToken: Option[String],
     resetTokenExpiresAt: Option[ZonedDateTime],
-    roles: String,
+    roles: Array[String],
     dateOfBirth: Option[LocalDate],
     avatarUrl: Option[String],
     profession: Option[String],
@@ -121,7 +119,7 @@ object PersistentUserServiceComponent {
         verificationTokenExpiresAt = verificationTokenExpiresAt,
         resetToken = resetToken,
         resetTokenExpiresAt = resetTokenExpiresAt,
-        roles = roles.split(ROLE_SEPARATOR).toIndexedSeq.map(Role.apply),
+        roles = roles.toSeq.map(Role.apply),
         country = Country(country),
         profile = toProfile,
         isHardBounce = isHardBounce,
@@ -141,7 +139,7 @@ object PersistentUserServiceComponent {
     def toUserRights: UserRights = {
       UserRights(
         userId = UserId(uuid),
-        roles = roles.split(ROLE_SEPARATOR).toIndexedSeq.map(Role.apply),
+        roles = roles.toSeq.map(Role.apply),
         availableQuestions = availableQuestions.toSeq.map(QuestionId.apply),
         emailVerified = emailVerified
       )
@@ -264,7 +262,10 @@ object PersistentUserServiceComponent {
         verificationTokenExpiresAt = resultSet.zonedDateTimeOpt(userResultName.verificationTokenExpiresAt),
         resetToken = resultSet.stringOpt(userResultName.resetToken),
         resetTokenExpiresAt = resultSet.zonedDateTimeOpt(userResultName.resetTokenExpiresAt),
-        roles = resultSet.string(userResultName.roles),
+        roles = resultSet
+          .arrayOpt(userResultName.roles)
+          .map(_.getArray.asInstanceOf[Array[String]])
+          .getOrElse(Array()),
         dateOfBirth = resultSet.localDateOpt(userResultName.dateOfBirth),
         avatarUrl = resultSet.stringOpt(userResultName.avatarUrl),
         profession = resultSet.stringOpt(userResultName.profession),
@@ -568,7 +569,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
                   lastName =>
                     sqls.like(sqls.lower(userAlias.lastName), s"%${lastName.replace("%", "\\%").toLowerCase}%")
                 ),
-                maybeRole.map(role         => sqls.like(userAlias.roles, s"%${role.value}%")),
+                maybeRole.map(role         => sqls.isNotNull(sqls"array_position(${userAlias.roles}, ${role.value})")),
                 maybeUserType.map(userType => sqls.eq(userAlias.userType, userType))
               )
             )
@@ -765,7 +766,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.verificationTokenExpiresAt -> user.verificationTokenExpiresAt,
               column.resetToken -> user.resetToken,
               column.resetTokenExpiresAt -> user.resetTokenExpiresAt,
-              column.roles -> user.roles.map(_.value).mkString(PersistentUserServiceComponent.ROLE_SEPARATOR),
+              column.roles -> session.connection
+                .createArrayOf("VARCHAR", user.roles.map(_.value).toArray),
               column.avatarUrl -> user.profile.flatMap(_.avatarUrl),
               column.profession -> user.profile.flatMap(_.profession),
               column.phoneNumber -> user.profile.flatMap(_.phoneNumber),
@@ -852,7 +854,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.verificationTokenExpiresAt -> user.verificationTokenExpiresAt,
               column.resetToken -> user.resetToken,
               column.resetTokenExpiresAt -> user.resetTokenExpiresAt,
-              column.roles -> user.roles.map(_.value).mkString(PersistentUserServiceComponent.ROLE_SEPARATOR),
+              column.roles -> session.connection
+                .createArrayOf("VARCHAR", user.roles.map(_.value).toArray),
               column.avatarUrl -> user.profile.flatMap(_.avatarUrl),
               column.profession -> user.profile.flatMap(_.profession),
               column.phoneNumber -> user.profile.flatMap(_.phoneNumber),
@@ -1169,7 +1172,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
                 email.map(email            => sqls.like(userAlias.email, s"%${email.replace("%", "\\%")}%")),
                 firstName.map(firstName    => sqls.like(userAlias.firstName, s"%${firstName.replace("%", "\\%")}%")),
                 lastName.map(lastName      => sqls.like(userAlias.lastName, s"%${lastName.replace("%", "\\%")}%")),
-                maybeRole.map(role         => sqls.like(userAlias.roles, s"%${role.value}%")),
+                maybeRole.map(role         => sqls.isNotNull(sqls"array_position(${userAlias.roles}, ${role.value})")),
                 maybeUserType.map(userType => sqls.eq(userAlias.userType, userType))
               )
             )
