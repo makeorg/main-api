@@ -44,7 +44,7 @@ trait PersistentCrmQuestionTemplateService {
 trait DefaultPersistentCrmQuestionTemplateServiceComponent extends PersistentCrmQuestionTemplateServiceComponent {
   this: MakeDBExecutionContextComponent =>
 
-  override def persistentCrmQuestionTemplateService: PersistentCrmQuestionTemplateService =
+  override lazy val persistentCrmQuestionTemplateService: PersistentCrmQuestionTemplateService =
     new DefaultPersistentCrmQuestionTemplateService
 
   class DefaultPersistentCrmQuestionTemplateService extends PersistentCrmQuestionTemplateService with ShortenedNames {

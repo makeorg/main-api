@@ -213,6 +213,7 @@ trait MakeApi
     with DefaultPersistentClientServiceComponent
     with DefaultPersistentCrmLanguageTemplateServiceComponent
     with DefaultPersistentCrmQuestionTemplateServiceComponent
+    with DefaultPersistentCrmSynchroUserServiceComponent
     with DefaultPersistentCrmUserServiceComponent
     with DefaultPersistentFeatureServiceComponent
     with DefaultPersistentIdeaMappingServiceComponent

@@ -101,13 +101,7 @@ final case class User(
     with Timestamped {
 
   def fullName: Option[String] = {
-    (firstName, lastName, organisationName) match {
-      case (None, None, None)                                 => None
-      case (None, None, Some(definedOrganisationName))        => Some(definedOrganisationName)
-      case (Some(definedFirstName), None, _)                  => Some(definedFirstName)
-      case (None, Some(definedLastName), _)                   => Some(definedLastName)
-      case (Some(definedFirstName), Some(definedLastName), _) => Some(s"$definedFirstName $definedLastName")
-    }
+    User.fullName(firstName, lastName, organisationName)
   }
 
   def displayName: Option[String] = this.userType match {
@@ -129,6 +123,22 @@ final case class User(
 
   def isB2B: Boolean = userType == UserType.UserTypePersonality || userType == UserType.UserTypeOrganisation
   def isB2C: Boolean = userType == UserType.UserTypeUser
+}
+
+object User {
+  def fullName(
+    firstName: Option[String],
+    lastName: Option[String],
+    organisationName: Option[String]
+  ): Option[String] = {
+    (firstName, lastName, organisationName) match {
+      case (None, None, None)                                 => None
+      case (None, None, Some(definedOrganisationName))        => Some(definedOrganisationName)
+      case (Some(definedFirstName), None, _)                  => Some(definedFirstName)
+      case (None, Some(definedLastName), _)                   => Some(definedLastName)
+      case (Some(definedFirstName), Some(definedLastName), _) => Some(s"$definedFirstName $definedLastName")
+    }
+  }
 }
 
 final case class UserId(value: String) extends StringValue

@@ -27,7 +27,6 @@ import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Executors, ThreadFactory}
 import java.util.stream.Collectors
-
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.http.scaladsl.model.StatusCodes
 import akka.persistence.query.EventEnvelope
@@ -53,14 +52,15 @@ import org.make.api.technical.crm.ManageContactAction.{AddNoForce, Remove}
 import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.api.technical.job.JobCoordinatorServiceComponent
 import org.make.api.technical._
-import org.make.api.user.{PersistentUserToAnonymizeServiceComponent, UserServiceComponent}
+import org.make.api.user.PersistentCrmSynchroUserService.CrmSynchroUser
+import org.make.api.user.{PersistentCrmSynchroUserServiceComponent, PersistentUserToAnonymizeServiceComponent}
 import org.make.api.userhistory._
 import org.make.core.DateHelper.isLast30daysDate
 import org.make.core.Validation.emailRegex
 import org.make.core.job.Job.JobId.SyncCrmData
 import org.make.core.question.Question
 import org.make.core.session.SessionId
-import org.make.core.user.{User, UserId, UserType}
+import org.make.core.user.{UserId, UserType}
 import org.make.core.{DateHelper, Order}
 
 import scala.concurrent.duration.DurationInt
@@ -93,10 +93,10 @@ trait CrmServiceComponent {
 trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with ErrorAccumulatingCirceSupport {
   self: MailJetConfigurationComponent
     with ActorSystemTypedComponent
+    with PersistentCrmSynchroUserServiceComponent
     with OperationServiceComponent
     with QuestionServiceComponent
     with UserHistoryCoordinatorServiceComponent
-    with UserServiceComponent
     with PersistentUserToAnonymizeServiceComponent
     with ReadJournalComponent
     with ProposalServiceComponent
@@ -400,7 +400,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
     private def computeAndPersistCrmUsers(questionResolver: QuestionResolver): Future[Unit] = {
       val start = System.currentTimeMillis()
       StreamUtils
-        .asyncPageToPageSource(userService.findUsersForCrmSynchro(None, None, _, batchSize))
+        .asyncPageToPageSource(persistentCrmSynchroUserService.findUsersForCrmSynchro(None, None, _, batchSize))
         .mapConcat(identity)
         .mapAsync(retrievePropertiesParallelism) { user =>
           getPropertiesFromUser(user, questionResolver).map { properties =>
@@ -491,11 +491,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
       } yield new QuestionResolver(questions, operations)
     }
 
-    final def getPropertiesFromUser(user: User, resolver: QuestionResolver): Future[ContactProperties] = {
+    final def getPropertiesFromUser(user: CrmSynchroUser, resolver: QuestionResolver): Future[ContactProperties] = {
 
       val decider: Supervision.Decider = { e =>
         logger.error(
-          s"Error in stream getPropertiesFromUser for user ${user.userId}. Stream resumed by dropping this element: ",
+          s"Error in stream getPropertiesFromUser for user ${user.uuid.value}. Stream resumed by dropping this element: ",
           e
         )
         Supervision.Resume
@@ -504,7 +504,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
       val events: Source[EventEnvelope, NotUsed] =
         userJournal
           .currentEventsByPersistenceId(
-            persistenceId = user.userId.value,
+            persistenceId = user.uuid.value,
             fromSequenceNr = 0,
             toSequenceNr = Long.MaxValue
           )
@@ -520,20 +520,20 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
       userProperties.map(properties => contactPropertiesFromUserProperties(properties.normalize()))
     }
 
-    private def userPropertiesFromUser(user: User, questionResolver: QuestionResolver): UserProperties = {
+    private def userPropertiesFromUser(user: CrmSynchroUser, questionResolver: QuestionResolver): UserProperties = {
       val question =
         questionResolver.findQuestionWithOperation { question =>
-          user.profile.flatMap(_.registerQuestionId).contains(question.questionId)
+          user.registerQuestionId.contains(question.questionId)
         }
 
       UserProperties(
-        userId = user.userId,
+        userId = user.uuid,
         firstname = user.firstName.getOrElse(""),
-        zipCode = user.profile.flatMap(_.postalCode),
-        dateOfBirth = user.profile.flatMap(_.dateOfBirth),
+        zipCode = user.postalCode,
+        dateOfBirth = user.dateOfBirth,
         emailValidationStatus = user.emailVerified,
         emailHardBounceStatus = user.isHardBounce,
-        unsubscribeStatus = user.profile.exists(!_.optInNewsletter),
+        unsubscribeStatus = !user.optInNewsletter,
         accountCreationDate = user.createdAt,
         userB2B = user.userType != UserType.UserTypeUser,
         updatedAt = Some(DateHelper.now()),
@@ -562,7 +562,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
         emailValidationStatus = Some(userProperty.emailValidationStatus),
         emailHardBounceValue = Some(userProperty.emailHardBounceStatus),
         unsubscribeStatus = Some(userProperty.unsubscribeStatus),
-        accountCreationDate = userProperty.accountCreationDate.map(_.format(dateFormatter)),
+        accountCreationDate = Some(userProperty.accountCreationDate.format(dateFormatter)),
         accountCreationSource = userProperty.accountCreationSource,
         accountCreationOrigin = userProperty.accountCreationOrigin,
         accountCreationSlug = userProperty.accountCreationSlug,
@@ -849,7 +849,7 @@ final case class UserProperties(
   emailValidationStatus: Boolean,
   emailHardBounceStatus: Boolean,
   unsubscribeStatus: Boolean,
-  accountCreationDate: Option[ZonedDateTime],
+  accountCreationDate: ZonedDateTime,
   userB2B: Boolean,
   accountCreationSource: Option[String] = None,
   accountCreationOrigin: Option[String] = None,
@@ -883,7 +883,7 @@ final case class UserProperties(
   private def normalizeUserPropertiesWhenNoRegisterEvent(): UserProperties = {
     val sourceFixDate: ZonedDateTime = ZonedDateTime.parse("2018-09-01T00:00:00Z")
     (accountCreationSource, accountCreationDate) match {
-      case (None, Some(date)) if date.isBefore(sourceFixDate) =>
+      case (None, date) if date.isBefore(sourceFixDate) =>
         this.copy(
           accountCreationSource = Some("core"),
           accountCreationCountry = accountCreationCountry.orElse(Some("FR")),

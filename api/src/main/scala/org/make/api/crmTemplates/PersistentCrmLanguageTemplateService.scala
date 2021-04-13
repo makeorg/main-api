@@ -43,7 +43,7 @@ trait PersistentCrmLanguageTemplateService {
 trait DefaultPersistentCrmLanguageTemplateServiceComponent extends PersistentCrmLanguageTemplateServiceComponent {
   this: MakeDBExecutionContextComponent =>
 
-  override def persistentCrmLanguageTemplateService: PersistentCrmLanguageTemplateService =
+  override lazy val persistentCrmLanguageTemplateService: PersistentCrmLanguageTemplateService =
     new DefaultPersistentCrmLanguageTemplateService
 
   class DefaultPersistentCrmLanguageTemplateService extends PersistentCrmLanguageTemplateService with ShortenedNames {
