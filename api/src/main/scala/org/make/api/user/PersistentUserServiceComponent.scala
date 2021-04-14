@@ -384,12 +384,6 @@ trait PersistentUserService {
   def updateIsHardBounce(email: String, isHardBounce: Boolean): Future[Boolean]
   def updateLastMailingError(email: String, lastMailingError: Option[MailingErrorLog]): Future[Boolean]
   def updateSocialUser(user: User): Future[Boolean]
-  def findUsersForCrmSynchro(
-    optIn: Option[Boolean],
-    hardBounce: Option[Boolean],
-    offset: Int,
-    limit: Int
-  ): Future[Seq[User]]
   def findUsersWithoutRegisterQuestion: Future[Seq[User]]
   def getFollowedUsers(userId: UserId): Future[Seq[String]]
   def removeAnonymizedUserFromFollowedUserTable(userId: UserId): Future[Unit]
@@ -667,34 +661,6 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       })
 
       futurePersistentUserId.map(_.map(UserId(_)))
-    }
-
-    override def findUsersForCrmSynchro(
-      optIn: Option[Boolean],
-      hardBounce: Option[Boolean],
-      offset: Int,
-      limit: Int
-    ): Future[Seq[User]] = {
-      implicit val cxt: EC = readExecutionContext
-      val futurePersistentUsers = Future(NamedDB("READ").retryableTx { implicit session =>
-        withSQL {
-          select
-            .from(PersistentUser.as(userAlias))
-            .where(
-              sqls.toAndConditionOpt(
-                hardBounce.map(sqls.eq(userAlias.isHardBounce, _)),
-                optIn.map(sqls.eq(userAlias.optInNewsletter, _)),
-                Some(sqls.notLike(userAlias.email, "yopmail+%@make.org"))
-              )
-            )
-            .orderBy(userAlias.createdAt.asc, userAlias.email.asc)
-            .limit(limit)
-            .offset(offset)
-
-        }.map(PersistentUser.apply()).list().apply()
-      })
-
-      futurePersistentUsers.map(_.map(_.toUser))
     }
 
     override def findUsersWithoutRegisterQuestion: Future[Seq[User]] = {

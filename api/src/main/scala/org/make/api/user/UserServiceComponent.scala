@@ -116,12 +116,6 @@ trait UserService extends ShortenedNames {
   def updateIsHardBounce(email: String, isHardBounce: Boolean): Future[Boolean]
   def updateLastMailingError(userId: UserId, lastMailingError: Option[MailingErrorLog]): Future[Boolean]
   def updateLastMailingError(email: String, lastMailingError: Option[MailingErrorLog]): Future[Boolean]
-  def findUsersForCrmSynchro(
-    optIn: Option[Boolean],
-    hardBounce: Option[Boolean],
-    page: Int,
-    limit: Int
-  ): Future[Seq[User]]
   def getUsersWithoutRegisterQuestion: Future[Seq[User]]
   def anonymize(user: User, adminId: UserId, requestContext: RequestContext, mode: Anonymization): Future[Unit]
   def anonymizeInactiveUsers(adminId: UserId, requestContext: RequestContext): Future[JobAcceptance]
@@ -709,15 +703,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def updateLastMailingError(userId: UserId, lastMailingError: Option[MailingErrorLog]): Future[Boolean] = {
       persistentUserService.updateLastMailingError(userId, lastMailingError)
-    }
-
-    override def findUsersForCrmSynchro(
-      optIn: Option[Boolean],
-      hardBounce: Option[Boolean],
-      offset: Int,
-      limit: Int
-    ): Future[Seq[User]] = {
-      persistentUserService.findUsersForCrmSynchro(optIn, hardBounce, offset, limit)
     }
 
     override def getUsersWithoutRegisterQuestion: Future[Seq[User]] = {

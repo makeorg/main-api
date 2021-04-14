@@ -27,8 +27,9 @@ import org.make.core.StringValue
 import org.make.core.crmTemplate.{CrmLanguageTemplateId, CrmQuestionTemplateId, CrmTemplateKind, TemplateId}
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
-import org.make.core.reference.Language
+import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
+import org.make.core.user.{UserId, UserType}
 import scalikejdbc.{Binders, ParameterBinderFactory, TypeBinder}
 
 object ScalikeSupport {
@@ -51,11 +52,15 @@ object ScalikeSupport {
   implicit val crmQuestionTemplateIdBinders: Binders[CrmQuestionTemplateId] = stringValueBinders(
     CrmQuestionTemplateId.apply
   )
+  implicit val countryBinders: Binders[Country] = stringValueBinders(Country.apply)
   implicit val languageBinders: Binders[Language] = stringValueBinders(Language.apply)
   implicit val operationIdBinders: Binders[OperationId] = stringValueBinders(OperationId.apply)
   implicit val questionIdBinders: Binders[QuestionId] = stringValueBinders(QuestionId.apply)
   implicit val sequenceIdBinders: Binders[SequenceId] = stringValueBinders(SequenceId.apply)
   implicit val templateIdBinders: Binders[TemplateId] = stringValueBinders(TemplateId.apply)
+  implicit val userIdBinders: Binders[UserId] = stringValueBinders(UserId.apply)
+
+  implicit val userTypeBinders: Binders[UserType] = stringEnumBinders[UserType]
 
   /*
    * The following code is a copy-paste from https://github.com/katainaka0503/scalikejdbc-refined
