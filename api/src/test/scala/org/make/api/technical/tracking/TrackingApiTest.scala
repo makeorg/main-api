@@ -74,6 +74,7 @@ class TrackingApiTest
     testBackofficeLogs("user", tokenCitizen, StatusCodes.Forbidden, false)
     testBackofficeLogs("moderator", tokenModerator, StatusCodes.NoContent, true)
     testBackofficeLogs("admin", tokenAdmin, StatusCodes.NoContent, true)
+    testBackofficeLogs("superadmin", tokenSuperAdmin, StatusCodes.NoContent, true)
 
   }
 

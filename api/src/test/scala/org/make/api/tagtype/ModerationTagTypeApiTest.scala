@@ -84,15 +84,17 @@ class ModerationTagTypeApiTest
     }
 
     Scenario("allow authenticated admin") {
-      Post("/moderation/tag-types")
-        .withEntity(
-          HttpEntity(
-            ContentTypes.`application/json`,
-            """{"label": "valid TagType", "display":"HIDDEN", "weight": 0, "requiredForEnrichment": false}"""
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/moderation/tag-types")
+          .withEntity(
+            HttpEntity(
+              ContentTypes.`application/json`,
+              """{"label": "valid TagType", "display":"HIDDEN", "weight": 0, "requiredForEnrichment": false}"""
+            )
           )
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.Created)
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.Created)
+        }
       }
     }
   }
@@ -198,32 +200,36 @@ class ModerationTagTypeApiTest
     }
 
     Scenario("allow authenticated admin on existing tag type") {
-      Put("/moderation/tag-types/hello-tag-type")
-        .withEntity(
-          HttpEntity(
-            ContentTypes.`application/json`,
-            """{"label": "new label", "display":"HIDDEN", "weight": 0, "requiredForEnrichment": true}"""
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/moderation/tag-types/hello-tag-type")
+          .withEntity(
+            HttpEntity(
+              ContentTypes.`application/json`,
+              """{"label": "new label", "display":"HIDDEN", "weight": 0, "requiredForEnrichment": true}"""
+            )
           )
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val tagType: TagTypeResponse = entityAs[TagTypeResponse]
-        tagType.id should be(newHelloWorldTagType.tagTypeId)
-        tagType.label should be(newHelloWorldTagType.label)
-        tagType.display should be(newHelloWorldTagType.display)
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          val tagType: TagTypeResponse = entityAs[TagTypeResponse]
+          tagType.id should be(newHelloWorldTagType.tagTypeId)
+          tagType.label should be(newHelloWorldTagType.label)
+          tagType.display should be(newHelloWorldTagType.display)
+        }
       }
     }
 
     Scenario("not found and allow authenticated admin on a non existing tag type") {
-      Put("/moderation/tag-types/fake-tag-type")
-        .withEntity(
-          HttpEntity(
-            ContentTypes.`application/json`,
-            """{"label": "new label", "display":"HIDDEN", "weight": 0, "requiredForEnrichment": true}"""
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/moderation/tag-types/fake-tag-type")
+          .withEntity(
+            HttpEntity(
+              ContentTypes.`application/json`,
+              """{"label": "new label", "display":"HIDDEN", "weight": 0, "requiredForEnrichment": true}"""
+            )
           )
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
   }

@@ -74,25 +74,30 @@ class AdminCrmQuestionTemplatesApiTest
         status should be(StatusCodes.Forbidden)
       }
 
-      Get(s"/admin/crm-templates/questions?questionId=${questionId.value}")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        header("x-total-count").map(_.value) should be(Some("3"))
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get(s"/admin/crm-templates/questions?questionId=${questionId.value}")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          header("x-total-count").map(_.value) should be(Some("3"))
 
-        val templates: Seq[CrmQuestionTemplate] = entityAs[Seq[CrmQuestionTemplate]]
-        templates.size should be(3)
-        templates.map(_.kind).toSet shouldBe Set(
-          CrmTemplateKind.Registration,
-          CrmTemplateKind.B2BEmailChanged,
-          CrmTemplateKind.B2BRegistration
-        )
+          val templates: Seq[CrmQuestionTemplate] = entityAs[Seq[CrmQuestionTemplate]]
+          templates.size should be(3)
+          templates.map(_.kind).toSet shouldBe Set(
+            CrmTemplateKind.Registration,
+            CrmTemplateKind.B2BEmailChanged,
+            CrmTemplateKind.B2BRegistration
+          )
+        }
       }
     }
 
     Scenario("missing mandatory questionId param") {
-      Get("/admin/crm-templates/questions")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+
+        Get("/admin/crm-templates/questions")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
   }
@@ -121,14 +126,17 @@ class AdminCrmQuestionTemplatesApiTest
         status should be(StatusCodes.Forbidden)
       }
 
-      Get("/admin/crm-templates/questions/id-getone")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-      }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
 
-      Get("/admin/crm-templates/questions/fake")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+        Get("/admin/crm-templates/questions/id-getone")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+        }
+
+        Get("/admin/crm-templates/questions/fake")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
   }
@@ -179,35 +187,41 @@ class AdminCrmQuestionTemplatesApiTest
         status should be(StatusCodes.Forbidden)
       }
 
-      Post("/admin/crm-templates/questions")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/crm-templates/questions")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
 
-        status should be(StatusCodes.Created)
+          status should be(StatusCodes.Created)
+        }
       }
     }
 
     Scenario("invalid") {
-      Post("/admin/crm-templates/questions")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, fakeQuestion.asJson.toString))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/crm-templates/questions")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, fakeQuestion.asJson.toString))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
 
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(1)
-        errors.head.field should be("questionId")
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size should be(1)
+          errors.head.field should be("questionId")
+        }
       }
     }
 
     Scenario("already exists") {
-      Post("/admin/crm-templates/questions")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, alreadyExists.asJson.toString))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/crm-templates/questions")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, alreadyExists.asJson.toString))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
 
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(1)
-        errors.head.field should be("templateKind")
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size should be(1)
+          errors.head.field should be("templateKind")
+        }
       }
     }
   }
@@ -255,44 +269,52 @@ class AdminCrmQuestionTemplatesApiTest
         status should be(StatusCodes.Forbidden)
       }
 
-      Put("/admin/crm-templates/questions/id-update")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/crm-templates/questions/id-update")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, valid.asJson.toString))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+        }
       }
     }
 
     Scenario("not found") {
-      Put("/admin/crm-templates/questions/fake")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, fakeQuestion.asJson.toString))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/crm-templates/questions/fake")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, fakeQuestion.asJson.toString))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
 
     Scenario("kind already exists") {
-      Put("/admin/crm-templates/questions/id-update")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, valid.copy(kind = doNotOverrideKind).asJson.toString))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/crm-templates/questions/id-update")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, valid.copy(kind = doNotOverrideKind).asJson.toString))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
 
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(1)
-        errors.head.field should be("kind")
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size should be(1)
+          errors.head.field should be("kind")
+        }
       }
     }
 
     Scenario("fake question") {
-      Put("/admin/crm-templates/questions/id-update")
-        .withEntity(
-          HttpEntity(ContentTypes.`application/json`, valid.copy(questionId = fakeQuestionId).asJson.toString)
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/crm-templates/questions/id-update")
+          .withEntity(
+            HttpEntity(ContentTypes.`application/json`, valid.copy(questionId = fakeQuestionId).asJson.toString)
+          )
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
 
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(1)
-        errors.head.field should be("questionId")
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size should be(1)
+          errors.head.field should be("questionId")
+        }
       }
     }
   }
@@ -318,9 +340,11 @@ class AdminCrmQuestionTemplatesApiTest
         status should be(StatusCodes.Forbidden)
       }
 
-      Delete("/admin/crm-templates/questions/id-delete")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Delete("/admin/crm-templates/questions/id-delete")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+        }
       }
     }
   }

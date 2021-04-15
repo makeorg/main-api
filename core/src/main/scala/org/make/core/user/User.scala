@@ -41,6 +41,7 @@ object Role extends StringEnum[Role] with FallbackingStringCirceEnum[Role] {
 
   override def default(value: String): Role = CustomRole(value)
 
+  case object RoleSuperAdmin extends Role("ROLE_SUPER_ADMIN")
   case object RoleAdmin extends Role("ROLE_ADMIN")
   case object RoleModerator extends Role("ROLE_MODERATOR")
   case object RolePolitical extends Role("ROLE_POLITICAL")

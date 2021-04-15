@@ -85,13 +85,15 @@ class AdminTopIdeaApiTest
           | "weight": 42
           |}""".stripMargin
 
-      Post("/admin/top-ideas")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, entity) ~>
-        routes ~>
-        check {
-          status should be(StatusCodes.BadRequest)
-        }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/top-ideas")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(ContentTypes.`application/json`, entity) ~>
+          routes ~>
+          check {
+            status should be(StatusCodes.BadRequest)
+          }
+      }
     }
 
     Scenario("idea doesn't exists") {
@@ -128,13 +130,15 @@ class AdminTopIdeaApiTest
           | "weight": 42
           |}""".stripMargin
 
-      Post("/admin/top-ideas")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, entity) ~>
-        routes ~>
-        check {
-          status should be(StatusCodes.BadRequest)
-        }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/top-ideas")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(ContentTypes.`application/json`, entity) ~>
+          routes ~>
+          check {
+            status should be(StatusCodes.BadRequest)
+          }
+      }
     }
 
     Scenario("access granted for admin") {
@@ -199,13 +203,15 @@ class AdminTopIdeaApiTest
           | "weight": 42
           |}""".stripMargin
 
-      Post("/admin/top-ideas")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, entity) ~>
-        routes ~>
-        check {
-          status should be(StatusCodes.Created)
-        }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/top-ideas")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(ContentTypes.`application/json`, entity) ~>
+          routes ~>
+          check {
+            status should be(StatusCodes.Created)
+          }
+      }
 
     }
 
@@ -267,13 +273,15 @@ class AdminTopIdeaApiTest
           | "weight": 42
           |}""".stripMargin
 
-      Post("/admin/top-ideas")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, entity) ~>
-        routes ~>
-        check {
-          status should be(StatusCodes.BadRequest)
-        }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/top-ideas")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(ContentTypes.`application/json`, entity) ~>
+          routes ~>
+          check {
+            status should be(StatusCodes.BadRequest)
+          }
+      }
     }
 
     Scenario("idea doesn't exists") {
@@ -326,13 +334,15 @@ class AdminTopIdeaApiTest
           | "weight": 42
           |}""".stripMargin
 
-      Post("/admin/top-ideas")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, entity) ~>
-        routes ~>
-        check {
-          status should be(StatusCodes.BadRequest)
-        }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/top-ideas")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(ContentTypes.`application/json`, entity) ~>
+          routes ~>
+          check {
+            status should be(StatusCodes.BadRequest)
+          }
+      }
     }
 
     Scenario("access granted for admin") {
@@ -394,13 +404,15 @@ class AdminTopIdeaApiTest
           | "weight": 42
           |}""".stripMargin
 
-      Put("/admin/top-ideas/top-idea-id")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, entity) ~>
-        routes ~>
-        check {
-          status should be(StatusCodes.OK)
-        }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/top-ideas/top-idea-id")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(ContentTypes.`application/json`, entity) ~>
+          routes ~>
+          check {
+            status should be(StatusCodes.OK)
+          }
+      }
 
     }
 
@@ -424,13 +436,15 @@ class AdminTopIdeaApiTest
           | "weight": 42
           |}""".stripMargin
 
-      Put("/admin/top-ideas/not-found")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, entity) ~>
-        routes ~>
-        check {
-          status should be(StatusCodes.NotFound)
-        }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/top-ideas/not-found")
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(ContentTypes.`application/json`, entity) ~>
+          routes ~>
+          check {
+            status should be(StatusCodes.NotFound)
+          }
+      }
     }
 
   }
@@ -474,12 +488,14 @@ class AdminTopIdeaApiTest
           )
         )
 
-      Get("/admin/top-ideas/top-idea-id")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~>
-        routes ~>
-        check {
-          status should be(StatusCodes.OK)
-        }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/top-ideas/top-idea-id")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~>
+          routes ~>
+          check {
+            status should be(StatusCodes.OK)
+          }
+      }
 
     }
 
@@ -525,12 +541,14 @@ class AdminTopIdeaApiTest
           )
       ).thenReturn(Future.successful(Seq.empty))
 
-      Get("/admin/top-ideas")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~>
-        routes ~>
-        check {
-          status should be(StatusCodes.OK)
-        }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/top-ideas")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~>
+          routes ~>
+          check {
+            status should be(StatusCodes.OK)
+          }
+      }
 
     }
 

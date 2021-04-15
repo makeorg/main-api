@@ -194,12 +194,14 @@ class PersonalityApiTest
           status should be(StatusCodes.Forbidden)
         }
 
-      Post(s"/personalities/some-user-other-than-self/comments")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~>
-        routes ~>
-        check {
-          status should be(StatusCodes.Forbidden)
-        }
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post(s"/personalities/some-user-other-than-self/comments")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~>
+          routes ~>
+          check {
+            status should be(StatusCodes.Forbidden)
+          }
+      }
     }
 
     Scenario("access granted but not found if not personality") {

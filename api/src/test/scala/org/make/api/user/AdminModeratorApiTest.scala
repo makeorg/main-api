@@ -29,6 +29,7 @@ import org.make.core.technical.Pagination.Start
 import org.make.core.user.Role.{RoleCitizen, RoleModerator, RolePolitical}
 import org.make.core.user._
 import org.make.core.{RequestContext, ValidationError}
+import org.mockito.Mockito.clearInvocations
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
@@ -76,27 +77,33 @@ class AdminModeratorApiTest
 
     Scenario("unexistant moderator") {
       when(userService.getUser(UserId("moderator-fake"))).thenReturn(Future.successful(None))
-      Get("/admin/moderators/moderator-fake")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/moderators/moderator-fake")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
 
     Scenario("found user with no moderator role") {
       when(userService.getUser(eqTo(defaultCitizenUser.userId)))
         .thenReturn(Future.successful(Some(defaultCitizenUser)))
-      Get(s"/admin/moderators/${defaultCitizenUser.userId.value}")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get(s"/admin/moderators/${defaultCitizenUser.userId.value}")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
 
     Scenario("successfully return moderator") {
-      Get(s"/admin/moderators/${moderatorId.value}")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val moderator = entityAs[ModeratorResponse]
-        moderator.id should be(moderatorId)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get(s"/admin/moderators/${moderatorId.value}")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          val moderator = entityAs[ModeratorResponse]
+          moderator.id should be(moderatorId)
+        }
       }
     }
   }
@@ -176,11 +183,13 @@ class AdminModeratorApiTest
           Some(UserType.UserTypeUser)
         )
       ).thenReturn(Future.successful(listModerator.size))
-      Get("/admin/moderators")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val moderators = entityAs[Seq[ModeratorResponse]]
-        moderators.size should be(listModerator.size)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/moderators")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          val moderators = entityAs[Seq[ModeratorResponse]]
+          moderators.size should be(listModerator.size)
+        }
       }
     }
   }
@@ -222,25 +231,28 @@ class AdminModeratorApiTest
           |}
         """.stripMargin
 
-      Post("/admin/moderators", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.Created)
-        verify(userService).register(argThat[UserRegisterData] { data =>
-          data.email == s"${defaultModeratorUser.email}" &&
-          data.firstName.contains("Mod") &&
-          data.lastName.contains("Erator") &&
-          data.password.isEmpty &&
-          data.lastIp.isEmpty &&
-          data.dateOfBirth.isEmpty &&
-          data.profession.isEmpty &&
-          data.postalCode.isEmpty &&
-          data.country == Country("FR") &&
-          data.gender.isEmpty &&
-          data.socioProfessionalCategory.isEmpty &&
-          data.optIn.contains(false) &&
-          data.optInPartner.contains(false) &&
-          data.questionId.isEmpty
-        }, any[RequestContext])
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        clearInvocations(userService)
+        Post("/admin/moderators", HttpEntity(ContentTypes.`application/json`, request))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.Created)
+          verify(userService).register(argThat[UserRegisterData] { data =>
+            data.email == s"${defaultModeratorUser.email}" &&
+            data.firstName.contains("Mod") &&
+            data.lastName.contains("Erator") &&
+            data.password.isEmpty &&
+            data.lastIp.isEmpty &&
+            data.dateOfBirth.isEmpty &&
+            data.profession.isEmpty &&
+            data.postalCode.isEmpty &&
+            data.country == Country("FR") &&
+            data.gender.isEmpty &&
+            data.socioProfessionalCategory.isEmpty &&
+            data.optIn.contains(false) &&
+            data.optInPartner.contains(false) &&
+            data.questionId.isEmpty
+          }, any[RequestContext])
+        }
       }
     }
 
@@ -260,16 +272,18 @@ class AdminModeratorApiTest
           |}
         """.stripMargin
 
-      Post("/admin/moderators", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val emailError = errors.find(_.field == "email")
-        emailError should be(
-          Some(
-            ValidationError("email", "already_registered", Some(s"Email ${defaultModeratorUser.email} already exist"))
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/moderators", HttpEntity(ContentTypes.`application/json`, request))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          val emailError = errors.find(_.field == "email")
+          emailError should be(
+            Some(
+              ValidationError("email", "already_registered", Some(s"Email ${defaultModeratorUser.email} already exist"))
+            )
           )
-        )
+        }
       }
     }
 
@@ -284,12 +298,16 @@ class AdminModeratorApiTest
           |}
         """.stripMargin
 
-      Post("/admin/moderators", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val countryError = errors.find(_.field == "country")
-        countryError should be(Some(ValidationError("country", "malformed", Some("The field [.country] is missing."))))
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/moderators", HttpEntity(ContentTypes.`application/json`, request))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          val countryError = errors.find(_.field == "country")
+          countryError should be(
+            Some(ValidationError("country", "malformed", Some("The field [.country] is missing.")))
+          )
+        }
       }
     }
 
@@ -306,12 +324,14 @@ class AdminModeratorApiTest
           |}
         """.stripMargin
 
-      Post("/admin/moderators", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val emailError = errors.find(_.field == "email")
-        emailError should be(Some(ValidationError("email", "invalid_email", Some("email is not a valid email"))))
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/moderators", HttpEntity(ContentTypes.`application/json`, request))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          val emailError = errors.find(_.field == "email")
+          emailError should be(Some(ValidationError("email", "invalid_email", Some("email is not a valid email"))))
+        }
       }
     }
 
@@ -328,13 +348,15 @@ class AdminModeratorApiTest
           |}
         """.stripMargin
 
-      Post("/admin/moderators", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val rolesError = errors.find(_.field == "roles")
-        rolesError.isDefined should be(true)
-        rolesError.map(_.field) should be(Some("roles"))
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/moderators", HttpEntity(ContentTypes.`application/json`, request))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          val rolesError = errors.find(_.field == "roles")
+          rolesError.isDefined should be(true)
+          rolesError.map(_.field) should be(Some("roles"))
+        }
       }
     }
   }
@@ -374,21 +396,24 @@ class AdminModeratorApiTest
           |}
         """.stripMargin
 
-      Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        clearInvocations(userService)
+        Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
 
-        verify(userService)
-          .update(argThat[User] { user: User =>
-            user.userId == moderatorId &&
-            user.email == s"${defaultModeratorUser.email}" &&
-            user.firstName.contains("New Mod") &&
-            user.lastName.contains("New Erator") &&
-            user.lastIp.isEmpty &&
-            user.hashedPassword.isEmpty &&
-            user.roles == Seq(RoleModerator, RolePolitical, RoleCitizen) &&
-            user.country == Country("GB")
-          }, any[RequestContext])
+          verify(userService)
+            .update(argThat[User] { user: User =>
+              user.userId == moderatorId &&
+              user.email == s"${defaultModeratorUser.email}" &&
+              user.firstName.contains("New Mod") &&
+              user.lastName.contains("New Erator") &&
+              user.lastIp.isEmpty &&
+              user.hashedPassword.isEmpty &&
+              user.roles == Seq(RoleModerator, RolePolitical, RoleCitizen) &&
+              user.country == Country("GB")
+            }, any[RequestContext])
+        }
       }
     }
 
@@ -409,14 +434,16 @@ class AdminModeratorApiTest
           |}
         """.stripMargin
 
-      Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val emailError = errors.find(_.field == "email")
-        emailError should be(
-          Some(ValidationError("email", "already_registered", Some("Email toto@modo.com already exists")))
-        )
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          val emailError = errors.find(_.field == "email")
+          emailError should be(
+            Some(ValidationError("email", "already_registered", Some("Email toto@modo.com already exists")))
+          )
+        }
       }
     }
 
@@ -433,12 +460,14 @@ class AdminModeratorApiTest
           |}
         """.stripMargin
 
-      Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val emailError = errors.find(_.field == "email")
-        emailError should be(Some(ValidationError("email", "invalid_email", Some("email is not a valid email"))))
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          val emailError = errors.find(_.field == "email")
+          emailError should be(Some(ValidationError("email", "invalid_email", Some("email is not a valid email"))))
+        }
       }
     }
 
@@ -474,13 +503,15 @@ class AdminModeratorApiTest
           |}
         """.stripMargin
 
-      Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val rolesError = errors.find(_.field == "roles")
-        rolesError.isDefined should be(true)
-        rolesError.map(_.field) should be(Some("roles"))
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          val rolesError = errors.find(_.field == "roles")
+          rolesError.isDefined should be(true)
+          rolesError.map(_.field) should be(Some("roles"))
+        }
       }
     }
 

@@ -76,22 +76,26 @@ class AdminPersonalityRoleApiTest
           .createPersonalityRole(any[CreatePersonalityRoleRequest])
       ).thenReturn(Future.successful(personalityRole))
 
-      Post("/admin/personality-roles")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/personality-roles")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "name": "CANDIDATE"
                                                                   |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.Created
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.Created
+        }
       }
     }
 
     Scenario("post scenario with wrong request") {
-      Post("/admin/personality-roles")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/personality-roles")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "firstName": "false"
                                                                   |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.BadRequest
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.BadRequest
+        }
       }
     }
   }
@@ -117,12 +121,14 @@ class AdminPersonalityRoleApiTest
       when(personalityRoleService.updatePersonalityRole(any[PersonalityRoleId], any[UpdatePersonalityRoleRequest]))
         .thenReturn(Future.successful(Some(personalityRole)))
 
-      Put("/admin/personality-roles/personality-role-id")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/personality-roles/personality-role-id")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "name": "updated"
                                                                   |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
 
@@ -130,12 +136,14 @@ class AdminPersonalityRoleApiTest
       when(personalityRoleService.updatePersonalityRole(any[PersonalityRoleId], any[UpdatePersonalityRoleRequest]))
         .thenReturn(Future.successful(None))
 
-      Put("/admin/personality-roles/not-found")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/personality-roles/not-found")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                    "name": "updated"
                                                                   |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.NotFound
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.NotFound
+        }
       }
     }
   }
@@ -162,9 +170,11 @@ class AdminPersonalityRoleApiTest
       ).thenReturn(Future.successful(Seq(personalityRole)))
       when(personalityRoleService.count(roleIds = None, name = None)).thenReturn(Future.successful(1))
 
-      Get("/admin/personality-roles")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/personality-roles")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
   }
@@ -188,9 +198,11 @@ class AdminPersonalityRoleApiTest
       when(personalityRoleService.getPersonalityRole(any[PersonalityRoleId]))
         .thenReturn(Future.successful(Some(personalityRole)))
 
-      Get("/admin/personality-roles/personality-role-id")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/personality-roles/personality-role-id")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
 
@@ -199,9 +211,11 @@ class AdminPersonalityRoleApiTest
       when(personalityRoleService.getPersonalityRole(any[PersonalityRoleId]))
         .thenReturn(Future.successful(None))
 
-      Get("/admin/personality-roles/not-found")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.NotFound
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/personality-roles/not-found")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.NotFound
+        }
       }
     }
   }
@@ -225,9 +239,11 @@ class AdminPersonalityRoleApiTest
       when(personalityRoleService.deletePersonalityRole(any[PersonalityRoleId]))
         .thenReturn(Future.unit)
 
-      Delete("/admin/personality-roles/personality-role-id")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Delete("/admin/personality-roles/personality-role-id")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
   }
@@ -256,24 +272,28 @@ class AdminPersonalityRoleApiTest
           .createPersonalityRoleField(any[PersonalityRoleId], any[CreatePersonalityRoleFieldRequest])
       ).thenReturn(Future.successful(personalityRoleField))
 
-      Post("/admin/personality-roles/personality-role-id/fields")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/personality-roles/personality-role-id/fields")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "name": "Activity",
                                                                   | "fieldType": "STRING",
                                                                   | "required": true
                                                                   |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.Created
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.Created
+        }
       }
     }
 
     Scenario("post scenario with wrong request") {
-      Post("/admin/personality-roles/personality-role-id/fields")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/personality-roles/personality-role-id/fields")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "name": "false"
                                                                   |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.BadRequest
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.BadRequest
+        }
       }
     }
   }
@@ -305,14 +325,16 @@ class AdminPersonalityRoleApiTest
           )
       ).thenReturn(Future.successful(Some(personalityRoleField)))
 
-      Put("/admin/personality-roles/personality-role-id/fields/personality-role-field-id")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/personality-roles/personality-role-id/fields/personality-role-field-id")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "name": "updated",
                                                                   | "fieldType": "STRING",
                                                                   | "required": true
                                                                   |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
 
@@ -325,14 +347,16 @@ class AdminPersonalityRoleApiTest
         )
       ).thenReturn(Future.successful(None))
 
-      Put("/admin/personality-roles/personality-role-id/fields/not-found")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/personality-roles/personality-role-id/fields/not-found")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                    "name": "updated",
                                                                   | "fieldType": "STRING",
                                                                   | "required": true
                                                                   |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.NotFound
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.NotFound
+        }
       }
     }
   }
@@ -375,9 +399,11 @@ class AdminPersonalityRoleApiTest
         )
       ).thenReturn(Future.successful(1))
 
-      Get("/admin/personality-roles/personality-role-id/fields")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/personality-roles/personality-role-id/fields")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
   }
@@ -401,9 +427,11 @@ class AdminPersonalityRoleApiTest
       when(personalityRoleFieldService.getPersonalityRoleField(any[PersonalityRoleFieldId], any[PersonalityRoleId]))
         .thenReturn(Future.successful(Some(personalityRoleField)))
 
-      Get("/admin/personality-roles/personality-role-id/fields/personality-role-field-id")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/personality-roles/personality-role-id/fields/personality-role-field-id")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
 
@@ -412,9 +440,11 @@ class AdminPersonalityRoleApiTest
       when(personalityRoleFieldService.getPersonalityRoleField(any[PersonalityRoleFieldId], any[PersonalityRoleId]))
         .thenReturn(Future.successful(None))
 
-      Get("/admin/personality-roles/personality-role-id/fields/not-found")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.NotFound
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/personality-roles/personality-role-id/fields/not-found")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.NotFound
+        }
       }
     }
   }
@@ -438,9 +468,11 @@ class AdminPersonalityRoleApiTest
       when(personalityRoleFieldService.deletePersonalityRoleField(any[PersonalityRoleFieldId]))
         .thenReturn(Future.unit)
 
-      Delete("/admin/personality-roles/personality-role-id/fields/personality-role-field-id")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status shouldBe StatusCodes.OK
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Delete("/admin/personality-roles/personality-role-id/fields/personality-role-field-id")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+        }
       }
     }
   }

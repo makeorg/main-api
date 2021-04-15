@@ -216,9 +216,11 @@ class ModerationQuestionApiTest
         )
       )
 
-      Post(uri)
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NoContent)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post(uri)
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NoContent)
+        }
       }
     }
   }
@@ -309,13 +311,15 @@ class ModerationQuestionApiTest
     ).thenReturn(Future.successful(ProposalId("proposal-id")))
 
     Scenario("authenticated create proposal") {
-      Post(uri)
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
-        status should be(StatusCodes.Created)
-        val proposalIdResponse: ProposalIdResponse = entityAs[ProposalIdResponse]
-        proposalIdResponse.id.value should be("proposal-id")
-        proposalIdResponse.proposalId.value should be("proposal-id")
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post(uri)
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+          status should be(StatusCodes.Created)
+          val proposalIdResponse: ProposalIdResponse = entityAs[ProposalIdResponse]
+          proposalIdResponse.id.value should be("proposal-id")
+          proposalIdResponse.proposalId.value should be("proposal-id")
+        }
       }
     }
     Scenario("unauthorized create proposal") {
@@ -339,31 +343,39 @@ class ModerationQuestionApiTest
       }
     }
     Scenario("bad request create proposal: firstName None") {
-      Post(uri)
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(HttpEntity(ContentTypes.`application/json`, badRequest1)) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post(uri)
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(HttpEntity(ContentTypes.`application/json`, badRequest1)) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+        }
       }
     }
     Scenario("bad request create proposal: firstName empty string") {
-      Post(uri)
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(HttpEntity(ContentTypes.`application/json`, badRequest2)) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post(uri)
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(HttpEntity(ContentTypes.`application/json`, badRequest2)) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+        }
       }
     }
     Scenario("bad request create proposal: no country") {
-      Post(uri)
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(HttpEntity(ContentTypes.`application/json`, requestWithoutCountry)) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post(uri)
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(HttpEntity(ContentTypes.`application/json`, requestWithoutCountry)) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+        }
       }
     }
     Scenario("bad request create proposal: country not in question") {
-      Post(uri)
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(HttpEntity(ContentTypes.`application/json`, requestWithBadCountry)) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post(uri)
+          .withHeaders(Authorization(OAuth2BearerToken(token)))
+          .withEntity(HttpEntity(ContentTypes.`application/json`, requestWithBadCountry)) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+        }
       }
     }
   }
@@ -402,9 +414,11 @@ class ModerationQuestionApiTest
     }
 
     Scenario("question not found") {
-      Post(uri("fake-question"))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post(uri("fake-question"))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
       }
     }
 
@@ -415,9 +429,11 @@ class ModerationQuestionApiTest
       )
       )
 
-      Post(uri(), request)
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post(uri(), request)
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+        }
       }
     }
 
@@ -434,9 +450,11 @@ class ModerationQuestionApiTest
             )
         )
 
-      Post(uri(), request)
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.InternalServerError)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post(uri(), request)
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.InternalServerError)
+        }
       }
     }
 
@@ -452,12 +470,14 @@ class ModerationQuestionApiTest
             Map("filename" -> "image.jpeg")
           )
       )
-      Post(uri(), entityOfSize(256000 + 1))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post(uri(), entityOfSize(256000 + 1))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
 
-        val path: UploadResponse = entityAs[UploadResponse]
-        path.path shouldBe "path/to/uploaded/image.jpeg"
+          val path: UploadResponse = entityAs[UploadResponse]
+          path.path shouldBe "path/to/uploaded/image.jpeg"
+        }
       }
     }
   }

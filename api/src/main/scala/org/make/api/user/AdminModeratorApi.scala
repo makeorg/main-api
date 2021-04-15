@@ -33,7 +33,7 @@ import org.make.core.auth.UserRights
 import org.make.core.question.QuestionId
 import org.make.core.reference.Country
 import org.make.core.technical.Pagination._
-import org.make.core.user.Role.{RoleAdmin, RoleModerator}
+import org.make.core.user.Role.{RoleAdmin, RoleModerator, RoleSuperAdmin}
 import org.make.core.user._
 import scalaoauth2.provider.AuthInfo
 
@@ -174,7 +174,7 @@ trait DefaultAdminModeratorApiComponent
     val moderatorId: PathMatcher1[UserId] = Segment.map(UserId.apply)
 
     private def isModerator(user: User): Boolean = {
-      user.roles.contains(Role.RoleModerator) || user.roles.contains(Role.RoleAdmin)
+      Set(RoleModerator, RoleAdmin, RoleSuperAdmin).intersect(user.roles.toSet).nonEmpty
     }
 
     override def getModerator: Route = get {
@@ -286,7 +286,7 @@ trait DefaultAdminModeratorApiComponent
         path("admin" / "moderators" / moderatorId) { moderatorId =>
           makeOperation("UpdateModerator") { requestContext =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-              val isAdmin = userAuth.user.roles.contains(RoleAdmin)
+              val isAdmin = Set(RoleAdmin, RoleSuperAdmin).intersect(userAuth.user.roles.toSet).nonEmpty
               val isModerator = userAuth.user.roles.contains(RoleModerator)
               authorize((isModerator && moderatorId == userAuth.user.userId) || isAdmin) {
                 decodeRequest {

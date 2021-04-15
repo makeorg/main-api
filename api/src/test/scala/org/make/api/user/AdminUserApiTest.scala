@@ -60,9 +60,12 @@ class AdminUserApiTest
     Profile.parseProfile(optInNewsletter = false, avatarUrl = Some("https://example.com/foo.png"))
   )
   val citizenId: UserId = citizen.userId
+  val fakeId: UserId = UserId("user-fake")
   val moderatorId: UserId = defaultModeratorUser.userId
   val adminId: UserId = defaultAdminUser.userId
+  val superAdminId: UserId = defaultSuperAdminUser.userId
 
+  when(userService.getUser(fakeId)).thenReturn(Future.successful(None))
   when(userService.getUser(eqTo(citizenId))).thenReturn(Future.successful(Some(citizen)))
   when(userService.getUserByEmail(citizen.email)).thenReturn(Future.successful(Some(citizen)))
   when(userService.getUser(eqTo(moderatorId))).thenReturn(Future.successful(Some(defaultModeratorUser)))
@@ -70,42 +73,25 @@ class AdminUserApiTest
   when(userService.update(any[User], any[RequestContext])).thenReturn(Future.successful(defaultModeratorUser))
 
   Feature("get user") {
-    Scenario("unauthenticate user unauthorized to get user") {
-      Get(s"/admin/users/${citizenId.value}") ~> routes ~> check {
-        status should be(StatusCodes.Unauthorized)
-      }
-    }
-
-    Scenario("citizen forbidden to get user") {
-      Get(s"/admin/users/${citizenId.value}")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
-      }
-    }
-
-    Scenario("moderator forbidden to get user") {
-      Get(s"/admin/users/${citizenId.value}")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
-      }
-    }
-
-    Scenario("unexistant user") {
-      when(userService.getUser(eqTo(UserId("user-fake")))).thenReturn(Future.successful(None))
-      Get("/admin/users/user-fake")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
-      }
-    }
-
-    Scenario("successfully return user") {
-      Get(s"/admin/users/${citizenId.value}")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val user = entityAs[AdminUserResponse]
-        user.id should be(citizenId)
-        user.optInNewsletter should be(Some(false))
-        user.avatarUrl should be(Some("https://example.com/foo.png"))
+    for ((maybeToken, id, expectedStatus, additionalChecks) <- Seq(
+           (None, citizenId, StatusCodes.Unauthorized, None),
+           (Some(tokenCitizen), citizenId, StatusCodes.Forbidden, None),
+           (Some(tokenModerator), citizenId, StatusCodes.Forbidden, None),
+           (Some(tokenAdmin), citizenId, StatusCodes.Forbidden, None),
+           (Some(tokenSuperAdmin), fakeId, StatusCodes.NotFound, None),
+           (Some(tokenSuperAdmin), citizenId, StatusCodes.OK, Some(() => {
+             val user = entityAs[AdminUserResponse]
+             user.id should be(citizenId)
+             user.optInNewsletter should be(Some(false))
+             user.avatarUrl should be(Some("https://example.com/foo.png"))
+           }))
+         )) {
+      Scenario(s"get user by id ${id.value} with $maybeToken token should be $expectedStatus") {
+        Get(s"/admin/users/${id.value}")
+          .withHeaders(maybeToken.toList.map(token => Authorization(OAuth2BearerToken(token)))) ~> routes ~> check {
+          status should be(expectedStatus)
+          additionalChecks.foreach(_.apply())
+        }
       }
     }
   }
@@ -132,13 +118,20 @@ class AdminUserApiTest
     }
 
     Scenario("admin user") {
+      Delete("/admin/users/user-id")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("superadmin user") {
       when(
         userService
-          .anonymize(eqTo(defaultModeratorUser), eqTo(adminId), any[RequestContext], eqTo(Anonymization.Automatic))
+          .anonymize(eqTo(defaultModeratorUser), eqTo(superAdminId), any[RequestContext], eqTo(Anonymization.Automatic))
       ).thenReturn(Future.unit)
       when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
       Delete(s"/admin/users/${moderatorId.value}")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenSuperAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
@@ -179,20 +172,27 @@ class AdminUserApiTest
     }
 
     Scenario("admin user") {
+      Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("superadmin user") {
       when(
         userService
           .anonymize(eqTo(defaultModeratorUser), eqTo(adminId), any[RequestContext], eqTo(Anonymization.Automatic))
       ).thenReturn(Future.unit)
       when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
       Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenSuperAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
 
     Scenario("bad request") {
       Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, badRequest))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenSuperAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -220,22 +220,29 @@ class AdminUserApiTest
       }
     }
 
-    Scenario("admin user - job accepted") {
-      when(userService.anonymizeInactiveUsers(eqTo(adminId), any[RequestContext]))
-        .thenReturn(Future.successful(JobAcceptance(true)))
+    Scenario("admin user") {
       Delete("/admin/users")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("superadmin user - job accepted") {
+      when(userService.anonymizeInactiveUsers(eqTo(superAdminId), any[RequestContext]))
+        .thenReturn(Future.successful(JobAcceptance(true)))
+      Delete("/admin/users")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenSuperAdmin))) ~> routes ~> check {
         status should be(StatusCodes.Accepted)
         val response = entityAs[JobId]
         response should be(JobId.AnonymizeInactiveUsers)
       }
     }
 
-    Scenario("admin user - job not accepted") {
-      when(userService.anonymizeInactiveUsers(eqTo(adminId), any[RequestContext]))
+    Scenario("superadmin user - job not accepted") {
+      when(userService.anonymizeInactiveUsers(eqTo(superAdminId), any[RequestContext]))
         .thenReturn(Future.successful(JobAcceptance(false)))
       Delete("/admin/users")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenSuperAdmin))) ~> routes ~> check {
         status should be(StatusCodes.Conflict)
         val response = entityAs[JobId]
         response should be(JobId.AnonymizeInactiveUsers)
@@ -269,6 +276,13 @@ class AdminUserApiTest
     Scenario("moderator forbidden to get user") {
       Get("/admin/users")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("admin forbidden to get user") {
+      Get("/admin/users")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -316,14 +330,14 @@ class AdminUserApiTest
         )
       ).thenReturn(Future.successful(Seq(tataUser)))
       Get("/admin/users")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenSuperAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val users = entityAs[Seq[AdminUserResponse]]
         users.size should be(listUsers.size)
       }
 
       Get("/admin/users?role=some-custom-role")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenSuperAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val users = entityAs[Seq[AdminUserResponse]]
         users.size should be(1)
@@ -354,7 +368,14 @@ class AdminUserApiTest
       }
     }
 
-    Scenario("admin successfully update user") {
+    Scenario("admin forbidden to update user") {
+      Put(s"/admin/users/${moderatorId.value}")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("superadmin successfully update user") {
       when(userService.getUserByEmail(eqTo("toto@user.com"))).thenReturn(Future.successful(None))
       val request =
         """{
@@ -372,7 +393,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Put(s"/admin/users/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenSuperAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
 
         verify(userService)
@@ -411,7 +432,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Put(s"/admin/users/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenSuperAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
@@ -437,7 +458,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Put(s"/admin/users/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenSuperAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
@@ -480,7 +501,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Put(s"/admin/users/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenSuperAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val rolesError = errors.find(_.field == "roles")
@@ -567,29 +588,30 @@ class AdminUserApiTest
       }
     }
 
-    Scenario("file successfully uploaded") {
-      when(
-        storageService
-          .uploadAdminUserAvatar(any[String], any[String], any[FileContent], eqTo(UserType.UserTypeOrganisation))
-      ).thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
+    for (token <- Seq(tokenAdmin, tokenSuperAdmin))
+      Scenario(s"file successfully uploaded as $token") {
+        when(
+          storageService
+            .uploadAdminUserAvatar(any[String], any[String], any[FileContent], eqTo(UserType.UserTypeOrganisation))
+        ).thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
 
-      def entityOfSize(size: Int): Multipart = Multipart.FormData(
-        Multipart.FormData.BodyPart
-          .Strict(
-            "data",
-            HttpEntity.Strict(ContentType(MediaTypes.`image/jpeg`), ByteString("0" * size)),
-            Map("filename" -> "image.jpeg")
-          )
-      )
+        def entityOfSize(size: Int): Multipart = Multipart.FormData(
+          Multipart.FormData.BodyPart
+            .Strict(
+              "data",
+              HttpEntity.Strict(ContentType(MediaTypes.`image/jpeg`), ByteString("0" * size)),
+              Map("filename" -> "image.jpeg")
+            )
+        )
 
-      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation.value}", entityOfSize(10))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
+        Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation.value}", entityOfSize(10))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
 
-        val path: UploadResponse = entityAs[UploadResponse]
-        path.path shouldBe "path/to/uploaded/image.jpeg"
+          val path: UploadResponse = entityAs[UploadResponse]
+          path.path shouldBe "path/to/uploaded/image.jpeg"
+        }
       }
-    }
   }
 
   Feature("update user email") {
@@ -620,6 +642,13 @@ class AdminUserApiTest
     Scenario("as an admin") {
       Post("/admin/users/update-user-email", request)
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("as a superadmin") {
+      Post("/admin/users/update-user-email", request)
+        .withHeaders(Authorization(OAuth2BearerToken(tokenSuperAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NoContent)
       }
     }
@@ -627,7 +656,7 @@ class AdminUserApiTest
     Scenario("old email not found") {
       when(userService.getUserByEmail(eqTo("outis@example.com"))).thenReturn(Future.successful(None))
       Post("/admin/users/update-user-email", request.copy(oldEmail = "outis@example.com"))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenSuperAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -656,9 +685,16 @@ class AdminUserApiTest
       }
     }
 
+    Scenario("forbidden admin") {
+      Post(s"/admin/users/update-user-roles")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
     Scenario("ok") {
       Post("/admin/users/update-user-roles", request)
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenSuperAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NoContent)
       }
     }
@@ -666,7 +702,7 @@ class AdminUserApiTest
     Scenario("email not found") {
       when(userService.getUserByEmail(eqTo("non-existent@make.org"))).thenReturn(Future.successful(None))
       Post("/admin/users/update-user-roles", request.copy(email = "non-existent@make.org"))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenSuperAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
