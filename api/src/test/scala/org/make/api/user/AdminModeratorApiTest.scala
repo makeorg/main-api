@@ -171,7 +171,7 @@ class AdminModeratorApiTest
             firstName = None,
             lastName = None,
             role = Some(Role.RoleModerator),
-            Some(UserType.UserTypeUser)
+            userType = None
           )
       ).thenReturn(Future.successful(listModerator))
       when(
@@ -180,7 +180,7 @@ class AdminModeratorApiTest
           firstName = None,
           lastName = None,
           role = Some(Role.RoleModerator),
-          Some(UserType.UserTypeUser)
+          userType = None
         )
       ).thenReturn(Future.successful(listModerator.size))
       for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {

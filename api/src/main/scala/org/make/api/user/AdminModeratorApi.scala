@@ -215,7 +215,7 @@ trait DefaultAdminModeratorApiComponent
                       firstName = firstName,
                       lastName = None,
                       role = Some(Role.RoleModerator),
-                      userType = Some(UserType.UserTypeUser)
+                      userType = None
                     )
                   ) { count =>
                     provideAsync(
@@ -228,7 +228,7 @@ trait DefaultAdminModeratorApiComponent
                         firstName = firstName,
                         lastName = None,
                         role = Some(Role.RoleModerator),
-                        userType = Some(UserType.UserTypeUser)
+                        userType = None
                       )
                     ) { users =>
                       complete(
