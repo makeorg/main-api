@@ -101,55 +101,57 @@ class DatabaseConfiguration(override protected val configuration: Config)
   private val adminFirstName: String = configuration.getString("default-admin.first-name")
   private val adminEmail: String = configuration.getString("default-admin.email")
   private val adminPassword: String = configuration.getString("default-admin.password")
-  logger.debug(s"Creating database with name: $databaseName")
 
-  Try {
-    val connection: Connection = writeDatasource.getConnection
-    connection.prepareStatement(s"CREATE DATABASE IF NOT EXISTS $databaseName").execute()
-    connection.close()
-  } match {
-    case Success(_) =>
-    case Failure(e) => logger.debug(s"Error when creating database: ${e.getMessage}")
-  }
-
-  val setBaselineVersion: Boolean = configuration.getBoolean("database.migration.init-schema")
-
-  val baselineVersion: MigrationVersion =
-    MigrationVersion.fromVersion(configuration.getString("database.migration.baseline-version"))
-
-  val repair: Boolean = configuration.getBoolean("database.migration.repair")
-
-  var flywayBuilder: FluentConfiguration = Flyway
-    .configure()
-    .dataSource(writeDatasource)
-    .baselineOnMigrate(true)
-    .locations("classpath:db/migration", "classpath:org/make/api/migrations/db")
-    .placeholders(
-      Map(
-        "dbname" -> databaseName,
-        "clientId" -> defaultClientId,
-        "clientSecret" -> defaultClientSecret,
-        "adminEmail" -> adminEmail,
-        "adminFirstName" -> adminFirstName,
-        "adminEncryptedPassword" -> adminPassword.bcrypt
-      ).asJava
-    )
-
-  if (!setBaselineVersion && flywayBuilder.getBaselineVersion.compareTo(baselineVersion) < 0) {
-    flywayBuilder = flywayBuilder.baselineVersion(baselineVersion)
-  }
-
-  val flyway: Flyway = flywayBuilder.load()
-  if (repair) {
-    Try(flyway.repair()) match {
-      case Success(_) => logger.info("Repairing SQL migrations history: success")
-      case Failure(e) => logger.warn("Cannot repair SQL migrations history:", e)
+  def migrateDatabase(): Unit = {
+    logger.debug(s"Creating database with name: $databaseName")
+    Try {
+      val connection: Connection = writeDatasource.getConnection
+      connection.prepareStatement(s"CREATE DATABASE IF NOT EXISTS $databaseName").execute()
+      connection.close()
+    } match {
+      case Success(_) =>
+      case Failure(e) => logger.debug(s"Error when creating database: ${e.getMessage}")
     }
-  }
-  flyway.migrate()
-  Try(flyway.validate()) match {
-    case Success(_) => logger.info("SQL migrations: success")
-    case Failure(e) => logger.warn("Cannot migrate database:", e)
+
+    val setBaselineVersion: Boolean = configuration.getBoolean("database.migration.init-schema")
+
+    val baselineVersion: MigrationVersion =
+      MigrationVersion.fromVersion(configuration.getString("database.migration.baseline-version"))
+
+    val repair: Boolean = configuration.getBoolean("database.migration.repair")
+
+    var flywayBuilder: FluentConfiguration = Flyway
+      .configure()
+      .dataSource(writeDatasource)
+      .baselineOnMigrate(true)
+      .locations("classpath:db/migration", "classpath:org/make/api/migrations/db")
+      .placeholders(
+        Map(
+          "dbname" -> databaseName,
+          "clientId" -> defaultClientId,
+          "clientSecret" -> defaultClientSecret,
+          "adminEmail" -> adminEmail,
+          "adminFirstName" -> adminFirstName,
+          "adminEncryptedPassword" -> adminPassword.bcrypt
+        ).asJava
+      )
+
+    if (!setBaselineVersion && flywayBuilder.getBaselineVersion.compareTo(baselineVersion) < 0) {
+      flywayBuilder = flywayBuilder.baselineVersion(baselineVersion)
+    }
+
+    val flyway: Flyway = flywayBuilder.load()
+    if (repair) {
+      Try(flyway.repair()) match {
+        case Success(_) => logger.info("Repairing SQL migrations history: success")
+        case Failure(e) => logger.warn("Cannot repair SQL migrations history:", e)
+      }
+    }
+    flyway.migrate()
+    Try(flyway.validate()) match {
+      case Success(_) => logger.info("SQL migrations: success")
+      case Failure(e) => logger.warn("Cannot migrate database:", e)
+    }
   }
 }
 

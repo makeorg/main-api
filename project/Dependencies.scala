@@ -99,7 +99,7 @@ object Dependencies {
   val scalike: ModuleID = "org.scalikejdbc"       %% "scalikejdbc"                      % scalikeVersion
   val scalikeMacros: ModuleID = "org.scalikejdbc" %% "scalikejdbc-syntax-support-macro" % scalikeVersion
   val postgresql: ModuleID = "org.postgresql"     % "postgresql"                        % "42.2.19"
-  val flywaydb: ModuleID = "org.flywaydb"         % "flyway-core"                       % "6.5.0"
+  val flywaydb: ModuleID = "org.flywaydb"         % "flyway-core"                       % "7.7.3"
 
   val slugify: ModuleID = "com.github.slugify" % "slugify" % "2.4"
 

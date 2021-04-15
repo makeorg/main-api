@@ -90,6 +90,7 @@ object MakeMain extends App with Logging with MakeApi {
   Kamon.init(configuration)
 
   private val databaseConfiguration = actorSystemTyped.registerExtension(DatabaseConfiguration)
+  databaseConfiguration.migrateDatabase()
 
   Await.result(elasticsearchClient.initialize(), 10.seconds)
 
