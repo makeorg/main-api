@@ -27,7 +27,6 @@ import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
 import io.circe.{Codec, Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.question.{SimpleQuestionResponse, SimpleQuestionWordingResponse}
-import org.make.api.user.UserResponse
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
@@ -134,7 +133,7 @@ object ModerationProposalResponse extends CirceFormatters {
 final case class ProposalActionResponse(
   @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
   date: ZonedDateTime,
-  user: Option[UserResponse],
+  user: Option[ProposalActionAuthorResponse],
   actionType: String,
   arguments: Map[String, String]
 )
@@ -142,6 +141,16 @@ final case class ProposalActionResponse(
 object ProposalActionResponse extends CirceFormatters {
   implicit val encoder: Encoder[ProposalActionResponse] = deriveEncoder[ProposalActionResponse]
   implicit val decoder: Decoder[ProposalActionResponse] = deriveDecoder[ProposalActionResponse]
+}
+
+final case class ProposalActionAuthorResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b")
+  id: UserId,
+  displayName: Option[String]
+)
+
+object ProposalActionAuthorResponse {
+  implicit val codec: Codec[ProposalActionAuthorResponse] = deriveCodec
 }
 
 @ApiModel

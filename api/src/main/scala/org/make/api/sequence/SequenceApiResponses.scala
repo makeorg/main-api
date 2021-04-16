@@ -19,58 +19,20 @@
 
 package org.make.api.sequence
 
-import java.time.ZonedDateTime
-
 import io.circe.{Codec, Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.proposal.ProposalResponse
-import org.make.api.user.UserResponse
-import org.make.core.{CirceFormatters, RequestContext}
-import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
 import org.make.core.sequence.{
   SelectionAlgorithmName,
   SequenceConfiguration,
   SequenceId,
-  SequenceStatus,
-  SequenceTranslation,
   SpecificSequenceConfiguration,
   SpecificSequenceConfigurationId
 }
-import org.make.core.tag.TagId
 
 import scala.annotation.meta.field
-
-@ApiModel
-final case class SequenceResponse(
-  sequenceId: SequenceId,
-  slug: String,
-  title: String,
-  @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId] = Seq.empty,
-  @(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId] = Seq.empty,
-  status: SequenceStatus,
-  creationContext: RequestContext,
-  createdAt: Option[ZonedDateTime],
-  updatedAt: Option[ZonedDateTime],
-  sequenceTranslation: Seq[SequenceTranslation] = Seq.empty,
-  events: Seq[SequenceActionResponse]
-)
-
-object SequenceResponse extends CirceFormatters {
-  implicit val encoder: Encoder[SequenceResponse] = deriveEncoder[SequenceResponse]
-}
-
-final case class SequenceActionResponse(
-  date: ZonedDateTime,
-  user: Option[UserResponse],
-  actionType: String,
-  arguments: Map[String, String]
-)
-
-object SequenceActionResponse extends CirceFormatters {
-  implicit val encoder: Encoder[SequenceActionResponse] = deriveEncoder[SequenceActionResponse]
-}
 
 final case class SequenceResult(proposals: Seq[ProposalResponse])
 

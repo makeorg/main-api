@@ -585,8 +585,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
         },
         accountType = userProperty.accountType,
         updatedAt = userProperty.updatedAt.map(_.format(dateFormatter)),
-        daysBeforeDeletion = Some(getDaysBeforeDeletionFromLastActivityDate(userProperty.lastActivityDate)),
-        lastActivityDate = Some(userProperty.lastActivityDate.format(dateFormatter)),
+        daysBeforeDeletion = userProperty.lastActivityDate.map(getDaysBeforeDeletionFromLastActivityDate),
+        lastActivityDate = userProperty.lastActivityDate.map(_.format(dateFormatter)),
         sessionsCount = Some(userProperty.sessionsIds.size),
         eventsCount = Some(userProperty.eventsCount)
       )
@@ -624,7 +624,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
     ): UserProperties = {
 
       accumulator.copy(
-        lastActivityDate = accumulator.lastActivityDate.max(event.action.date),
+        lastActivityDate = accumulator.lastActivityDate.max(Some(event.action.date)),
         sessionsIds = accumulator.sessionsIds ++ Set(event.requestContext.sessionId),
         eventsCount = accumulator.eventsCount + 1
       )
@@ -655,7 +655,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
           } else {
             accumulator.daysOfActivity
           },
-          lastActivityDate = accumulator.lastActivityDate.max(event.action.date),
+          lastActivityDate = accumulator.lastActivityDate.max(Some(event.action.date)),
           sessionsIds = accumulator.sessionsIds ++ Set(event.requestContext.sessionId),
           eventsCount = accumulator.eventsCount + 1
         )
@@ -688,7 +688,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
           } else {
             accumulator.daysOfActivity30d
           },
-          lastActivityDate = accumulator.lastActivityDate.max(event.action.date),
+          lastActivityDate = accumulator.lastActivityDate.max(Some(event.action.date)),
           sessionsIds = accumulator.sessionsIds ++ Set(event.requestContext.sessionId),
           eventsCount = accumulator.eventsCount + 1
         )
@@ -720,7 +720,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
           } else {
             accumulator.daysOfActivity30d
           },
-          lastActivityDate = accumulator.lastActivityDate.max(event.action.date),
+          lastActivityDate = accumulator.lastActivityDate.max(Some(event.action.date)),
           sessionsIds = accumulator.sessionsIds ++ Set(event.requestContext.sessionId),
           eventsCount = accumulator.eventsCount + 1
         )
@@ -753,7 +753,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
           } else {
             accumulator.daysOfActivity30d
           },
-          lastActivityDate = accumulator.lastActivityDate.max(event.action.date),
+          lastActivityDate = accumulator.lastActivityDate.max(Some(event.action.date)),
           sessionsIds = accumulator.sessionsIds ++ Set(event.requestContext.sessionId),
           eventsCount = accumulator.eventsCount + 1
         )
@@ -788,7 +788,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
           } else {
             accumulator.daysOfActivity30d
           },
-          lastActivityDate = accumulator.lastActivityDate.max(event.action.date),
+          lastActivityDate = accumulator.lastActivityDate.max(Some(event.action.date)),
           sessionsIds = accumulator.sessionsIds ++ Set(event.requestContext.sessionId),
           eventsCount = accumulator.eventsCount + 1
         )
@@ -815,7 +815,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
         questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toList,
         sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
-        lastActivityDate = accumulator.lastActivityDate.max(event.action.date),
+        lastActivityDate = accumulator.lastActivityDate.max(Some(event.action.date)),
         sessionsIds = accumulator.sessionsIds ++ Set(event.requestContext.sessionId),
         eventsCount = accumulator.eventsCount + 1
       )
@@ -826,7 +826,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
       event: LogUserStartSequenceEvent
     ): UserProperties = {
       accumulator.copy(
-        lastActivityDate = accumulator.lastActivityDate.max(event.action.date),
+        lastActivityDate = accumulator.lastActivityDate.max(Some(event.action.date)),
         sessionsIds = accumulator.sessionsIds ++ Set(event.requestContext.sessionId),
         eventsCount = accumulator.eventsCount + 1
       )
@@ -868,7 +868,7 @@ final case class UserProperties(
   daysOfActivity30d: Seq[String] = Seq.empty,
   accountType: Option[String] = None,
   updatedAt: Option[ZonedDateTime],
-  lastActivityDate: ZonedDateTime,
+  lastActivityDate: Option[ZonedDateTime],
   sessionsIds: Set[SessionId],
   eventsCount: Int
 ) {

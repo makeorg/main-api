@@ -152,7 +152,7 @@ class UserServiceTest
     clearInvocations(eventBusService)
   }
 
-  val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
+  val zonedDateTimeInThePast: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]"))
   val fooProfile: Some[Profile] = Profile
     .parseProfile(
       dateOfBirth = Some(LocalDate.parse("2000-01-01")),
@@ -183,10 +183,10 @@ class UserServiceTest
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
     lastConnection = zonedDateTimeInThePast,
     verificationToken = Some("VERIFTOKEN"),
-    verificationTokenExpiresAt = Some(zonedDateTimeInThePast),
+    verificationTokenExpiresAt = zonedDateTimeInThePast,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
     profile = fooProfile,
-    createdAt = Some(zonedDateTimeInThePast)
+    createdAt = zonedDateTimeInThePast
   )
 
   val johnDoeProfile: Some[Profile] = Profile
@@ -203,7 +203,7 @@ class UserServiceTest
     lastName = Some("doe"),
     lastIp = Some("127.0.0.1"),
     hashedPassword = Some("passpass".bcrypt),
-    lastConnection = DateHelper.now(),
+    lastConnection = Some(DateHelper.now()),
     verificationToken = Some("Token"),
     verificationTokenExpiresAt = Some(DateHelper.now()),
     profile = johnDoeProfile
@@ -304,7 +304,7 @@ class UserServiceTest
         firstName = info.firstName,
         lastIp = Some("127.0.0.1"),
         hashedPassword = Some("passpass"),
-        lastConnection = DateHelper.now(),
+        lastConnection = Some(DateHelper.now()),
         verificationToken = Some("Token"),
         verificationTokenExpiresAt = Some(DateHelper.now()),
         profile = returnedProfile,
@@ -371,7 +371,7 @@ class UserServiceTest
         firstName = infoWithGender.firstName,
         lastIp = Some("127.0.0.1"),
         hashedPassword = Some("passpass"),
-        lastConnection = DateHelper.now(),
+        lastConnection = Some(DateHelper.now()),
         verificationToken = Some("Token"),
         verificationTokenExpiresAt = Some(DateHelper.now()),
         profile = returnedProfileWithGender,
@@ -435,7 +435,7 @@ class UserServiceTest
         firstName = info.firstName,
         lastIp = Some("127.0.0.1"),
         hashedPassword = Some("passpass"),
-        lastConnection = DateHelper.now(),
+        lastConnection = Some(DateHelper.now()),
         verificationToken = Some("Token"),
         verificationTokenExpiresAt = Some(DateHelper.now()),
         profile = returnedProfile,
@@ -494,7 +494,7 @@ class UserServiceTest
         firstName = info.firstName,
         lastIp = Some("127.0.0.1"),
         hashedPassword = Some("passpass"),
-        lastConnection = DateHelper.now(),
+        lastConnection = Some(DateHelper.now()),
         verificationToken = Some("Token"),
         verificationTokenExpiresAt = Some(DateHelper.now()),
         profile = returnedProfile,
@@ -604,7 +604,7 @@ class UserServiceTest
         firstName = info.firstName,
         lastIp = Some("127.0.0.1"),
         hashedPassword = Some("passpass"),
-        lastConnection = DateHelper.now(),
+        lastConnection = Some(DateHelper.now()),
         verificationToken = Some("Token"),
         verificationTokenExpiresAt = Some(DateHelper.now()),
         profile = returnedProfile

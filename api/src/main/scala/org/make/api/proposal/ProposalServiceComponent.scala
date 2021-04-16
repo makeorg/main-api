@@ -40,7 +40,7 @@ import org.make.api.tag.TagServiceComponent
 import org.make.api.tagtype.TagTypeServiceComponent
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeRandom, ReadJournalComponent}
-import org.make.api.user.{UserResponse, UserServiceComponent}
+import org.make.api.user.UserServiceComponent
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory._
 import org.make.core.common.indexed.Sort
@@ -606,14 +606,15 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         case None => Future.successful(None)
         case Some((proposal, author)) =>
           val eventsUserIds: Seq[UserId] = proposal.events.map(_.user).distinct
-          val futureEventsUsers: Future[Seq[UserResponse]] =
-            userService.getUsersByUserIds(eventsUserIds).map(_.map(UserResponse.apply))
+          val futureEventsUsers: Future[Seq[User]] = userService.getUsersByUserIds(eventsUserIds)
 
           futureEventsUsers.map { eventsUsers =>
             val events: Seq[ProposalActionResponse] = proposal.events.map { action =>
               ProposalActionResponse(
                 date = action.date,
-                user = eventsUsers.find(_.userId.value == action.user.value),
+                user = eventsUsers
+                  .find(_.userId.value == action.user.value)
+                  .map(user => ProposalActionAuthorResponse(user.userId, user.displayName)),
                 actionType = action.actionType,
                 arguments = action.arguments
               )

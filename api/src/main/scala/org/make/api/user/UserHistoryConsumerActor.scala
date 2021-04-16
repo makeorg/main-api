@@ -104,7 +104,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
           )
         )
         userService
-          .update(user.copy(lastConnection = event.eventDate), event.requestContext)
+          .update(user.copy(lastConnection = Some(event.eventDate)), event.requestContext)
           .toUnit
       case None =>
         log.warning("User not found after UserConnectedEvent: ", event)

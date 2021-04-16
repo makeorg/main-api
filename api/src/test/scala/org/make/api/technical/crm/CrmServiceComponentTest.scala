@@ -179,7 +179,7 @@ class CrmServiceComponentTest
     createdAt = DateHelper.now(),
     userType = UserType.UserTypeUser,
     country = Country("FR"),
-    lastConnection = DateHelper.now(),
+    lastConnection = Some(DateHelper.now()),
     registerQuestionId = None
   )
 
@@ -320,7 +320,7 @@ class CrmServiceComponentTest
     email = "foo@example.com",
     firstName = Some("Foo"),
     lastName = Some("John"),
-    lastConnection = zonedDateTimeInThePast,
+    lastConnection = Some(zonedDateTimeInThePast),
     createdAt = zonedDateTimeInThePast,
     organisationName = None,
     postalCode = Some("93"),

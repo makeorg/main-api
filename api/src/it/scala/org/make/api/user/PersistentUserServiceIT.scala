@@ -39,7 +39,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
   override protected val cockroachExposedPort: Int = 40002
 
-  val before: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
+  val before: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]"))
 
   val johnDoeProfile: Some[Profile] = Profile
     .parseProfile(
@@ -70,7 +70,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
-    verificationTokenExpiresAt = Some(before),
+    verificationTokenExpiresAt = before,
     roles = Seq(Role.RoleAdmin, Role.RoleModerator, Role.RoleCitizen),
     profile = johnDoeProfile,
     anonymousParticipation = true
@@ -85,7 +85,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
-    verificationTokenExpiresAt = Some(before)
+    verificationTokenExpiresAt = before
   )
 
   val janeDee = TestUtilsIT.user(
@@ -97,7 +97,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
-    verificationTokenExpiresAt = Some(before),
+    verificationTokenExpiresAt = before,
     roles = Seq(Role.RoleAdmin, Role.RoleModerator)
   )
 
@@ -110,7 +110,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     hashedPassword = Some("123456".bcrypt),
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
-    verificationTokenExpiresAt = Some(before),
+    verificationTokenExpiresAt = before,
     roles = Seq(Role.RoleAdmin, Role.RoleModerator)
   )
 
@@ -122,7 +122,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("0.0.0.0"),
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
-    verificationTokenExpiresAt = Some(before),
+    verificationTokenExpiresAt = before,
     roles = Seq(Role.RoleAdmin, Role.RoleModerator),
     profile = Profile.parseProfile(dateOfBirth = Some(LocalDate.parse("1970-01-01")))
   )
@@ -135,7 +135,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("-1.-1.-1.-1"),
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
-    verificationTokenExpiresAt = Some(before),
+    verificationTokenExpiresAt = before,
     roles = Seq(Role.RoleActor),
     organisationName = Some("Direction Générale de la Sécurité Extérieure"),
     userType = UserType.UserTypeOrganisation
@@ -149,7 +149,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("-1.-1.-1.-1"),
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
-    verificationTokenExpiresAt = Some(before),
+    verificationTokenExpiresAt = before,
     roles = Seq(Role.RoleActor),
     organisationName = Some("Canadian Security Intelligence Service"),
     userType = UserType.UserTypeOrganisation
@@ -163,7 +163,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("-1.-1.-1.-1"),
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
-    verificationTokenExpiresAt = Some(before),
+    verificationTokenExpiresAt = before,
     roles = Seq(Role.RoleActor),
     country = Country("RU"),
     organisationName = Some("Federal Security Service"),
@@ -192,7 +192,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("-1.-1.-1.-1"),
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
-    verificationTokenExpiresAt = Some(before),
+    verificationTokenExpiresAt = before,
     roles = Seq(Role.RoleActor),
     country = Country("US"),
     organisationName = Some("Central Intelligence Agency - CIA"),
@@ -207,7 +207,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("-1.-1.-1.-1"),
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
-    verificationTokenExpiresAt = Some(before),
+    verificationTokenExpiresAt = before,
     roles = Seq(Role.RoleActor),
     country = Country("US"),
     organisationName = Some("Federal Bureau of Investigation - FBI"),
@@ -222,7 +222,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("-1.-1.-1.-1"),
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
-    verificationTokenExpiresAt = Some(before),
+    verificationTokenExpiresAt = before,
     roles = Seq(Role.RoleActor),
     country = Country("UK"),
     organisationName = Some("Military Intelligence, Section 5 - MI5"),
@@ -238,7 +238,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
-    verificationTokenExpiresAt = Some(before),
+    verificationTokenExpiresAt = before,
     roles = Seq(Role.RoleAdmin, Role.RoleModerator, Role.RoleCitizen),
     profile = johnDoeProfile
   )

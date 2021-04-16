@@ -306,7 +306,7 @@ trait TestUtilsIT {
     hashedPassword: Option[String] = None,
     enabled: Boolean = true,
     emailVerified: Boolean = true,
-    lastConnection: ZonedDateTime = ZonedDateTime.parse("1992-08-23T02:02:02.020Z"),
+    lastConnection: Option[ZonedDateTime] = Some(ZonedDateTime.parse("1992-08-23T02:02:02.020Z")),
     verificationToken: Option[String] = None,
     verificationTokenExpiresAt: Option[ZonedDateTime] = None,
     resetToken: Option[String] = None,

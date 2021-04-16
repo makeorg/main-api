@@ -68,7 +68,7 @@ class OperationServiceIT
     lastName = Some("Doe Ope Service"),
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
-    lastConnection = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]"),
+    lastConnection = Some(ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")),
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")),
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
