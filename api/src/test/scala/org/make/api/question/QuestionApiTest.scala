@@ -715,9 +715,14 @@ class QuestionApiTest
       when(questionService.getQuestion(eqTo(qId)))
         .thenReturn(Future.successful(Some(baseQuestion)))
 
-      when(keywordService.findAll(eqTo(qId), eqTo(5)))
+      when(keywordService.findTop(eqTo(qId), eqTo(5)))
         .thenReturn(
-          Future.successful(Seq(Keyword(qId, "key", "label", 4.2f, 14), Keyword(qId, "key-2", "label-2", -4.2f, 21)))
+          Future.successful(
+            Seq(
+              Keyword(qId, "key", "label", 4.2f, 14, topKeyword = true),
+              Keyword(qId, "key-2", "label-2", -4.2f, 21, topKeyword = true)
+            )
+          )
         )
 
       Get("/questions/question-id/keywords?limit=5") ~> routes ~> check {

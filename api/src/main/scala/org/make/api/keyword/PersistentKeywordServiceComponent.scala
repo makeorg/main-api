@@ -35,8 +35,11 @@ trait PersistentKeywordServiceComponent {
 }
 
 trait PersistentKeywordService {
-  def findAll(questionId: QuestionId, limit: Int): Future[Seq[Keyword]]
-  def replaceAll(questionId: QuestionId, keywords: Seq[Keyword]): Future[Seq[Keyword]]
+  def findAll(questionId: QuestionId): Future[Seq[Keyword]]
+  def findTop(questionId: QuestionId, limit: Int): Future[Seq[Keyword]]
+  def resetTop(questionId: QuestionId): Future[Unit]
+  def updateTop(questionId: QuestionId, keywords: Seq[Keyword]): Future[Unit]
+  def createKeywords(questionId: QuestionId, keywords: Seq[Keyword]): Future[Unit]
 }
 
 trait DefaultPersistentKeywordServiceComponent extends PersistentKeywordServiceComponent {
@@ -52,13 +55,29 @@ trait DefaultPersistentKeywordServiceComponent extends PersistentKeywordServiceC
     private val keywords = SQLSyntaxSupportFactory[Keyword]()
     private val kw = keywords.syntax
 
-    override def findAll(questionId: QuestionId, limit: Int): Future[Seq[Keyword]] = {
+    override def findAll(questionId: QuestionId): Future[Seq[Keyword]] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(keywords.as(kw))
             .where(sqls.eq(kw.questionId, questionId))
+            .orderBy(kw.key)
+            .asc
+        }.map(keywords.apply(kw.resultName)).list().apply()
+      })
+    }
+
+    override def findTop(questionId: QuestionId, limit: Int): Future[Seq[Keyword]] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB("READ").retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(keywords.as(kw))
+            .where
+            .eq(kw.questionId, questionId)
+            .and
+            .eq(kw.topKeyword, true)
             .orderBy(kw.score)
             .desc
             .limit(limit)
@@ -66,37 +85,45 @@ trait DefaultPersistentKeywordServiceComponent extends PersistentKeywordServiceC
       })
     }
 
-    override def replaceAll(questionId: QuestionId, items: Seq[Keyword]): Future[Seq[Keyword]] = {
+    def resetTop(questionId: QuestionId): Future[Unit] = {
       implicit val context: EC = writeExecutionContext
       Future(NamedDB("WRITE").retryableTx { implicit session =>
-        Seq(deleteAll(questionId), insertAll(items))
-      }).map(_ => items)
+        withSQL {
+          update(keywords).set(keywords.column.topKeyword -> false).where.eq(kw.topKeyword, true)
+        }.update().apply()
+      })
     }
 
-    private def deleteAll(questionId: QuestionId)(implicit session: DBSession): Boolean = {
-      withSQL {
-        delete
-          .from(keywords.as(kw))
-          .where(sqls.eq(kw.questionId, questionId))
-      }.update().apply() >= 0
+    def createKeywords(questionId: QuestionId, items: Seq[Keyword]): Future[Unit] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
+        def values(keyword: Keyword, columns: Seq[SQLSyntax]): Seq[ParameterBinder] = {
+          val namedValues = autoNamedValues(keyword, keywords.column)
+          columns.map(namedValues(_))
+        }
+        items match {
+          case Seq() => true
+          case _ =>
+            val columnsNames: Seq[SQLSyntax] = keywords.column.columns.toSeq
+            withSQL {
+              insert
+                .into(keywords)
+                .columns(columnsNames: _*)
+                .multipleValues(items.map(values(_, columnsNames)): _*)
+            }.execute().apply()
+        }
+      })
     }
 
-    private def insertAll(items: Seq[Keyword])(implicit session: DBSession): Boolean = {
-      def values(keyword: Keyword, columns: Seq[SQLSyntax]): Seq[ParameterBinder] = {
-        val namedValues = autoNamedValues(keyword, keywords.column)
-        columns.map(namedValues(_))
-      }
-      items match {
-        case Seq() => true
-        case _ =>
-          val columnsNames: Seq[SQLSyntax] = keywords.column.columns.toSeq
+    def updateTop(questionId: QuestionId, items: Seq[Keyword]): Future[Unit] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
+        items.foreach { keyword =>
           withSQL {
-            insert
-              .into(keywords)
-              .columns(columnsNames: _*)
-              .multipleValues(items.map(values(_, columnsNames)): _*)
-          }.execute().apply()
-      }
+            update(keywords).set(autoNamedValues(keyword, keywords.column, "key")).where.eq(kw.key, keyword.key)
+          }.update().apply()
+        }
+      })
     }
 
   }

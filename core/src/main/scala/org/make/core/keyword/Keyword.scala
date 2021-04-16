@@ -25,7 +25,14 @@ import io.circe.generic.semiauto.deriveCodec
 import io.circe.refined._
 import org.make.core.question.QuestionId
 
-final case class Keyword(questionId: QuestionId, key: String, label: String, score: Float, count: NonNegInt)
+final case class Keyword(
+  questionId: QuestionId,
+  key: String,
+  label: String,
+  score: Float,
+  count: NonNegInt,
+  topKeyword: Boolean
+)
 
 object Keyword {
   implicit val codec: Codec[Keyword] = deriveCodec

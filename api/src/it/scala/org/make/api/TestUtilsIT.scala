@@ -547,9 +547,10 @@ trait TestUtilsIT {
     key: String,
     label: String = "label",
     score: Float = 0.42f,
-    count: NonNegInt = 14
+    count: NonNegInt = 14,
+    topKeyword: Boolean = false
   ): Keyword =
-    Keyword(questionId = questionId, key = key, label = label, score = score, count = count)
+    Keyword(questionId = questionId, key = key, label = label, score = score, count = count, topKeyword = topKeyword)
 
 }
 

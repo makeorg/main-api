@@ -838,7 +838,7 @@ trait DefaultQuestionApiComponent
         makeOperation("GetKeywords") { requestContext =>
           parameters("limit".as[Int]) { (limit: Int) =>
             provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
-              provideAsync(keywordService.findAll(questionId, limit)) { keywords =>
+              provideAsync(keywordService.findTop(questionId, limit)) { keywords =>
                 complete(keywords)
               }
             }

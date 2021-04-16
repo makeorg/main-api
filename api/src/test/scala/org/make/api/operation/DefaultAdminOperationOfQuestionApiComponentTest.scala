@@ -114,10 +114,7 @@ class DefaultAdminOperationOfQuestionApiComponentTest
   }
 
   Feature("keywords") {
-    when(keywordService.replaceAll(any[QuestionId], any[Seq[Keyword]])).thenAnswer {
-      (_: QuestionId, keywords: Seq[Keyword]) =>
-        Future.successful(keywords)
-    }
+    when(keywordService.addAndReplaceTop(any[QuestionId], any[Seq[Keyword]])).thenReturn(Future.unit)
 
     Scenario("unauthenticated user") {
       Put("/admin/questions/some-question/keywords") ~> routes ~> check {
