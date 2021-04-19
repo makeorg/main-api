@@ -446,7 +446,7 @@ trait DefaultAdminUserApiComponent
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireSuperAdminRole(userAuth.user) {
               provideAsyncOrNotFound(userService.getUser(userId)) { user =>
-                provideAsync(userService.anonymize(user, userAuth.user.userId, requestContext, Anonymization.Automatic)) {
+                provideAsync(userService.anonymize(user, userAuth.user.userId, requestContext, Anonymization.Explicit)) {
                   _ =>
                     provideAsync(oauth2DataHandler.removeTokenByUserId(userId)) { _ =>
                       complete(StatusCodes.OK)
@@ -486,7 +486,7 @@ trait DefaultAdminUserApiComponent
                 entity(as[AnonymizeUserRequest]) { request =>
                   provideAsyncOrNotFound(userService.getUserByEmail(request.email)) { user =>
                     provideAsync(
-                      userService.anonymize(user, userAuth.user.userId, requestContext, Anonymization.Automatic)
+                      userService.anonymize(user, userAuth.user.userId, requestContext, Anonymization.Explicit)
                     ) { _ =>
                       provideAsync(oauth2DataHandler.removeTokenByUserId(user.userId)) { _ =>
                         complete(StatusCodes.OK)

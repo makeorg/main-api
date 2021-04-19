@@ -127,7 +127,7 @@ class AdminUserApiTest
     Scenario("superadmin user") {
       when(
         userService
-          .anonymize(eqTo(defaultModeratorUser), eqTo(superAdminId), any[RequestContext], eqTo(Anonymization.Automatic))
+          .anonymize(eqTo(defaultModeratorUser), eqTo(superAdminId), any[RequestContext], eqTo(Anonymization.Explicit))
       ).thenReturn(Future.unit)
       when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
       Delete(s"/admin/users/${moderatorId.value}")
@@ -181,7 +181,7 @@ class AdminUserApiTest
     Scenario("superadmin user") {
       when(
         userService
-          .anonymize(eqTo(defaultModeratorUser), eqTo(adminId), any[RequestContext], eqTo(Anonymization.Automatic))
+          .anonymize(eqTo(defaultModeratorUser), eqTo(adminId), any[RequestContext], eqTo(Anonymization.Explicit))
       ).thenReturn(Future.unit)
       when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
       Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, request))
