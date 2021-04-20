@@ -22,6 +22,7 @@ package org.make.api.technical
 import akka.actor.typed.scaladsl.AskPattern.Askable
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{Behavior, Scheduler, SupervisorStrategy}
+import akka.cluster.sharding.ShardRegion.ClusterShardingStats
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.cluster.sharding.typed.{scaladsl, GetClusterShardingStats}
 import akka.cluster.typed.Cluster
@@ -30,6 +31,7 @@ import akka.util.Timeout
 import com.typesafe.config.Config
 import kamon.Kamon
 import kamon.metric.Gauge
+
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success}
@@ -65,7 +67,7 @@ object ClusterShardingMonitor {
     }
   }
 
-  def apply(): Behavior[Monitor.type] = {
+  def apply(): Behavior[Protocol] = {
     Behaviors
       .supervise(monitorClusterSharding())
       .onFailure(
@@ -73,7 +75,7 @@ object ClusterShardingMonitor {
       )
   }
 
-  private def monitorClusterSharding(): Behavior[Monitor.type] = {
+  private def monitorClusterSharding(): Behavior[Protocol] = {
     Behaviors.setup { context =>
       val configuration = ClusterShardingMonitorConfiguration(context.system.settings.config)
       val gauges: Map[String, ShardingGauges] = configuration.shardedRegions.map { region =>
@@ -91,32 +93,41 @@ object ClusterShardingMonitor {
             val shardingInfo = scaladsl.ClusterSharding(context.system)
             gauges.foreach {
               case (region, regionGauges) =>
-                val statsFuture =
-                  shardingInfo.shardState
-                    .ask(GetClusterShardingStats(EntityTypeKey(region), configuration.statsTimeout, _))
+                val statsFuture = shardingInfo.shardState
+                  .ask(GetClusterShardingStats(EntityTypeKey(region), configuration.statsTimeout, _))
 
-                statsFuture.onComplete {
-                  case Success(stats) =>
-                    val allProposals = stats.regions.values.map(_.stats.values.sum).sum
-                    regionGauges.totalActorsCount.update(allProposals)
-
-                    val maybeRegion = stats.regions.get(Cluster(context.system).selfMember.address)
-                    maybeRegion.foreach { shardStats =>
-                      regionGauges.nodeActorsCount.update(shardStats.stats.values.sum)
-                      regionGauges.nodeShardsCount.update(shardStats.stats.size)
-                    }
-                  case Failure(e: AskTimeoutException) if e.getMessage.contains("terminated") =>
-                    context.log.warn(s"Unable to retrieve stats for $name due to terminated actor: ${e.getMessage}")
-                  case Failure(e) => context.log.error(s"Unable to retrieve stats for $name:", e)
-                }(context.executionContext)
+                context.pipeToSelf(statsFuture) {
+                  case Success(stats) => StatsSuccess(regionGauges, stats)
+                  case Failure(e)     => StatsFailure(region, e)
+                }
             }
             Behaviors.same
+          case StatsSuccess(regionGauges, stats) =>
+            val allProposals = stats.regions.values.map(_.stats.values.sum).sum
+            regionGauges.totalActorsCount.update(allProposals)
+
+            val maybeRegion = stats.regions.get(Cluster(context.system).selfMember.address)
+            maybeRegion.foreach { shardStats =>
+              regionGauges.nodeActorsCount.update(shardStats.stats.values.sum)
+              regionGauges.nodeShardsCount.update(shardStats.stats.size)
+            }
+            Behaviors.same
+          case StatsFailure(region, e: AskTimeoutException) if e.getMessage.contains("terminated") =>
+            context.log.warn(s"Unable to retrieve stats for $region due to terminated actor: ${e.getMessage}")
+            Behaviors.same
+          case StatsFailure(region, e) =>
+            context.log.error(s"Unable to retrieve stats for $region:", e)
+            Behaviors.same
+
         }
       }
     }
   }
 
-  case object Monitor
+  sealed trait Protocol
+  case object Monitor extends Protocol
+  final case class StatsSuccess(gauges: ShardingGauges, stats: ClusterShardingStats) extends Protocol
+  final case class StatsFailure(region: String, throwable: Throwable) extends Protocol
 
   val name = "actor-sharding-monitor"
 
