@@ -203,7 +203,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
         enabled = true,
         emailVerified = true,
         userType = UserType.UserTypeOrganisation,
-        lastConnection = DateHelper.now(),
+        lastConnection = None,
         verificationToken = None,
         verificationTokenExpiresAt = None,
         resetToken = Some(resetToken),

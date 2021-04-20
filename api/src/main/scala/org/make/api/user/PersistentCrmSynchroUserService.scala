@@ -60,7 +60,7 @@ object PersistentCrmSynchroUserService {
     createdAt: ZonedDateTime,
     userType: UserType,
     country: Country,
-    lastConnection: ZonedDateTime,
+    lastConnection: Option[ZonedDateTime],
     registerQuestionId: Option[QuestionId]
   ) {
     def fullName: Option[String] = {

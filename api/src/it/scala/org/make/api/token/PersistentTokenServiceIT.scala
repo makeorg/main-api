@@ -41,7 +41,7 @@ class PersistentTokenServiceIT
 
   override protected val cockroachExposedPort: Int = 40004
 
-  val before: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
+  val before: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]"))
   val now: ZonedDateTime = DateHelper.now()
 
   val user: User = TestUtilsIT.user(
@@ -53,7 +53,7 @@ class PersistentTokenServiceIT
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
-    verificationTokenExpiresAt = Some(before),
+    verificationTokenExpiresAt = before,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen)
   )
   val client: Client = Client(

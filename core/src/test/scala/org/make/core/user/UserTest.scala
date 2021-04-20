@@ -30,7 +30,7 @@ import org.make.core.user.UserType.UserTypeOrganisation
 import org.make.core.user.UserType.UserTypePersonality
 
 class UserTest extends MakeUnitTest {
-  val before: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
+  val before: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]"))
   val johnDoe = User(
     userId = UserId("1"),
     email = "doe@example.com",
@@ -42,7 +42,7 @@ class UserTest extends MakeUnitTest {
     emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
-    verificationTokenExpiresAt = Some(before),
+    verificationTokenExpiresAt = before,
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
@@ -228,7 +228,7 @@ class UserTest extends MakeUnitTest {
     hashedPassword: Option[String] = None,
     enabled: Boolean = true,
     emailVerified: Boolean = true,
-    lastConnection: ZonedDateTime = ZonedDateTime.parse("1992-08-23T02:02:02.020Z"),
+    lastConnection: Option[ZonedDateTime] = Some(ZonedDateTime.parse("1992-08-23T02:02:02.020Z")),
     verificationToken: Option[String] = None,
     verificationTokenExpiresAt: Option[ZonedDateTime] = None,
     resetToken: Option[String] = None,

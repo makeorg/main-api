@@ -64,7 +64,7 @@ class PersistentOperationServiceIT
     lastName = Some("Doe"),
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
-    lastConnection = ZonedDateTime.parse("2017-06-01T12:30:40Z"),
+    lastConnection = Some(ZonedDateTime.parse("2017-06-01T12:30:40Z")),
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(ZonedDateTime.parse("2017-06-01T12:30:40Z")),
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),

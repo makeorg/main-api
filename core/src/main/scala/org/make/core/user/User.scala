@@ -81,7 +81,7 @@ final case class User(
   enabled: Boolean,
   emailVerified: Boolean,
   userType: UserType,
-  lastConnection: ZonedDateTime,
+  lastConnection: Option[ZonedDateTime],
   verificationToken: Option[String],
   verificationTokenExpiresAt: Option[ZonedDateTime],
   resetToken: Option[String],

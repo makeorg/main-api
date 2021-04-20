@@ -128,7 +128,7 @@ class UserApiTest
     lastIp = Some("127.0.0.1"),
     hashedPassword = Some("passpass"),
     emailVerified = false,
-    lastConnection = DateHelper.now(),
+    lastConnection = Some(DateHelper.now()),
     verificationToken = Some("token"),
     verificationTokenExpiresAt = Some(DateHelper.now())
   )
@@ -943,7 +943,7 @@ class UserApiTest
       lastIp = Some("127.0.0.1"),
       hashedPassword = Some("passpass"),
       emailVerified = false,
-      lastConnection = DateHelper.now(),
+      lastConnection = Some(DateHelper.now()),
       verificationToken = Some("token"),
       verificationTokenExpiresAt = Some(DateHelper.now())
     )
@@ -965,7 +965,7 @@ class UserApiTest
       email = "foo@exemple.com",
       firstName = None,
       lastName = None,
-      lastConnection = DateHelper.now(),
+      lastConnection = Some(DateHelper.now()),
       resetToken = Some("baz-bar"),
       resetTokenExpiresAt = Some(DateHelper.now().minusDays(1))
     )
@@ -977,7 +977,7 @@ class UserApiTest
       email = "foo@exemple.com",
       firstName = None,
       lastName = None,
-      lastConnection = DateHelper.now(),
+      lastConnection = Some(DateHelper.now()),
       resetToken = Some("valid-reset-token"),
       resetTokenExpiresAt = Some(DateHelper.now().plusDays(1))
     )

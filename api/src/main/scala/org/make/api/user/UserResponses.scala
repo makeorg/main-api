@@ -42,7 +42,7 @@ final case class UserResponse(
   emailVerified: Boolean,
   isOrganisation: Boolean,
   @(ApiModelProperty @field)(dataType = "dateTime")
-  lastConnection: ZonedDateTime,
+  lastConnection: Option[ZonedDateTime],
   @(ApiModelProperty @field)(
     dataType = "list[string]",
     allowableValues = "ROLE_CITIZEN,ROLE_MODERATOR,ROLE_ADMIN,ROLE_POLITICAL,ROLE_ACTOR"
