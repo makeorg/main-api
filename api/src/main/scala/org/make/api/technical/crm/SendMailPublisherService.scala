@@ -122,10 +122,14 @@ trait DefaultSendMailPublisherServiceComponent
     )
   }
 
-  private def getForgottenPasswordUrl(user: User, resetToken: String, requestContext: RequestContext): String = {
+  private def getForgottenPasswordUrl(
+    user: User,
+    resetToken: String,
+    baseApplicationName: Option[ApplicationName]
+  ): String = {
     val appPath = s"password-recovery/${user.userId.value}/$resetToken"
 
-    val (base, path) = requestContext.applicationName match {
+    val (base, path) = baseApplicationName match {
       case Some(ApplicationName.Backoffice) =>
         (mailJetTemplateConfiguration.backofficeUrl, s"#/$appPath")
       case _ =>
@@ -324,7 +328,11 @@ trait DefaultSendMailPublisherServiceComponent
                   variables = Some(
                     Map(
                       "firstname" -> user.firstName.getOrElse(""),
-                      "forgotten_password_url" -> getForgottenPasswordUrl(user, resetToken, requestContext),
+                      "forgotten_password_url" -> getForgottenPasswordUrl(
+                        user,
+                        resetToken,
+                        requestContext.applicationName
+                      ),
                       "operation" -> requestContext.operationId.map(_.value).getOrElse(""),
                       "question" -> requestContext.question.getOrElse(""),
                       "location" -> requestContext.location.getOrElse(""),
@@ -366,7 +374,11 @@ trait DefaultSendMailPublisherServiceComponent
                   ),
                   variables = Some(
                     Map(
-                      "forgotten_password_url" -> getForgottenPasswordUrl(organisation, resetToken, requestContext),
+                      "forgotten_password_url" -> getForgottenPasswordUrl(
+                        organisation,
+                        resetToken,
+                        requestContext.applicationName
+                      ),
                       "operation" -> requestContext.operationId.map(_.value).getOrElse(""),
                       "question" -> requestContext.question.getOrElse(""),
                       "location" -> requestContext.location.getOrElse(""),
@@ -536,7 +548,11 @@ trait DefaultSendMailPublisherServiceComponent
                   variables = Some(
                     Map(
                       "mailto" -> user.email,
-                      "forgotten_password_url" -> getForgottenPasswordUrl(user, resetToken, requestContext)
+                      "forgotten_password_url" -> getForgottenPasswordUrl(
+                        user,
+                        resetToken,
+                        Some(ApplicationName.MainFrontend)
+                      )
                     )
                   ),
                   customCampaign = None,
