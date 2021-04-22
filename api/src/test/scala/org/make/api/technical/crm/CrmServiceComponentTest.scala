@@ -66,6 +66,7 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import java.io.{BufferedReader, InputStreamReader}
 import java.nio.file.Path
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -614,6 +615,10 @@ class CrmServiceComponentTest
           DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
         )
         lastActivityDate.isEqual(zonedDateTimeInThePast) shouldBe true
+        val deletionDate = lastActivityDate.plusYears(2).plusMonths(11)
+        maybeProperties.daysBeforeDeletion shouldBe Some(
+          ChronoUnit.DAYS.between(ZonedDateTime.now(), deletionDate).toInt
+        )
         maybeProperties.sessionsCount shouldBe Some(0)
         maybeProperties.eventsCount shouldBe Some(0)
       }
@@ -664,9 +669,52 @@ class CrmServiceComponentTest
           DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
         )
         lastActivityDate.isEqual(zonedDateTimeInThePast) shouldBe true
+        val deletionDate = lastActivityDate.plusYears(2).plusMonths(11)
+        maybeProperties.daysBeforeDeletion shouldBe Some(
+          ChronoUnit.DAYS.between(ZonedDateTime.now(), deletionDate).toInt
+        )
         maybeProperties.sessionsCount shouldBe Some(0)
         maybeProperties.eventsCount shouldBe Some(0)
       }
+    }
+
+    Scenario("Date before deletion is changed based on events") {
+      when(userJournal.currentEventsByPersistenceId(eqTo(fooUser.uuid.value), any[Long], any[Long]))
+        .thenReturn(
+          Source(
+            List(
+              registerCitizenEventEnvelope,
+              userProposalEventEnvelope,
+              userVoteEventEnvelope,
+              userVoteEventEnvelope2,
+              userVoteEventEnvelope3
+            )
+          ),
+          Source(
+            List(
+              registerCitizenEventEnvelope,
+              userProposalEventEnvelope,
+              userVoteEventEnvelope,
+              userVoteEventEnvelope2,
+              userVoteEventEnvelope3,
+              userVoteEventEnvelope4,
+              userVoteEventEnvelope5,
+              userConnectedEventEnvelope
+            )
+          )
+        )
+
+      def futureProperties = crmService.getPropertiesFromUser(fooUser, new QuestionResolver(Seq.empty, Map.empty))
+      var dateBeforeDeletion1: Option[Int] = None
+      var dateBeforeDeletion2: Option[Int] = None
+      whenReady(futureProperties, Timeout(3.seconds)) { properties =>
+        dateBeforeDeletion1 = properties.daysBeforeDeletion
+      }
+      whenReady(futureProperties, Timeout(3.seconds)) { properties =>
+        dateBeforeDeletion2 = properties.daysBeforeDeletion
+      }
+      (dateBeforeDeletion1 should not).equal(dateBeforeDeletion2)
+      dateBeforeDeletion1 should be < dateBeforeDeletion2
     }
   }
 
@@ -772,6 +820,10 @@ class CrmServiceComponentTest
         )
         lastActivityDate.isBefore(zonedDateTimeInThePastAt31daysBefore.plusDays(15).plusSeconds(1)) && lastActivityDate
           .isAfter(zonedDateTimeInThePastAt31daysBefore.plusDays(15).minusSeconds(1)) shouldBe true
+        val deletionDate = lastActivityDate.plusYears(2).plusMonths(11)
+        maybeProperties.daysBeforeDeletion shouldBe Some(
+          ChronoUnit.DAYS.between(ZonedDateTime.now(), deletionDate).toInt
+        )
         maybeProperties.sessionsCount shouldBe Some(5)
         maybeProperties.eventsCount shouldBe Some(8)
       }
