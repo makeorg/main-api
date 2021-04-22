@@ -76,6 +76,11 @@ class PersistentKeywordServiceIT
         result.foreach(_.questionId shouldBe questionId)
         result.map(_.key) shouldBe Seq("bar", "baz", "foo", "quux", "qux")
       }
+
+      whenReady(persistentKeywordService.get("foo", questionId), Timeout(3.seconds)) { result =>
+        result shouldBe defined
+        result.foreach(_.key shouldBe "foo")
+      }
     }
   }
 

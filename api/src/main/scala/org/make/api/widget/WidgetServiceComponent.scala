@@ -46,6 +46,7 @@ trait WidgetService {
   ): Future[ProposalsResultSeededResponse]
 }
 
+@Deprecated
 trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
   this: ProposalServiceComponent
     with ProposalCoordinatorServiceComponent
@@ -71,12 +72,10 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
 
       for {
         selectedProposals <- sequenceService.startNewSequence(
-          zone = None,
-          keyword = None,
+          behaviourParam = tagsIds.getOrElse(Seq.empty),
           maybeUserId = maybeUserId,
           questionId = questionId,
-          includedProposals = Seq.empty,
-          tagsIds = tagsIds,
+          includedProposalsIds = Seq.empty,
           requestContext = requestContext
         )
       } yield ProposalsResultSeededResponse(selectedProposals.proposals.size.toLong, selectedProposals.proposals, None)

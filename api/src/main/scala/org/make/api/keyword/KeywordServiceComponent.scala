@@ -31,6 +31,7 @@ trait KeywordServiceComponent {
 }
 
 trait KeywordService {
+  def get(key: String, questionId: QuestionId): Future[Option[Keyword]]
   def findTop(questionId: QuestionId, limit: Int): Future[Seq[Keyword]]
   def addAndReplaceTop(questionId: QuestionId, keywords: Seq[Keyword]): Future[Unit]
 }
@@ -41,6 +42,10 @@ trait DefaultKeywordServiceComponent extends KeywordServiceComponent {
   override lazy val keywordService: KeywordService = new DefaultKeywordService
 
   class DefaultKeywordService extends KeywordService {
+
+    override def get(key: String, questionId: QuestionId): Future[Option[Keyword]] = {
+      persistentKeywordService.get(key, questionId)
+    }
 
     override def findTop(questionId: QuestionId, limit: Int): Future[Seq[Keyword]] = {
       persistentKeywordService.findTop(questionId, limit)

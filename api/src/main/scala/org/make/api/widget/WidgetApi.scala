@@ -59,7 +59,6 @@ trait WidgetApi extends Directives {
         dataType = "string",
         example = "ad0065ec-8c80-4f88-b298-bc0956dbc495,4caac845-f219-4455-ae78-8dd2fd5515ce"
       ),
-      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string", example = "FR"),
       new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer", example = "12")
     )
   )
@@ -68,6 +67,7 @@ trait WidgetApi extends Directives {
   def routes: Route = startSequenceByQuestionSlug
 }
 
+@Deprecated
 trait DefaultWidgetApiComponent
     extends WidgetApiComponent
     with MakeAuthenticationDirectives

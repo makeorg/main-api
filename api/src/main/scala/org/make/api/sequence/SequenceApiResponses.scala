@@ -135,3 +135,9 @@ object SpecificSequenceConfigurationResponse {
     )
   }
 }
+
+final case class KeywordSequenceResult(key: String, label: String, proposals: Seq[ProposalResponse])
+
+object KeywordSequenceResult {
+  implicit val encoder: Encoder[KeywordSequenceResult] = deriveEncoder[KeywordSequenceResult]
+}

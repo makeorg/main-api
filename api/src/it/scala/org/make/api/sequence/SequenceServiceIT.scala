@@ -70,6 +70,7 @@ import org.make.api.proposal.ProposalScorer.VotesCounter
 import org.make.api.question.{DefaultPersistentQuestionServiceComponent, DefaultQuestionServiceComponent}
 import org.make.api.segment.DefaultSegmentServiceComponent
 import org.make.api.semantic.{SemanticComponent, SemanticService}
+import org.make.api.sequence.SequenceBehaviour.ConsensusParam
 import org.make.api.sessionhistory.{
   DefaultSessionHistoryCoordinatorServiceComponent,
   SessionHistoryCoordinator,
@@ -128,7 +129,15 @@ import org.make.core.{DefaultDateHelperComponent, RequestContext}
 import org.make.core.job.Job
 import org.make.core.job.Job.JobId
 import org.make.core.proposal.indexed.{SequencePool, Zone}
-import org.make.core.proposal.{Proposal, ProposalStatus, SearchFilters, SearchQuery, StatusSearchFilter, VoteKey}
+import org.make.core.proposal.{
+  Proposal,
+  ProposalKeywordKey,
+  ProposalStatus,
+  SearchFilters,
+  SearchQuery,
+  StatusSearchFilter,
+  VoteKey
+}
 import org.make.core.question.QuestionId
 import org.make.core.sequence.{
   SequenceConfiguration,
@@ -355,7 +364,7 @@ class SequenceServiceIT
   private def getScorer(proposal: Proposal): ProposalScorer =
     ProposalScorer(proposal.votes, VotesCounter.SequenceVotesCounter, sequenceConfiguration.nonSequenceVotesWeight)
 
-  Feature("Start a sequence") {
+  Feature("Start a sequence with lots of params") {
     Scenario("standard behaviour") {
       whenReady(
         sequenceService.startNewSequence(None, None, None, questionId, Nil, None, requestContext),
@@ -367,20 +376,34 @@ class SequenceServiceIT
       }
     }
 
-    for (zone <- Zone.values) {
-      Scenario(s"$zone zone behaviour") {
-        whenReady(
-          sequenceService.startNewSequence(Some(zone), None, None, questionId, Nil, None, requestContext),
-          Timeout(60.seconds)
-        ) { result =>
-          result.proposals.size should be > 0
-          result.proposals.foreach { p =>
-            val proposal = getProposal(p)
-            val scorer = getScorer(proposal)
-            scorer.zone shouldBe zone
-            scorer.pool(sequenceConfiguration, proposal.status) shouldBe SequencePool.Tested
-            p.votes.foreach(_.hasVoted shouldBe false)
-          }
+    Scenario(s"Controversy zone behaviour") {
+      whenReady(
+        sequenceService.startNewSequence(Some(Zone.Controversy), None, None, questionId, Nil, None, requestContext),
+        Timeout(60.seconds)
+      ) { result =>
+        result.proposals.size should be > 0
+        result.proposals.foreach { p =>
+          val proposal = getProposal(p)
+          val scorer = getScorer(proposal)
+          scorer.zone shouldBe Zone.Controversy
+          scorer.pool(sequenceConfiguration, proposal.status) shouldBe SequencePool.Tested
+          p.votes.foreach(_.hasVoted shouldBe false)
+        }
+      }
+    }
+
+    Scenario(s"Consensus zone behaviour") {
+      whenReady(
+        sequenceService.startNewSequence(Some(Zone.Consensus), None, None, questionId, Nil, None, requestContext),
+        Timeout(60.seconds)
+      ) { result =>
+        result.proposals.size should be > 0
+        result.proposals.foreach { p =>
+          val proposal = getProposal(p)
+          val scorer = getScorer(proposal)
+          scorer.zone shouldBe Zone.Consensus
+          scorer.pool(sequenceConfiguration, proposal.status) shouldBe SequencePool.Tested
+          p.votes.foreach(_.hasVoted shouldBe false)
         }
       }
     }
@@ -411,6 +434,78 @@ class SequenceServiceIT
           sequence.proposals.size should be > 0
           sequence.proposals.foreach(_.keywords.map(_.key) should contain(key))
         case (_, None) => succeed
+      }
+    }
+  }
+
+  Feature("Start a sequence with dedicated params") {
+    Scenario("standard behaviour") {
+      whenReady(sequenceService.startNewSequence((), None, questionId, Nil, requestContext), Timeout(60.seconds)) {
+        result =>
+          result.proposals.size should be > 0
+          result.proposals.map(p => getScorer(getProposal(p)).zone).distinct.size should be > 1
+          result.proposals.foreach(_.votes.foreach(_.hasVoted shouldBe false))
+      }
+    }
+
+    Scenario(s"Controversy zone behaviour") {
+      whenReady(
+        sequenceService.startNewSequence(Zone.Controversy, None, questionId, Nil, requestContext),
+        Timeout(60.seconds)
+      ) { result =>
+        result.proposals.size should be > 0
+        result.proposals.foreach { p =>
+          val proposal = getProposal(p)
+          val scorer = getScorer(proposal)
+          scorer.zone shouldBe Zone.Controversy
+          scorer.pool(sequenceConfiguration, proposal.status) shouldBe SequencePool.Tested
+          p.votes.foreach(_.hasVoted shouldBe false)
+        }
+      }
+    }
+
+    Scenario(s"Consensus zone behaviour") {
+      whenReady(
+        sequenceService.startNewSequence(ConsensusParam(Some(0.2)), None, questionId, Nil, requestContext),
+        Timeout(60.seconds)
+      ) { result =>
+        result.proposals.size should be > 0
+        result.proposals.foreach { p =>
+          val proposal = getProposal(p)
+          val scorer = getScorer(proposal)
+          scorer.zone shouldBe Zone.Consensus
+          scorer.pool(sequenceConfiguration, proposal.status) shouldBe SequencePool.Tested
+          p.votes.foreach(_.hasVoted shouldBe false)
+        }
+      }
+    }
+
+    Scenario("tag behaviour") {
+      val futureSequenceTags = for {
+        proposals <- elasticsearchProposalAPI.searchProposals(SearchQuery(limit = Some(10)))
+        tags = proposals.results.flatMap(_.tags.map(_.tagId)).take(2)
+        sequence <- sequenceService.startNewSequence(tags, None, questionId, Nil, requestContext)
+      } yield (sequence, tags)
+      whenReady(futureSequenceTags, Timeout(60.seconds)) {
+        case (sequence, tags) if tags.nonEmpty =>
+          sequence.proposals.size should be > 0
+          sequence.proposals.foreach(proposal => tags.intersect(proposal.tags.map(_.tagId)).size should be > 0)
+        case (sequence, _) =>
+          sequence.proposals.size should be(0)
+      }
+    }
+
+    Scenario("keyword behaviour") {
+      val futureSequenceKey = for {
+        proposals <- elasticsearchProposalAPI.searchProposals(SearchQuery(limit = Some(10)))
+        key = proposals.results.flatMap(_.keywords.map(_.key)).headOption.getOrElse(ProposalKeywordKey("undefined"))
+        sequence <- sequenceService.startNewSequence(key, None, questionId, Nil, requestContext)
+      } yield (sequence, key)
+      whenReady(futureSequenceKey, Timeout(60.seconds)) {
+        case (_, ProposalKeywordKey("undefined")) => succeed
+        case (sequence, _) =>
+          sequence.proposals.size should be > 0
+          sequence.proposals.foreach(_.keywords.map(_.key) should contain(key))
       }
     }
   }

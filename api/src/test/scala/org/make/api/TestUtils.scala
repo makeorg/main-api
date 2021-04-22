@@ -24,6 +24,7 @@ import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.MaxSize
+import eu.timepit.refined.types.numeric.NonNegInt
 import org.make.api.proposal.ProposalScorer
 import org.make.api.proposal.ProposalScorer.VotesCounter
 import org.make.core.sequence.{
@@ -34,6 +35,7 @@ import org.make.core.sequence.{
 }
 import org.make.core.auth.{Client, ClientId}
 import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
+import org.make.core.keyword.Keyword
 import org.make.core.operation._
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.post.indexed.IndexedPost
@@ -671,6 +673,16 @@ trait TestUtils {
       testedProposalsMaxVotesThreshold = testedProposalsMaxVotesThreshold,
       nonSequenceVotesWeight = nonSequenceVotesWeight
     )
+
+  def keyword(
+    questionId: QuestionId,
+    key: String,
+    label: String = "label",
+    score: Float = 0.42f,
+    count: NonNegInt = 21,
+    topKeyword: Boolean = false
+  ): Keyword =
+    Keyword(questionId = questionId, key = key, label = label, score = score, count = count, topKeyword = topKeyword)
 
 }
 

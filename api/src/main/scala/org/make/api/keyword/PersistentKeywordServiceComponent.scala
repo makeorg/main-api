@@ -35,6 +35,7 @@ trait PersistentKeywordServiceComponent {
 }
 
 trait PersistentKeywordService {
+  def get(key: String, questionId: QuestionId): Future[Option[Keyword]]
   def findAll(questionId: QuestionId): Future[Seq[Keyword]]
   def findTop(questionId: QuestionId, limit: Int): Future[Seq[Keyword]]
   def resetTop(questionId: QuestionId): Future[Unit]
@@ -54,6 +55,22 @@ trait DefaultPersistentKeywordServiceComponent extends PersistentKeywordServiceC
       with Logging {
     private val keywords = SQLSyntaxSupportFactory[Keyword]()
     private val kw = keywords.syntax
+
+    override def get(key: String, questionId: QuestionId): Future[Option[Keyword]] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB("READ").retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(keywords.as(kw))
+            .where
+            .eq(kw.key, key)
+            .and
+            .eq(kw.questionId, questionId)
+            .orderBy(kw.key)
+            .asc
+        }.map(keywords.apply(kw.resultName)).single().apply()
+      })
+    }
 
     override def findAll(questionId: QuestionId): Future[Seq[Keyword]] = {
       implicit val context: EC = readExecutionContext
