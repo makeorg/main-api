@@ -71,5 +71,11 @@ object CockroachHealthCheckActorIT {
        |make-api.database.jdbc-url = "jdbc:postgresql://localhost:$cockroachExposedPort/$databaseName"
     """.stripMargin
 
-  val actorSystem = ActorSystem("CockroachHealthCheckActorIT", ConfigFactory.parseString(configuration))
+  val actorSystem = ActorSystem(
+    "CockroachHealthCheckActorIT",
+    ConfigFactory
+      .parseString(configuration)
+      .withFallback(ConfigFactory.load("default-application.conf").withOnlyPath("make-api"))
+      .resolve()
+  )
 }

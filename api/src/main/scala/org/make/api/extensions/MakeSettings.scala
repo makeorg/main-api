@@ -24,6 +24,7 @@ import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.actor.typed.{ActorSystem, Extension, ExtensionId}
 import com.typesafe.config.Config
 import org.make.api.ActorSystemTypedComponent
+import org.make.api.extensions.MakeSettings.DefaultAdmin
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -33,6 +34,11 @@ class MakeSettings(config: Config) extends Extension {
   val passivateTimeout: Duration = Duration(config.getString("passivate-timeout"))
   val maxUserHistoryEvents: Int = config.getInt("max-user-history-events")
   val mandatoryConnection: Boolean = config.getBoolean("mandatory-connection")
+  val defaultAdmin: DefaultAdmin = DefaultAdmin(
+    firstName = config.getString("default-admin.first-name"),
+    email = config.getString("default-admin.email"),
+    password = config.getString("default-admin.password")
+  )
   val defaultUserAnonymousParticipation: Boolean = config.getBoolean("default-user-anonymous-participation")
   val lockDuration: FiniteDuration =
     FiniteDuration(Duration(config.getString("lock-duration")).toMillis, TimeUnit.MILLISECONDS)
@@ -95,6 +101,10 @@ class MakeSettings(config: Config) extends Extension {
 object MakeSettings extends ExtensionId[MakeSettings] {
   override def createExtension(system: ActorSystem[_]): MakeSettings =
     new MakeSettings(system.settings.config.getConfig("make-api"))
+
+  final case class DefaultAdmin(firstName: String, email: String, password: String) {
+    override def toString: String = s"default admin account ($email)"
+  }
 }
 
 trait MakeSettingsExtension { self: Actor =>

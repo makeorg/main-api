@@ -24,6 +24,7 @@ import java.util.concurrent.Executors
 import akka.stream.scaladsl.{Sink, Source}
 import grizzled.slf4j.Logging
 import org.make.api.ActorSystemComponent
+import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation.{
   CreateOperationOfQuestion,
   OperationOfQuestionServiceComponent,
@@ -81,7 +82,8 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Logg
     with PartnerServiceComponent
     with SecurityConfigurationComponent
     with SessionHistoryCoordinatorServiceComponent
-    with ActorSystemComponent =>
+    with ActorSystemComponent
+    with MakeSettingsComponent =>
   override lazy val fixturesService: FixturesService = new DefaultFixturesService
 
   class DefaultFixturesService extends FixturesService {
@@ -310,7 +312,7 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Logg
       maybeQuestionId: Option[QuestionId],
       maxProposals: Option[Int] = None
     ): Future[FixtureResponse] = {
-      val futureAdmin: Future[User] = userService.getUserByEmail("admin@make.org").flatMap {
+      val futureAdmin: Future[User] = userService.getUserByEmail(makeSettings.defaultAdmin.email).flatMap {
         case Some(user) => Future.successful(user)
         case None       => Future.failed(new IllegalStateException())
       }
