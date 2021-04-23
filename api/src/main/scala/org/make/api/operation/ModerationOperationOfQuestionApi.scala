@@ -257,7 +257,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
                 "operationId".as[OperationId].?,
                 "operationKind".csv[OperationKind],
                 "openAt".as[ZonedDateTime].?,
-                "endAfter".as[ZonedDateTime].?
+                "endAfter".as[ZonedDateTime].?,
+                "slug".as[String].?
               ) {
                 (
                   start: Option[Start],
@@ -268,7 +269,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
                   operationId,
                   operationKinds,
                   openAt,
-                  endAfter
+                  endAfter,
+                  slug
                 ) =>
                   val resolvedQuestions: Option[Seq[QuestionId]] = {
                     if (auth.user.roles.contains(RoleAdmin)) {
@@ -291,7 +293,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
                           operationIds = operationId.map(opId => Seq(opId)),
                           operationKind = operationKinds,
                           openAt = openAt,
-                          endAfter = endAfter
+                          endAfter = endAfter,
+                          slug = slug
                         )
                       )
                   ) { result: Seq[OperationOfQuestion] =>
@@ -303,7 +306,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
                             operationIds = operationId.map(opId => Seq(opId)),
                             operationKind = operationKinds,
                             openAt = openAt,
-                            endAfter = endAfter
+                            endAfter = endAfter,
+                            slug = slug
                           )
                         )
                     ) { count =>

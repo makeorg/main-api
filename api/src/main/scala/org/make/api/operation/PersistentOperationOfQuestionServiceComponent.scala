@@ -56,7 +56,8 @@ trait PersistentOperationOfQuestionService {
     operationIds: Option[Seq[OperationId]],
     operationKind: Option[Seq[OperationKind]],
     openAt: Option[ZonedDateTime],
-    endAfter: Option[ZonedDateTime]
+    endAfter: Option[ZonedDateTime],
+    slug: Option[String]
   ): Future[Seq[OperationOfQuestion]]
   def persist(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
   def modify(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
@@ -67,7 +68,8 @@ trait PersistentOperationOfQuestionService {
     questionIds: Option[Seq[QuestionId]],
     operationIds: Option[Seq[OperationId]],
     openAt: Option[ZonedDateTime],
-    endAfter: Option[ZonedDateTime]
+    endAfter: Option[ZonedDateTime],
+    slug: Option[String]
   ): Future[Int]
   // TODO: delete this method once the calling batch was run in production
   def questionIdFromSequenceId(sequenceId: SequenceId): Future[Option[QuestionId]]
@@ -100,7 +102,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
       operationIds: Option[Seq[OperationId]],
       operationKind: Option[Seq[OperationKind]],
       openAt: Option[ZonedDateTime],
-      endAfter: Option[ZonedDateTime]
+      endAfter: Option[ZonedDateTime],
+      slug: Option[String]
     ): Future[scala.Seq[OperationOfQuestion]] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
@@ -109,13 +112,15 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
             .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
             .innerJoin(PersistentOperation.as(operationAlias))
             .on(operationOfQuestionAlias.operationId, operationAlias.uuid)
+            .innerJoin(PersistentQuestion.as(PersistentQuestion.alias))
+            .on(operationOfQuestionAlias.questionId, PersistentQuestion.alias.questionId)
             .where(
               sqls.toAndConditionOpt(
                 operationIds.map(
                   operations => sqls.in(PersistentOperationOfQuestion.column.operationId, operations.map(_.value))
                 ),
                 questionIds.map(
-                  questionIds => sqls.in(PersistentOperationOfQuestion.column.questionId, questionIds.map(_.value))
+                  questionIds => sqls.in(PersistentOperationOfQuestion.alias.questionId, questionIds.map(_.value))
                 ),
                 operationKind
                   .map(operationKind => sqls.in(operationAlias.operationKind, operationKind)),
@@ -125,7 +130,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                       .le(PersistentOperationOfQuestion.column.startDate, openAt)
                       .and(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
                 ),
-                endAfter.map(end => sqls.ge(PersistentOperationOfQuestion.column.endDate, end))
+                endAfter.map(end => sqls.ge(PersistentOperationOfQuestion.column.endDate, end)),
+                slug.map(sqls.eq(PersistentQuestion.alias.slug, _))
               )
             )
 
@@ -316,26 +322,30 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
       questionIds: Option[Seq[QuestionId]],
       operationIds: Option[Seq[OperationId]],
       openAt: Option[ZonedDateTime],
-      endAfter: Option[ZonedDateTime]
+      endAfter: Option[ZonedDateTime],
+      slug: Option[String]
     ): Future[Int] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL[PersistentOperationOfQuestion] {
           select(sqls.count)
             .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
+            .innerJoin(PersistentQuestion.as(PersistentQuestion.alias))
+            .on(operationOfQuestionAlias.questionId, PersistentQuestion.alias.questionId)
             .where(
               sqls.toAndConditionOpt(
                 operationIds
                   .map(opIds => sqls.in(PersistentOperationOfQuestion.column.operationId, opIds.map(_.value))),
                 questionIds
-                  .map(qIds => sqls.in(PersistentOperationOfQuestion.column.questionId, qIds.map(_.value))),
+                  .map(qIds => sqls.in(PersistentOperationOfQuestion.alias.questionId, qIds.map(_.value))),
                 openAt.map(
                   openAt =>
                     sqls
                       .le(PersistentOperationOfQuestion.column.startDate, openAt)
                       .and(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
                 ),
-                endAfter.map(end => sqls.ge(PersistentOperationOfQuestion.column.endDate, end))
+                endAfter.map(end => sqls.ge(PersistentOperationOfQuestion.column.endDate, end)),
+                slug.map(sqls.eq(PersistentQuestion.alias.slug, _))
               )
             )
         }.map(_.int(1)).single().apply().getOrElse(0)
