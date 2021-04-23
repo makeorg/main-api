@@ -36,6 +36,7 @@ class PersistentKeywordServiceIT
   override protected val cockroachExposedPort: Int = 40025
   val questionId: QuestionId = QuestionId("question-id")
   val otherQuestionId: QuestionId = QuestionId("other-question-id")
+  val thirdQuestionId: QuestionId = QuestionId("third-question-id")
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -43,25 +44,68 @@ class PersistentKeywordServiceIT
     whenReady(persistentQuestionService.persist(question(id = otherQuestionId, slug = "kw-2")), Timeout(2.seconds))(
       _ => ()
     )
+    whenReady(persistentQuestionService.persist(question(id = thirdQuestionId, slug = "kw-3")), Timeout(2.seconds))(
+      _ => ()
+    )
   }
 
-  Feature("Replace & find all") {
-    Scenario("replace and find all") {
+  Feature("Create & Find keywords") {
+    Scenario("createKeywords and findTop and findAll") {
       val keywords = Seq(
-        keyword(questionId, "foo"),
-        keyword(questionId, "bar"),
-        keyword(questionId, "baz"),
-        keyword(otherQuestionId, "qux")
+        keyword(questionId, "foo", score = 6f, topKeyword = true),
+        keyword(questionId, "bar", score = 5f, topKeyword = true),
+        keyword(questionId, "baz", score = 4f, topKeyword = true),
+        keyword(questionId, "qux", score = 3f, topKeyword = true),
+        keyword(questionId, "quux", score = 2f, topKeyword = false),
+        keyword(otherQuestionId, "quuz", score = 1f, topKeyword = true)
       )
 
-      val futureKeyword: Future[Seq[Keyword]] = for {
-        _   <- persistentKeywordService.replaceAll(questionId, keywords)
-        all <- persistentKeywordService.findAll(questionId, 2)
+      val futureTopKeywords: Future[Seq[Keyword]] = for {
+        _   <- persistentKeywordService.createKeywords(questionId, keywords)
+        top <- persistentKeywordService.findTop(questionId, 3)
+      } yield top
+
+      whenReady(futureTopKeywords, Timeout(3.seconds)) { result =>
+        result.size shouldBe 3
+        result.foreach(_.questionId shouldBe questionId)
+        result.map(_.key) shouldBe Seq("foo", "bar", "baz")
+      }
+
+      whenReady(persistentKeywordService.findAll(questionId), Timeout(3.seconds)) { result =>
+        result.size shouldBe 5
+        result.foreach(_.questionId shouldBe questionId)
+        result.map(_.key) shouldBe Seq("bar", "baz", "foo", "quux", "qux")
+      }
+    }
+  }
+
+  Feature("Reset & update top keywords") {
+    Scenario("resetTop and updateTop") {
+      val keywords = Seq(
+        keyword(thirdQuestionId, "toto", score = 3f, topKeyword = true),
+        keyword(thirdQuestionId, "tata", score = 2f, topKeyword = true),
+        keyword(thirdQuestionId, "tutu", score = 1f, topKeyword = true)
+      )
+
+      val update = Seq(keyword(thirdQuestionId, "tata", score = 42f, topKeyword = true))
+      val newTop = Seq(
+        keyword(thirdQuestionId, "titi", score = 21f, topKeyword = true),
+        keyword(thirdQuestionId, "tete", score = 14f, topKeyword = true)
+      )
+
+      val futureKeywords: Future[Seq[Keyword]] = for {
+        _   <- persistentKeywordService.createKeywords(thirdQuestionId, keywords)
+        _   <- persistentKeywordService.resetTop(thirdQuestionId)
+        _   <- persistentKeywordService.updateTop(thirdQuestionId, update)
+        _   <- persistentKeywordService.createKeywords(thirdQuestionId, newTop)
+        all <- persistentKeywordService.findAll(thirdQuestionId)
       } yield all
 
-      whenReady(futureKeyword, Timeout(3.seconds)) { result =>
-        result.size shouldBe 2
-        result.foreach(_.questionId shouldBe questionId)
+      whenReady(futureKeywords, Timeout(3.seconds)) { result =>
+        result.size shouldBe 5
+        result.find(_.key == "tata").foreach(_.score shouldBe 42f)
+        result.find(_.key == "tutu").foreach(_.topKeyword shouldBe false)
+        result.find(_.key == "titi").foreach(_.topKeyword shouldBe true)
       }
     }
   }

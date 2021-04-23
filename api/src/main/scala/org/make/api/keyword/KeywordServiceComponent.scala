@@ -24,14 +24,15 @@ import org.make.core.question.QuestionId
 import org.make.core.keyword._
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 trait KeywordServiceComponent {
   def keywordService: KeywordService
 }
 
 trait KeywordService {
-  def findAll(questionId: QuestionId, limit: Int): Future[Seq[Keyword]]
-  def replaceAll(questionId: QuestionId, keywords: Seq[Keyword]): Future[Seq[Keyword]]
+  def findTop(questionId: QuestionId, limit: Int): Future[Seq[Keyword]]
+  def addAndReplaceTop(questionId: QuestionId, keywords: Seq[Keyword]): Future[Unit]
 }
 
 trait DefaultKeywordServiceComponent extends KeywordServiceComponent {
@@ -41,12 +42,18 @@ trait DefaultKeywordServiceComponent extends KeywordServiceComponent {
 
   class DefaultKeywordService extends KeywordService {
 
-    override def findAll(questionId: QuestionId, limit: Int): Future[Seq[Keyword]] = {
-      persistentKeywordService.findAll(questionId, limit)
+    override def findTop(questionId: QuestionId, limit: Int): Future[Seq[Keyword]] = {
+      persistentKeywordService.findTop(questionId, limit)
     }
 
-    override def replaceAll(questionId: QuestionId, keywords: Seq[Keyword]): Future[Seq[Keyword]] = {
-      persistentKeywordService.replaceAll(questionId, keywords)
+    override def addAndReplaceTop(questionId: QuestionId, keywords: Seq[Keyword]): Future[Unit] = {
+      for {
+        _           <- persistentKeywordService.resetTop(questionId)
+        allKeywords <- persistentKeywordService.findAll(questionId)
+        (existingKeywords, newKeywords) = keywords.partition(kw => allKeywords.exists(_.key == kw.key))
+        _ <- persistentKeywordService.updateTop(questionId, existingKeywords)
+        _ <- persistentKeywordService.createKeywords(questionId, newKeywords)
+      } yield {}
     }
   }
 }

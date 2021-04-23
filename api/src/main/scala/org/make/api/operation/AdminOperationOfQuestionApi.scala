@@ -168,9 +168,10 @@ trait DefaultAdminOperationOfQuestionApiComponent
                         s"keywords contain duplicate keys: ${duplicateKeys.mkString(", ")}"
                       )
                     )
-                    provideAsync(keywordService.replaceAll(questionId, request.keywords.map(_.toKeyword(questionId)))) {
-                      _ =>
-                        complete(StatusCodes.NoContent)
+                    provideAsync(
+                      keywordService.addAndReplaceTop(questionId, request.keywords.map(_.toKeyword(questionId)))
+                    ) { _ =>
+                      complete(StatusCodes.NoContent)
                     }
                   }
                 }
@@ -197,7 +198,8 @@ object UpdateKeywords {
 }
 
 final case class KeywordRequest(key: String, label: String, score: Float, count: NonNegInt) {
-  def toKeyword(questionId: QuestionId): Keyword = Keyword(questionId, key, label, score, count)
+  def toKeyword(questionId: QuestionId): Keyword =
+    Keyword(questionId = questionId, key = key, label = label, score = score, count = count, topKeyword = true)
 }
 
 object KeywordRequest {
