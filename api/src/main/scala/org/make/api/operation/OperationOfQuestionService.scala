@@ -257,7 +257,7 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         createdAt = DateHelper.now()
       )
 
-      val mainSequence = SpecificSequenceConfiguration.mainSequenceDefault(specificSequenceConfigurationId())
+      val mainSequence = SpecificSequenceConfiguration(specificSequenceConfigurationId())
       val controversialSequence = SpecificSequenceConfiguration.otherSequenceDefault(specificSequenceConfigurationId())
       val popularSequence = SpecificSequenceConfiguration.otherSequenceDefault(specificSequenceConfigurationId())
       val keywordSequence = SpecificSequenceConfiguration.otherSequenceDefault(specificSequenceConfigurationId())
