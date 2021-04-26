@@ -20,6 +20,8 @@
 package org.make.api.technical.healthcheck
 
 import akka.actor.Props
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
+import org.make.api.extensions.MakeSettings
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import scalikejdbc._
@@ -30,11 +32,13 @@ class CockroachHealthCheckActor(healthCheckExecutionContext: ExecutionContext) e
 
   override val techno: String = "cockroach"
 
+  private val email = MakeSettings(context.system.toTyped).defaultAdmin.email
+
   override def healthCheck(): Future[String] = {
     implicit val cxt: EC = healthCheckExecutionContext
 
     val futureResults: Future[List[Map[String, Any]]] = Future(NamedDB("READ").retryableTx { implicit session =>
-      sql"select first_name from make_user where email='admin@make.org'".map(_.toMap()).list().apply()
+      sql"select first_name from make_user where email=$email".map(_.toMap()).list().apply()
     })
 
     futureResults

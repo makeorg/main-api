@@ -120,7 +120,7 @@ object MakeMain extends App with Logging with MakeApi {
   actorSystem.actorOf(ShardedSessionHistory.props(userHistoryCoordinator, 1.second, idGenerator), "fake-session") ! PoisonPill
 
   // Ensure database stuff is initialized
-  Await.result(userService.getUserByEmail("admin@make.org"), atMost = 20.seconds)
+  Await.result(userService.getUserByEmail(settings.defaultAdmin.email), atMost = 20.seconds)
 
   implicit val ec: ExecutionContextExecutor = actorSystemTyped.executionContext
 

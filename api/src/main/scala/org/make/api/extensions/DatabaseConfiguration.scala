@@ -30,6 +30,7 @@ import org.apache.commons.dbcp2.BasicDataSource
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.MigrationVersion
 import org.flywaydb.core.api.configuration.FluentConfiguration
+import org.make.api.extensions.MakeSettings.DefaultAdmin
 import org.make.api.technical.MonitorableExecutionContext
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
 
@@ -38,7 +39,7 @@ import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 import org.make.api.technical.ExecutorServiceHelper._
 
-class DatabaseConfiguration(override protected val configuration: Config)
+class DatabaseConfiguration(override protected val configuration: Config, defaultAdmin: DefaultAdmin)
     extends Extension
     with ConfigurationSupport
     with Logging {
@@ -98,9 +99,6 @@ class DatabaseConfiguration(override protected val configuration: Config)
   private val databaseName = writeDatasource.getConnection.getCatalog
   private val defaultClientId: String = configuration.getString("authentication.default-client-id")
   private val defaultClientSecret: String = configuration.getString("authentication.default-client-secret")
-  private val adminFirstName: String = configuration.getString("default-admin.first-name")
-  private val adminEmail: String = configuration.getString("default-admin.email")
-  private val adminPassword: String = configuration.getString("default-admin.password")
 
   def migrateDatabase(): Unit = {
     logger.debug(s"Creating database with name: $databaseName")
@@ -130,9 +128,9 @@ class DatabaseConfiguration(override protected val configuration: Config)
           "dbname" -> databaseName,
           "clientId" -> defaultClientId,
           "clientSecret" -> defaultClientSecret,
-          "adminEmail" -> adminEmail,
-          "adminFirstName" -> adminFirstName,
-          "adminEncryptedPassword" -> adminPassword.bcrypt
+          "adminEmail" -> defaultAdmin.email,
+          "adminFirstName" -> defaultAdmin.firstName,
+          "adminEncryptedPassword" -> defaultAdmin.password.bcrypt
         ).asJava
       )
 
@@ -157,6 +155,6 @@ class DatabaseConfiguration(override protected val configuration: Config)
 
 object DatabaseConfiguration extends ExtensionId[DatabaseConfiguration] {
   override def createExtension(system: ActorSystem[_]): DatabaseConfiguration =
-    new DatabaseConfiguration(system.settings.config.getConfig("make-api"))
+    new DatabaseConfiguration(system.settings.config.getConfig("make-api"), MakeSettings(system).defaultAdmin)
 
 }

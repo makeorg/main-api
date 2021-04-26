@@ -26,6 +26,7 @@ import akka.testkit.TestKit
 import com.typesafe.config.{Config, ConfigFactory}
 import org.make.api.{ActorSystemComponent, ActorSystemTypedComponent, DatabaseTest, DefaultConfigComponent}
 import org.make.api.docker.{DockerCassandraService, DockerElasticsearchService}
+import org.make.api.extensions.MakeSettings.DefaultAdmin
 import org.make.api.extensions.{
   MailJetConfiguration,
   MailJetConfigurationComponent,
@@ -238,6 +239,7 @@ class SequenceServiceIT
   override lazy val userHistoryCoordinator: ActorRef = actorSystem.actorOf(UserHistoryCoordinator.props)
 
   override val makeSettings: MakeSettings = mock[MakeSettings]
+  when(makeSettings.defaultAdmin).thenReturn(DefaultAdmin("firstName", "admin@make.org", "password"))
   when(makeSettings.maxHistoryProposalsPerPage).thenReturn(10)
   when(makeSettings.resetTokenExpiresIn).thenReturn(1.day)
   when(makeSettings.resetTokenB2BExpiresIn).thenReturn(1.day)
