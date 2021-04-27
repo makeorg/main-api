@@ -89,7 +89,12 @@ trait DefaultPersistentKeywordServiceComponent extends PersistentKeywordServiceC
       implicit val context: EC = writeExecutionContext
       Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
-          update(keywords).set(keywords.column.topKeyword -> false).where.eq(kw.topKeyword, true)
+          update(keywords)
+            .set(keywords.column.topKeyword -> false)
+            .where
+            .eq(kw.topKeyword, true)
+            .and
+            .eq(kw.questionId, questionId)
         }.update().apply()
       })
     }

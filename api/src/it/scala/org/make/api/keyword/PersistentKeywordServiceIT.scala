@@ -94,7 +94,11 @@ class PersistentKeywordServiceIT
       )
 
       val futureKeywords: Future[Seq[Keyword]] = for {
-        _   <- persistentKeywordService.createKeywords(thirdQuestionId, keywords)
+        _ <- persistentKeywordService.createKeywords(thirdQuestionId, keywords)
+        _ <- persistentKeywordService.createKeywords(
+          questionId,
+          Seq(keyword(questionId, "check-top", topKeyword = true))
+        )
         _   <- persistentKeywordService.resetTop(thirdQuestionId)
         _   <- persistentKeywordService.updateTop(thirdQuestionId, update)
         _   <- persistentKeywordService.createKeywords(thirdQuestionId, newTop)
@@ -103,9 +107,13 @@ class PersistentKeywordServiceIT
 
       whenReady(futureKeywords, Timeout(3.seconds)) { result =>
         result.size shouldBe 5
-        result.find(_.key == "tata").foreach(_.score shouldBe 42f)
-        result.find(_.key == "tutu").foreach(_.topKeyword shouldBe false)
-        result.find(_.key == "titi").foreach(_.topKeyword shouldBe true)
+        result.find(_.key == "tata").map(_.score) shouldBe Some(42f)
+        result.find(_.key == "tutu").map(_.topKeyword) shouldBe Some(false)
+        result.find(_.key == "titi").map(_.topKeyword) shouldBe Some(true)
+      }
+
+      whenReady(persistentKeywordService.findAll(questionId), Timeout(3.seconds)) { result =>
+        result.find(_.key == "check-top").map(_.topKeyword) shouldBe Some(true)
       }
     }
   }
