@@ -278,7 +278,7 @@ class SequenceServiceIT
   private var questionId: QuestionId = null
   private val requestContext = RequestContext.empty.copy(sessionId = idGenerator.nextSessionId())
   private def specificSequence =
-    SpecificSequenceConfiguration.mainSequenceDefault(SpecificSequenceConfigurationId(questionId.value))
+    SpecificSequenceConfiguration(SpecificSequenceConfigurationId(questionId.value))
   private def sequenceConfiguration =
     SequenceConfiguration.default.copy(
       sequenceId = SequenceId(questionId.value),

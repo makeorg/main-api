@@ -127,13 +127,13 @@ object SequenceConfiguration {
   val default: SequenceConfiguration = SequenceConfiguration(
     sequenceId = SequenceId("default-sequence"),
     questionId = QuestionId("default-question"),
-    mainSequence = SpecificSequenceConfiguration.mainSequenceDefault(SpecificSequenceConfigurationId("default-main")),
+    mainSequence = SpecificSequenceConfiguration(SpecificSequenceConfigurationId("default-main")),
     controversial =
       SpecificSequenceConfiguration.otherSequenceDefault(SpecificSequenceConfigurationId("default-controversial")),
     popular = SpecificSequenceConfiguration.otherSequenceDefault(SpecificSequenceConfigurationId("default-popular")),
     keyword = SpecificSequenceConfiguration.otherSequenceDefault(SpecificSequenceConfigurationId("default-keyword")),
-    newProposalsVoteThreshold = 100,
-    testedProposalsEngagementThreshold = Some(0.8),
+    newProposalsVoteThreshold = 10,
+    testedProposalsEngagementThreshold = None,
     testedProposalsScoreThreshold = None,
     testedProposalsControversyThreshold = None,
     testedProposalsMaxVotesThreshold = Some(1500),
@@ -145,51 +145,31 @@ object SequenceConfiguration {
 final case class SpecificSequenceConfiguration(
   specificSequenceConfigurationId: SpecificSequenceConfigurationId,
   sequenceSize: Int = 12,
-  newProposalsRatio: Double = 0.5,
+  newProposalsRatio: Double = 0.3,
   maxTestedProposalCount: Int = 1000,
   selectionAlgorithmName: SelectionAlgorithmName = SelectionAlgorithmName.Bandit,
   intraIdeaEnabled: Boolean = true,
   intraIdeaMinCount: Int = 1,
   intraIdeaProposalsRatio: Double = 0.0,
   interIdeaCompetitionEnabled: Boolean = true,
-  interIdeaCompetitionTargetCount: Int = 50,
+  interIdeaCompetitionTargetCount: Int = 20,
   interIdeaCompetitionControversialRatio: Double = 0.0,
-  interIdeaCompetitionControversialCount: Int = 0
+  interIdeaCompetitionControversialCount: Int = 2
 )
 
 object SpecificSequenceConfiguration {
   implicit val decoder: Decoder[SpecificSequenceConfiguration] = deriveDecoder[SpecificSequenceConfiguration]
   implicit val encoder: Encoder[SpecificSequenceConfiguration] = deriveEncoder[SpecificSequenceConfiguration]
 
-  def mainSequenceDefault(id: SpecificSequenceConfigurationId): SpecificSequenceConfiguration =
-    SpecificSequenceConfiguration(
-      specificSequenceConfigurationId = id,
-      sequenceSize = 12,
-      newProposalsRatio = 0.5,
-      maxTestedProposalCount = 1000,
-      selectionAlgorithmName = SelectionAlgorithmName.Bandit,
-      intraIdeaEnabled = true,
-      intraIdeaMinCount = 1,
-      intraIdeaProposalsRatio = 0.0,
-      interIdeaCompetitionEnabled = false,
-      interIdeaCompetitionTargetCount = 50,
-      interIdeaCompetitionControversialRatio = 0.0,
-      interIdeaCompetitionControversialCount = 0
-    )
-
   def otherSequenceDefault(id: SpecificSequenceConfigurationId): SpecificSequenceConfiguration =
     SpecificSequenceConfiguration(
       specificSequenceConfigurationId = id,
-      sequenceSize = 12,
-      newProposalsRatio = 0.5,
-      maxTestedProposalCount = 1000,
+      newProposalsRatio = 0,
       selectionAlgorithmName = SelectionAlgorithmName.Random,
       intraIdeaEnabled = false,
       intraIdeaMinCount = 0,
-      intraIdeaProposalsRatio = 0.0,
       interIdeaCompetitionEnabled = false,
       interIdeaCompetitionTargetCount = 0,
-      interIdeaCompetitionControversialRatio = 0.0,
       interIdeaCompetitionControversialCount = 0
     )
 }
