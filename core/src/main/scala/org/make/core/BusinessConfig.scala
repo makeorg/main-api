@@ -86,6 +86,26 @@ object BusinessConfig {
       supportedLanguages = Seq(Language("bg"))
     ),
     CountryConfiguration(
+      countryCode = Country("BR"),
+      defaultLanguage = Language("pt"),
+      supportedLanguages = Seq(Language("pt"))
+    ),
+    CountryConfiguration(
+      countryCode = Country("CA"),
+      defaultLanguage = Language("en"),
+      supportedLanguages = Seq(Language("en"), Language("fr"))
+    ),
+    CountryConfiguration(
+      countryCode = Country("CH"),
+      defaultLanguage = Language("de"),
+      supportedLanguages = Seq(Language("de"), Language("fr"), Language("it"))
+    ),
+    CountryConfiguration(
+      countryCode = Country("CN"),
+      defaultLanguage = Language("en"),
+      supportedLanguages = Seq(Language("en"))
+    ),
+    CountryConfiguration(
       countryCode = Country("CY"),
       defaultLanguage = Language("el"),
       supportedLanguages = Seq(Language("el"))
@@ -136,6 +156,16 @@ object BusinessConfig {
       supportedLanguages = Seq(Language("en"))
     ),
     CountryConfiguration(
+      countryCode = Country("IN"),
+      defaultLanguage = Language("en"),
+      supportedLanguages = Seq(Language("en"))
+    ),
+    CountryConfiguration(
+      countryCode = Country("JP"),
+      defaultLanguage = Language("en"),
+      supportedLanguages = Seq(Language("en"))
+    ),
+    CountryConfiguration(
       countryCode = Country("LT"),
       defaultLanguage = Language("lt"),
       supportedLanguages = Seq(Language("lt"))
@@ -154,6 +184,11 @@ object BusinessConfig {
       countryCode = Country("MT"),
       defaultLanguage = Language("mt"),
       supportedLanguages = Seq(Language("mt"))
+    ),
+    CountryConfiguration(
+      countryCode = Country("NO"),
+      defaultLanguage = Language("en"),
+      supportedLanguages = Seq(Language("en"))
     ),
     CountryConfiguration(
       countryCode = Country("NL"),
@@ -176,6 +211,11 @@ object BusinessConfig {
       supportedLanguages = Seq(Language("ro"))
     ),
     CountryConfiguration(
+      countryCode = Country("RU"),
+      defaultLanguage = Language("en"),
+      supportedLanguages = Seq(Language("en"))
+    ),
+    CountryConfiguration(
       countryCode = Country("SE"),
       defaultLanguage = Language("sv"),
       supportedLanguages = Seq(Language("sv"))
@@ -189,6 +229,11 @@ object BusinessConfig {
       countryCode = Country("SK"),
       defaultLanguage = Language("sk"),
       supportedLanguages = Seq(Language("sk"))
+    ),
+    CountryConfiguration(
+      countryCode = Country("US"),
+      defaultLanguage = Language("en"),
+      supportedLanguages = Seq(Language("en"))
     )
   )
 
