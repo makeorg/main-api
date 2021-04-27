@@ -116,9 +116,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
             .on(operationOfQuestionAlias.questionId, PersistentQuestion.alias.questionId)
             .where(
               sqls.toAndConditionOpt(
-                operationIds.map(
-                  operations => sqls.in(PersistentOperationOfQuestion.column.operationId, operations.map(_.value))
-                ),
+                operationIds
+                  .map(operations => sqls.in(PersistentOperationOfQuestion.alias.operationId, operations.map(_.value))),
                 questionIds.map(
                   questionIds => sqls.in(PersistentOperationOfQuestion.alias.questionId, questionIds.map(_.value))
                 ),
@@ -127,11 +126,11 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                 openAt.map(
                   openAt =>
                     sqls
-                      .le(PersistentOperationOfQuestion.column.startDate, openAt)
-                      .and(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
+                      .le(PersistentOperationOfQuestion.alias.startDate, openAt)
+                      .and(sqls.ge(PersistentOperationOfQuestion.alias.endDate, openAt))
                 ),
-                endAfter.map(end => sqls.ge(PersistentOperationOfQuestion.column.endDate, end)),
-                slug.map(sqls.eq(PersistentQuestion.alias.slug, _))
+                endAfter.map(end => sqls.ge(PersistentOperationOfQuestion.alias.endDate, end)),
+                slug.map(s       => sqls.like(PersistentQuestion.alias.slug, s"%$s%"))
               )
             )
 
@@ -335,17 +334,17 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
             .where(
               sqls.toAndConditionOpt(
                 operationIds
-                  .map(opIds => sqls.in(PersistentOperationOfQuestion.column.operationId, opIds.map(_.value))),
+                  .map(opIds => sqls.in(PersistentOperationOfQuestion.alias.operationId, opIds.map(_.value))),
                 questionIds
                   .map(qIds => sqls.in(PersistentOperationOfQuestion.alias.questionId, qIds.map(_.value))),
                 openAt.map(
                   openAt =>
                     sqls
-                      .le(PersistentOperationOfQuestion.column.startDate, openAt)
-                      .and(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
+                      .le(PersistentOperationOfQuestion.alias.startDate, openAt)
+                      .and(sqls.ge(PersistentOperationOfQuestion.alias.endDate, openAt))
                 ),
-                endAfter.map(end => sqls.ge(PersistentOperationOfQuestion.column.endDate, end)),
-                slug.map(sqls.eq(PersistentQuestion.alias.slug, _))
+                endAfter.map(end => sqls.ge(PersistentOperationOfQuestion.alias.endDate, end)),
+                slug.map(s       => sqls.like(PersistentQuestion.alias.slug, s"%$s%"))
               )
             )
         }.map(_.int(1)).single().apply().getOrElse(0)

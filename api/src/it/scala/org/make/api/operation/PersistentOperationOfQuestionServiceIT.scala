@@ -192,6 +192,30 @@ class PersistentOperationOfQuestionServiceIT
       }
     }
 
+    Scenario("operationIds filter") {
+      val ooq = TestUtilsIT.operationOfQuestion(QuestionId("operationIds-filter"), operationId)
+
+      val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
+        _ <- createOperationOfQuestion(ooq)
+        result <- persistentOperationOfQuestionService.search(
+          start = Start.zero,
+          end = None,
+          sort = None,
+          order = None,
+          questionIds = None,
+          operationIds = Some(Seq(ooq.operationId)),
+          operationKind = None,
+          openAt = None,
+          endAfter = None,
+          slug = None
+        )
+      } yield result
+
+      whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { operationOfQuestion =>
+        operationOfQuestion.map(_.operationId) shouldBe Seq(ooq.operationId)
+      }
+    }
+
     Scenario("openAt filter") {
       val now = ZonedDateTime.now
       val yesterday = now.minusDays(1)
@@ -290,7 +314,7 @@ class PersistentOperationOfQuestionServiceIT
         operationKind = None,
         openAt = None,
         endAfter = None,
-        slug = Some("slug-question-toBeFiltered")
+        slug = Some("question-toBe")
       )
 
       whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { operationOfQuestion =>

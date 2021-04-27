@@ -101,7 +101,8 @@ trait ModerationOperationOfQuestionApi extends Directives {
         allowMultiple = true
       ),
       new ApiImplicitParam(name = "openAt", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "endAfter", paramType = "query", required = false, dataType = "string")
+      new ApiImplicitParam(name = "endAfter", paramType = "query", required = false, dataType = "string"),
+      new ApiImplicitParam(name = "slug", paramType = "query", required = false, dataType = "string")
     )
   )
   @Path(value = "/")
