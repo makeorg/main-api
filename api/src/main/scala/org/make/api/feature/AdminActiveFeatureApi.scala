@@ -217,7 +217,7 @@ trait DefaultAdminActiveFeatureApiComponent
                             end = end,
                             sort = sort,
                             order = order,
-                            maybeQuestionId = maybeQuestionId
+                            maybeQuestionId = maybeQuestionId.map(Seq(_))
                           )
                       ) { filteredActiveFeatures =>
                         complete(

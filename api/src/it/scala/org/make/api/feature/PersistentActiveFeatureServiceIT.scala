@@ -19,18 +19,16 @@
 
 package org.make.api.feature
 
-import cats.data.NonEmptyList
 import org.make.api.DatabaseTest
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.core.feature.{Feature => Feat, _}
-import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language}
+import org.make.core.question.QuestionId
+import org.make.core.technical.Pagination.Start
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
-import org.make.core.technical.Pagination.Start
 
 class PersistentActiveFeatureServiceIT
     extends DatabaseTest
@@ -43,26 +41,27 @@ class PersistentActiveFeatureServiceIT
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    whenReady(
-      persistentQuestionService.persist(
-        Question(
-          questionId = QuestionId("question-1"),
-          slug = "question-1",
-          countries = NonEmptyList.of(Country("FR")),
-          language = Language("fr"),
-          question = "question ?",
-          shortTitle = None,
-          operationId = None
-        )
-      ),
-      Timeout(10.seconds)
-    ) { _ =>
+    val futurePersistQuestions: Future[Unit] = for {
+      _ <- persistentQuestionService.persist(question(QuestionId("question-1"), slug = "question-1"))
+      _ <- persistentQuestionService.persist(question(QuestionId("question-2"), slug = "question-2"))
+    } yield {}
+    val futurePersistFeatures = for {
+      _ <- persistentFeatureService.persist(Feat(featureId = FeatureId("feature"), name = "Feature", slug = "feature"))
+      _ <- persistentFeatureService.persist(
+        Feat(featureId = FeatureId("feature2"), name = "Feature2", slug = "feature2")
+      )
+      _ <- persistentFeatureService.persist(
+        Feat(featureId = FeatureId("feature-search"), name = "Feature search", slug = "feature-search")
+      )
+      _ <- persistentFeatureService.persist(
+        Feat(featureId = FeatureId("feature-search2"), name = "Feature search 2", slug = "feature-search2")
+      )
+    } yield {}
+
+    whenReady(futurePersistQuestions, Timeout(10.seconds)) { _ =>
       ()
     }
-    whenReady(
-      persistentFeatureService.persist(Feat(featureId = FeatureId("feature"), name = "Feature", slug = "feature")),
-      Timeout(10.seconds)
-    ) { _ =>
+    whenReady(futurePersistFeatures, Timeout(10.seconds)) { _ =>
       ()
     }
   }
@@ -120,7 +119,8 @@ class PersistentActiveFeatureServiceIT
           end = None,
           sort = None,
           order = None,
-          maybeQuestionId = None
+          maybeQuestionIds = None,
+          featureIds = None
         )
       } yield foundFeatures -> persistedFeaturesList
 
@@ -132,7 +132,7 @@ class PersistentActiveFeatureServiceIT
       }
     }
 
-    Scenario("Get a list of features by questionId") {
+    Scenario("Get a list of features by questionIds") {
 
       val futureFeaturesLists: Future[Seq[ActiveFeature]] = for {
         _ <- persistentActiveFeatureService.persist(
@@ -144,12 +144,43 @@ class PersistentActiveFeatureServiceIT
         _ <- persistentActiveFeatureService.persist(
           newActiveFeature(FeatureId("feature"), Some(QuestionId("question-1")))
         )
+        _ <- persistentActiveFeatureService.persist(
+          newActiveFeature(FeatureId("feature"), Some(QuestionId("question-2")))
+        )
         listFeatures <- persistentActiveFeatureService.find(
           start = Start.zero,
           end = None,
           sort = None,
           order = None,
-          maybeQuestionId = Some(QuestionId("question-1"))
+          maybeQuestionIds = Some(Seq(QuestionId("question-1"), QuestionId("question-2"))),
+          featureIds = None
+        )
+      } yield listFeatures
+
+      whenReady(futureFeaturesLists, Timeout(3.seconds)) { found =>
+        found.size should be(4)
+      }
+    }
+
+    Scenario("Get a list of features by featureIds") {
+
+      val futureFeaturesLists: Future[Seq[ActiveFeature]] = for {
+        _ <- persistentActiveFeatureService.persist(
+          newActiveFeature(FeatureId("feature-search"), Some(QuestionId("question-1")))
+        )
+        _ <- persistentActiveFeatureService.persist(
+          newActiveFeature(FeatureId("feature-search2"), Some(QuestionId("question-1")))
+        )
+        _ <- persistentActiveFeatureService.persist(
+          newActiveFeature(FeatureId("feature-search2"), Some(QuestionId("question-2")))
+        )
+        listFeatures <- persistentActiveFeatureService.find(
+          start = Start.zero,
+          end = None,
+          sort = None,
+          order = None,
+          maybeQuestionIds = None,
+          featureIds = Some(Seq(FeatureId("feature-search"), FeatureId("feature-search2")))
         )
       } yield listFeatures
 

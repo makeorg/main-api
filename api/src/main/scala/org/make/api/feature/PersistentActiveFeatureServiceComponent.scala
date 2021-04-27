@@ -27,6 +27,7 @@ import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.api.technical.Futures._
+import org.make.api.technical.ScalikeSupport._
 import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId}
 import org.make.core.question.QuestionId
 import org.make.core.Order
@@ -48,7 +49,8 @@ trait PersistentActiveFeatureService {
     end: Option[End],
     sort: Option[String],
     order: Option[Order],
-    maybeQuestionId: Option[QuestionId]
+    maybeQuestionIds: Option[Seq[QuestionId]],
+    featureIds: Option[Seq[FeatureId]]
   ): Future[Seq[ActiveFeature]]
   def count(maybeQuestionId: Option[QuestionId]): Future[Int]
 }
@@ -71,7 +73,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
         withSQL {
           select
             .from(PersistentActiveFeature.as(activeFeatureAlias))
-            .where(sqls.eq(activeFeatureAlias.id, activeFeatureId.value))
+            .where(sqls.eq(activeFeatureAlias.id, activeFeatureId))
         }.map(PersistentActiveFeature.apply()).single().apply()
       })
 
@@ -85,9 +87,9 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
           insert
             .into(PersistentActiveFeature)
             .namedValues(
-              column.id -> activeFeature.activeFeatureId.value,
-              column.featureId -> activeFeature.featureId.value,
-              column.questionId -> activeFeature.maybeQuestionId.map(_.value)
+              column.id -> activeFeature.activeFeatureId,
+              column.featureId -> activeFeature.featureId,
+              column.questionId -> activeFeature.maybeQuestionId
             )
         }.execute().apply()
       }).map(_ => activeFeature)
@@ -99,7 +101,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
         withSQL {
           delete
             .from(PersistentActiveFeature.as(activeFeatureAlias))
-            .where(sqls.eq(activeFeatureAlias.id, activeFeatureId.value))
+            .where(sqls.eq(activeFeatureAlias.id, activeFeatureId))
         }.update().apply()
       }).toUnit
     }
@@ -109,7 +111,8 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
       end: Option[End],
       sort: Option[String],
       order: Option[Order],
-      maybeQuestionId: Option[QuestionId]
+      maybeQuestionId: Option[Seq[QuestionId]],
+      featureId: Option[Seq[FeatureId]]
     ): Future[Seq[ActiveFeature]] = {
       implicit val context: EC = readExecutionContext
 
@@ -121,7 +124,8 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
                 .from(PersistentActiveFeature.as(activeFeatureAlias))
                 .where(
                   sqls.toAndConditionOpt(
-                    maybeQuestionId.map(questionId => sqls.eq(activeFeatureAlias.questionId, questionId.value))
+                    maybeQuestionId.map(sqls.in(activeFeatureAlias.questionId, _)),
+                    featureId.map(sqls.in(activeFeatureAlias.featureId, _))
                   )
                 )
             sortOrderQuery(start, end, sort, order, query)
@@ -140,7 +144,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
             .from(PersistentActiveFeature.as(activeFeatureAlias))
             .where(
               sqls.toAndConditionOpt(
-                maybeQuestionId.map(questionId => sqls.eq(activeFeatureAlias.questionId, questionId.value))
+                maybeQuestionId.map(questionId => sqls.eq(activeFeatureAlias.questionId, questionId))
               )
             )
         }.map(_.int(1)).single().apply().getOrElse(0)
