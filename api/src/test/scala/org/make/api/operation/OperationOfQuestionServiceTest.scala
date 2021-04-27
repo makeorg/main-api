@@ -78,7 +78,8 @@ class OperationOfQuestionServiceTest
         questionIds = Some(Seq(QuestionId("q-id"))),
         operationIds = Some(Seq(OperationId("o-id"))),
         operationKind = None,
-        openAt = None
+        openAt = None,
+        slug = Some("slug")
       )
       operationOfQuestionService.find(Start(42), Some(End(84)), None, Some(Order.asc), req)
 
@@ -92,7 +93,8 @@ class OperationOfQuestionServiceTest
           operationIds = Some(Seq(OperationId("o-id"))),
           operationKind = None,
           openAt = None,
-          endAfter = None
+          endAfter = None,
+          slug = Some("slug")
         )
     }
 
@@ -329,14 +331,21 @@ class OperationOfQuestionServiceTest
 
   Feature("count") {
     Scenario("count from query") {
-      val query = SearchOperationsOfQuestions(questionIds =
-        Some(Seq(QuestionId("first-question-id"), QuestionId("second-question-id")))
+      val query = SearchOperationsOfQuestions(
+        questionIds = Some(Seq(QuestionId("first-question-id"), QuestionId("second-question-id"))),
+        slug = Some("slug")
       )
 
       operationOfQuestionService.count(query)
 
       verify(persistentOperationOfQuestionService)
-        .count(Some(Seq(QuestionId("first-question-id"), QuestionId("second-question-id"))), None, None, None)
+        .count(
+          Some(Seq(QuestionId("first-question-id"), QuestionId("second-question-id"))),
+          None,
+          None,
+          None,
+          Some("slug")
+        )
     }
   }
 

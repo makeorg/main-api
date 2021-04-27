@@ -158,7 +158,8 @@ class PersistentOperationOfQuestionServiceIT
           operationIds = None,
           operationKind = None,
           openAt = None,
-          endAfter = None
+          endAfter = None,
+          slug = None
         )
       } yield result
 
@@ -181,7 +182,8 @@ class PersistentOperationOfQuestionServiceIT
           operationIds = None,
           operationKind = None,
           openAt = None,
-          endAfter = None
+          endAfter = None,
+          slug = None
         )
       } yield result
 
@@ -219,7 +221,8 @@ class PersistentOperationOfQuestionServiceIT
           operationIds = None,
           operationKind = None,
           openAt = Some(now),
-          endAfter = None
+          endAfter = None,
+          slug = None
         )
       } yield result
 
@@ -266,12 +269,32 @@ class PersistentOperationOfQuestionServiceIT
           operationIds = None,
           operationKind = None,
           openAt = None,
-          endAfter = Some(now)
+          endAfter = Some(now),
+          slug = None
         )
       } yield result
 
       whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { operationOfQuestion =>
         operationOfQuestion.size shouldBe 2
+      }
+    }
+
+    Scenario("slug filter") {
+      val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = persistentOperationOfQuestionService.search(
+        start = Start.zero,
+        end = None,
+        sort = None,
+        order = None,
+        questionIds = None,
+        operationIds = None,
+        operationKind = None,
+        openAt = None,
+        endAfter = None,
+        slug = Some("slug-question-toBeFiltered")
+      )
+
+      whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { operationOfQuestion =>
+        operationOfQuestion.size shouldBe 1
       }
     }
   }
