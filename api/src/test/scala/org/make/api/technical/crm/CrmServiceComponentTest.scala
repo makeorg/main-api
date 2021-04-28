@@ -716,6 +716,27 @@ class CrmServiceComponentTest
       (dateBeforeDeletion1 should not).equal(dateBeforeDeletion2)
       dateBeforeDeletion1 should be < dateBeforeDeletion2
     }
+
+    Scenario("B2B users are anonymized after 5 years") {
+      val organisation = fooUser.copy(userType = UserType.UserTypeOrganisation)
+      whenReady(
+        crmService.getPropertiesFromUser(organisation, new QuestionResolver(Seq.empty, Map.empty)),
+        Timeout(3.seconds)
+      ) { properties =>
+        properties.daysBeforeDeletion shouldBe properties.lastActivityDate.map(
+          date =>
+            ChronoUnit.DAYS
+              .between(
+                ZonedDateTime.now(),
+                ZonedDateTime
+                  .parse(date, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC))
+                  .plusYears(4)
+                  .plusMonths(11)
+              )
+              .toInt
+        )
+      }
+    }
   }
 
   Feature("add user to OptInList") {

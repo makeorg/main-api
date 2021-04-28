@@ -54,7 +54,7 @@ object Role extends StringEnum[Role] with FallbackingStringCirceEnum[Role] {
 
 final case class CustomRole(override val value: String) extends Role(value)
 
-sealed abstract class UserType(val value: String) extends StringEnumEntry
+sealed abstract class UserType(val value: String) extends StringEnumEntry with Product with Serializable
 
 object UserType extends StringEnum[UserType] with FallbackingStringCirceEnum[UserType] {
 
@@ -67,6 +67,20 @@ object UserType extends StringEnum[UserType] with FallbackingStringCirceEnum[Use
 
   override def values: IndexedSeq[UserType] = findValues
 
+  implicit class UserTypeOps[T](val t: T) extends AnyVal {
+    def isB2B(implicit h: HasUserType[T]): Boolean =
+      Set(UserType.UserTypePersonality, UserType.UserTypeOrganisation).contains(h.userType(t))
+    def isB2C(implicit h: HasUserType[T]): Boolean = h.userType(t) == UserType.UserTypeUser
+  }
+
+}
+
+trait HasUserType[T] {
+  def userType(t: T): UserType
+}
+
+object HasUserType {
+  implicit val userUserType: HasUserType[User] = _.userType
 }
 
 final case class MailingErrorLog(error: String, date: ZonedDateTime)
@@ -122,8 +136,6 @@ final case class User(
     roles.contains(role)
   }
 
-  def isB2B: Boolean = userType == UserType.UserTypePersonality || userType == UserType.UserTypeOrganisation
-  def isB2C: Boolean = userType == UserType.UserTypeUser
 }
 
 object User {

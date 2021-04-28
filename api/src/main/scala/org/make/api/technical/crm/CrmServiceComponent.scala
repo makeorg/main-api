@@ -60,7 +60,8 @@ import org.make.core.Validation.emailRegex
 import org.make.core.job.Job.JobId.SyncCrmData
 import org.make.core.question.Question
 import org.make.core.session.SessionId
-import org.make.core.user.{UserId, UserType}
+import org.make.core.user.{HasUserType, UserId}
+import org.make.core.user.UserType._
 import org.make.core.{DateHelper, Order}
 
 import scala.concurrent.duration.DurationInt
@@ -130,6 +131,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
         )
         .instrument("crm-batchs")
         .toExecutionContext
+
+    implicit val crmSynchroUserUserType: HasUserType[CrmSynchroUser] = _.userType
 
     private val localDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd 00:00:00")
     private val dateFormatter: DateTimeFormatter =
@@ -535,7 +538,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
         emailHardBounceStatus = user.isHardBounce,
         unsubscribeStatus = !user.optInNewsletter,
         accountCreationDate = user.createdAt,
-        userB2B = user.userType != UserType.UserTypeUser,
+        userB2B = user.isB2B,
         updatedAt = Some(DateHelper.now()),
         accountCreationCountry = Some(user.country.value),
         lastCountryActivity = Some(user.country.value),
@@ -548,9 +551,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
       )
     }
 
-    private def getDaysBeforeDeletionFromLastActivityDate(lastActivityDate: ZonedDateTime): Int = {
-      val deletionDate = lastActivityDate.plusYears(2).plusMonths(11)
-      ChronoUnit.DAYS.between(ZonedDateTime.now(), deletionDate).toInt
+    private def getDaysBeforeDeletionFromLastActivityDate(properties: UserProperties): Option[Int] = {
+      properties.lastActivityDate.map { date =>
+        val deletionDate = date.plusYears(if (properties.userB2B) 4 else 2).plusMonths(11)
+        ChronoUnit.DAYS.between(ZonedDateTime.now(), deletionDate).toInt
+      }
     }
 
     private def contactPropertiesFromUserProperties(userProperty: UserProperties): ContactProperties = {
@@ -585,7 +590,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
         },
         accountType = userProperty.accountType,
         updatedAt = userProperty.updatedAt.map(_.format(dateFormatter)),
-        daysBeforeDeletion = userProperty.lastActivityDate.map(getDaysBeforeDeletionFromLastActivityDate),
+        daysBeforeDeletion = getDaysBeforeDeletionFromLastActivityDate(userProperty),
         lastActivityDate = userProperty.lastActivityDate.map(_.format(dateFormatter)),
         sessionsCount = Some(userProperty.sessionsIds.size),
         eventsCount = Some(userProperty.eventsCount)
