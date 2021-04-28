@@ -19,53 +19,55 @@
 
 package org.make.api.technical
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.Address
+import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
 import akka.cluster.Cluster
 import org.make.constructr.coordination.Coordination
-import org.make.api.technical.MakeDowningActor.AutoDown
 
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
-import scala.concurrent.ExecutionContext.Implicits.global
-
-class MakeDowningActor extends Actor with ActorLogging {
-
-  private val constructr = Coordination(context.system.name, context.system)
-
-  override def preStart(): Unit = {
-    context.system.scheduler.scheduleWithFixedDelay(10.seconds, 10.seconds, self, AutoDown)
-    ()
-  }
-
-  override def receive: Receive = {
-    case AutoDown =>
-      val cluster = Cluster(context.system)
-
-      val members = cluster.state.members
-      val actualMembers = constructr.getNodes()
-
-      actualMembers.onComplete {
-        case Success(nodes) =>
-          members.foreach { member =>
-            if (!nodes.contains(member.uniqueAddress.address)) {
-              log.warning(
-                "Downing node {} since it is no longer present in coordination",
-                member.uniqueAddress.address.toString
-              )
-              cluster.down(member.uniqueAddress.address)
-            }
-          }
-
-        case Failure(e) =>
-          log.error(e, "Error while retrieving nodes")
-      }
-  }
-}
 
 object MakeDowningActor {
-
   val name: String = "MakeDowningActor"
-  val props: Props = Props[MakeDowningActor]()
 
-  case object AutoDown
+  sealed trait Protocol
+  case object AutoDown extends Protocol
+  final case class MembersReceived(members: Set[Address]) extends Protocol
+  final case class CoordinationError(e: Throwable) extends Protocol
+
+  def apply(): Behavior[Protocol] = {
+    Behaviors.setup { context =>
+      val coordination = Coordination(context.system.name, context.system.toClassic)
+      Behaviors.withTimers { timers =>
+        timers.startTimerAtFixedRate(AutoDown, 10.seconds)
+
+        Behaviors.receiveMessage {
+          case AutoDown =>
+            context.pipeToSelf(coordination.getNodes()) {
+              case Success(nodes) => MembersReceived(nodes)
+              case Failure(e)     => CoordinationError(e)
+            }
+            Behaviors.same
+          case MembersReceived(nodes) =>
+            val cluster = Cluster(context.system)
+            val members = cluster.state.members
+            members.foreach { member =>
+              if (!nodes.contains(member.uniqueAddress.address)) {
+                context.log.warn(
+                  s"Downing node ${member.uniqueAddress.address.toString} since it is no longer present in coordination"
+                )
+                cluster.down(member.uniqueAddress.address)
+              }
+            }
+            Behaviors.same
+          case CoordinationError(e) =>
+            context.log.error("Error while retrieving nodes", e)
+            Behaviors.same
+        }
+      }
+    }
+  }
+
 }

@@ -19,24 +19,26 @@
 
 package org.make.api.technical
 
-import akka.actor.{Actor, ActorLogging, DeadLetter, Props}
+import akka.actor.DeadLetter
+import akka.actor.typed.Behavior
+import akka.actor.typed.eventstream.EventStream.Subscribe
+import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.SaveSnapshotSuccess
 
-class DeadLettersListenerActor extends Actor with ActorLogging {
-
-  override def preStart(): Unit = {
-    context.system.eventStream.subscribe(self, classOf[DeadLetter])
-    ()
-  }
-
-  override def receive: Receive = {
-    case DeadLetter(_: SaveSnapshotSuccess, _, _) =>
-    case DeadLetter(msg, from, to) =>
-      log.info("[DEADLETTERS] [{}] -> [{}]. Message: {}", from.toString, to.toString, msg.toString)
-  }
-}
-
 object DeadLettersListenerActor {
-  val props: Props = Props(new DeadLettersListenerActor)
   val name: String = "dead-letters-log"
+
+  def apply(): Behavior[DeadLetter] = {
+    Behaviors.setup { context =>
+      context.system.eventStream ! Subscribe(context.self)
+
+      Behaviors.receiveMessage {
+        case DeadLetter(_: SaveSnapshotSuccess, _, _) =>
+          Behaviors.same
+        case DeadLetter(msg, from, to) =>
+          context.log.info(s"[DEADLETTERS] [${from.toString}] -> [${to.toString}]. Message: ${msg.toString}")
+          Behaviors.same
+      }
+    }
+  }
 }

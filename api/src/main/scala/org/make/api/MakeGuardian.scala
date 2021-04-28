@@ -41,9 +41,9 @@ import org.make.core.job.Job
 class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
   override def preStart(): Unit = {
 
-    context.watch(context.actorOf(MakeDowningActor.props, MakeDowningActor.name))
+    context.watch(context.spawn(MakeDowningActor(), MakeDowningActor.name))
 
-    context.watch(context.actorOf(DeadLettersListenerActor.props, DeadLettersListenerActor.name))
+    context.watch(context.spawn(DeadLettersListenerActor(), DeadLettersListenerActor.name))
 
     val userHistoryCoordinator =
       context.watch(context.actorOf(UserHistoryCoordinator.props, UserHistoryCoordinator.name))
