@@ -26,6 +26,7 @@ import org.make.api.technical.crm.SendMailPublisherService
 import org.make.api.technical.{KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory._
 import org.make.core.user.{User, UserId}
+import org.make.core.user.UserType._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
