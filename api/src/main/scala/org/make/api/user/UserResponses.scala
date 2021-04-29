@@ -264,6 +264,6 @@ object SocialLoginResponse {
 
 final case class UserPrivacyPolicyResponse(privacyPolicyApprovalDate: Option[ZonedDateTime])
 
-object UserPrivacyPolicyResponse {
+object UserPrivacyPolicyResponse extends CirceFormatters {
   implicit val codec: Codec[UserPrivacyPolicyResponse] = deriveCodec
 }

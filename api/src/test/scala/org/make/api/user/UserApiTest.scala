@@ -774,6 +774,41 @@ class UserApiTest
       }
     }
 
+    Scenario("invalid token") {
+      when(
+        socialService
+          .login(
+            any[SocialProvider],
+            eqTo("fake-token"),
+            any[Country],
+            any[Option[QuestionId]],
+            any[RequestContext],
+            any[ClientId],
+            any[Option[ZonedDateTime]]
+          )
+      ).thenReturn(Future.failed(SocialProviderException("whatever message")))
+      val request =
+        """
+          |{
+          | "provider": "google_people",
+          | "token": "fake-token",
+          | "country": "FR",
+          | "approvePrivacyPolicy": true
+          |}
+        """.stripMargin
+
+      val addr: InetAddress = InetAddress.getByName("192.0.0.1")
+      Post("/user/login/social", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(`X-Forwarded-For`(RemoteAddress(addr))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        header("Set-Cookie").get.value should not contain "cookie-secure"
+
+        val errors = entityAs[Seq[ValidationError]]
+        val tokenError = errors.find(_.field == "token")
+        tokenError should be(Some(ValidationError("token", "invalid_token", Some("whatever message"))))
+      }
+    }
+
     Scenario("validation failed for invalid approvePrivacyPolicy") {
       val request =
         """
@@ -2103,7 +2138,10 @@ class UserApiTest
       val entity = """{"email": "fake@mail.com", "password": "fake"}"""
       Post("/user/privacy-policy")
         .withEntity(HttpEntity(ContentTypes.`application/json`, entity)) ~> routes ~> check {
-        status should be(StatusCodes.Unauthorized)
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val emailError = errors.find(_.field == "email")
+        emailError should be(Some(ValidationError("email", "invalid", Some("email or password is invalid."))))
       }
     }
 
@@ -2122,11 +2160,11 @@ class UserApiTest
   }
 
   Feature("get social privacy policy acceptance date") {
-    Scenario("No user found") {
-      when(socialService.getUserByProviderAndToken(any[SocialProvider], any[String]))
+    Scenario("User with no email") {
+      when(socialService.getUserByProviderAndToken(any[SocialProvider], eqTo("no-email-token")))
         .thenReturn(Future.successful(None))
 
-      val entity = """{"provider": "google_people", "token": "token"}"""
+      val entity = """{"provider": "google_people", "token": "no-email-token"}"""
       Post("/user/social/privacy-policy").withEntity(HttpEntity(ContentTypes.`application/json`, entity)) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val response = entityAs[UserPrivacyPolicyResponse]
@@ -2135,7 +2173,7 @@ class UserApiTest
     }
 
     Scenario("Some user") {
-      when(socialService.getUserByProviderAndToken(any[SocialProvider], any[String]))
+      when(socialService.getUserByProviderAndToken(any[SocialProvider], eqTo("token")))
         .thenReturn(Future.successful(Some(sylvain)))
 
       val entity = """{"provider": "google_people", "token": "token"}"""
@@ -2143,6 +2181,19 @@ class UserApiTest
         status should be(StatusCodes.OK)
         val response = entityAs[UserPrivacyPolicyResponse]
         response.privacyPolicyApprovalDate should be(sylvain.privacyPolicyApprovalDate)
+      }
+    }
+
+    Scenario("Failed to connect") {
+      when(socialService.getUserByProviderAndToken(any[SocialProvider], eqTo("fake-token")))
+        .thenReturn(Future.failed(SocialProviderException("whatever message")))
+
+      val entity = """{"provider": "google_people", "token": "fake-token"}"""
+      Post("/user/social/privacy-policy").withEntity(HttpEntity(ContentTypes.`application/json`, entity)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val tokenError = errors.find(_.field == "token")
+        tokenError should be(Some(ValidationError("token", "invalid_token", Some("whatever message"))))
       }
     }
   }

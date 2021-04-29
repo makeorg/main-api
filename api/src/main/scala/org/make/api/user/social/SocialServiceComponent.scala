@@ -20,7 +20,6 @@
 package org.make.api.user.social
 
 import java.time.ZonedDateTime
-
 import grizzled.slf4j.Logging
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.MakeDataHandlerComponent
@@ -113,3 +112,5 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
 
   }
 }
+
+final case class SocialProviderException(message: String) extends Exception(message)

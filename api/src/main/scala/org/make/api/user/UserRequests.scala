@@ -357,7 +357,7 @@ final case class SocialLoginRequest(
   provider: SocialProvider,
   token: String,
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
-  approvePrivacyPolicy: Option[Boolean]
+  @(ApiModelProperty @field)(dataType = "boolean", example = "true") approvePrivacyPolicy: Option[Boolean]
 ) {
   validate(
     mandatoryField("country", country),

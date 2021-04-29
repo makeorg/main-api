@@ -110,7 +110,8 @@ import org.make.api.user.social.{
   DefaultFacebookApiComponent,
   DefaultGoogleApiComponent,
   DefaultSocialProvidersConfigurationComponent,
-  DefaultSocialServiceComponent
+  DefaultSocialServiceComponent,
+  SocialProviderException
 }
 import org.make.api.user.validation.DefaultUserRegistrationValidatorComponent
 import org.make.api.userhistory.{
@@ -498,6 +499,8 @@ object MakeApi extends Logging with Directives with ErrorAccumulatingCirceSuppor
       complete(StatusCodes.BadRequest -> Seq(ValidationError("email", "already_registered", Option(e.getMessage))))
     case e: EmailNotAllowed =>
       complete(StatusCodes.Forbidden -> Seq(ValidationError("email", "not_allowed_to_register", Option(e.getMessage))))
+    case e: SocialProviderException =>
+      complete(StatusCodes.BadRequest -> Seq(ValidationError("token", "invalid_token", Option(e.getMessage))))
     case ValidationFailedError(messages) =>
       complete(
         HttpResponse(
