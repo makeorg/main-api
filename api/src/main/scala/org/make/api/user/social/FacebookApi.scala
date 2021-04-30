@@ -77,7 +77,7 @@ trait DefaultFacebookApiComponent extends FacebookApiComponent {
         case HttpResponse(code, _, entity, _) =>
           entity.toStrict(2.second).flatMap { entity =>
             val response = entity.data.decodeString(Charset.forName("UTF-8"))
-            Future.failed(new IllegalStateException(s"Got unexpected response code: $code, with body: $response"))
+            Future.failed(SocialProviderException(s"Got unexpected response code: $code, with body: $response"))
           }
       }
     }

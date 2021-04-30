@@ -681,6 +681,7 @@ trait DefaultUserApiComponent
         }
       }
     }
+
     override def currentUser: Route = {
       get {
         path("user" / "current") {
@@ -1389,11 +1390,16 @@ trait DefaultUserApiComponent
     override def getPrivacyPolicy: Route = {
       post {
         path("user" / "privacy-policy") {
-          makeOperation("GetPrivacyPolicy") { requestContext =>
+          makeOperation("GetPrivacyPolicy") { _ =>
             decodeRequest {
               entity(as[PrivacyPolicyRequest]) { request =>
                 provideAsync(userService.getUserByEmailAndPassword(request.email, request.password)) {
-                  case None       => complete(StatusCodes.Unauthorized)
+                  case None =>
+                    complete(
+                      StatusCodes.BadRequest -> Seq(
+                        ValidationError("email", "invalid", Some("email or password is invalid."))
+                      )
+                    )
                   case Some(user) => complete(UserPrivacyPolicyResponse(user.privacyPolicyApprovalDate))
                 }
               }
@@ -1406,7 +1412,7 @@ trait DefaultUserApiComponent
     override def getSocialPrivacyPolicy: Route = {
       post {
         path("user" / "social" / "privacy-policy") {
-          makeOperation("GetSocialPrivacyPolicy") { requestContext =>
+          makeOperation("GetSocialPrivacyPolicy") { _ =>
             decodeRequest {
               entity(as[SocialPrivacyPolicyRequest]) { request =>
                 provideAsync(socialService.getUserByProviderAndToken(request.provider, request.token)) { maybeUser =>

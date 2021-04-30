@@ -69,7 +69,7 @@ trait DefaultGoogleApiComponent extends GoogleApiComponent with ErrorAccumulatin
           Unmarshal(entity).to[Entity]
         case HttpResponse(code, _, entity, _) =>
           Unmarshal(entity).to[String].flatMap { error =>
-            Future.failed(new IllegalStateException(s"Got unexpected response code: $code, with body: $error"))
+            Future.failed(SocialProviderException(s"Got unexpected response code: $code, with body: $error"))
           }
       }
     }
