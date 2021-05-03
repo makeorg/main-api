@@ -307,7 +307,7 @@ object LogLockProposalEvent {
 }
 
 object LogRegisterCitizenEvent {
-  val action = "register"
+  val action: String = "register"
 
   implicit val logRegisterCitizenEventFormatted: RootJsonFormat[LogRegisterCitizenEvent] =
     DefaultJsonProtocol.jsonFormat(LogRegisterCitizenEvent.apply, "userId", "context", "action")

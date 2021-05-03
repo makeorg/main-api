@@ -98,8 +98,8 @@ object SequenceConfigurationActor {
   final case class CachedSequenceConfiguration(sequenceConfiguration: SequenceConfiguration)
   final case class StoredSequenceConfiguration(sequenceConfiguration: Option[SequenceConfiguration])
 
-  val name = "sequence-configuration-backoff"
-  val internalName = "sequence-configuration-backoff"
+  val name: String = "sequence-configuration-backoff"
+  val internalName: String = "sequence-configuration-backoff"
 
   def props(persistentSequenceConfigurationService: PersistentSequenceConfigurationService): Props = {
     val maxNrOfRetries = 50

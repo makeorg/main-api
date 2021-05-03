@@ -45,7 +45,7 @@ trait PostSearchEngine {
 }
 
 object PostSearchEngine {
-  val postIndexName = "post"
+  val postIndexName: String = "post"
 }
 
 trait DefaultPostSearchEngineComponent extends PostSearchEngineComponent with CirceFormatters with Logging {

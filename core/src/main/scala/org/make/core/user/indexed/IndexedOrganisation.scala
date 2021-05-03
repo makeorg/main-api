@@ -27,20 +27,20 @@ import org.make.core.user.{User, UserId}
 import org.make.core.{BusinessConfig, CirceFormatters, SlugHelper}
 
 object OrganisationElasticsearchFieldNames {
-  val organisationId = "organisationId"
-  val organisationName = "organisationName"
-  val organisationNameKeyword = "organisationName.keyword"
-  val organisationNameGeneral = "organisationName.general"
-  val slug = "slug"
-  val avatarUrl = "avatarUrl"
-  val description = "description"
-  val canBeFollowed = "canBeFollowed"
-  val proposalsCount = "proposalsCount"
-  val votesCount = "votesCount"
-  val language = "language"
-  val country = "country"
-  val countsByQuestion = "countsByQuestion"
-  val countsByQuestionQuestionId = "countsByQuestion.questionId"
+  val organisationId: String = "organisationId"
+  val organisationName: String = "organisationName"
+  val organisationNameKeyword: String = "organisationName.keyword"
+  val organisationNameGeneral: String = "organisationName.general"
+  val slug: String = "slug"
+  val avatarUrl: String = "avatarUrl"
+  val description: String = "description"
+  val canBeFollowed: String = "canBeFollowed"
+  val proposalsCount: String = "proposalsCount"
+  val votesCount: String = "votesCount"
+  val language: String = "language"
+  val country: String = "country"
+  val countsByQuestion: String = "countsByQuestion"
+  val countsByQuestionQuestionId: String = "countsByQuestion.questionId"
 
   def organisationNameLanguageSubfield(language: Language, stemmed: Boolean = false): Option[String] = {
     BusinessConfig.supportedCountries

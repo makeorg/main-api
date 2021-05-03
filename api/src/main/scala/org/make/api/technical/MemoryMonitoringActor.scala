@@ -54,5 +54,5 @@ object MemoryMonitoringActor {
 
   case object Monitor
 
-  val name = "memory-monitor-backoff"
+  val name: String = "memory-monitor-backoff"
 }

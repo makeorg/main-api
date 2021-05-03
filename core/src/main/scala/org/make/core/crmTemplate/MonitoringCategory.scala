@@ -20,7 +20,7 @@
 package org.make.core.crmTemplate
 
 object MonitoringCategory {
-  val account = "account"
-  val welcome = "welcome"
-  val moderation = "moderation"
+  val account: String = "account"
+  val welcome: String = "welcome"
+  val moderation: String = "moderation"
 }

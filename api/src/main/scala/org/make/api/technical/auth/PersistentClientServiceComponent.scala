@@ -42,8 +42,8 @@ trait PersistentClientServiceComponent {
 
 object PersistentClientServiceComponent {
 
-  val GRANT_TYPE_SEPARATOR = ","
-  val ROLE_SEPARATOR = ","
+  val GRANT_TYPE_SEPARATOR: String = ","
+  val ROLE_SEPARATOR: String = ","
 
   final case class PersistentClient(
     uuid: String,
