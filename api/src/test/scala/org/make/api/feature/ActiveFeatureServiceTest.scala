@@ -104,11 +104,13 @@ class ActiveFeatureServiceTest
           any[Option[End]],
           any[Option[String]],
           any[Option[Order]],
-          eqTo(Some(QuestionId("find-activeFeature-1")))
+          eqTo(Some(Seq(QuestionId("find-activeFeature-1")))),
+          eqTo(None)
         )
       ).thenReturn(Future.successful(Seq(activeFeature1)))
 
-      val futureActiveFeatures = activeFeatureService.find(maybeQuestionId = Some(QuestionId("find-activeFeature-1")))
+      val futureActiveFeatures =
+        activeFeatureService.find(maybeQuestionId = Some(Seq(QuestionId("find-activeFeature-1"))))
 
       whenReady(futureActiveFeatures, Timeout(3.seconds)) { activeFeatures =>
         activeFeatures.size shouldBe 1

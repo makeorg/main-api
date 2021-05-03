@@ -66,7 +66,7 @@ trait DefaultSegmentServiceComponent extends SegmentServiceComponent {
     override def resolveSegment(requestContext: RequestContext): Future[Option[String]] = {
       requestContext.questionId.map { _ =>
         activeFeatureService
-          .find(maybeQuestionId = requestContext.questionId)
+          .find(maybeQuestionId = requestContext.questionId.map(Seq(_)))
           .flatMap { activeFeatures =>
             featureService.findByFeatureIds(activeFeatures.map(_.featureId))
           }

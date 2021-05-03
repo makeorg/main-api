@@ -447,7 +447,7 @@ trait DefaultQuestionApiComponent
     }
 
     private def findActiveFeatureSlugsByQuestionId(questionId: QuestionId): Future[Seq[String]] = {
-      activeFeatureService.find(maybeQuestionId = Some(questionId)).flatMap { activeFeatures =>
+      activeFeatureService.find(maybeQuestionId = Some(Seq(questionId))).flatMap { activeFeatures =>
         featureService.findByFeatureIds(activeFeatures.map(_.featureId)).map(_.map(_.slug))
       }
     }

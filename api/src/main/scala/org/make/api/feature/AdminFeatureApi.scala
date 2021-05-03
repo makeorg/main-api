@@ -24,12 +24,14 @@ import akka.http.scaladsl.server._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
+import org.make.api.question.{ModerationQuestionResponse, QuestionServiceComponent, SearchQuestionRequest}
 
 import javax.ws.rs.Path
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.feature.{Feature, FeatureId}
+import org.make.core.question.Question
 import org.make.core.{HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 import org.make.core.technical.Pagination._
@@ -156,7 +158,10 @@ trait DefaultAdminFeatureApiComponent
     extends AdminFeatureApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors {
-  this: MakeDirectivesDependencies with FeatureServiceComponent =>
+  this: MakeDirectivesDependencies
+    with FeatureServiceComponent
+    with ActiveFeatureServiceComponent
+    with QuestionServiceComponent =>
 
   override lazy val adminFeatureApi: AdminFeatureApi = new DefaultAdminFeatureApi
 
@@ -170,8 +175,16 @@ trait DefaultAdminFeatureApiComponent
           makeOperation("AdminGetFeature") { _ =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireAdminRole(userAuth.user) {
-                provideAsyncOrNotFound(featureService.getFeature(featureId)) { feature =>
-                  complete(FeatureResponse(feature))
+                val futureFeature = featureService.getFeature(featureId)
+                val futureActiveFeatures = activeFeatureService.find(featureId = Some(Seq(featureId)))
+                provideAsyncOrNotFound(futureFeature) { feature =>
+                  provideAsync(futureActiveFeatures) { activeFeatures =>
+                    val questionIds = activeFeatures.flatMap(_.maybeQuestionId).distinct
+                    provideAsync(questionService.searchQuestion(SearchQuestionRequest(Some(questionIds)))) {
+                      questions =>
+                        complete(FeatureResponse(feature, questions))
+                    }
+                  }
                 }
               }
             }
@@ -197,7 +210,7 @@ trait DefaultAdminFeatureApiComponent
                       Validation.validateUserInput("name", request.name, None)
                     )
                     onSuccess(featureService.createFeature(name = request.name, slug = request.slug)) { feature =>
-                      complete(StatusCodes.Created -> FeatureResponse(feature))
+                      complete(StatusCodes.Created -> FeatureResponse(feature, Seq.empty))
                     }
                   }
                 }
@@ -222,18 +235,30 @@ trait DefaultAdminFeatureApiComponent
               ) =>
                 makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                   requireAdminRole(userAuth.user) {
-                    provideAsync(featureService.count(slug = maybeSlug)) { count =>
-                      onSuccess(
-                        featureService
-                          .find(start = start.orZero, end = end, sort = sort, order = order, slug = maybeSlug)
-                      ) { filteredFeatures =>
-                        complete(
-                          (
-                            StatusCodes.OK,
-                            List(`X-Total-Count`(count.toString)),
-                            filteredFeatures.map(FeatureResponse.apply)
-                          )
-                        )
+                    val futureCount = featureService.count(slug = maybeSlug)
+                    val futureFeatures = featureService
+                      .find(start = start.orZero, end = end, sort = sort, order = order, slug = maybeSlug)
+
+                    provideAsync(futureCount) { count =>
+                      onSuccess(futureFeatures) { filteredFeatures =>
+                        provideAsync(activeFeatureService.find(featureId = Some(filteredFeatures.map(_.featureId)))) {
+                          activeFeatures =>
+                            val questionIds = activeFeatures.flatMap(_.maybeQuestionId).distinct
+                            provideAsync(questionService.searchQuestion(SearchQuestionRequest(Some(questionIds)))) {
+                              questions =>
+                                val questionsByFeature =
+                                  activeFeatures.groupMapReduce(_.featureId)(af => Set.from(af.maybeQuestionId))(_ ++ _)
+                                val response = filteredFeatures.map { feature =>
+                                  FeatureResponse(
+                                    feature = feature,
+                                    questions = questions.filter(
+                                      q => questionsByFeature(feature.featureId).contains(q.questionId)
+                                    )
+                                  )
+                                }
+                                complete((StatusCodes.OK, List(`X-Total-Count`(count.toString)), response))
+                            }
+                        }
                       }
                     }
                   }
@@ -262,7 +287,13 @@ trait DefaultAdminFeatureApiComponent
                     provideAsyncOrNotFound(
                       featureService.updateFeature(featureId = featureId, slug = request.slug, name = request.name)
                     ) { feature =>
-                      complete(FeatureResponse(feature))
+                      provideAsync(activeFeatureService.find(featureId = Some(Seq(featureId)))) { activeFeatures =>
+                        val questionIds = activeFeatures.flatMap(_.maybeQuestionId).distinct
+                        provideAsync(questionService.searchQuestion(SearchQuestionRequest(Some(questionIds)))) {
+                          questions =>
+                            complete(FeatureResponse(feature, questions))
+                        }
+                      }
                     }
                   }
                 }
@@ -307,15 +338,21 @@ object UpdateFeatureRequest {
 final case class FeatureResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "1c895cb8-f4fe-45ff-a1c2-24db14324a0f") id: FeatureId,
   name: String,
-  slug: String
+  slug: String,
+  questions: Seq[ModerationQuestionResponse]
 )
 
 object FeatureResponse {
   implicit val encoder: Encoder[FeatureResponse] = deriveEncoder[FeatureResponse]
   implicit val decoder: Decoder[FeatureResponse] = deriveDecoder[FeatureResponse]
 
-  def apply(feature: Feature): FeatureResponse =
-    FeatureResponse(id = feature.featureId, name = feature.name, slug = feature.slug)
+  def apply(feature: Feature, questions: Seq[Question]): FeatureResponse =
+    FeatureResponse(
+      id = feature.featureId,
+      name = feature.name,
+      slug = feature.slug,
+      questions = questions.map(ModerationQuestionResponse.apply)
+    )
 }
 
 final case class FeatureIdResponse(

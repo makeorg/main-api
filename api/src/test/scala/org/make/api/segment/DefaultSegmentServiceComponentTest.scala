@@ -50,7 +50,7 @@ class DefaultSegmentServiceComponentTest
     }
 
     Scenario("no feature for the question") {
-      when(activeFeatureService.find(maybeQuestionId = Some(QuestionId("no-feature"))))
+      when(activeFeatureService.find(maybeQuestionId = Some(Seq(QuestionId("no-feature")))))
         .thenReturn(Future.successful(Seq.empty))
 
       when(featureService.findByFeatureIds(Seq.empty))
@@ -65,7 +65,7 @@ class DefaultSegmentServiceComponentTest
     Scenario("feature flip consultation-department-compulsory declared but no data in custom data") {
       val featureId = FeatureId("got-feature")
 
-      when(activeFeatureService.find(maybeQuestionId = Some(QuestionId("got-feature"))))
+      when(activeFeatureService.find(maybeQuestionId = Some(Seq(QuestionId("got-feature")))))
         .thenReturn(
           Future
             .successful(Seq(ActiveFeature(ActiveFeatureId("who cares?"), featureId, Some(QuestionId("got-feature")))))
@@ -86,7 +86,7 @@ class DefaultSegmentServiceComponentTest
     Scenario("feature flip consultation-department-compulsory declared and declared_department custom data") {
       val featureId = FeatureId("got-feature2")
 
-      when(activeFeatureService.find(maybeQuestionId = Some(QuestionId("got-feature2"))))
+      when(activeFeatureService.find(maybeQuestionId = Some(Seq(QuestionId("got-feature2")))))
         .thenReturn(
           Future
             .successful(Seq(ActiveFeature(ActiveFeatureId("who cares?"), featureId, Some(QuestionId("got-feature2")))))
@@ -110,7 +110,7 @@ class DefaultSegmentServiceComponentTest
     Scenario("feature flip consultation-department-compulsory declared and detected_department custom data") {
       val featureId = FeatureId("got-feature3")
 
-      when(activeFeatureService.find(maybeQuestionId = Some(QuestionId("got-feature3"))))
+      when(activeFeatureService.find(maybeQuestionId = Some(Seq(QuestionId("got-feature3")))))
         .thenReturn(
           Future
             .successful(Seq(ActiveFeature(ActiveFeatureId("who cares?"), featureId, Some(QuestionId("got-feature3")))))
@@ -136,7 +136,7 @@ class DefaultSegmentServiceComponentTest
     ) {
       val featureId = FeatureId("got-feature4")
 
-      when(activeFeatureService.find(maybeQuestionId = Some(QuestionId("got-feature4"))))
+      when(activeFeatureService.find(maybeQuestionId = Some(Seq(QuestionId("got-feature4")))))
         .thenReturn(
           Future
             .successful(Seq(ActiveFeature(ActiveFeatureId("who cares?"), featureId, Some(QuestionId("got-feature4")))))

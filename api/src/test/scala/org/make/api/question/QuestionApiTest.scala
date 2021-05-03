@@ -245,7 +245,7 @@ class QuestionApiTest
         partnerKind = None
       )
     ).thenReturn(Future.successful(Seq(partner, partner2)))
-    when(activeFeatureService.find(maybeQuestionId = Some(baseQuestion.questionId)))
+    when(activeFeatureService.find(maybeQuestionId = Some(Seq(baseQuestion.questionId))))
       .thenReturn(Future.successful(Seq(activeFeature1)))
     when(featureService.findByFeatureIds(featureIds = Seq(FeatureId("f1"))))
       .thenReturn(Future.successful(Seq(feature1)))

@@ -23,13 +23,24 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
-import org.make.core.feature.{Feature => Feat, FeatureId}
+import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
+import org.make.core.Order
+import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId, Feature => Feat}
+import org.make.core.question.QuestionId
+import org.make.core.technical.Pagination
 
 import scala.concurrent.Future
 
-class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiComponent with FeatureServiceComponent {
+class AdminFeatureApiTest
+    extends MakeApiTestBase
+    with DefaultAdminFeatureApiComponent
+    with FeatureServiceComponent
+    with ActiveFeatureServiceComponent
+    with QuestionServiceComponent {
 
   override val featureService: FeatureService = mock[FeatureService]
+  override val activeFeatureService: ActiveFeatureService = mock[ActiveFeatureService]
+  override val questionService: QuestionService = mock[QuestionService]
 
   val routes: Route = sealRoute(adminFeatureApi.routes)
 
@@ -126,6 +137,7 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
           feature.id should be(helloFeature.featureId)
           feature.slug should be(helloFeature.slug)
           feature.name should be(helloFeature.name)
+          feature.questions.map(_.id).toSet should be(Set(QuestionId("question-id"), QuestionId("question-id-2")))
         }
       }
     }
@@ -158,6 +170,37 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
       .thenReturn(Future.successful(Some(newHelloFeature)))
     when(featureService.updateFeature(eqTo(sameSlugFeature.featureId), eqTo("same-slug"), eqTo("new name")))
       .thenReturn(Future.successful(Some(sameSlugFeature)))
+    when(
+      activeFeatureService.find(
+        any[Pagination.Start],
+        any[Option[Pagination.End]],
+        any[Option[String]],
+        any[Option[Order]],
+        any[Option[Seq[QuestionId]]],
+        any[Option[Seq[FeatureId]]]
+      )
+    ).thenReturn(
+      Future.successful(
+        Seq(
+          ActiveFeature(ActiveFeatureId("active-feature-1"), FeatureId("feature-id"), Some(QuestionId("question-id"))),
+          ActiveFeature(
+            ActiveFeatureId("active-feature-2"),
+            FeatureId("feature-id-2"),
+            Some(QuestionId("question-id"))
+          ),
+          ActiveFeature(
+            ActiveFeatureId("active-feature-3"),
+            FeatureId("feature-id"),
+            Some(QuestionId("question-id-2"))
+          ),
+          ActiveFeature(ActiveFeatureId("active-feature-4"), FeatureId("feature-id"), None)
+        )
+      )
+    )
+    when(
+      questionService
+        .searchQuestion(eqTo(SearchQuestionRequest(Some(Seq(QuestionId("question-id"), QuestionId("question-id-2"))))))
+    ).thenReturn(Future.successful(Seq(question(QuestionId("question-id")), question(QuestionId("question-id-2")))))
 
     Scenario("unauthorize unauthenticated") {
       Put("/admin/features/hello-feature").withEntity(
@@ -193,6 +236,7 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
           feature.id should be(newHelloFeature.featureId)
           feature.slug should be(newHelloFeature.slug)
           feature.name should be(newHelloFeature.name)
+          feature.questions.map(_.id).toSet should be(Set(QuestionId("question-id"), QuestionId("question-id-2")))
         }
       }
     }
