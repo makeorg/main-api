@@ -29,7 +29,7 @@ import org.make.core.session.SessionId
 
 object SecurityHelper extends Logging {
 
-  val HASH_SEPARATOR = "-"
+  val HASH_SEPARATOR: String = "-"
 
   @Deprecated
 //  This hash method is used for backward compatibility only. Use `defaultHash` instead.

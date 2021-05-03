@@ -199,7 +199,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
 
 object DefaultPersistentQuestionServiceComponent {
 
-  val COUNTRY_SEPARATOR = ","
+  val COUNTRY_SEPARATOR: String = ","
 
   final case class PersistentQuestion(
     questionId: String,

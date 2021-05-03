@@ -129,7 +129,7 @@ object ClusterShardingMonitor {
   final case class StatsSuccess(gauges: ShardingGauges, stats: ClusterShardingStats) extends Protocol
   final case class StatsFailure(region: String, throwable: Throwable) extends Protocol
 
-  val name = "actor-sharding-monitor"
+  val name: String = "actor-sharding-monitor"
 
   class ShardingGauges(name: String) {
     val totalActorsCount: Gauge = Kamon.gauge("sharding-total-actors").withTag("region", name)

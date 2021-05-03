@@ -56,7 +56,7 @@ class Reconnect extends GrantHandler {
 }
 
 object Reconnect {
-  val RECONNECT_TOKEN = "reconnect_token"
+  val RECONNECT_TOKEN: String = "reconnect_token"
 }
 
 final case class ReconnectRequest(request: AuthorizationRequest)

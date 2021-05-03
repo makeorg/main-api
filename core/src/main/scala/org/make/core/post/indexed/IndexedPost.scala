@@ -28,16 +28,16 @@ import org.make.core.post.{Post, PostId}
 import org.make.core.reference.Country
 
 object PostElasticsearchFieldNames {
-  val postId = "postId"
-  val name = "name"
-  val slug = "slug"
-  val displayHome = "displayHome"
-  val postDate = "postDate"
-  val thumbnailUrl = "thumbnailUrl"
-  val thumbnailAlt = "thumbnailAlt"
-  val sourceUrl = "sourceUrl"
-  val summary = "summary"
-  val country = "country"
+  val postId: String = "postId"
+  val name: String = "name"
+  val slug: String = "slug"
+  val displayHome: String = "displayHome"
+  val postDate: String = "postDate"
+  val thumbnailUrl: String = "thumbnailUrl"
+  val thumbnailAlt: String = "thumbnailAlt"
+  val sourceUrl: String = "sourceUrl"
+  val summary: String = "summary"
+  val country: String = "country"
 }
 
 final case class IndexedPost(

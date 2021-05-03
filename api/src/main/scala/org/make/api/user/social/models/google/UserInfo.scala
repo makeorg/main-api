@@ -108,5 +108,5 @@ final case class PeopleInfo(
 object PeopleInfo {
   implicit val decoder: Decoder[PeopleInfo] = deriveDecoder
 
-  val MODERATOR_DOMAIN = "make.org"
+  val MODERATOR_DOMAIN: String = "make.org"
 }

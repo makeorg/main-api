@@ -21,24 +21,24 @@ import sbt._
 
 object Dependencies {
 
-  private val akkaVersion = "2.6.13"
+  private val akkaVersion = "2.6.14"
   private val akkaHttpVersion = "10.2.4"
   private val alpakkaVersion = "1.1.2"
-  private val nettyVersion = "4.1.59.Final"
+  private val nettyVersion = "4.1.63.Final"
   private val kafkaVersion = "1.1.0"
   private val elastic4sVersion = "6.7.8"
   private val jerseyVersion = "2.32"
-  private val kamonVersion = "2.1.12"
-  private val log4jVersion = "2.14.0"
+  private val kamonVersion = "2.1.17"
+  private val log4jVersion = "2.14.1"
   private val circeVersion = "0.13.0"
-  val kanelaVersion: String = "1.0.8"
+  val kanelaVersion: String = "1.0.9"
   val swaggerUiVersion: String = "3.20.9"
-  private val refinedVersion: String = "0.9.21"
+  private val refinedVersion: String = "0.9.24"
   private val scalikeVersion = "3.5.0"
   private val staminaVersion: String = "0.1.5+1-74109b8e"
   private val calibanVersion = "0.9.1"
   private val zioVersion = "1.0.1"
-  private val mockitoVersion = "1.16.29"
+  private val mockitoVersion = "1.16.37"
 
   val grizzledSlf4j: ModuleID = "org.clapper"             %% "grizzled-slf4j"  % "1.3.4"
   val logger: ModuleID = "org.apache.logging.log4j"       % "log4j"            % log4jVersion
@@ -58,13 +58,13 @@ object Dependencies {
   val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion
   val akkaStream: ModuleID = "com.typesafe.akka"          %% "akka-stream-typed"           % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"                   % akkaHttpVersion
-  val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"             % "1.35.3"
+  val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"             % "1.36.0"
   val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "1.2.0")
     .exclude("javax.ws.rs", "jsr311-api")
   val akkaPersistence: ModuleID = "com.typesafe.akka"      %% "akka-persistence-typed" % akkaVersion
   val akkaPersistenceQuery: ModuleID = "com.typesafe.akka" %% "akka-persistence-query" % akkaVersion
   val akkaPersistenceCassandra: ModuleID =
-    ("com.typesafe.akka" %% "akka-persistence-cassandra" % "1.0.4")
+    ("com.typesafe.akka" %% "akka-persistence-cassandra" % "1.0.5")
       .exclude("io.netty", "netty-handler")
   val akkaSlf4j: ModuleID = "com.typesafe.akka"            %% "akka-slf4j"               % akkaVersion
   val alpakka: ModuleID = "com.lightbend.akka"             %% "akka-stream-alpakka-file" % alpakkaVersion
@@ -98,10 +98,10 @@ object Dependencies {
 
   val scalike: ModuleID = "org.scalikejdbc"       %% "scalikejdbc"                      % scalikeVersion
   val scalikeMacros: ModuleID = "org.scalikejdbc" %% "scalikejdbc-syntax-support-macro" % scalikeVersion
-  val postgresql: ModuleID = "org.postgresql"     % "postgresql"                        % "42.2.19"
+  val postgresql: ModuleID = "org.postgresql"     % "postgresql"                        % "42.2.20"
   val flywaydb: ModuleID = "org.flywaydb"         % "flyway-core"                       % "7.7.3"
 
-  val slugify: ModuleID = "com.github.slugify" % "slugify" % "2.4"
+  val slugify: ModuleID = "com.github.slugify" % "slugify" % "2.5"
 
   val swiftClient: ModuleID = "org.make" %% "openstack-swift-client" % "1.0.17"
 
@@ -135,8 +135,8 @@ object Dependencies {
   // Test related dependencies
   val akkaTest: ModuleID = "com.typesafe.akka"            %% "akka-actor-testkit-typed" % akkaVersion     % "it,test"
   val akkaStreamTest: ModuleID = "com.typesafe.akka"      %% "akka-stream-testkit"      % akkaVersion     % "it,test"
-  val scalaTest: ModuleID = "org.scalatest"               %% "scalatest"                % "3.2.6"         % "it,test"
-  val scalaTestScalaCheck: ModuleID = "org.scalatestplus" %% "scalacheck-1-15"          % "3.2.6.0"       % "it,test"
+  val scalaTest: ModuleID = "org.scalatest"               %% "scalatest"                % "3.2.8"         % "it,test"
+  val scalaTestScalaCheck: ModuleID = "org.scalatestplus" %% "scalacheck-1-15"          % "3.2.8.0"       % "it,test"
   val akkaHttpTest: ModuleID = "com.typesafe.akka"        %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
   val mockito: ModuleID = "org.mockito"                   %% "mockito-scala"            % mockitoVersion  % "it,test"
   val mockitoScalatest: ModuleID = "org.mockito"          %% "mockito-scala-scalatest"  % mockitoVersion  % "it,test"
