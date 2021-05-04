@@ -41,7 +41,7 @@ trait ActiveFeatureService extends ShortenedNames {
     sort: Option[String] = None,
     order: Option[Order] = None,
     maybeQuestionId: Option[Seq[QuestionId]] = None,
-    featureId: Option[Seq[FeatureId]] = None
+    featureIds: Option[Seq[FeatureId]] = None
   ): Future[Seq[ActiveFeature]]
   def count(maybeQuestionId: Option[QuestionId]): Future[Int]
 }
@@ -80,10 +80,10 @@ trait DefaultActiveFeatureServiceComponent extends ActiveFeatureServiceComponent
       sort: Option[String] = None,
       order: Option[Order] = None,
       maybeQuestionId: Option[Seq[QuestionId]] = None,
-      featureId: Option[Seq[FeatureId]] = None
+      featureIds: Option[Seq[FeatureId]] = None
     ): Future[Seq[ActiveFeature]] = {
 
-      persistentActiveFeatureService.find(start, end, sort, order, maybeQuestionId, featureId)
+      persistentActiveFeatureService.find(start, end, sort, order, maybeQuestionId, featureIds)
 
     }
 
