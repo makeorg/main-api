@@ -176,7 +176,7 @@ trait DefaultAdminFeatureApiComponent
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireAdminRole(userAuth.user) {
                 val futureFeature = featureService.getFeature(featureId)
-                val futureActiveFeatures = activeFeatureService.find(featureId = Some(Seq(featureId)))
+                val futureActiveFeatures = activeFeatureService.find(featureIds = Some(Seq(featureId)))
                 provideAsyncOrNotFound(futureFeature) { feature =>
                   provideAsync(futureActiveFeatures) { activeFeatures =>
                     val questionIds = activeFeatures.flatMap(_.maybeQuestionId).distinct
@@ -241,7 +241,7 @@ trait DefaultAdminFeatureApiComponent
 
                     provideAsync(futureCount) { count =>
                       onSuccess(futureFeatures) { filteredFeatures =>
-                        provideAsync(activeFeatureService.find(featureId = Some(filteredFeatures.map(_.featureId)))) {
+                        provideAsync(activeFeatureService.find(featureIds = Some(filteredFeatures.map(_.featureId)))) {
                           activeFeatures =>
                             val questionIds = activeFeatures.flatMap(_.maybeQuestionId).distinct
                             provideAsync(questionService.searchQuestion(SearchQuestionRequest(Some(questionIds)))) {
@@ -252,7 +252,10 @@ trait DefaultAdminFeatureApiComponent
                                   FeatureResponse(
                                     feature = feature,
                                     questions = questions.filter(
-                                      q => questionsByFeature(feature.featureId).contains(q.questionId)
+                                      q =>
+                                        questionsByFeature
+                                          .getOrElse(feature.featureId, Set.empty)
+                                          .contains(q.questionId)
                                     )
                                   )
                                 }
@@ -284,10 +287,11 @@ trait DefaultAdminFeatureApiComponent
                         message = Some("Feature slug already exists in this context. Duplicates are not allowed")
                       )
                     )
-                    provideAsyncOrNotFound(
+                    val futureFeature =
                       featureService.updateFeature(featureId = featureId, slug = request.slug, name = request.name)
-                    ) { feature =>
-                      provideAsync(activeFeatureService.find(featureId = Some(Seq(featureId)))) { activeFeatures =>
+                    val futureActiveFeatures = activeFeatureService.find(featureIds = Some(Seq(featureId)))
+                    provideAsyncOrNotFound(futureFeature) { feature =>
+                      provideAsync(futureActiveFeatures) { activeFeatures =>
                         val questionIds = activeFeatures.flatMap(_.maybeQuestionId).distinct
                         provideAsync(questionService.searchQuestion(SearchQuestionRequest(Some(questionIds)))) {
                           questions =>
