@@ -21,6 +21,7 @@ package org.make.api.sequence
 
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import grizzled.slf4j.Logging
+import org.make.api.sequence.SequenceBehaviour.ConsensusParam
 import org.make.api.technical.MakeRandom
 import org.make.core.proposal
 import org.make.core.proposal.indexed.{IndexedProposal, SequencePool, Zone}
@@ -30,7 +31,6 @@ import org.make.core.sequence.{SequenceConfiguration, SpecificSequenceConfigurat
 import org.make.core.session.SessionId
 import org.make.core.tag.TagId
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 sealed trait SequenceBehaviour {
@@ -98,8 +98,9 @@ object SequenceBehaviour extends Logging {
     }
   }
 
+  final case class ConsensusParam(top20ConsensusThreshold: Option[Double])
   final case class Consensus(
-    futureConsensusThreshold: Future[Option[Double]],
+    consensusParam: ConsensusParam,
     override val configuration: SequenceConfiguration,
     questionId: QuestionId,
     maybeSegment: Option[String],
@@ -108,26 +109,23 @@ object SequenceBehaviour extends Logging {
     override val specificConfiguration: SpecificSequenceConfiguration = configuration.popular
 
     override def testedProposals(search: SearchFunction): Future[Seq[IndexedProposal]] = {
-      futureConsensusThreshold.flatMap { consensusThreshold =>
-        search(
-          questionId,
-          maybeSegment,
-          Some(SequencePool.Tested),
-          proposal.SearchQuery(filters = Some(
-            proposal.SearchFilters(
-              zone = Some(ZoneSearchFilter(Zone.Consensus)),
-              minScoreLowerBound = consensusThreshold.map(MinScoreLowerBoundSearchFilter)
-            )
+      search(
+        questionId,
+        maybeSegment,
+        Some(SequencePool.Tested),
+        proposal.SearchQuery(filters = Some(
+          proposal.SearchFilters(
+            zone = Some(ZoneSearchFilter(Zone.Consensus)),
+            minScoreLowerBound = consensusParam.top20ConsensusThreshold.map(MinScoreLowerBoundSearchFilter)
           )
-          ),
-          RandomAlgorithm(MakeRandom.nextInt())
         )
-      }
+        ),
+        RandomAlgorithm(MakeRandom.nextInt())
+      )
     }
   }
 
-  final case class ZoneDefault(
-    zone: Zone,
+  final case class Controversy(
     override val configuration: SequenceConfiguration,
     questionId: QuestionId,
     maybeSegment: Option[String],
@@ -141,7 +139,7 @@ object SequenceBehaviour extends Logging {
         questionId,
         maybeSegment,
         Some(SequencePool.Tested),
-        proposal.SearchQuery(filters = Some(proposal.SearchFilters(zone = Some(ZoneSearchFilter(zone))))),
+        proposal.SearchQuery(filters = Some(proposal.SearchFilters(zone = Some(ZoneSearchFilter(Zone.Controversy))))),
         RandomAlgorithm(MakeRandom.nextInt())
       )
     }
@@ -210,4 +208,61 @@ object SequenceBehaviour extends Logging {
       )
     }
   }
+}
+
+trait SequenceBehaviourProvider[T] {
+  def behaviour(
+    param: T,
+    configuration: SequenceConfiguration,
+    questionId: QuestionId,
+    maybeSegment: Option[String],
+    sessionId: SessionId
+  ): SequenceBehaviour
+}
+
+object SequenceBehaviourProvider {
+
+  def apply[T](implicit bp: SequenceBehaviourProvider[T]): SequenceBehaviourProvider[T] = bp
+
+  implicit val standard: SequenceBehaviourProvider[Unit] = (
+    _: Unit,
+    configuration: SequenceConfiguration,
+    questionId: QuestionId,
+    maybeSegment: Option[String],
+    sessionId: SessionId
+  ) => SequenceBehaviour.Standard(configuration, questionId, maybeSegment, sessionId)
+
+  implicit val consensus: SequenceBehaviourProvider[ConsensusParam] = (
+    consensusParam: ConsensusParam,
+    configuration: SequenceConfiguration,
+    questionId: QuestionId,
+    maybeSegment: Option[String],
+    sessionId: SessionId
+  ) => SequenceBehaviour.Consensus(consensusParam, configuration, questionId, maybeSegment, sessionId)
+
+  implicit val controversy: SequenceBehaviourProvider[Zone.Controversy.type] =
+    (
+      _: Zone.Controversy.type,
+      configuration: SequenceConfiguration,
+      questionId: QuestionId,
+      maybeSegment: Option[String],
+      sessionId: SessionId
+    ) => SequenceBehaviour.Controversy(configuration, questionId, maybeSegment, sessionId)
+
+  implicit val keyword: SequenceBehaviourProvider[ProposalKeywordKey] = (
+    keyword: ProposalKeywordKey,
+    configuration: SequenceConfiguration,
+    questionId: QuestionId,
+    maybeSegment: Option[String],
+    sessionId: SessionId
+  ) => SequenceBehaviour.Keyword(keyword, configuration, questionId, maybeSegment, sessionId)
+
+  implicit val tags: SequenceBehaviourProvider[Seq[TagId]] = (
+    tagsIds: Seq[TagId],
+    configuration: SequenceConfiguration,
+    questionId: QuestionId,
+    maybeSegment: Option[String],
+    sessionId: SessionId
+  ) => SequenceBehaviour.Tags(tagsIds, configuration, questionId, maybeSegment, sessionId)
+
 }

@@ -474,7 +474,7 @@ trait DefaultQuestionApiComponent
                       keyword = keyword,
                       maybeUserId = userAuth.map(_.user.userId),
                       questionId = questionId,
-                      includedProposals = includes.getOrElse(Seq.empty),
+                      includedProposalIds = includes.getOrElse(Seq.empty),
                       tagsIds = None,
                       requestContext = requestContext
                     )

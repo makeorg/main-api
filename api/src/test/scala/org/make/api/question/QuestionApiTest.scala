@@ -188,7 +188,7 @@ class QuestionApiTest
           keyword = eqTo(None),
           maybeUserId = any[Option[UserId]],
           questionId = eqTo(questionId),
-          includedProposals = any[Seq[ProposalId]],
+          includedProposalIds = any[Seq[ProposalId]],
           tagsIds = any[Option[Seq[TagId]]],
           requestContext = any[RequestContext]
         )

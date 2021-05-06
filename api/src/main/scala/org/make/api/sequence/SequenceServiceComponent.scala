@@ -24,6 +24,7 @@ import grizzled.slf4j.Logging
 import org.make.api.operation.OperationOfQuestionSearchEngineComponent
 import org.make.api.proposal._
 import org.make.api.segment.SegmentServiceComponent
+import org.make.api.sequence.SequenceBehaviour.ConsensusParam
 import org.make.api.sessionhistory._
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
@@ -45,12 +46,20 @@ trait SequenceServiceComponent {
 }
 
 trait SequenceService {
+  def startNewSequence[T: SequenceBehaviourProvider](
+    behaviourParam: T,
+    maybeUserId: Option[UserId],
+    questionId: QuestionId,
+    includedProposalsIds: Seq[ProposalId],
+    requestContext: RequestContext
+  ): Future[SequenceResult]
+
   def startNewSequence(
     zone: Option[Zone],
     keyword: Option[ProposalKeywordKey],
     maybeUserId: Option[UserId],
     questionId: QuestionId,
-    includedProposals: Seq[ProposalId],
+    includedProposalIds: Seq[ProposalId],
     tagsIds: Option[Seq[TagId]],
     requestContext: RequestContext
   ): Future[SequenceResult]
@@ -71,20 +80,70 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
 
   class DefaultSequenceService extends SequenceService {
 
+    def startNewSequence[T: SequenceBehaviourProvider](
+      behaviourParam: T,
+      maybeUserId: Option[UserId],
+      questionId: QuestionId,
+      includedProposalsIds: Seq[ProposalId],
+      requestContext: RequestContext
+    ): Future[SequenceResult] = {
+      val log = logStartSequenceUserHistory(questionId, maybeUserId, includedProposalsIds, requestContext)
+      val votedProposals = futureVotedProposals(maybeUserId = maybeUserId, requestContext = requestContext)
+      val behaviour = createBehaviour(behaviourParam, questionId, requestContext)
+      for {
+        _                  <- log
+        proposalsToExclude <- votedProposals
+        behaviour          <- behaviour
+        sequenceProposals  <- chooseSequenceProposals(includedProposalsIds, behaviour, proposalsToExclude)
+        sequenceVotes      <- votesForProposals(maybeUserId, requestContext, sequenceProposals.map(_.id))
+      } yield SequenceResult(proposals = sequenceProposals
+        .map(indexed => {
+          val proposalKey =
+            SecurityHelper.generateProposalKeyHash(
+              indexed.id,
+              requestContext.sessionId,
+              requestContext.location,
+              securityConfiguration.secureVoteSalt
+            )
+          ProposalResponse(indexed, maybeUserId.contains(indexed.userId), sequenceVotes.get(indexed.id), proposalKey)
+        })
+      )
+    }
+
+    def createBehaviour[T: SequenceBehaviourProvider](
+      behaviourParam: T,
+      questionId: QuestionId,
+      requestContext: RequestContext
+    ): Future[SequenceBehaviour] = {
+      val futureMaybeSegment = segmentService.resolveSegment(requestContext)
+      val futureConfig = sequenceConfigurationService.getSequenceConfigurationByQuestionId(questionId)
+      for {
+        maybeSegment <- futureMaybeSegment
+        config       <- futureConfig
+      } yield SequenceBehaviourProvider[T].behaviour(
+        behaviourParam,
+        config,
+        questionId,
+        maybeSegment,
+        requestContext.sessionId
+      )
+    }
+
+    @Deprecated
     override def startNewSequence(
       zone: Option[Zone],
       keyword: Option[ProposalKeywordKey],
       maybeUserId: Option[UserId],
       questionId: QuestionId,
-      includedProposalsIds: Seq[ProposalId],
+      includedProposalIds: Seq[ProposalId],
       tagsIds: Option[Seq[TagId]],
       requestContext: RequestContext
     ): Future[SequenceResult] = {
       for {
-        _                  <- logStartSequenceUserHistory(questionId, maybeUserId, includedProposalsIds, requestContext)
+        _                  <- logStartSequenceUserHistory(questionId, maybeUserId, includedProposalIds, requestContext)
         behaviour          <- resolveBehaviour(questionId, requestContext, zone, keyword, tagsIds)
         proposalsToExclude <- futureVotedProposals(maybeUserId = maybeUserId, requestContext = requestContext)
-        sequenceProposals  <- chooseSequenceProposals(includedProposalsIds, behaviour, proposalsToExclude)
+        sequenceProposals  <- chooseSequenceProposals(includedProposalIds, behaviour, proposalsToExclude)
         sequenceVotes      <- votesForProposals(maybeUserId, requestContext, sequenceProposals.map(_.id))
       } yield SequenceResult(proposals = sequenceProposals
         .map(indexed => {
@@ -134,6 +193,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       }
     }
 
+    @Deprecated
     private def futureTop20ConsensusThreshold(questionId: QuestionId): Future[Option[Double]] =
       elasticsearchOperationOfQuestionAPI
         .findOperationOfQuestionById(questionId)
@@ -164,6 +224,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
         Future.successful(Seq.empty)
       }
 
+    @Deprecated
     def resolveBehaviour(
       questionId: QuestionId,
       requestContext: RequestContext,
@@ -171,26 +232,34 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       keyword: Option[ProposalKeywordKey],
       tagsIds: Option[Seq[TagId]]
     ): Future[SequenceBehaviour] = {
-      for {
+      val futureParams = for {
         maybeSegment <- segmentService.resolveSegment(requestContext)
         config       <- sequenceConfigurationService.getSequenceConfigurationByQuestionId(questionId)
-      } yield (keyword, tagsIds, zone) match {
-        case (None, None, None) =>
-          SequenceBehaviour.Standard(config, questionId, maybeSegment, requestContext.sessionId)
-        case (Some(kw), _, _) =>
-          SequenceBehaviour.Keyword(kw, config, questionId, maybeSegment, requestContext.sessionId)
-        case (_, Some(tags), _) =>
-          SequenceBehaviour.Tags(tags, config, questionId, maybeSegment, requestContext.sessionId)
-        case (_, _, Some(Zone.Consensus)) =>
-          SequenceBehaviour.Consensus(
-            futureTop20ConsensusThreshold(questionId),
-            config,
-            questionId,
-            maybeSegment,
-            requestContext.sessionId
-          )
-        case (_, _, Some(zone)) =>
-          SequenceBehaviour.ZoneDefault(zone, config, questionId, maybeSegment, requestContext.sessionId)
+      } yield (maybeSegment, config)
+      futureParams.flatMap {
+        case (maybeSegment, config) =>
+          (keyword, tagsIds, zone) match {
+            case (None, None, None) =>
+              Future.successful(SequenceBehaviour.Standard(config, questionId, maybeSegment, requestContext.sessionId))
+            case (Some(kw), _, _) =>
+              Future.successful(
+                SequenceBehaviour.Keyword(kw, config, questionId, maybeSegment, requestContext.sessionId)
+              )
+            case (_, Some(tags), _) =>
+              Future.successful(
+                SequenceBehaviour.Tags(tags, config, questionId, maybeSegment, requestContext.sessionId)
+              )
+            case (_, _, Some(Zone.Consensus)) =>
+              futureTop20ConsensusThreshold(questionId).map(
+                threshold =>
+                  SequenceBehaviour
+                    .Consensus(ConsensusParam(threshold), config, questionId, maybeSegment, requestContext.sessionId)
+              )
+            case (_, _, Some(_)) =>
+              Future.successful(
+                SequenceBehaviour.Controversy(config, questionId, maybeSegment, requestContext.sessionId)
+              )
+          }
       }
 
     }

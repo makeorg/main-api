@@ -122,7 +122,7 @@ class SequenceServiceComponentTest
         sequenceService.resolveBehaviour(questionId, requestContext, Some(Zone.Controversy), None, None),
         Timeout(3.seconds)
       ) { behaviour =>
-        behaviour shouldBe a[SequenceBehaviour.ZoneDefault]
+        behaviour shouldBe a[SequenceBehaviour.Controversy]
       }
     }
     Scenario("precedence") {
