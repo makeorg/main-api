@@ -62,6 +62,7 @@ object ProposalElasticsearchFieldName extends StringEnum[ProposalElasticsearchFi
 
   case object id extends Simple("id")
 
+  case object agreementRate extends Alias("agreementRate", scoreAgreement, sortable = true)
   case object authorAge extends Simple("author.age")
   case object authorFirstName extends Simple("author.firstName")
   case object authorPostalCode extends Simple("author.postalCode")
@@ -134,6 +135,7 @@ object ProposalElasticsearchFieldName extends StringEnum[ProposalElasticsearchFi
   case object questionLanguage extends Simple("question.language", sortable = true)
   case object refusalReason extends Simple("refusalReason")
   case object scores extends Simple("scores")
+  case object scoreAgreement extends Simple("scores.agreement")
   case object scoreRealistic extends Simple("scores.realistic")
   case object scoreUpperBound extends Simple("scores.scoreUpperBound")
   case object scoreLowerBound extends Simple("scores.scoreLowerBound")

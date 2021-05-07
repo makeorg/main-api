@@ -23,6 +23,8 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import cats.implicits._
 import grizzled.slf4j.Logging
+import io.circe.Codec
+import io.circe.generic.semiauto.deriveCodec
 import io.swagger.annotations._
 
 import javax.ws.rs.Path
@@ -30,21 +32,70 @@ import org.make.api.idea.IdeaServiceComponent
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.tag.TagServiceComponent
+import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
-import org.make.api.technical.{MakeAuthenticationDirectives}
+import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
-import org.make.core.proposal.ProposalId
-import org.make.core.question.Question
-import org.make.core.{DateHelper, HttpCodes, ParameterExtractors, Validation}
+import org.make.core.proposal.indexed.{IndexedProposal, IndexedTag, ProposalElasticsearchFieldName}
+import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
+import org.make.core.question.{Question, QuestionId}
+import org.make.core.tag.TagId
+import org.make.core.user.{UserId, UserType}
+import org.make.core.{CirceFormatters, DateHelper, HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
+import java.time.ZonedDateTime
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Api(value = "AdminProposal")
 @Path(value = "/admin/proposals")
 trait AdminProposalApi extends Directives {
+
+  @ApiOperation(
+    value = "admin-search-proposals",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[AdminProposalResponse]]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string", allowMultiple = true),
+      new ApiImplicitParam(
+        name = "status",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "Pending,Accepted,Refused,Postponed,Archived",
+        allowMultiple = true
+      ),
+      new ApiImplicitParam(name = "content", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(
+        name = "userType",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "USER,ORGANISATION,PERSONALITY",
+        allowMultiple = true
+      ),
+      new ApiImplicitParam(name = "initialProposal", paramType = "query", dataType = "boolean"),
+      new ApiImplicitParam(name = "tagId", paramType = "query", dataType = "string", allowMultiple = true),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "order", paramType = "query", dataType = "string")
+    )
+  )
+  def search: Route
+
   @ApiOperation(
     value = "fix-trolled-proposal",
     httpMethod = "PUT",
@@ -133,7 +184,7 @@ trait AdminProposalApi extends Directives {
   @Path(value = "/keywords")
   def setProposalKeywords: Route
 
-  def routes: Route = patchProposal ~ updateProposalVotes ~ resetVotes ~ setProposalKeywords
+  def routes: Route = search ~ patchProposal ~ updateProposalVotes ~ resetVotes ~ setProposalKeywords
 }
 
 trait AdminProposalApiComponent {
@@ -159,6 +210,79 @@ trait DefaultAdminProposalApiComponent
 
   class DefaultAdminProposalApi extends AdminProposalApi {
     val adminProposalId: PathMatcher1[ProposalId] = Segment.map(id => ProposalId(id))
+
+    override def search: Route = get {
+      path("admin" / "proposals") {
+        makeOperation("AdminSearchProposals") { requestContext =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireAdminRole(userAuth.user) {
+              parameters(
+                "questionId".as[Seq[QuestionId]].?,
+                "content".?,
+                "status".csv[ProposalStatus],
+                "userType".csv[UserType],
+                "initialProposal".as[Boolean].?,
+                "tagId".as[Seq[TagId]].?,
+                "limit".as[Int].?,
+                "skip".as[Int].?,
+                "sort".as[ProposalElasticsearchFieldName].?,
+                "order".as[Order].?
+              ) {
+                (
+                  questionIds: Option[Seq[QuestionId]],
+                  content: Option[String],
+                  status: Option[Seq[ProposalStatus]],
+                  userTypes: Option[Seq[UserType]],
+                  initialProposal: Option[Boolean],
+                  tagIds: Option[Seq[TagId]],
+                  limit: Option[Int],
+                  skip: Option[Int],
+                  sort: Option[ProposalElasticsearchFieldName],
+                  order: Option[Order]
+                ) =>
+                  Validation.validate(sort.map { sortValue =>
+                    val choices = ProposalElasticsearchFieldName.values.filter(_.sortable)
+                    Validation.validChoices(
+                      fieldName = "sort",
+                      message = Some(
+                        s"Invalid sort. Got $sortValue but expected one of: ${choices.map(_.parameter).mkString("\"", "\", \"", "\"")}"
+                      ),
+                      Seq(sortValue),
+                      choices
+                    )
+                  }.toList: _*)
+
+                  val exhaustiveSearchRequest: ExhaustiveSearchRequest = ExhaustiveSearchRequest(
+                    initialProposal = initialProposal,
+                    tagsIds = tagIds,
+                    questionIds = questionIds,
+                    content = content,
+                    status = status,
+                    sort = sort.map(_.field),
+                    order = order,
+                    limit = limit,
+                    skip = skip,
+                    userTypes = userTypes
+                  )
+                  val query: SearchQuery = exhaustiveSearchRequest.toSearchQuery(requestContext)
+                  provideAsync(
+                    proposalService
+                      .search(userId = Some(userAuth.user.userId), query = query, requestContext = requestContext)
+                  ) { proposals =>
+                    complete(
+                      (
+                        StatusCodes.OK,
+                        List(`X-Total-Count`(proposals.total.toString)),
+                        proposals.results.map(AdminProposalResponse.apply)
+                      )
+                    )
+                  }
+              }
+            }
+          }
+        }
+      }
+    }
 
     def updateProposalVotes: Route = put {
       path("admin" / "proposals" / adminProposalId / "fix-trolled-proposal") { proposalId =>
@@ -310,5 +434,52 @@ trait DefaultAdminProposalApiComponent
     }
 
   }
+
+}
+
+final case class AdminProposalResponse(
+  id: ProposalId,
+  author: AdminProposalResponse.Author,
+  content: String,
+  status: ProposalStatus,
+  tags: Seq[IndexedTag] = Seq.empty,
+  createdAt: ZonedDateTime,
+  agreement: Double
+)
+
+object AdminProposalResponse extends CirceFormatters {
+
+  def apply(proposal: IndexedProposal): AdminProposalResponse =
+    AdminProposalResponse(
+      id = proposal.id,
+      author = Author(proposal),
+      content = proposal.content,
+      status = proposal.status,
+      tags = proposal.tags,
+      createdAt = proposal.createdAt,
+      agreement = proposal.scores.agreement
+    )
+
+  final case class Author(
+    id: UserId,
+    userType: UserType,
+    displayName: Option[String],
+    postalCode: Option[String],
+    age: Option[Int]
+  )
+
+  object Author {
+    def apply(proposal: IndexedProposal): Author =
+      Author(
+        id = proposal.userId,
+        userType = proposal.author.userType,
+        displayName = proposal.author.displayName,
+        postalCode = proposal.author.postalCode,
+        age = proposal.author.age
+      )
+    implicit val codec: Codec[Author] = deriveCodec
+  }
+
+  implicit val codec: Codec[AdminProposalResponse] = deriveCodec
 
 }

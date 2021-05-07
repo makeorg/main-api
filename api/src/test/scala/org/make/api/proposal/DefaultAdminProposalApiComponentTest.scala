@@ -31,6 +31,7 @@ import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
+import org.make.core.common.indexed.Sort
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.Accepted
@@ -47,6 +48,7 @@ import org.make.core.proposal.QualificationKey.{
 }
 import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal._
+import org.make.core.proposal.indexed.{ProposalElasticsearchFieldName, ProposalsSearchResult}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
@@ -76,6 +78,36 @@ class DefaultAdminProposalApiComponentTest
   override val tagService: TagService = mock[TagService]
 
   val routes: Route = sealRoute(adminProposalApi.routes)
+
+  Feature("search proposals") {
+    Scenario("forbidden when not admin") {
+      for (token <- Seq(None, Some(tokenCitizen), Some(tokenModerator))) {
+        Get("/admin/proposals")
+          .withHeaders(token.map(t => Authorization(OAuth2BearerToken(t))).toList) ~> routes ~> check {
+          status should be(token.fold(StatusCodes.Unauthorized)(_ => StatusCodes.Forbidden))
+        }
+      }
+    }
+    Scenario("works for admins") {
+      when(
+        proposalService.search(
+          any,
+          eqTo(SearchQuery(sort = Some(Sort(Some(ProposalElasticsearchFieldName.agreementRate.field), None)))),
+          any
+        )
+      ).thenReturn(Future.successful(ProposalsSearchResult(1, Seq(indexedProposal(ProposalId("search"))))))
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/admin/proposals?sort=agreementRate")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          header("x-total-count").map(_.value) should be(Some("1"))
+          val results = entityAs[Seq[AdminProposalResponse]]
+          results.size should be(1)
+          results.head.id.value should be("search")
+        }
+      }
+    }
+  }
 
   Feature("update verified votes") {
     Scenario("unauthorized user") {
