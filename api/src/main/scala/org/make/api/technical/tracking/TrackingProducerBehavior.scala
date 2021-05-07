@@ -19,17 +19,13 @@
 
 package org.make.api.technical.tracking
 
-import akka.actor.Props
-import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import org.make.api.technical.BasicProducerActor
+import akka.actor.typed.Behavior
+import org.make.api.technical.KafkaProducerBehavior
 import org.make.core.MakeSerializable
 
-class TrackingProducerActor extends BasicProducerActor[TrackingEventWrapper, TrackingEvent] {
-  override protected lazy val eventClass: Class[TrackingEvent] = classOf[TrackingEvent]
-  override protected lazy val format: RecordFormat[TrackingEventWrapper] = TrackingEventWrapper.recordFormat
-  override protected lazy val schema: SchemaFor[TrackingEventWrapper] = TrackingEventWrapper.schemaFor
-  override val kafkaTopic: String = kafkaConfiguration.topics(TrackingProducerActor.topicKey)
-  override protected def convert(event: TrackingEvent): TrackingEventWrapper = {
+class TrackingProducerBehavior extends KafkaProducerBehavior[TrackingEvent, TrackingEventWrapper] {
+  override protected val topicKey: String = TrackingProducerBehavior.topicKey
+  override protected def wrapEvent(event: TrackingEvent): TrackingEventWrapper = {
     TrackingEventWrapper(
       version = MakeSerializable.V1,
       id = event.requestContext.sessionId.value,
@@ -40,8 +36,8 @@ class TrackingProducerActor extends BasicProducerActor[TrackingEventWrapper, Tra
   }
 }
 
-object TrackingProducerActor {
-  val name: String = "tracking-event-producer"
-  val props: Props = Props[TrackingProducerActor]()
+object TrackingProducerBehavior {
+  def apply(): Behavior[TrackingEvent] = new TrackingProducerBehavior().createBehavior(name)
+  val name: String = "tracking-events-producer"
   val topicKey: String = "tracking-events"
 }

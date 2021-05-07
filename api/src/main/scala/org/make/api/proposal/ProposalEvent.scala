@@ -19,9 +19,8 @@
 
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
 import com.sksamuel.avro4s
-import com.sksamuel.avro4s.{AvroDefault, AvroSortPriority, DefaultFieldMapper, RecordFormat, SchemaFor}
+import com.sksamuel.avro4s.{AvroDefault, AvroSortPriority, SchemaFor}
 import org.make.api.proposal.ProposalEvent.DeprecatedEvent
 import org.make.core.SprayJsonFormatters._
 import org.make.core.history.HistoryActions.VoteTrust
@@ -33,9 +32,11 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
-import org.make.core.{AvroSerializers, EventId, EventWrapper, MakeSerializable, RequestContext, WithEventId}
+import org.make.core._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+
+import java.time.ZonedDateTime
 
 sealed trait ProposalEvent extends MakeSerializable {
   def id: ProposalId
@@ -99,11 +100,9 @@ object PublishedProposalEvent {
       with WithEventId
 
   object ProposalEventWrapper extends AvroSerializers {
-    lazy val schemaFor: SchemaFor[ProposalEventWrapper] = SchemaFor.gen[ProposalEventWrapper]
+    implicit lazy val schemaFor: SchemaFor[ProposalEventWrapper] = SchemaFor.gen[ProposalEventWrapper]
     implicit lazy val avroDecoder: avro4s.Decoder[ProposalEventWrapper] = avro4s.Decoder.gen[ProposalEventWrapper]
     implicit lazy val avroEncoder: avro4s.Encoder[ProposalEventWrapper] = avro4s.Encoder.gen[ProposalEventWrapper]
-    lazy val recordFormat: RecordFormat[ProposalEventWrapper] =
-      RecordFormat[ProposalEventWrapper](schemaFor.schema(DefaultFieldMapper))(avroEncoder, avroDecoder)
   }
 
   @AvroSortPriority(6)

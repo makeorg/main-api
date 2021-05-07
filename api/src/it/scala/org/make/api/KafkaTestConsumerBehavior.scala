@@ -19,46 +19,39 @@
 
 package org.make.api
 
-import java.util.UUID
-
-import akka.actor.{ActorLogging, ActorRef, Props}
-import akka.pattern.ask
+import akka.actor.typed.scaladsl.AskPattern.Askable
+import akka.actor.typed.{ActorRef, Behavior, Scheduler}
 import akka.util.Timeout
-import com.sksamuel.avro4s.RecordFormat
-import org.make.api.technical.KafkaConsumerActor
-import org.make.api.technical.KafkaConsumerActor.{CheckState, Ready, Waiting}
+import com.sksamuel.avro4s.{Decoder, SchemaFor}
+import org.make.api.technical.KafkaConsumerBehavior
+import org.make.api.technical.KafkaConsumerBehavior.{CheckState, Protocol, Ready, Waiting}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class KafkaTestConsumerActor[T](
-  override val format: RecordFormat[T],
-  override val kafkaTopic: String,
+class KafkaTestConsumerBehavior[T: Decoder: SchemaFor](
+  override val topicKey: String,
   override val groupId: String,
-  receiver: ActorRef
-) extends KafkaConsumerActor[T]
-    with ActorLogging {
+  receiver: ActorRef[T]
+) extends KafkaConsumerBehavior[T] {
 
   override def handleMessage(message: T): Future[_] = Future.successful {
     receiver ! message
   }
 }
 
-object KafkaTestConsumerActor {
-
-  def propsAndName[T](format: RecordFormat[T], kafkaTopic: String, receiver: ActorRef): (String, Props) = {
-    val name = UUID.randomUUID().toString
-    (name, Props(new KafkaTestConsumerActor[T](format, kafkaTopic, name, receiver)))
+object KafkaTestConsumerBehavior {
+  def apply[T: Decoder: SchemaFor](topicKey: String, groupId: String, receiver: ActorRef[T]): Behavior[Protocol] = {
+    new KafkaTestConsumerBehavior(topicKey, groupId, receiver)
+      .createBehavior(groupId)
   }
 
-  val defaultRetries = 5
-
-  def waitUntilReady(target: ActorRef, retries: Int = defaultRetries): Future[Unit] = {
+  def waitUntilReady(target: ActorRef[Protocol], retries: Int = 5)(implicit scheduler: Scheduler): Future[Unit] = {
     val defaultInterval: Long = 100
     implicit val timeout: Timeout = Timeout(10.seconds)
 
-    (target ? CheckState).flatMap {
+    (target ? (ref => CheckState(ref))).flatMap {
       case Ready => Future.unit
       case Waiting =>
         Thread.sleep(defaultInterval)
@@ -70,5 +63,4 @@ object KafkaTestConsumerActor {
         waitUntilReady(target, retries - 1)
     }
   }
-
 }

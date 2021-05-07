@@ -19,18 +19,15 @@
 
 package org.make.api
 
-import java.util.concurrent.Future
-
-import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord, RecordMetadata}
 import org.make.core.AvroSerializers
+
+import java.util.concurrent.Future
 
 trait KafkaConsumerTest[T] extends KafkaTest with AvroSerializers {
 
   def topic: String
-  def format: RecordFormat[T]
-  def schema: SchemaFor[T]
-  lazy val producer: KafkaProducer[String, T] = createProducer(schema, format)
+  val producer: KafkaProducer[String, T]
 
   override def afterAll(): Unit = {
     producer.close()

@@ -21,9 +21,11 @@ package org.make.api.technical
 
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.AskPattern.Askable
-import akka.actor.typed.{ActorRef, ActorSystem, Scheduler}
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, ActorSystem, BackoffSupervisorStrategy, Behavior, Scheduler, SupervisorStrategy}
 import akka.util.Timeout
 
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.Future
 
 object ActorSystemHelper {
@@ -41,5 +43,15 @@ object ActorSystemHelper {
       }
 
     }
+  }
+
+  private val maxRestarts = 50
+  val DefaultFallbackStrategy: BackoffSupervisorStrategy =
+    SupervisorStrategy
+      .restartWithBackoff(minBackoff = 3.seconds, maxBackoff = 30.seconds, randomFactor = 0.2)
+      .withMaxRestarts(maxRestarts)
+
+  def superviseWithBackoff[T](behavior: Behavior[T]): Behavior[T] = {
+    Behaviors.supervise(behavior).onFailure(DefaultFallbackStrategy)
   }
 }

@@ -19,18 +19,14 @@
 
 package org.make.api.semantic
 
-import akka.actor.Props
-import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import org.make.api.technical.BasicProducerActor
+import akka.actor.typed.Behavior
+import org.make.api.technical.KafkaProducerBehavior
 import org.make.core.{DateHelper, MakeSerializable}
 
-class SemanticProducerActor extends BasicProducerActor[PredictDuplicateEventWrapper, PredictDuplicateEvent] {
-  override protected lazy val eventClass: Class[PredictDuplicateEvent] = classOf[PredictDuplicateEvent]
-  override protected lazy val format: RecordFormat[PredictDuplicateEventWrapper] =
-    PredictDuplicateEventWrapper.recordFormat
-  override protected lazy val schema: SchemaFor[PredictDuplicateEventWrapper] = PredictDuplicateEventWrapper.schemaFor
-  override val kafkaTopic: String = kafkaConfiguration.topics(SemanticProducerActor.topicKey)
-  override protected def convert(trackingEvent: PredictDuplicateEvent): PredictDuplicateEventWrapper =
+class SemanticProducerBehavior extends KafkaProducerBehavior[PredictDuplicateEvent, PredictDuplicateEventWrapper] {
+  override protected val topicKey: String = SemanticProducerBehavior.topicKey
+
+  override protected def wrapEvent(trackingEvent: PredictDuplicateEvent): PredictDuplicateEventWrapper =
     PredictDuplicateEventWrapper(
       version = MakeSerializable.V1,
       id = trackingEvent.proposalId.value,
@@ -40,8 +36,8 @@ class SemanticProducerActor extends BasicProducerActor[PredictDuplicateEventWrap
     )
 }
 
-object SemanticProducerActor {
-  val name: String = "duplicate-detector-producer"
-  val props: Props = Props[SemanticProducerActor]()
+object SemanticProducerBehavior {
+  def apply(): Behavior[PredictDuplicateEvent] = new SemanticProducerBehavior().createBehavior(name)
+  val name: String = "duplicates-predicted-producer"
   val topicKey: String = "duplicates-predicted"
 }

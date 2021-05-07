@@ -19,10 +19,8 @@
 
 package org.make.api.userhistory
 
-import java.time.{LocalDate, ZonedDateTime}
-
 import com.sksamuel.avro4s
-import com.sksamuel.avro4s.{AvroDefault, AvroSortPriority, DefaultFieldMapper, RecordFormat, SchemaFor}
+import com.sksamuel.avro4s.{AvroDefault, AvroSortPriority, SchemaFor}
 import org.make.api.technical.ActorProtocol
 import org.make.api.user.Anonymization
 import org.make.core._
@@ -32,6 +30,8 @@ import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
 import org.make.core.reference.Country
 import org.make.core.user.{User, UserId}
+
+import java.time.{LocalDate, ZonedDateTime}
 
 trait UserHistoryActorProtocol extends ActorProtocol
 
@@ -79,11 +79,9 @@ final case class UserEventWrapper(
     with WithEventId
 
 object UserEventWrapper extends AvroSerializers {
-  lazy val schemaFor: SchemaFor[UserEventWrapper] = SchemaFor.gen[UserEventWrapper]
+  implicit lazy val schemaFor: SchemaFor[UserEventWrapper] = SchemaFor.gen[UserEventWrapper]
   implicit lazy val avroDecoder: avro4s.Decoder[UserEventWrapper] = avro4s.Decoder.gen[UserEventWrapper]
   implicit lazy val avroEncoder: avro4s.Encoder[UserEventWrapper] = avro4s.Encoder.gen[UserEventWrapper]
-  lazy val recordFormat: RecordFormat[UserEventWrapper] =
-    RecordFormat[UserEventWrapper](schemaFor.schema(DefaultFieldMapper))
 }
 
 sealed trait B2BRegisteredEvent extends UserEvent

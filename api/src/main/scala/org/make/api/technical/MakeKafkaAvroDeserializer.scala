@@ -19,15 +19,22 @@
 
 package org.make.api.technical
 
-import java.util
-
-import com.sksamuel.avro4s.RecordFormat
+import com.sksamuel.avro4s.{Decoder, DefaultFieldMapper, FieldMapper, SchemaFor}
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
 import io.confluent.kafka.serializers.KafkaAvroDeserializer
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.common.serialization.Deserializer
 
-class MakeKafkaAvroDeserializer[T](registryUrl: String, format: RecordFormat[T]) extends Deserializer[T] {
+import java.util
+
+class MakeKafkaAvroDeserializer[T: Decoder: SchemaFor](
+  registryUrl: String,
+  fieldMapper: FieldMapper = DefaultFieldMapper
+) extends Deserializer[T] {
+
+  val schemaFor: SchemaFor[T] = SchemaFor[T]
+  val decoder: Decoder[T] = Decoder[T]
+
   private val identityMapCapacity = 1000
   private val delegate = new KafkaAvroDeserializer(new CachedSchemaRegistryClient(registryUrl, identityMapCapacity))
 
@@ -41,6 +48,10 @@ class MakeKafkaAvroDeserializer[T](registryUrl: String, format: RecordFormat[T])
 
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   override def deserialize(topic: String, data: Array[Byte]): T = {
-    format.from(delegate.deserialize(topic, data).asInstanceOf[GenericRecord])
+    decoder.decode(
+      delegate.deserialize(topic, data).asInstanceOf[GenericRecord],
+      schemaFor.schema(fieldMapper),
+      fieldMapper
+    )
   }
 }

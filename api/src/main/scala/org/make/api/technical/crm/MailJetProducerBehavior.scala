@@ -19,20 +19,16 @@
 
 package org.make.api.technical.crm
 
-import akka.actor.Props
-import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import org.make.api.technical.BasicProducerActor
+import akka.actor.typed.Behavior
+import org.make.api.technical.KafkaProducerBehavior
 
-class MailJetProducerActor extends BasicProducerActor[SendEmail, SendEmail] {
-  override protected lazy val eventClass: Class[SendEmail] = classOf[SendEmail]
-  override protected lazy val format: RecordFormat[SendEmail] = SendEmail.recordFormat
-  override protected lazy val schema: SchemaFor[SendEmail] = SendEmail.schemaFor
-  override val kafkaTopic: String = kafkaConfiguration.topics(MailJetProducerActor.topicKey)
-  override protected def convert(event: SendEmail): SendEmail = event
+class MailJetProducerBehavior extends KafkaProducerBehavior[SendEmail, SendEmail] {
+  override protected val topicKey: String = MailJetProducerBehavior.topicKey
+  override protected def wrapEvent(event: SendEmail): SendEmail = event
 }
 
-object MailJetProducerActor {
-  val name: String = "mailjet-email-producer"
-  val props: Props = Props[MailJetProducerActor]()
+object MailJetProducerBehavior {
+  def apply(): Behavior[SendEmail] = new MailJetProducerBehavior().createBehavior(name)
+  val name: String = "emails-producer"
   val topicKey: String = "emails"
 }

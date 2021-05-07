@@ -19,25 +19,26 @@
 
 package org.make.api.user
 
-import java.time.ZonedDateTime
-import akka.actor.{ActorRef, ActorSystem, PoisonPill}
-import akka.testkit.{ImplicitSender, TestKit, TestProbe}
-import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.{ActorRef, ActorSystem, Scheduler}
+import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
+import org.apache.kafka.clients.producer.KafkaProducer
+import org.make.api.technical.KafkaConsumerBehavior.Protocol
 import org.make.api.technical.crm.{SendMailPublisherService, SendMailPublisherServiceComponent}
 import org.make.api.userhistory._
-import org.make.api.{KafkaConsumerTest, KafkaTestConsumerActor, TestUtilsIT}
+import org.make.api.{KafkaConsumerTest, KafkaTestConsumerBehavior, TestUtilsIT}
 import org.make.core.reference.Country
 import org.make.core.user.{User, UserId, UserType}
 import org.make.core.{DateHelper, EventId, MakeSerializable, RequestContext}
 
+import java.time.ZonedDateTime
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
-class UserEmailConsumerActorIT
-    extends TestKit(UserEmailConsumerActorIT.actorSystem)
+class UserEmailConsumerBehaviorIT
+    extends ScalaTestWithActorTestKit(UserEmailConsumerBehaviorIT.actorSystem)
     with KafkaConsumerTest[UserEventWrapper]
-    with ImplicitSender
     with UserServiceComponent
     with SendMailPublisherServiceComponent {
 
@@ -52,20 +53,21 @@ class UserEmailConsumerActorIT
   override val sendMailPublisherService: SendMailPublisherService = mock[SendMailPublisherService]
 
   override val topic: String = "users"
+  override val producer: KafkaProducer[String, UserEventWrapper] = createProducer
 
-  override val format: RecordFormat[UserEventWrapper] = UserEventWrapper.recordFormat
-  override val schema: SchemaFor[UserEventWrapper] = UserEventWrapper.schemaFor
+  implicit val scheduler: Scheduler = testKit.scheduler
 
-  val consumer: ActorRef =
-    system.actorOf(UserEmailConsumerActor.props(userService, sendMailPublisherService), "UserEvent")
+  val consumer: ActorRef[Protocol] =
+    testKit.spawn(UserEmailConsumerBehavior(userService, sendMailPublisherService), "UserEvent")
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    Await.result(KafkaTestConsumerActor.waitUntilReady(consumer), atMost = 2.minutes)
+    Await.result(KafkaTestConsumerBehavior.waitUntilReady(consumer), atMost = 2.minutes)
   }
 
   override def afterAll(): Unit = {
-    consumer ! PoisonPill
+    testKit.system.terminate()
+    Await.result(testKit.system.whenTerminated, atMost = 10.seconds)
     super.afterAll()
   }
 
@@ -84,7 +86,7 @@ class UserEmailConsumerActorIT
   val country: Country = Country("FR")
 
   Feature("consume ResetPasswordEvent") {
-    val probeReset: TestProbe = TestProbe("reset")
+    val probeReset = testKit.createTestProbe[String]()
     Scenario("user reset password") {
       when(
         sendMailPublisherService
@@ -100,7 +102,7 @@ class UserEmailConsumerActorIT
 
       send(wrappedEvent)
 
-      probeReset.expectMsg(500.millis, "sendMailPublisherService.publishForgottenPassword called")
+      probeReset.expectMessage(2.seconds, "sendMailPublisherService.publishForgottenPassword called")
     }
 
     Scenario("organisation reset password") {
@@ -118,7 +120,7 @@ class UserEmailConsumerActorIT
 
       send(wrappedEvent)
 
-      probeReset.expectMsg(500.millis, "sendMailPublisherService.publishForgottenPasswordOrganisation called")
+      probeReset.expectMessage(2.seconds, "sendMailPublisherService.publishForgottenPasswordOrganisation called")
     }
 
     Scenario("perso reset password") {
@@ -144,12 +146,12 @@ class UserEmailConsumerActorIT
 
       send(wrappedEventPerso)
 
-      probeReset.expectMsg(500.millis, "sendMailPublisherService.publishForgottenPasswordOrganisation perso called")
+      probeReset.expectMessage(2.seconds, "sendMailPublisherService.publishForgottenPasswordOrganisation perso called")
     }
   }
 
   Feature("consume UserRegisteredEvent") {
-    val probeRegistered: TestProbe = TestProbe("registered")
+    val probeRegistered = testKit.createTestProbe[String]()
 
     Scenario("user register") {
       when(
@@ -186,13 +188,13 @@ class UserEmailConsumerActorIT
 
       send(wrappedEventUser)
 
-      probeRegistered.expectMsg(500.millis, "sendMailPublisherService.publishRegistration called")
+      probeRegistered.expectMessage(2.seconds, "sendMailPublisherService.publishRegistration called")
     }
   }
 
   Feature("consume B2BRegistered") {
     Scenario("organisation register") {
-      val orgaProbe: TestProbe = TestProbe()
+      val orgaProbe = testKit.createTestProbe[String]()
       when(
         sendMailPublisherService
           .publishRegistrationB2B(eqTo(organisation), eqTo(RequestContext.empty))
@@ -221,11 +223,11 @@ class UserEmailConsumerActorIT
 
       send(wrappedEventOrganisation)
 
-      orgaProbe.expectMsg(500.millis, "sendMailPublisherService.publishRegistrationB2B called")
+      orgaProbe.expectMessage(2.seconds, "sendMailPublisherService.publishRegistrationB2B called")
     }
 
     Scenario("personality register") {
-      val persoProbe: TestProbe = TestProbe()
+      val persoProbe = testKit.createTestProbe[String]()
       when(
         sendMailPublisherService
           .publishRegistrationB2B(eqTo(personality1), eqTo(RequestContext.empty))
@@ -247,13 +249,13 @@ class UserEmailConsumerActorIT
 
       send(wrappedEvent)
 
-      persoProbe.expectMsg(500.millis, "sendMailPublisherService.publishRegistrationB2B called")
+      persoProbe.expectMessage(2.seconds, "sendMailPublisherService.publishRegistrationB2B called")
     }
   }
 
   Feature("consume UserValidatedAccountEvent") {
     Scenario("user validate") {
-      val userProbe: TestProbe = TestProbe("validate")
+      val userProbe = testKit.createTestProbe[String]()
       when(sendMailPublisherService.publishWelcome(eqTo(user), eqTo(RequestContext.empty))).thenAnswer {
         (_: User, _: RequestContext) =>
           userProbe.ref ! "sendMailPublisherService.publishWelcome called"
@@ -274,11 +276,11 @@ class UserEmailConsumerActorIT
 
       send(wrappedEvent)
 
-      userProbe.expectMsg(500.millis, "sendMailPublisherService.publishWelcome called")
+      userProbe.expectMessage(2.seconds, "sendMailPublisherService.publishWelcome called")
     }
 
     Scenario("organisation validate") {
-      val orgaProbe: TestProbe = TestProbe()
+      val orgaProbe = testKit.createTestProbe[String]()
       val event: UserValidatedAccountEvent = UserValidatedAccountEvent(
         connectedUserId = None,
         eventDate = dateNow,
@@ -296,7 +298,7 @@ class UserEmailConsumerActorIT
     }
 
     Scenario("personality validate") {
-      val persoProbe: TestProbe = TestProbe()
+      val persoProbe = testKit.createTestProbe[String]()
       val event: UserValidatedAccountEvent = UserValidatedAccountEvent(
         connectedUserId = None,
         eventDate = dateNow,
@@ -315,7 +317,7 @@ class UserEmailConsumerActorIT
   }
 
   Feature("consume ResendValidationEmailEvent") {
-    val probeValidation: TestProbe = TestProbe("resend")
+    val probeValidation = testKit.createTestProbe[String]()
 
     Scenario("user resend") {
       when(
@@ -340,7 +342,7 @@ class UserEmailConsumerActorIT
 
       send(wrappedEvent)
 
-      probeValidation.expectMsg(500.millis, "sendMailPublisherService.resendRegistration called")
+      probeValidation.expectMessage(2.seconds, "sendMailPublisherService.resendRegistration called")
     }
 
     Scenario("organisation resend") {
@@ -366,7 +368,7 @@ class UserEmailConsumerActorIT
 
       send(wrappedEvent)
 
-      probeValidation.expectMsg(500.millis, "sendMailPublisherService.resendRegistration called")
+      probeValidation.expectMessage(2.seconds, "sendMailPublisherService.resendRegistration called")
     }
 
     Scenario("personality resend") {
@@ -392,12 +394,12 @@ class UserEmailConsumerActorIT
 
       send(wrappedEvent)
 
-      probeValidation.expectMsg(500.millis, "sendMailPublisherService.resendRegistration called")
+      probeValidation.expectMessage(2.seconds, "sendMailPublisherService.resendRegistration called")
     }
   }
 }
 
-object UserEmailConsumerActorIT {
+object UserEmailConsumerBehaviorIT {
   // This configuration cannot be dynamic, port values _must_ match reality
   val configuration: String =
     """
@@ -418,9 +420,18 @@ object UserEmailConsumerActorIT {
       |      ideas = "ideas"
       |      predictions = "predictions"
       |    }
+      |    dispatcher {
+      |      type = Dispatcher
+      |      executor = "thread-pool-executor"
+      |      thread-pool-executor {
+      |        fixed-pool-size = 32
+      |      }
+      |      throughput = 1
+      |    }
       |  }
       |}
     """.stripMargin
 
-  val actorSystem = ActorSystem("UserEmailConsumerActorIT", ConfigFactory.parseString(configuration))
+  val actorSystem: ActorSystem[Nothing] =
+    ActorSystem[Nothing](Behaviors.empty, "UserEmailConsumerActorIT", ConfigFactory.parseString(configuration))
 }

@@ -19,19 +19,16 @@
 
 package org.make.api.proposal
 
-import akka.actor.Props
-import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import org.make.api.proposal.PublishedProposalEvent._
-import org.make.api.technical.BasicProducerActor
+import akka.actor.typed.Behavior
+import org.make.api.proposal.PublishedProposalEvent.ProposalEventWrapper
+import org.make.api.technical.KafkaProducerBehavior
 import org.make.core.DateHelper
 
-class ProposalProducerActor extends BasicProducerActor[ProposalEventWrapper, PublishedProposalEvent] {
-  override protected lazy val eventClass: Class[PublishedProposalEvent] = classOf[PublishedProposalEvent]
-  override protected lazy val format: RecordFormat[ProposalEventWrapper] = ProposalEventWrapper.recordFormat
-  override protected lazy val schema: SchemaFor[ProposalEventWrapper] = ProposalEventWrapper.schemaFor
-  override val kafkaTopic: String = kafkaConfiguration.topics(ProposalProducerActor.topicKey)
+class ProposalKafkaProducerBehavior extends KafkaProducerBehavior[PublishedProposalEvent, ProposalEventWrapper] {
 
-  override protected def convert(event: PublishedProposalEvent): ProposalEventWrapper = {
+  override val topicKey: String = ProposalKafkaProducerBehavior.topicKey
+
+  override protected def wrapEvent(event: PublishedProposalEvent): ProposalEventWrapper = {
     ProposalEventWrapper(
       version = event.version(),
       id = event.id.value,
@@ -41,10 +38,14 @@ class ProposalProducerActor extends BasicProducerActor[ProposalEventWrapper, Pub
       eventId = event.eventId
     )
   }
+
 }
 
-object ProposalProducerActor {
-  val props: Props = Props[ProposalProducerActor]()
-  val name: String = "kafka-proposals-event-writer"
+object ProposalKafkaProducerBehavior {
+  def apply(): Behavior[PublishedProposalEvent] = {
+    new ProposalKafkaProducerBehavior().createBehavior(name)
+  }
+
+  val name: String = "proposal-producer"
   val topicKey: String = "proposals"
 }

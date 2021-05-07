@@ -21,7 +21,7 @@ package org.make.api.technical
 
 import akka.actor.typed.scaladsl.AskPattern.Askable
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{Behavior, Scheduler, SupervisorStrategy}
+import akka.actor.typed.{Behavior, Scheduler}
 import akka.cluster.sharding.ShardRegion.ClusterShardingStats
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.cluster.sharding.typed.{scaladsl, GetClusterShardingStats}
@@ -32,7 +32,7 @@ import com.typesafe.config.Config
 import kamon.Kamon
 import kamon.metric.Gauge
 
-import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success}
 
@@ -68,11 +68,7 @@ object ClusterShardingMonitor {
   }
 
   def apply(): Behavior[Protocol] = {
-    Behaviors
-      .supervise(monitorClusterSharding())
-      .onFailure(
-        SupervisorStrategy.restartWithBackoff(minBackoff = 3.seconds, maxBackoff = 30.seconds, randomFactor = 0.2)
-      )
+    ActorSystemHelper.superviseWithBackoff(monitorClusterSharding())
   }
 
   private def monitorClusterSharding(): Behavior[Protocol] = {

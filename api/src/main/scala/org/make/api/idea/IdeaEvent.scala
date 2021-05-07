@@ -38,11 +38,9 @@ final case class IdeaEventWrapper(version: Int, id: String, date: ZonedDateTime,
     extends EventWrapper[IdeaEvent]
 
 object IdeaEventWrapper extends AvroSerializers {
-  lazy val schemaFor: SchemaFor[IdeaEventWrapper] = SchemaFor.gen[IdeaEventWrapper]
+  implicit lazy val schemaFor: SchemaFor[IdeaEventWrapper] = SchemaFor.gen[IdeaEventWrapper]
   implicit lazy val avroDecoder: Decoder[IdeaEventWrapper] = Decoder.gen[IdeaEventWrapper]
   implicit lazy val avroEncoder: Encoder[IdeaEventWrapper] = Encoder.gen[IdeaEventWrapper]
-  lazy val recordFormat: RecordFormat[IdeaEventWrapper] =
-    RecordFormat[IdeaEventWrapper](schemaFor.schema(DefaultFieldMapper))
 }
 
 @AvroSortPriority(2)

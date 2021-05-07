@@ -19,12 +19,13 @@
 
 package org.make.api.proposal
 
-import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
-import akka.testkit.{ImplicitSender, TestKit, TestProbe}
-import com.sksamuel.avro4s.RecordFormat
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.{ActorSystem, Scheduler}
+import akka.actor.typed.eventstream.EventStream.Publish
+import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
 import org.make.api.proposal.PublishedProposalEvent.{ProposalAuthorInfo, ProposalEventWrapper, ProposalProposed}
-import org.make.api.{KafkaTest, KafkaTestConsumerActor}
+import org.make.api.{KafkaTest, KafkaTestConsumerBehavior}
 import org.make.core.proposal.ProposalId
 import org.make.core.user.UserId
 import org.make.core.{AvroSerializers, DateHelper, RequestContext}
@@ -33,36 +34,29 @@ import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 
 class ProposalProducerActorIT
-    extends TestKit(ProposalProducerActorIT.actorSystem)
+    extends ScalaTestWithActorTestKit(ProposalProducerActorIT.actorSystem)
     with KafkaTest
-    with ImplicitSender
     with AvroSerializers {
+
+  implicit val scheduler: Scheduler = testKit.system.scheduler
 
   Feature("Proposal producer") {
     Scenario("send wrapped event into kafka") {
       Given("a producer on the proposal topic and a consumer on the same topic")
-      val actorSystem = system
-      val producer: ActorRef = actorSystem.actorOf(ProposalProducerActor.props, ProposalProducerActor.name)
+      testKit.spawn(ProposalKafkaProducerBehavior(), ProposalKafkaProducerBehavior.name)
 
-      val probe = TestProbe()
-      val consumer = {
-        val (name: String, props: Props) =
-          KafkaTestConsumerActor.propsAndName(
-            RecordFormat[ProposalEventWrapper],
-            ProposalProducerActor.topicKey,
-            probe.ref
-          )
-        actorSystem.actorOf(props, name)
-      }
+      val probe = testKit.createTestProbe[ProposalEventWrapper]()
+
+      val consumer = testKit.spawn(
+        KafkaTestConsumerBehavior(ProposalKafkaProducerBehavior.topicKey, getClass.getSimpleName, probe.ref)
+      )
 
       // Wait for actors to init
-      Await.result(KafkaTestConsumerActor.waitUntilReady(consumer), atMost = 2.minutes)
+      Await.result(KafkaTestConsumerBehavior.waitUntilReady(consumer), atMost = 2.minutes)
       logger.info("Consumer is ready")
-      KafkaTestConsumerActor.waitUntilReady(producer)
-      logger.info("Producer is ready")
 
       When("I send a message to the producer")
-      actorSystem.eventStream.publish(
+      testKit.system.eventStream ! Publish(
         ProposalProposed(
           id = ProposalId("123456789"),
           slug = "ma-raison-de-proposer",
@@ -78,21 +72,15 @@ class ProposalProducerActorIT
       )
 
       Then("I should receive the wrapped version of it in the consumer")
-      val wrapped = probe.expectMsgType[ProposalEventWrapper](2.minutes)
+      val wrapped = probe.expectMessageType[ProposalEventWrapper](2.minutes)
       wrapped.id should be("123456789")
       wrapped.eventType should be("ProposalProposed")
-
-      // Clean up stuff
-      producer ! PoisonPill
-      consumer ! PoisonPill
-
-      // sleep to wait for consumer / producer to be gracefully stopped
-      Thread.sleep(2000)
     }
   }
 
   override def afterAll(): Unit = {
-    system.terminate()
+    testKit.system.terminate()
+    Await.result(testKit.system.whenTerminated, atMost = 10.seconds)
     super.afterAll()
   }
 }
@@ -118,10 +106,19 @@ object ProposalProducerActorIT {
       |      ideas = "ideas"
       |      predictions = "predictions"
       |    }
+      |    dispatcher {
+      |      type = Dispatcher
+      |      executor = "thread-pool-executor"
+      |      thread-pool-executor {
+      |        fixed-pool-size = 32
+      |      }
+      |      throughput = 1
+      |    }
       |  }
       |}
     """.stripMargin
 
-  val actorSystem = ActorSystem("ProposalProducerIT", ConfigFactory.parseString(configuration))
+  val actorSystem: ActorSystem[Nothing] =
+    ActorSystem[Nothing](Behaviors.empty, "ProposalProducerIT", ConfigFactory.parseString(configuration))
 
 }

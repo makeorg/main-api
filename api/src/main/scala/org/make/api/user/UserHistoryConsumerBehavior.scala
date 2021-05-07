@@ -19,26 +19,26 @@
 
 package org.make.api.user
 
-import akka.actor.Props
+import akka.actor.typed.Behavior
 import akka.util.Timeout
-import com.sksamuel.avro4s.RecordFormat
 import grizzled.slf4j.Logging
 import org.make.api.technical.Futures._
-import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
+import org.make.api.technical.KafkaConsumerBehavior.Protocol
+import org.make.api.technical.{KafkaConsumerBehavior, TimeSettings}
 import org.make.api.userhistory._
 import org.make.core.AvroSerializers
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordinatorService, userService: UserService)
-    extends KafkaConsumerActor[UserEventWrapper]
-    with ActorEventBusServiceComponent
+class UserHistoryConsumerBehavior(
+  userHistoryCoordinatorService: UserHistoryCoordinatorService,
+  userService: UserService
+) extends KafkaConsumerBehavior[UserEventWrapper]
     with AvroSerializers
     with Logging {
 
-  override protected lazy val kafkaTopic: String = UserProducerActor.topicKey
-  override protected val format: RecordFormat[UserEventWrapper] = UserEventWrapper.recordFormat
+  override protected val topicKey: String = UserProducerBehavior.topicKey
   override val groupId = "user-history"
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
@@ -107,7 +107,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
           .update(user.copy(lastConnection = Some(event.eventDate)), event.requestContext)
           .toUnit
       case None =>
-        log.warning("User not found after UserConnectedEvent: ", event)
+        warn(s"User not found after UserConnectedEvent: $event")
         Future.unit
     }
   }
@@ -191,8 +191,12 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
   }
 }
 
-object UserHistoryConsumerActor {
-  def props(userHistoryCoordinatorService: UserHistoryCoordinatorService, userService: UserService): Props =
-    Props(new UserHistoryConsumerActor(userHistoryCoordinatorService, userService))
-  val name: String = "user-events-history-consumer"
+object UserHistoryConsumerBehavior {
+  def apply(
+    userHistoryCoordinatorService: UserHistoryCoordinatorService,
+    userService: UserService
+  ): Behavior[Protocol] =
+    new UserHistoryConsumerBehavior(userHistoryCoordinatorService, userService)
+      .createBehavior(name)
+  val name: String = "user-history-consumer"
 }

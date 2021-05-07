@@ -68,9 +68,6 @@ trait CrmClient {
     limit: Int,
     offset: Int = 0
   )(implicit executionContext: ExecutionContext): Future[ContactsResponse]
-  def manageContactListJobDetails(jobId: String)(
-    implicit executionContext: ExecutionContext
-  ): Future[ManageManyContactsJobDetailsResponse]
   def getContactsProperties(offset: Int, limit: Int)(
     implicit executionContext: ExecutionContext
   ): Future[GetMailjetContactProperties]
@@ -311,28 +308,6 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       }
     }
 
-    override def manageContactListJobDetails(
-      jobId: String
-    )(implicit executionContext: ExecutionContext): Future[ManageManyContactsJobDetailsResponse] = {
-      val request = HttpRequest(
-        method = HttpMethods.GET,
-        uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contact/managemanycontacts/$jobId"),
-        headers = immutable.Seq(campaignApiAuthorization)
-      )
-      doHttpCall(request).flatMap {
-        case HttpResponse(code, _, responseEntity, _) if code.isSuccess() =>
-          Unmarshal(responseEntity).to[ManageManyContactsJobDetailsResponse]
-        case HttpResponse(StatusCodes.TooManyRequests, _, responseEntity, _) =>
-          Unmarshal(responseEntity).to[String].flatMap { response =>
-            Future.failed(QuotaExceeded("manageContactListJobDetails", response))
-          }
-        case HttpResponse(code, _, entity, _) =>
-          Unmarshal(entity).to[String].flatMap { response =>
-            Future.failed(CrmClientException.RequestException.ManageContactListJobDetailsException(code, response))
-          }
-      }
-    }
-
     private def getContactByMailOrContactId(
       identifier: String
     )(implicit executionContext: ExecutionContext): Future[ContactsResponse] = {
@@ -475,14 +450,11 @@ object BasicCrmResponse {
 
   type ContactsResponse = BasicCrmResponse[ContactDataResponse]
   type ManageManyContactsResponse = BasicCrmResponse[JobId]
-  type ManageManyContactsJobDetailsResponse = BasicCrmResponse[JobDetailsResponse]
   type GetMailjetContactProperties = BasicCrmResponse[MailjetContactProperties]
   type ManageContactsWithCsvResponse = BasicCrmResponse[CsvImportResponse]
 
   implicit val contactsResponseDecoder: Decoder[ContactsResponse] = createDecoder[ContactDataResponse]
   implicit val manageManyContactsResponseDecoder: Decoder[ManageManyContactsResponse] = createDecoder[JobId]
-  implicit val manageManyContactsJobDetailsResponseDecoder: Decoder[ManageManyContactsJobDetailsResponse] =
-    createDecoder[JobDetailsResponse]
   implicit val getMailjetContactPropertiesResponseDecoder: Decoder[GetMailjetContactProperties] =
     createDecoder[MailjetContactProperties]
   implicit val manageContactsWithCsvResponseDecoder: Decoder[ManageContactsWithCsvResponse] =
@@ -533,30 +505,6 @@ final case class JobId(jobId: Long)
 object JobId {
   implicit val decoder: Decoder[JobId] =
     Decoder.forProduct1("JobID")(JobId.apply)
-}
-
-final case class JobDetailsResponse(
-  contactsLists: Seq[ContactListAndAction],
-  count: Int,
-  error: String,
-  errorFile: String,
-  jobEnd: String,
-  jobStart: String,
-  status: String
-)
-
-object JobDetailsResponse {
-  implicit val decoder: Decoder[JobDetailsResponse] =
-    Decoder.forProduct7("ContactsLists", "Count", "Error", "ErrorFile", "JobEnd", "JobStart", "Status")(
-      JobDetailsResponse.apply
-    )
-}
-
-final case class ContactListAndAction(listId: Long, action: String)
-
-object ContactListAndAction {
-  implicit val decoder: Decoder[ContactListAndAction] =
-    Decoder.forProduct2("ListID", "Action")(ContactListAndAction.apply)
 }
 
 final case class MailjetContactProperties(properties: Seq[MailjetProperty], contactId: Long)

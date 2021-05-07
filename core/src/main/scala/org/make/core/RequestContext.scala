@@ -22,7 +22,7 @@ package org.make.core
 import java.time.ZonedDateTime
 
 import com.sksamuel.avro4s
-import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
+import com.sksamuel.avro4s.SchemaFor
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
@@ -102,9 +102,8 @@ final case class RequestContext(
 
 object RequestContext extends CirceFormatters with SprayJsonFormatters with AvroSerializers {
   lazy val schemaFor: SchemaFor[RequestContext] = SchemaFor.gen[RequestContext]
-  implicit lazy val fromRecord: avro4s.Decoder[RequestContext] = avro4s.Decoder.gen[RequestContext]
-  implicit lazy val toRecord: avro4s.Encoder[RequestContext] = avro4s.Encoder.gen[RequestContext]
-  lazy val recordFormat: RecordFormat[RequestContext] = RecordFormat[RequestContext]
+  implicit lazy val avroDecoder: avro4s.Decoder[RequestContext] = avro4s.Decoder.gen[RequestContext]
+  implicit lazy val avroEncoder: avro4s.Encoder[RequestContext] = avro4s.Encoder.gen[RequestContext]
 
   implicit val encoder: Encoder[RequestContext] = deriveEncoder[RequestContext]
   implicit val decoder: Decoder[RequestContext] = deriveDecoder[RequestContext]

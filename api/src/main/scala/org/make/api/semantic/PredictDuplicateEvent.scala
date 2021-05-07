@@ -19,10 +19,11 @@
 
 package org.make.api.semantic
 
-import java.time.ZonedDateTime
 import com.sksamuel.avro4s._
 import org.make.core.proposal.ProposalId
 import org.make.core.{AvroSerializers, EventWrapper}
+
+import java.time.ZonedDateTime
 
 sealed trait PredictDuplicate
 final case class PredictDuplicateEvent(
@@ -41,9 +42,7 @@ final case class PredictDuplicateEventWrapper(
 ) extends EventWrapper[PredictDuplicate]
 
 object PredictDuplicateEventWrapper extends AvroSerializers {
-  lazy val schemaFor: SchemaFor[PredictDuplicateEventWrapper] = SchemaFor.gen[PredictDuplicateEventWrapper]
+  implicit lazy val schemaFor: SchemaFor[PredictDuplicateEventWrapper] = SchemaFor.gen[PredictDuplicateEventWrapper]
   implicit lazy val decoder: Decoder[PredictDuplicateEventWrapper] = Decoder.gen[PredictDuplicateEventWrapper]
   implicit lazy val encoder: Encoder[PredictDuplicateEventWrapper] = Encoder.gen[PredictDuplicateEventWrapper]
-  lazy val recordFormat: RecordFormat[PredictDuplicateEventWrapper] =
-    RecordFormat[PredictDuplicateEventWrapper](schemaFor.schema(DefaultFieldMapper))
 }

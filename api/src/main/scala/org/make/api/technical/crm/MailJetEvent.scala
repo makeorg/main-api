@@ -68,11 +68,9 @@ object MailJetEvent {
 final case class MailJetEventWrapper(version: Int, id: String, date: ZonedDateTime, event: MailJetEvent) extends Sharded
 
 object MailJetEventWrapper extends AvroSerializers {
-  lazy val schemaFor: SchemaFor[MailJetEventWrapper] = SchemaFor.gen[MailJetEventWrapper]
+  implicit lazy val schemaFor: SchemaFor[MailJetEventWrapper] = SchemaFor.gen[MailJetEventWrapper]
   implicit lazy val avroDecoder: avro4s.Decoder[MailJetEventWrapper] = avro4s.Decoder.gen[MailJetEventWrapper]
   implicit lazy val avroEncoder: avro4s.Encoder[MailJetEventWrapper] = avro4s.Encoder.gen[MailJetEventWrapper]
-  lazy val recordFormat: RecordFormat[MailJetEventWrapper] =
-    RecordFormat[MailJetEventWrapper](schemaFor.schema(DefaultFieldMapper))
 }
 
 sealed trait MailJetErrorRelatedTo {

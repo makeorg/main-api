@@ -42,10 +42,8 @@ final case class PredictionsEventWrapper(
 ) extends EventWrapper[PredictedTagsEvents]
 
 object PredictionsEventWrapper extends AvroSerializers {
-  lazy val schemaFor: SchemaFor[PredictionsEventWrapper] = SchemaFor.gen[PredictionsEventWrapper]
+  implicit lazy val schemaFor: SchemaFor[PredictionsEventWrapper] = SchemaFor.gen[PredictionsEventWrapper]
   implicit lazy val avroDecoder: Decoder[PredictionsEventWrapper] = Decoder.gen[PredictionsEventWrapper]
   implicit lazy val avroEncoder: Encoder[PredictionsEventWrapper] = Encoder.gen[PredictionsEventWrapper]
-  lazy val recordFormat: RecordFormat[PredictionsEventWrapper] =
-    RecordFormat[PredictionsEventWrapper](schemaFor.schema(DefaultFieldMapper))
 
 }
