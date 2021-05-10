@@ -20,9 +20,10 @@
 package org.make.api.proposal
 
 import eu.timepit.refined.auto._
+
 import java.time.ZonedDateTime
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
+import io.circe.{Codec, Decoder, Encoder}
 import io.circe.refined._
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.technical.MakeRandom
@@ -471,4 +472,29 @@ final case class ProposalKeywordRequest(proposalId: ProposalId, keywords: Seq[Pr
 
 object ProposalKeywordRequest {
   implicit val decoder: Decoder[ProposalKeywordRequest] = deriveDecoder[ProposalKeywordRequest]
+}
+
+final case class BulkAcceptProposal(@(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId])
+
+object BulkAcceptProposal {
+  implicit val codec: Codec[BulkAcceptProposal] = deriveCodec[BulkAcceptProposal]
+}
+
+final case class BulkTagProposal(
+  @(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId],
+  @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId]
+)
+
+object BulkTagProposal {
+  implicit val codec: Codec[BulkTagProposal] = deriveCodec[BulkTagProposal]
+}
+
+final case class BulkDeleteTagProposal(
+  @(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId],
+  @(ApiModelProperty @field)(dataType = "string", example = "50150a2c-e43f-4876-b38c-5426c4a0a5d9")
+  tagId: TagId
+)
+
+object BulkDeleteTagProposal {
+  implicit val codec: Codec[BulkDeleteTagProposal] = deriveCodec[BulkDeleteTagProposal]
 }

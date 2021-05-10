@@ -194,7 +194,74 @@ trait AdminProposalApi extends Directives {
   @Path(value = "/keywords")
   def setProposalKeywords: Route
 
-  def routes: Route = search ~ patchProposal ~ updateProposalVotes ~ resetVotes ~ setProposalKeywords
+  @ApiOperation(
+    value = "bulk-accept-proposal",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.BulkAcceptProposal")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[BulkActionResponse]))
+  )
+  @Path(value = "/accept")
+  def bulkAcceptProposal: Route
+
+  @ApiOperation(
+    value = "bulk-tag-proposal",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.BulkTagProposal")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[BulkActionResponse]))
+  )
+  @Path(value = "/tag")
+  def bulkTagProposal: Route
+
+  @ApiOperation(
+    value = "bulk-delete-tag-proposal",
+    httpMethod = "DELETE",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.BulkDeleteTagProposal")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[BulkActionResponse]))
+  )
+  @Path(value = "/tag")
+  def bulkDeleteTagProposal: Route
+
+  def routes: Route =
+    search ~ patchProposal ~ updateProposalVotes ~ resetVotes ~ setProposalKeywords ~ bulkAcceptProposal ~ bulkTagProposal ~ bulkDeleteTagProposal
 }
 
 trait AdminProposalApiComponent {
@@ -433,6 +500,67 @@ trait DefaultAdminProposalApiComponent
               decodeRequest {
                 entity(as[Seq[ProposalKeywordRequest]]) { request =>
                   provideAsync(proposalService.setKeywords(request, requestContext)) { response =>
+                    complete(response)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def bulkAcceptProposal: Route = post {
+      path("admin" / "proposals" / "accept") {
+        makeOperation("BulkAcceptProposal") { requestContext =>
+          makeOAuth2 { userAuth =>
+            requireAdminRole(userAuth.user) {
+              decodeRequest {
+                entity(as[BulkAcceptProposal]) { request =>
+                  provideAsync(proposalService.acceptAll(request.proposalIds, userAuth.user.userId, requestContext)) {
+                    response =>
+                      complete(response)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def bulkTagProposal: Route = post {
+      path("admin" / "proposals" / "tag") {
+        makeOperation("BulkTagProposal") { requestContext =>
+          makeOAuth2 { userAuth =>
+            requireAdminRole(userAuth.user) {
+              decodeRequest {
+                entity(as[BulkTagProposal]) { request =>
+                  provideAsync(
+                    proposalService
+                      .addTagsToAll(request.proposalIds, request.tagIds, userAuth.user.userId, requestContext)
+                  ) { response =>
+                    complete(response)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def bulkDeleteTagProposal: Route = delete {
+      path("admin" / "proposals" / "tag") {
+        makeOperation("BulkDeleteTagProposal") { requestContext =>
+          makeOAuth2 { userAuth =>
+            requireAdminRole(userAuth.user) {
+              decodeRequest {
+                entity(as[BulkDeleteTagProposal]) { request =>
+                  provideAsync(
+                    proposalService
+                      .deleteTagFromAll(request.proposalIds, request.tagId, userAuth.user.userId, requestContext)
+                  ) { response =>
                     complete(response)
                   }
                 }

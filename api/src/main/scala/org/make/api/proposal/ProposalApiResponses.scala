@@ -21,7 +21,6 @@ package org.make.api.proposal
 
 import java.time.{LocalDate, ZonedDateTime}
 import java.time.temporal.ChronoUnit
-
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
 import io.circe.{Codec, Decoder, Encoder}
@@ -555,4 +554,36 @@ final case class ProposalKeywordsResponse(
 
 object ProposalKeywordsResponse {
   implicit val codec: Codec[ProposalKeywordsResponse] = deriveCodec[ProposalKeywordsResponse]
+}
+
+final case class BulkActionResponse(successes: Seq[ProposalId], failures: Seq[SingleActionResponse])
+
+object BulkActionResponse {
+  implicit val codec: Codec[BulkActionResponse] = deriveCodec[BulkActionResponse]
+}
+
+final case class SingleActionResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "ab26f127-9230-4d20-82a3-08e70d58c2d4")
+  proposalId: ProposalId,
+  @(ApiModelProperty @field)(dataType = "string", example = "200")
+  key: ActionKey,
+  @(ApiModelProperty @field)(dataType = "string")
+  message: Option[String]
+)
+
+object SingleActionResponse extends CirceFormatters {
+  implicit val codec: Codec[SingleActionResponse] = deriveCodec[SingleActionResponse]
+}
+
+sealed abstract class ActionKey(val value: String) extends StringEnumEntry
+
+object ActionKey extends StringEnum[ActionKey] with StringCirceEnum[ActionKey] {
+  final case class ValidationError(key: String) extends ActionKey(key)
+  case object NotFound extends ActionKey("not_found")
+  case object OK extends ActionKey("ok")
+  case object QuestionNotFound extends ActionKey("question_not_found")
+  case object Unknown extends ActionKey("unknown")
+
+  override def values: IndexedSeq[ActionKey] = findValues
+
 }

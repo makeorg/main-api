@@ -23,7 +23,6 @@ import java.net.URL
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 import java.time.temporal.ChronoField._
 import java.time.{LocalDate, ZonedDateTime}
-
 import io.circe._
 
 import scala.util.{Failure, Success, Try}
@@ -79,5 +78,3 @@ trait CirceFormatters {
     }
   }
 }
-
-// object CirceFormatters extends CirceFormatters
