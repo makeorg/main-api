@@ -26,6 +26,7 @@ import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.proposal._
 import org.make.api.question.{PersistentQuestionServiceComponent, SearchQuestionRequest}
+import org.make.api.sequence.SequenceServiceComponent
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.MakeAuthenticationDirectives
 import org.make.core.auth.UserRights
@@ -73,7 +74,7 @@ trait DefaultWidgetApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors
     with PersistentQuestionServiceComponent {
-  this: MakeDirectivesDependencies with WidgetServiceComponent =>
+  this: MakeDirectivesDependencies with SequenceServiceComponent =>
   override lazy val widgetApi: WidgetApi = new DefaultWidgetApi
 
   class DefaultWidgetApi extends WidgetApi {
@@ -92,15 +93,21 @@ trait DefaultWidgetApiComponent
                     .map(_.headOption)
                 ) { question =>
                   provideAsync(
-                    widgetService.startNewWidgetSequence(
+                    sequenceService.startNewSequence(
+                      behaviourParam = tagsIds,
                       maybeUserId = userAuth.map(_.user.userId),
                       questionId = question.questionId,
-                      tagsIds = tagsIds,
-                      limit = limit,
+                      includedProposalsIds = Seq.empty,
                       requestContext = requestContext
                     )
-                  ) { proposalsResultSeededResponse: ProposalsResultSeededResponse =>
-                    complete(proposalsResultSeededResponse)
+                  ) { selectedProposals =>
+                    complete(
+                      ProposalsResultSeededResponse(
+                        selectedProposals.proposals.size.toLong,
+                        selectedProposals.proposals,
+                        None
+                      )
+                    )
                   }
                 }
             }

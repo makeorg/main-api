@@ -109,13 +109,13 @@ class SequenceApiTest
   ).thenReturn(Future.successful(SequenceResult(Seq.empty)))
 
   when(
-    sequenceService.startNewSequence[Seq[TagId]](
-      behaviourParam = any[Seq[TagId]],
+    sequenceService.startNewSequence[Option[Seq[TagId]]](
+      behaviourParam = any[Option[Seq[TagId]]],
       maybeUserId = any[Option[UserId]],
       questionId = eqTo(questionId),
       includedProposalsIds = any[Seq[ProposalId]],
       requestContext = any[RequestContext]
-    )(any[SequenceBehaviourProvider[Seq[TagId]]])
+    )(any[SequenceBehaviourProvider[Option[Seq[TagId]]]])
   ).thenReturn(Future.successful(SequenceResult(Seq.empty)))
 
   Seq("standard", "consensus", "controversy", "tags").foreach { sequenceType =>

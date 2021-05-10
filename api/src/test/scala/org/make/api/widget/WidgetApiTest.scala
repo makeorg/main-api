@@ -25,9 +25,11 @@ import cats.data.NonEmptyList
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.proposal._
 import org.make.api.question.{PersistentQuestionService, SearchQuestionRequest}
+import org.make.api.sequence.{SequenceBehaviourProvider, SequenceResult, SequenceService, SequenceServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeApiTestBase}
 import org.make.core.RequestContext
+import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
@@ -39,7 +41,7 @@ import scala.concurrent.Future
 class WidgetApiTest
     extends MakeApiTestBase
     with DefaultWidgetApiComponent
-    with WidgetServiceComponent
+    with SequenceServiceComponent
     with ProposalServiceComponent
     with ActorSystemComponent
     with UserServiceComponent
@@ -48,20 +50,25 @@ class WidgetApiTest
   override val proposalService: ProposalService = mock[ProposalService]
   override val userService: UserService = mock[UserService]
   override val ideaService: IdeaService = mock[IdeaService]
-  override val widgetService: WidgetService = mock[WidgetService]
+  override val sequenceService: SequenceService = mock[SequenceService]
   override val persistentQuestionService: PersistentQuestionService = mock[PersistentQuestionService]
 
   val routes: Route = sealRoute(widgetApi.routes)
 
+  val proposals: Seq[ProposalResponse] = Seq(
+    ProposalResponse(indexedProposal(ProposalId("widget-proposal-1")), myProposal = true, None, "key-1"),
+    ProposalResponse(indexedProposal(ProposalId("widget-proposal-2")), myProposal = false, None, "key-2"),
+    ProposalResponse(indexedProposal(ProposalId("widget-proposal-3")), myProposal = false, None, "key-3")
+  )
   when(
-    widgetService.startNewWidgetSequence(
+    sequenceService.startNewSequence(
+      any[Option[Seq[TagId]]],
       any[Option[UserId]],
       any[QuestionId],
-      any[Option[Seq[TagId]]],
-      any[Option[Int]],
+      any[Seq[ProposalId]],
       any[RequestContext]
-    )
-  ).thenReturn(Future.successful(ProposalsResultSeededResponse(total = 0, results = Seq.empty, seed = None)))
+    )(any[SequenceBehaviourProvider[Option[Seq[TagId]]]])
+  ).thenReturn(Future.successful(SequenceResult(proposals)))
 
   Feature("start sequence by question slug") {
     val baseQuestion =
