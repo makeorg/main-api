@@ -19,7 +19,7 @@
 
 package org.make.api
 
-import akka.actor.typed.SpawnProtocol
+import akka.actor.typed.{ActorRef, SpawnProtocol}
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{typed, Actor, ActorLogging, Props}
@@ -28,6 +28,7 @@ import org.make.api.idea.{IdeaConsumerBehavior, IdeaProducerBehavior}
 import org.make.api.proposal.ProposalSupervisor
 import org.make.api.semantic.{SemanticPredictionsProducerBehavior, SemanticProducerBehavior}
 import org.make.api.sequence.SequenceConfigurationActor
+import org.make.api.sequence.SequenceConfigurationActor.SequenceConfigurationActorProtocol
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.technical.crm._
 import org.make.api.technical.healthcheck.HealthCheckSupervisor
@@ -55,12 +56,16 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
       )
     )
 
-    context.watch(
-      context
-        .actorOf(
-          SequenceConfigurationActor.props(makeApi.persistentSequenceConfigurationService),
-          SequenceConfigurationActor.name
-        )
+    val sequenceCacheActor: ActorRef[SequenceConfigurationActorProtocol] = context.spawn(
+      ActorSystemHelper.superviseWithBackoff(
+        SequenceConfigurationActor(makeApi.persistentSequenceConfigurationService)
+      ),
+      SequenceConfigurationActor.name
+    )
+    context.watch(sequenceCacheActor)
+    context.system.toTyped.receptionist ! Receptionist.Register(
+      SequenceConfigurationActor.SequenceCacheActorKey,
+      sequenceCacheActor
     )
 
     context.watch(
