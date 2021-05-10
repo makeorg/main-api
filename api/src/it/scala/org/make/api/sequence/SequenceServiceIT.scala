@@ -484,7 +484,7 @@ class SequenceServiceIT
       val futureSequenceTags = for {
         proposals <- elasticsearchProposalAPI.searchProposals(SearchQuery(limit = Some(10)))
         tags = proposals.results.flatMap(_.tags.map(_.tagId)).take(2)
-        sequence <- sequenceService.startNewSequence(tags, None, questionId, Nil, requestContext)
+        sequence <- sequenceService.startNewSequence(Option(tags), None, questionId, Nil, requestContext)
       } yield (sequence, tags)
       whenReady(futureSequenceTags, Timeout(60.seconds)) {
         case (sequence, tags) if tags.nonEmpty =>

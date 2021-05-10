@@ -703,7 +703,7 @@ final case class InitialProposalFilter(isInitialProposal: Boolean)
 final case class QuestionSearchFilter(questionIds: Seq[QuestionId])
 
 final case class TagsSearchFilter(tagIds: Seq[TagId]) {
-  validate(validateField("tagId", "mandatory", tagIds.nonEmpty, "ids cannot be empty in tag search filters"))
+  validate(validateField("tagIds", "mandatory", tagIds.nonEmpty, "ids cannot be empty in tag search filters"))
 }
 
 final case class LabelsSearchFilter(labelIds: Seq[LabelId]) {

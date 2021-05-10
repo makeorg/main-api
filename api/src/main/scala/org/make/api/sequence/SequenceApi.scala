@@ -258,7 +258,7 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent {
                   provideAsync(
                     sequenceService
                       .startNewSequence(
-                        behaviourParam = tagsIds.getOrElse(Seq.empty),
+                        behaviourParam = tagsIds,
                         maybeUserId = userAuth.map(_.user.userId),
                         questionId = question.questionId,
                         includedProposalsIds = includes.getOrElse(Seq.empty),

@@ -179,7 +179,7 @@ object SequenceBehaviour extends Logging {
   }
 
   final case class Tags(
-    tagsIds: Seq[TagId],
+    tagsIds: Option[Seq[TagId]],
     override val configuration: SequenceConfiguration,
     questionId: QuestionId,
     maybeSegment: Option[String],
@@ -193,7 +193,8 @@ object SequenceBehaviour extends Logging {
         questionId,
         maybeSegment,
         Some(SequencePool.New),
-        proposal.SearchQuery(filters = Some(proposal.SearchFilters(tags = Some(proposal.TagsSearchFilter(tagsIds))))),
+        proposal.SearchQuery(filters = Some(proposal.SearchFilters(tags = tagsIds.map(proposal.TagsSearchFilter.apply)))
+        ),
         CreationDateAlgorithm(SortOrder.Asc)
       )
     }
@@ -203,7 +204,8 @@ object SequenceBehaviour extends Logging {
         questionId,
         maybeSegment,
         Some(SequencePool.Tested),
-        proposal.SearchQuery(filters = Some(proposal.SearchFilters(tags = Some(proposal.TagsSearchFilter(tagsIds))))),
+        proposal.SearchQuery(filters = Some(proposal.SearchFilters(tags = tagsIds.map(proposal.TagsSearchFilter.apply)))
+        ),
         RandomAlgorithm(MakeRandom.nextInt())
       )
     }
@@ -257,8 +259,8 @@ object SequenceBehaviourProvider {
     sessionId: SessionId
   ) => SequenceBehaviour.Keyword(keyword, configuration, questionId, maybeSegment, sessionId)
 
-  implicit val tags: SequenceBehaviourProvider[Seq[TagId]] = (
-    tagsIds: Seq[TagId],
+  implicit val tags: SequenceBehaviourProvider[Option[Seq[TagId]]] = (
+    tagsIds: Option[Seq[TagId]],
     configuration: SequenceConfiguration,
     questionId: QuestionId,
     maybeSegment: Option[String],

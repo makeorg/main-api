@@ -120,7 +120,7 @@ import org.make.api.userhistory.{
   UserHistoryCoordinatorComponent
 }
 import org.make.api.views._
-import org.make.api.widget.{DefaultWidgetApiComponent, DefaultWidgetServiceComponent, WidgetApi}
+import org.make.api.widget.{DefaultWidgetApiComponent, WidgetApi}
 import org.make.core.{AvroSerializers, DefaultDateHelperComponent, ValidationError, ValidationFailedError}
 import scalaoauth2.provider.{OAuthGrantType, _}
 
@@ -283,7 +283,6 @@ trait MakeApi
     with DefaultWidgetApiComponent
     with DefaultWebflowClientComponent
     with DefaultWebflowConfigurationComponent
-    with DefaultWidgetServiceComponent
     with HealthCheckComponent
     with JobCoordinatorComponent
     with MakeAuthentication

@@ -245,10 +245,6 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               Future.successful(
                 SequenceBehaviour.Keyword(kw, config, questionId, maybeSegment, requestContext.sessionId)
               )
-            case (_, Some(tags), _) =>
-              Future.successful(
-                SequenceBehaviour.Tags(tags, config, questionId, maybeSegment, requestContext.sessionId)
-              )
             case (_, _, Some(Zone.Consensus)) =>
               futureTop20ConsensusThreshold(questionId).map(
                 threshold =>
@@ -258,6 +254,10 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             case (_, _, Some(_)) =>
               Future.successful(
                 SequenceBehaviour.Controversy(config, questionId, maybeSegment, requestContext.sessionId)
+              )
+            case (_, tags, _) =>
+              Future.successful(
+                SequenceBehaviour.Tags(tags, config, questionId, maybeSegment, requestContext.sessionId)
               )
           }
       }
