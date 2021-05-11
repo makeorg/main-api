@@ -64,6 +64,7 @@ import org.make.api.proposal._
 import org.make.api.question._
 import org.make.api.segment.DefaultSegmentServiceComponent
 import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
+import org.make.api.sequence.SequenceConfigurationActor.SequenceConfigurationActorProtocol
 import org.make.api.sequence._
 import org.make.api.sessionhistory.{
   ConcurrentModification,
@@ -294,6 +295,8 @@ trait MakeApi
     with Logging
     with UserHistoryCoordinatorComponent {
 
+  implicit val timeout: Timeout = TimeSettings.defaultTimeout
+
   override lazy val proposalCoordinator: TypedActorRef[ProposalCommand] =
     Await.result(actorSystemTyped.findRefByKey(ProposalCoordinator.Key), atMost = 10.seconds)
 
@@ -319,12 +322,9 @@ trait MakeApi
     actorSystemTyped.findRefByKey(MakeGuardian.SpawnActorKey)
   }, atMost = 5.seconds)
 
-  override lazy val sequenceConfigurationActor: ActorRef = Await.result(
-    actorSystem
-      .actorSelection(actorSystem / MakeGuardian.name / SequenceConfigurationActor.name)
-      .resolveOne()(Timeout(10.seconds)),
-    atMost = 10.seconds
-  )
+  override lazy val sequenceConfigurationActor: TypedActorRef[SequenceConfigurationActorProtocol] = Await.result({
+    actorSystemTyped.findRefByKey(SequenceConfigurationActor.SequenceCacheActorKey)
+  }, atMost = 5.seconds)
 
   override lazy val healthCheckSupervisor: ActorRef = Await.result(
     actorSystem

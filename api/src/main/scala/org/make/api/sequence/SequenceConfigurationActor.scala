@@ -19,105 +19,68 @@
 
 package org.make.api.sequence
 
-import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
-import akka.pattern.{pipe, BackoffOpts, BackoffSupervisor}
-import org.make.api.sequence.SequenceConfigurationActor._
+import akka.actor.typed.receptionist.ServiceKey
+import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.scaladsl.Behaviors
+import org.make.api.sequence.SequenceConfigurationActor.SequenceConfigurationActorProtocol
 import org.make.core.question.QuestionId
-import org.make.core.sequence.{SequenceConfiguration, SequenceId}
+import org.make.core.sequence.SequenceConfiguration
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
-class SequenceConfigurationActor(persistentSequenceConfigurationService: PersistentSequenceConfigurationService)
-    extends Actor
-    with ActorLogging {
-
-  var configCache: Map[SequenceId, SequenceConfiguration] = Map.empty
-
-  def refreshCache(): Unit = {
-    val futureConfigs: Future[Seq[SequenceConfiguration]] = persistentSequenceConfigurationService.findAll()
-    futureConfigs.onComplete {
-      case Success(configs) => self ! UpdateSequenceConfiguration(configs)
-      case Failure(e) =>
-        log.error(e, "Error while refreshing sequence configuration")
-        self ! PoisonPill
+object SequenceConfigurationActor {
+  def apply(
+    persistentSequenceConfigurationService: PersistentSequenceConfigurationService
+  ): Behavior[SequenceConfigurationActorProtocol] = {
+    Behaviors.withTimers { timers =>
+      timers.startTimerWithFixedDelay(ReloadSequenceConfiguration, 5.minutes)
+      handleMessages(Map.empty)(persistentSequenceConfigurationService)
     }
   }
 
-  def updateConfiguration(configurations: Seq[SequenceConfiguration]): Unit = {
-    configCache = configurations.map { configuration =>
-      configuration.sequenceId -> configuration
-    }.toMap
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+  private def handleMessages(configCache: Map[QuestionId, SequenceConfiguration])(
+    implicit persistentSequenceConfigurationService: PersistentSequenceConfigurationService
+  ): Behavior[SequenceConfigurationActorProtocol] = {
+    Behaviors.setup { context =>
+      Behaviors.receiveMessage {
+        case ReloadSequenceConfiguration =>
+          context.pipeToSelf(persistentSequenceConfigurationService.findAll()) {
+            case Success(configurations) => UpdateSequenceConfiguration(configurations)
+            case Failure(e)              => UpdateSequenceConfigurationsFailed(e)
+          }
+          Behaviors.same
+        case UpdateSequenceConfiguration(configurations) =>
+          val configCache = configurations.map { configuration =>
+            configuration.questionId -> configuration
+          }.toMap
+          handleMessages(configCache)
+        case UpdateSequenceConfigurationsFailed(e) =>
+          context.log.error("Unable to reload sequence configurations:", e)
+          Behaviors.stopped
+        case GetSequenceConfiguration(questionId, replyTo) =>
+          replyTo ! CachedSequenceConfiguration(configCache.getOrElse(questionId, SequenceConfiguration.default))
+          Behaviors.same
+      }
+    }
   }
 
-  override def preStart(): Unit = {
-    context.system.scheduler.scheduleWithFixedDelay(0.seconds, 5.minutes, self, ReloadSequenceConfiguration)
-    ()
-  }
-
-  override def receive: Receive = {
-    case ReloadSequenceConfiguration                 => refreshCache()
-    case UpdateSequenceConfiguration(configurations) => updateConfiguration(configurations)
-    case GetSequenceConfiguration(sequenceId) =>
-      sender() ! CachedSequenceConfiguration(configCache.getOrElse(sequenceId, SequenceConfiguration.default))
-    case GetSequenceConfigurationByQuestionId(questionId) =>
-      sender() ! CachedSequenceConfiguration(
-        configCache.values.find(_.questionId == questionId).getOrElse(SequenceConfiguration.default)
-      )
-    case SetSequenceConfiguration(configuration) =>
-      pipe(persistentSequenceConfigurationService.persist(configuration)).to(sender())
-      ()
-    case GetPersistentSequenceConfiguration(sequenceId) =>
-      pipe(persistentSequenceConfigurationService.findOne(sequenceId).map(StoredSequenceConfiguration.apply))
-        .to(sender())
-      ()
-    case GetPersistentSequenceConfigurationByQuestionId(questionId) =>
-      pipe(persistentSequenceConfigurationService.findOne(questionId).map(StoredSequenceConfiguration.apply))
-        .to(sender())
-      ()
-  }
-
-}
-
-object SequenceConfigurationActor {
   sealed trait SequenceConfigurationActorProtocol
   case object ReloadSequenceConfiguration extends SequenceConfigurationActorProtocol
-  final case class UpdateSequenceConfiguration(configurations: Seq[SequenceConfiguration])
+  private final case class UpdateSequenceConfiguration(configurations: Seq[SequenceConfiguration])
       extends SequenceConfigurationActorProtocol
-  final case class GetSequenceConfiguration(sequenceId: SequenceId) extends SequenceConfigurationActorProtocol
-  final case class GetSequenceConfigurationByQuestionId(questionId: QuestionId)
-      extends SequenceConfigurationActorProtocol
-  final case class SetSequenceConfiguration(sequenceConfiguration: SequenceConfiguration)
-      extends SequenceConfigurationActorProtocol
-  final case class GetPersistentSequenceConfiguration(sequenceId: SequenceId) extends SequenceConfigurationActorProtocol
-  final case class GetPersistentSequenceConfigurationByQuestionId(questionId: QuestionId)
+  private final case class UpdateSequenceConfigurationsFailed(e: Throwable) extends SequenceConfigurationActorProtocol
+
+  final case class GetSequenceConfiguration(questionId: QuestionId, replyTo: ActorRef[CachedSequenceConfiguration])
       extends SequenceConfigurationActorProtocol
 
   final case class CachedSequenceConfiguration(sequenceConfiguration: SequenceConfiguration)
-  final case class StoredSequenceConfiguration(sequenceConfiguration: Option[SequenceConfiguration])
-
-  val name: String = "sequence-configuration-backoff"
-  val internalName: String = "sequence-configuration-backoff"
-
-  def props(persistentSequenceConfigurationService: PersistentSequenceConfigurationService): Props = {
-    val maxNrOfRetries = 50
-    BackoffSupervisor.props(
-      BackoffOpts
-        .onStop(
-          Props(new SequenceConfigurationActor(persistentSequenceConfigurationService)),
-          childName = internalName,
-          minBackoff = 3.seconds,
-          maxBackoff = 30.seconds,
-          randomFactor = 0.2
-        )
-        .withMaxNrOfRetries(maxNrOfRetries)
-    )
-  }
+  val name: String = "sequence-configuration-cache"
+  val SequenceCacheActorKey: ServiceKey[SequenceConfigurationActorProtocol] = ServiceKey(name)
 
 }
 
 trait SequenceConfigurationActorComponent {
-  def sequenceConfigurationActor: ActorRef
+  def sequenceConfigurationActor: ActorRef[SequenceConfigurationActorProtocol]
 }

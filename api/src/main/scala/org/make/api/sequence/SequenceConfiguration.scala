@@ -19,14 +19,15 @@
 
 package org.make.api.sequence
 
-import akka.pattern.ask
+import akka.actor.typed.Scheduler
 import akka.util.Timeout
 import grizzled.slf4j.Logging
+import org.make.api.ActorSystemTypedComponent
 import org.make.api.sequence.SequenceConfigurationActor._
+import org.make.api.technical.BetterLoggingActors._
 import org.make.api.technical.TimeSettings
 import org.make.core.question.QuestionId
 import org.make.core.sequence.{SequenceConfiguration, SequenceId}
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -67,7 +68,6 @@ import scala.concurrent.Future
   *
   **/
 trait SequenceConfigurationService {
-  def getSequenceConfiguration(sequenceId: SequenceId): Future[SequenceConfiguration]
   def getSequenceConfigurationByQuestionId(questionId: QuestionId): Future[SequenceConfiguration]
   def setSequenceConfiguration(sequenceConfiguration: SequenceConfiguration): Future[Boolean]
   def getPersistentSequenceConfiguration(sequenceId: SequenceId): Future[Option[SequenceConfiguration]]
@@ -80,39 +80,33 @@ trait SequenceConfigurationComponent {
 }
 
 trait DefaultSequenceConfigurationComponent extends SequenceConfigurationComponent with Logging {
-  self: SequenceConfigurationActorComponent =>
+  self: SequenceConfigurationActorComponent
+    with PersistentSequenceConfigurationComponent
+    with ActorSystemTypedComponent =>
 
-  implicit val timeout: Timeout = TimeSettings.defaultTimeout
+  override lazy val sequenceConfigurationService: SequenceConfigurationService = new DefaultSequenceConfigurationService
 
-  override lazy val sequenceConfigurationService: SequenceConfigurationService = new SequenceConfigurationService {
-    override def getSequenceConfiguration(sequenceId: SequenceId): Future[SequenceConfiguration] = {
-      (sequenceConfigurationActor ? GetSequenceConfiguration(sequenceId))
-        .mapTo[CachedSequenceConfiguration]
-        .map(_.sequenceConfiguration)
-    }
+  class DefaultSequenceConfigurationService extends SequenceConfigurationService {
+    implicit val timeout: Timeout = TimeSettings.defaultTimeout
+    implicit val scheduler: Scheduler = actorSystemTyped.scheduler
 
     override def getSequenceConfigurationByQuestionId(questionId: QuestionId): Future[SequenceConfiguration] = {
-      (sequenceConfigurationActor ? GetSequenceConfigurationByQuestionId(questionId))
-        .mapTo[CachedSequenceConfiguration]
+      (sequenceConfigurationActor ?? (GetSequenceConfiguration(questionId, _)))
         .map(_.sequenceConfiguration)
     }
 
     override def setSequenceConfiguration(sequenceConfiguration: SequenceConfiguration): Future[Boolean] = {
-      (sequenceConfigurationActor ? SetSequenceConfiguration(sequenceConfiguration)).mapTo[Boolean]
+      persistentSequenceConfigurationService.persist(sequenceConfiguration)
     }
 
     override def getPersistentSequenceConfiguration(sequenceId: SequenceId): Future[Option[SequenceConfiguration]] = {
-      (sequenceConfigurationActor ? GetPersistentSequenceConfiguration(sequenceId))
-        .mapTo[StoredSequenceConfiguration]
-        .map(_.sequenceConfiguration)
+      persistentSequenceConfigurationService.findOne(sequenceId)
     }
 
     override def getPersistentSequenceConfigurationByQuestionId(
       questionId: QuestionId
     ): Future[Option[SequenceConfiguration]] = {
-      (sequenceConfigurationActor ? GetPersistentSequenceConfigurationByQuestionId(questionId))
-        .mapTo[StoredSequenceConfiguration]
-        .map(_.sequenceConfiguration)
+      persistentSequenceConfigurationService.findOne(questionId)
     }
 
     override def reloadConfigurations(): Unit = {
