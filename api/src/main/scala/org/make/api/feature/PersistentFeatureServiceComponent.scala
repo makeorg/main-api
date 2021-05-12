@@ -176,7 +176,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
             val query: scalikejdbc.PagingSQLBuilder[PersistentFeature] =
               select
                 .from(PersistentFeature.as(featureAlias))
-                .where(sqls.toAndConditionOpt(maybeSlug.map(slug => sqls.eq(featureAlias.slug, slug))))
+                .where(sqls.toAndConditionOpt(maybeSlug.map(slug => sqls.like(featureAlias.slug, s"%$slug%"))))
 
             sortOrderQuery(start, end, sort, order, query)
           }.map(PersistentFeature.apply()).list().apply()
