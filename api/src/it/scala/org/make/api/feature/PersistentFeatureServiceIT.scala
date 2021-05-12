@@ -22,6 +22,7 @@ package org.make.api.feature
 import org.make.api.DatabaseTest
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.core.feature.{Feature => Feat, _}
+import org.make.core.technical.Pagination
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -39,8 +40,8 @@ class PersistentFeatureServiceIT
 
   val postalCode: Feat = newFeature("postal-code")
   val noVotes: Feat = newFeature("no-votes")
-  val fieldHelp: Feat = newFeature("field-help")
-  val stream: Feat = newFeature("stream")
+  val fieldHelp: Feat = newFeature("field-1-help")
+  val stream: Feat = newFeature("stream-1")
   val rust: Feat = newFeature("rust")
   val feature: Feat = newFeature("feature")
   val deleted: Feat = newFeature("deleted")
@@ -69,11 +70,11 @@ class PersistentFeatureServiceIT
   Feature("A list of features can be retrieved") {
     Scenario("Get a list of all enabled features") {
       val futurePersistedFeatureList: Future[Seq[Feat]] = for {
-        _                <- persistentFeatureService.persist(noVotes)
-        featureLannister <- persistentFeatureService.persist(fieldHelp)
-        featureBolton    <- persistentFeatureService.persist(stream)
-        featureGreyjoy   <- persistentFeatureService.persist(rust)
-      } yield Seq(featureLannister, featureBolton, featureGreyjoy)
+        _             <- persistentFeatureService.persist(noVotes)
+        featureHelp   <- persistentFeatureService.persist(fieldHelp)
+        featureStream <- persistentFeatureService.persist(stream)
+        featureRust   <- persistentFeatureService.persist(rust)
+      } yield Seq(featureHelp, featureStream, featureRust)
 
       val futureFeaturesLists: Future[(Seq[Feat], Seq[Feat])] = for {
         persistedFeaturesList <- futurePersistedFeatureList
@@ -83,6 +84,18 @@ class PersistentFeatureServiceIT
       whenReady(futureFeaturesLists, Timeout(3.seconds)) {
         case (persisted, found) =>
           found.forall(persisted.contains) should be(true)
+      }
+
+      val findSlug: Future[Seq[Feat]] = persistentFeatureService.find(
+        start = Pagination.Start.zero,
+        end = None,
+        sort = None,
+        order = None,
+        slug = Some("-1")
+      )
+
+      whenReady(findSlug, Timeout(3.seconds)) { features =>
+        features.map(_.slug).toSet shouldBe Set("field-1-help", "stream-1")
       }
     }
 
