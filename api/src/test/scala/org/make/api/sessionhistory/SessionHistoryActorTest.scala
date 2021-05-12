@@ -21,13 +21,25 @@ package org.make.api.sessionhistory
 
 import java.time.temporal.ChronoUnit
 import akka.actor.ActorRef
-import akka.testkit.TestProbe
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import org.make.api.ShardingActorTest
-import org.make.api.sessionhistory.SessionHistoryActor.{CurrentSessionId, SessionHistory, SessionVotesValues}
+import org.make.api.sessionhistory.SessionHistoryActor.{
+  CurrentSessionId,
+  LogAcknowledged,
+  SessionEventsInjected,
+  SessionHistory,
+  SessionVotesValues
+}
 import org.make.api.technical.DefaultIdGeneratorComponent
-import org.make.api.userhistory.UserHistoryActor.{InjectSessionEvents, LogAcknowledged, SessionEventsInjected}
 import org.make.core.history.HistoryActions.VoteTrust.Trusted
-import org.make.api.userhistory.{StartSequenceParameters, UserHistoryEnvelope}
+import org.make.api.userhistory.{
+  InjectSessionEvents,
+  StartSequenceParameters,
+  UserHistoryCommand,
+  UserHistoryResponse,
+  UserHistoryTransactionalEnvelope
+}
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.sequence.SequenceId
 import org.make.core.session.SessionId
@@ -38,13 +50,20 @@ import scala.concurrent.duration.DurationInt
 
 class SessionHistoryActorTest extends ShardingActorTest with DefaultIdGeneratorComponent {
 
-  val userCoordinatorProbe: TestProbe = TestProbe()(system)
+  val testKit = ActorTestKit(this.system.toTyped)
+
+  val userCoordinatorProbe = testKit.createTestProbe[UserHistoryCommand]()
 
   val coordinator: ActorRef =
     system.actorOf(
       SessionHistoryCoordinator.props(userCoordinatorProbe.ref, idGenerator, 500.milliseconds),
       SessionHistoryCoordinator.name
     )
+
+  override def afterAll(): Unit = {
+    testKit.shutdownTestKit()
+    super.afterAll()
+  }
 
   Feature("Vote retrieval") {
     Scenario("no vote history") {
@@ -554,11 +573,18 @@ class SessionHistoryActorTest extends ShardingActorTest with DefaultIdGeneratorC
       // This event should be forwarded to user history
       coordinator ! SessionHistoryEnvelope(sessionId, event2)
 
-      userCoordinatorProbe.expectMsg(5.seconds, InjectSessionEvents(userId, Seq(event1.toUserHistoryEvent(userId))))
-      userCoordinatorProbe.reply(SessionEventsInjected)
-      userCoordinatorProbe.expectMsg(5.seconds, UserHistoryEnvelope(userId, event2.toUserHistoryEvent(userId)))
+      val eventsInjected = userCoordinatorProbe.expectMessageType[InjectSessionEvents](5.seconds)
+      eventsInjected.userId shouldBe userId
+      eventsInjected.events shouldBe Seq(event1.toUserHistoryEvent(userId))
+      eventsInjected.replyTo ! UserHistoryResponse(SessionEventsInjected)
 
       val transformation = expectMsgType[SessionTransformed]
+
+      val messageForwarded = userCoordinatorProbe.expectMessageType[UserHistoryTransactionalEnvelope[_]](5.seconds)
+      messageForwarded.event shouldBe event2.toUserHistoryEvent(userId)
+      messageForwarded.replyTo ! UserHistoryResponse(LogAcknowledged)
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! GetSessionHistory(sessionId)
       // Once transformed, there shouldn't be any more messages added to the session
@@ -582,7 +608,11 @@ class SessionHistoryActorTest extends ShardingActorTest with DefaultIdGeneratorC
       )
       coordinator ! SessionHistoryEnvelope(sessionId, event3)
 
-      userCoordinatorProbe.expectMsg(5.seconds, UserHistoryEnvelope(userId, event3.toUserHistoryEvent(userId)))
+      val messageForwarded2 = userCoordinatorProbe.expectMessageType[UserHistoryTransactionalEnvelope[_]](5.seconds)
+      messageForwarded2.event shouldBe event3.toUserHistoryEvent(userId)
+      messageForwarded2.replyTo ! UserHistoryResponse(LogAcknowledged)
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! GetSessionHistory(sessionId)
       expectMsg(SessionHistory(List(transformation)))
@@ -687,9 +717,11 @@ class SessionHistoryActorTest extends ShardingActorTest with DefaultIdGeneratorC
       expectMsg(SessionHistory(List()))
 
       coordinator ! UserConnected(sessionId, userId, RequestContext.empty)
-      userCoordinatorProbe.expectMsg(5.seconds, InjectSessionEvents(userId, Seq.empty))
-      userCoordinatorProbe.reply(SessionEventsInjected)
-      val _ = expectMsgType[SessionTransformed]
+      val command = userCoordinatorProbe.expectMessageType[InjectSessionEvents](5.seconds)
+      command.userId shouldBe userId
+      command.events shouldBe Seq.empty
+      command.replyTo ! UserHistoryResponse(SessionEventsInjected)
+      val _ = expectMsgType[SessionTransformed](5.seconds)
 
       Thread.sleep(1000)
 

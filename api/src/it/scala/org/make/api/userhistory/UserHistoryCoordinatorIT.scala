@@ -19,16 +19,16 @@
 
 package org.make.api.userhistory
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.stream.scaladsl.{Sink, Source}
-import akka.testkit.TestKit
 import com.typesafe.config.{Config, ConfigFactory}
 import enumeratum.values.scalacheck._
-import org.make.api.{ActorSystemComponent, ItMakeTest}
+import org.make.api.{ActorSystemTypedComponent, ItMakeTest}
 import org.make.api.docker.DockerCassandraService
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.DefaultIdGeneratorComponent
-import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.core.{DateHelper, RequestContext}
 import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.proposal.VoteKey
@@ -40,19 +40,24 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.concurrent.duration.DurationInt
 
 class UserHistoryCoordinatorIT
-    extends TestKit(UserHistoryCoordinatorIT.actorSystem)
+    extends ScalaTestWithActorTestKit(UserHistoryCoordinatorIT.actorSystem)
     with ItMakeTest
-    with ActorSystemComponent
     with DefaultIdGeneratorComponent
     with DefaultUserHistoryCoordinatorServiceComponent
     with DockerCassandraService
     with MakeSettingsComponent
+    with ActorSystemTypedComponent
     with UserHistoryCoordinatorComponent {
 
-  override implicit val actorSystem: ActorSystem = system //.asInstanceOf[ExtendedActorSystem]
+  override def afterAll(): Unit = {
+    testKit.shutdownTestKit()
+    super.afterAll()
+  }
+
+  override implicit val actorSystemTyped: ActorSystem[Nothing] = testKit.system
   override val cassandraExposedPort: Int = UserHistoryCoordinatorIT.cassandraExposedPort
   override val makeSettings: MakeSettings = mock[MakeSettings]
-  override val userHistoryCoordinator: ActorRef = actorSystem.actorOf(UserHistoryCoordinator.props)
+  override val userHistoryCoordinator: ActorRef[UserHistoryCommand] = UserHistoryCoordinator(actorSystemTyped)
 
   Feature("delete a user") {
 
@@ -78,9 +83,8 @@ class UserHistoryCoordinatorIT
       whenReady(futureHasVoted, Timeout(30.seconds))(_ => ())
 
       whenReady(
-        userHistoryCoordinatorService.retrieveVoteAndQualifications(
-          RequestVoteValues(userId = userId, proposalIds = userVotes.map(_.proposalId))
-        ),
+        userHistoryCoordinatorService
+          .retrieveVoteAndQualifications(userId = userId, proposalIds = userVotes.map(_.proposalId)),
         Timeout(30.seconds)
       )(_.size shouldBe userVotes.size)
 
@@ -89,9 +93,8 @@ class UserHistoryCoordinatorIT
           .delete(userId)
           .flatMap(
             _ =>
-              userHistoryCoordinatorService.retrieveVoteAndQualifications(
-                RequestVoteValues(userId = userId, proposalIds = userVotes.map(_.proposalId))
-              )
+              userHistoryCoordinatorService
+                .retrieveVoteAndQualifications(userId = userId, proposalIds = userVotes.map(_.proposalId))
           ),
         Timeout(30.seconds)
       )(_ shouldBe empty)
@@ -112,12 +115,11 @@ object UserHistoryCoordinatorIT {
        |  cluster.jmx.multi-mbeans-in-same-jvm = on
        |
        |  persistence {
-       |
        |    journal {
-       |      plugin = "make-api.event-sourcing.users.journal"
+       |      plugin = "make-api.event-sourcing.technical.journal"
        |    }
        |    snapshot-store {
-       |      plugin = "make-api.event-sourcing.users.snapshot"
+       |      plugin = "make-api.event-sourcing.technical.snapshot"
        |    }
        |    role = "worker"
        |  }
@@ -138,7 +140,11 @@ object UserHistoryCoordinatorIT {
        |}
        |
        |make-api {
-       |  event-sourcing.users.events-by-tag.enabled = true
+       |  event-sourcing {
+       |    users {
+       |      events-by-tag.enabled = true
+       |    }
+       |  }
        |  kafka {
        |    connection-string = "nowhere:-1"
        |    schema-registry = "http://nowhere:-1"
@@ -154,6 +160,7 @@ object UserHistoryCoordinatorIT {
       .withFallback(ConfigFactory.load("default-application.conf"))
       .resolve()
 
-  val actorSystem = ActorSystem("UserHistoryCoordinatorIT", fullConfiguration)
+  val actorSystem: ActorSystem[Nothing] =
+    ActorSystem[Nothing](Behaviors.empty, "UserHistoryCoordinatorIT", fullConfiguration)
 
 }

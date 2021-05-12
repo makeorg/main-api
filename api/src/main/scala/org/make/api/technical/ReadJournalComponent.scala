@@ -27,7 +27,7 @@ import org.make.api.ActorSystemComponent
 import org.make.api.proposal.ProposalActor
 import org.make.api.sessionhistory.ShardedSessionHistory
 import org.make.api.technical.ReadJournalComponent.DefaultReadJournal
-import org.make.api.userhistory.ShardedUserHistory
+import org.make.api.userhistory.UserHistoryActor
 
 trait ReadJournalComponent {
   type MakeReadJournal <: DefaultReadJournal
@@ -51,7 +51,7 @@ trait DefaultReadJournalComponent extends ReadJournalComponent {
       .readJournalFor[MakeReadJournal](ProposalActor.QueryJournalPluginId)
   override def userJournal: MakeReadJournal =
     PersistenceQuery(system = actorSystem)
-      .readJournalFor[MakeReadJournal](ShardedUserHistory.queryJournal)
+      .readJournalFor[MakeReadJournal](UserHistoryActor.QueryJournalPluginId)
   override def sessionJournal: MakeReadJournal =
     PersistenceQuery(system = actorSystem)
       .readJournalFor[MakeReadJournal](ShardedSessionHistory.queryJournal)
@@ -67,7 +67,7 @@ trait ActorReadJournalComponent extends ReadJournalComponent {
       .readJournalFor[MakeReadJournal](ProposalActor.QueryJournalPluginId)
   override def userJournal: MakeReadJournal =
     PersistenceQuery(system = context.system)
-      .readJournalFor[MakeReadJournal](ShardedUserHistory.queryJournal)
+      .readJournalFor[MakeReadJournal](UserHistoryActor.QueryJournalPluginId)
   override def sessionJournal: MakeReadJournal =
     PersistenceQuery(system = context.system)
       .readJournalFor[MakeReadJournal](ShardedSessionHistory.queryJournal)

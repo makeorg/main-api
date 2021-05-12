@@ -21,19 +21,14 @@ package org.make.api.sessionhistory
 
 import java.time.ZonedDateTime
 import akka.actor.{ActorRef, PoisonPill}
-import akka.pattern.ask
+import akka.actor.typed.{ActorSystem, Scheduler, ActorRef => TypedRef}
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.util.Timeout
 import org.make.api.extensions.MakeSettingsExtension
 import org.make.api.sessionhistory.SessionHistoryActor._
+import org.make.api.technical.BetterLoggingActors.BetterLoggingTypedActorRef
 import org.make.api.technical.{ActorEventBusServiceComponent, MakePersistentActor}
 import org.make.api.technical.MakePersistentActor.Snapshot
-import org.make.api.userhistory.UserHistoryActor.{
-  InjectSessionEvents,
-  LogAcknowledged,
-  RequestUserVotedProposals,
-  RequestVoteValues,
-  _
-}
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions._
 import org.make.core.proposal.{ProposalId, QualificationKey}
@@ -49,12 +44,17 @@ import scala.concurrent.duration.{Deadline, FiniteDuration}
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
 
-class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration, idGenerator: IdGenerator)
-    extends MakePersistentActor(classOf[SessionHistory], classOf[SessionHistoryEvent[_]])
+class SessionHistoryActor(
+  userHistoryCoordinator: TypedRef[UserHistoryCommand],
+  lockDuration: FiniteDuration,
+  idGenerator: IdGenerator
+) extends MakePersistentActor(classOf[SessionHistory], classOf[SessionHistoryEvent[_]])
     with MakeSettingsExtension
     with ActorEventBusServiceComponent {
 
   implicit val timeout: Timeout = defaultTimeout
+  implicit val scheduler: Scheduler = context.system.toTyped.scheduler
+  implicit val actorSystem: ActorSystem[Nothing] = context.system.toTyped
   private val maxEvents: Int = settings.maxUserHistoryEvents
   private var locks: Map[ProposalId, LockVoteAction] = Map.empty
   private var deadline = Deadline.now
@@ -221,7 +221,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
       case _                            => Seq.empty[UserHistoryEvent[_]]
     }
 
-    (userHistoryCoordinator ? InjectSessionEvents(userId, events)).onComplete {
+    (userHistoryCoordinator ?? (InjectSessionEvents(userId, events, _))).onComplete {
       case Success(_) => self ! SessionClosed(originalSender)
       case Failure(e) =>
         // TODO: handle it gracefully
@@ -243,15 +243,39 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
       }
       sender() ! Ack
     case SessionHistoryEnvelope(_, command: TransferableToUser[_]) =>
-      userHistoryCoordinator.forward(UserHistoryEnvelope(userId, command.toUserHistoryEvent(userId)))
+      val originalSender = sender()
+      (userHistoryCoordinator ?? { replyTo: TypedRef[UserHistoryResponse[LogAcknowledged.type]] =>
+        UserHistoryTransactionalEnvelope(userId, command.toUserHistoryEvent(userId), replyTo)
+      }).map(_ => originalSender ! LogAcknowledged)
     case RequestSessionVotedProposals(_, proposalsIds) =>
-      userHistoryCoordinator.forward(RequestUserVotedProposals(userId = userId, proposalsIds = proposalsIds))
+      val originalSender = sender()
+      (userHistoryCoordinator ?? (
+        RequestUserVotedProposalsPaginate(
+          userId = userId,
+          filterVotes = None,
+          filterQualifications = None,
+          proposalsIds = proposalsIds,
+          limit = Int.MaxValue,
+          skip = 0,
+          _
+        )
+      )).map(response => originalSender ! response)
     case RequestSessionVotedProposalsPaginate(_, proposalsIds, limit, skip) =>
-      userHistoryCoordinator.forward(
-        RequestUserVotedProposalsPaginate(userId = userId, proposalsIds = proposalsIds, limit = limit, skip = skip)
-      )
+      val originalSender = sender()
+      (userHistoryCoordinator ?? (
+        RequestUserVotedProposalsPaginate(
+          userId = userId,
+          filterVotes = None,
+          filterQualifications = None,
+          proposalsIds = proposalsIds,
+          limit = limit,
+          skip = skip,
+          _
+        )
+      )).map(response => originalSender ! response)
     case RequestSessionVoteValues(_, proposalIds) =>
-      userHistoryCoordinator.forward(RequestVoteValues(userId, proposalIds))
+      val originalSender = sender()
+      (userHistoryCoordinator ?? (RequestVoteValues(userId, proposalIds, _))).map(response => originalSender ! response)
     case command: SessionHistoryAction =>
       log.warning("closed session {} with userId {} received command {}", persistenceId, userId.value, command.toString)
     case Snapshot                           => saveSnapshot()
@@ -460,4 +484,8 @@ object SessionHistoryActor {
   final case class CurrentSessionId(sessionId: SessionId) extends SessionHistoryActorProtocol
 
   case object Ack extends SessionHistoryActorProtocol
+
+  case object LogAcknowledged extends SessionHistoryActorProtocol
+
+  case object SessionEventsInjected extends SessionHistoryActorProtocol
 }

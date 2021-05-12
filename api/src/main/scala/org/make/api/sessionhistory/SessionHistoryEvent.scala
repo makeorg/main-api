@@ -62,7 +62,7 @@ sealed trait TransactionalSessionHistoryEvent[T] extends SessionHistoryEvent[T]
 
 sealed trait TransferableToUser[T] extends TransactionalSessionHistoryEvent[T] {
 
-  def toUserHistoryEvent(userId: UserId): UserHistoryEvent[_]
+  def toUserHistoryEvent(userId: UserId): TransactionalUserHistoryEvent[_]
 
 }
 
@@ -352,7 +352,7 @@ final case class LogSessionStartSequenceEvent(
   requestContext: RequestContext,
   action: SessionAction[StartSequenceParameters]
 ) extends TransferableToUser[StartSequenceParameters] {
-  override def toUserHistoryEvent(userId: UserId): UserHistoryEvent[_] =
+  override def toUserHistoryEvent(userId: UserId): LogUserStartSequenceEvent =
     LogUserStartSequenceEvent(
       userId,
       requestContext,

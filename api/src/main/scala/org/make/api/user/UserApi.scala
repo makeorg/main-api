@@ -34,7 +34,6 @@ import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.directives.ClientDirectives
 import org.make.api.technical.storage._
-import org.make.api.user.Anonymization
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.user.validation.UserRegistrationValidatorComponent
 import org.make.api.userhistory.{UserHistoryCoordinatorServiceComponent, _}
@@ -262,52 +261,6 @@ trait UserApi extends Directives {
     )
   )
   def resetPasswordRoute: Route
-
-  @ApiOperation(
-    value = "reload-history",
-    httpMethod = "POST",
-    code = HttpCodes.NoContent,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "user", description = "application user"),
-          new AuthorizationScope(scope = "admin", description = "BO Admin")
-        )
-      )
-    )
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        name = "userId",
-        paramType = "path",
-        dataType = "string",
-        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
-      )
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
-  @Path(value = "/{userId}/reload-history")
-  def rebuildUserHistory: Route
-
-  @ApiOperation(
-    value = "reload-all-users-history",
-    httpMethod = "POST",
-    code = HttpCodes.NoContent,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "user", description = "application user"),
-          new AuthorizationScope(scope = "admin", description = "BO Admin")
-        )
-      )
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
-  @Path(value = "/reload-history")
-  def rebuildAllUsersHistory: Route
 
   @Path(value = "/{userId}/proposals")
   @ApiOperation(
@@ -566,8 +519,6 @@ trait UserApi extends Directives {
       getUser ~
       register ~
       socialLogin ~
-      rebuildAllUsersHistory ~
-      rebuildUserHistory ~
       resetPasswordRequestRoute ~
       resetPasswordCheckRoute ~
       resetPasswordRoute ~
@@ -976,35 +927,6 @@ trait DefaultUserApiComponent
                     }
                 }
               }
-            }
-          }
-        }
-      }
-    }
-
-    override def rebuildUserHistory: Route = post {
-      path("user" / userId / "reload-history") { userId =>
-        makeOperation("ReloadUserHistory") { _ =>
-          makeOAuth2 { userAuth =>
-            requireAdminRole(userAuth.user) {
-              userHistoryCoordinatorService.reloadHistory(userId)
-              complete(StatusCodes.NoContent)
-            }
-          }
-        }
-      }
-    }
-
-    override def rebuildAllUsersHistory: Route = post {
-      path("user" / "reload-history") {
-        makeOperation("ReloadAllUsersHistory") { _ =>
-          makeOAuth2 { userAuth =>
-            requireAdminRole(userAuth.user) {
-              userJournal
-                .currentPersistenceIds()
-                .runForeach(id => userHistoryCoordinatorService.reloadHistory(UserId(id)))
-
-              complete(StatusCodes.NoContent)
             }
           }
         }

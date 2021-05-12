@@ -19,21 +19,16 @@
 
 package org.make.api.userhistory
 
-import akka.actor.ActorRef
-import akka.pattern.{ask, gracefulStop}
+import akka.actor.typed.ActorRef
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.Timeout
-import org.make.api.ActorSystemComponent
+import org.make.api.ActorSystemTypedComponent
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.technical.Futures._
+import org.make.api.sessionhistory.SessionHistoryActor.LogAcknowledged
+import org.make.api.technical.BetterLoggingActors._
 import org.make.api.technical.{MakePersistentActor, StreamUtils, TimeSettings}
-import org.make.api.userhistory.UserHistoryActor.{
-  ReloadState,
-  RequestUserVotedProposals,
-  RequestUserVotedProposalsPaginate,
-  RequestVoteValues,
-  Stop
-}
+import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
+import org.make.core.{ValidationError, ValidationFailedError}
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.ProposalId
 import org.make.core.user._
@@ -42,15 +37,17 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 trait UserHistoryCoordinatorComponent {
-  def userHistoryCoordinator: ActorRef
+  def userHistoryCoordinator: ActorRef[UserHistoryCommand]
 }
 
 trait UserHistoryCoordinatorService {
-  def logHistory(command: UserHistoryEvent[_]): Unit
-  def logTransactionalHistory(command: TransactionalUserHistoryEvent[_]): Future[Unit]
-  def retrieveVoteAndQualifications(request: RequestVoteValues): Future[Map[ProposalId, VoteAndQualifications]]
+  def logHistory(event: UserHistoryEvent[_]): Unit
+  def logTransactionalHistory(event: TransactionalUserHistoryEvent[_]): Future[Unit]
+  def retrieveVoteAndQualifications(
+    userId: UserId,
+    proposalIds: Seq[ProposalId]
+  ): Future[Map[ProposalId, VoteAndQualifications]]
   def retrieveVotedProposals(request: RequestUserVotedProposals): Future[Seq[ProposalId]]
-  def reloadHistory(userId: UserId): Unit
   def delete(userId: UserId): Future[Unit]
 }
 
@@ -59,7 +56,7 @@ trait UserHistoryCoordinatorServiceComponent {
 }
 
 trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinatorServiceComponent {
-  self: UserHistoryCoordinatorComponent with ActorSystemComponent with MakeSettingsComponent =>
+  self: UserHistoryCoordinatorComponent with ActorSystemTypedComponent with MakeSettingsComponent =>
 
   override lazy val userHistoryCoordinatorService: UserHistoryCoordinatorService =
     new DefaultUserHistoryCoordinatorService
@@ -69,43 +66,49 @@ trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinat
     private val proposalsPerPage: Int = makeSettings.maxHistoryProposalsPerPage
     implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
-    override def logHistory(command: UserHistoryEvent[_]): Unit = {
-      userHistoryCoordinator ! UserHistoryEnvelope(command.userId, command)
+    override def logHistory(event: UserHistoryEvent[_]): Unit = {
+      userHistoryCoordinator ! UserHistoryEnvelope(event.userId, event)
     }
 
-    override def logTransactionalHistory(command: TransactionalUserHistoryEvent[_]): Future[Unit] = {
-      (userHistoryCoordinator ? UserHistoryEnvelope(command.userId, command)).toUnit
+    override def logTransactionalHistory(event: TransactionalUserHistoryEvent[_]): Future[Unit] = {
+      (userHistoryCoordinator ?? { replyTo: ActorRef[UserHistoryResponse[LogAcknowledged.type]] =>
+        UserHistoryTransactionalEnvelope(event.userId, event, replyTo)
+      }).flatMap(_ => Future.unit)
     }
 
     override def retrieveVoteAndQualifications(
-      request: RequestVoteValues
+      userId: UserId,
+      proposalIds: Seq[ProposalId]
     ): Future[Map[ProposalId, VoteAndQualifications]] = {
-      (userHistoryCoordinator ? request).mapTo[VotesValues].map(_.votesValues)
+      (userHistoryCoordinator ?? (RequestVoteValues(userId, proposalIds, _))).flatMap(shapeResponse)
     }
 
     private def retrieveVotedProposalsPage(request: RequestUserVotedProposals, offset: Int): Future[Seq[ProposalId]] = {
-      def requestPaginate(proposalsIds: Option[Seq[ProposalId]]) =
+      def requestPaginate(
+        proposalsIds: Option[Seq[ProposalId]],
+        replyTo: ActorRef[UserHistoryResponse[Seq[ProposalId]]]
+      ) =
         RequestUserVotedProposalsPaginate(
           userId = request.userId,
           filterVotes = request.filterVotes,
           filterQualifications = request.filterQualifications,
           proposalsIds = proposalsIds,
           limit = offset + proposalsPerPage,
-          skip = offset
+          skip = offset,
+          replyTo
         )
       request.proposalsIds match {
         case Some(proposalsIds) if proposalsIds.size > proposalsPerPage =>
           Source(proposalsIds)
             .sliding(proposalsPerPage, proposalsPerPage)
             .mapAsync(5) { someProposalsIds =>
-              (userHistoryCoordinator ? requestPaginate(Some(someProposalsIds)))
-                .mapTo[VotedProposals]
-                .map(_.proposals)
+              (userHistoryCoordinator ?? (requestPaginate(Some(someProposalsIds), _)))
+                .flatMap(shapeResponse)
             }
             .mapConcat(identity)
             .runWith(Sink.seq)
         case _ =>
-          (userHistoryCoordinator ? requestPaginate(request.proposalsIds)).mapTo[VotedProposals].map(_.proposals)
+          (userHistoryCoordinator ?? (requestPaginate(request.proposalsIds, _))).flatMap(shapeResponse)
       }
     }
 
@@ -116,15 +119,17 @@ trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinat
         .runWith(Sink.seq)
     }
 
-    override def reloadHistory(userId: UserId): Unit = {
-      userHistoryCoordinator ! ReloadState(userId)
+    override def delete(userId: UserId): Future[Unit] = {
+      (userHistoryCoordinator ?? (Stop(userId, _)))
+        .flatMap(_ => MakePersistentActor.delete(userId, UserHistoryActor.JournalPluginId))
     }
 
-    override def delete(userId: UserId): Future[Unit] = {
-      (userHistoryCoordinator ? Stop(userId))
-        .mapTo[ActorRef]
-        .flatMap(ref => gracefulStop(ref, timeout.duration))
-        .flatMap(_ => MakePersistentActor.delete(userId, ShardedUserHistory.readJournal))
+    private def shapeResponse[T](response: UserHistoryResponse[T]): Future[T] = response match {
+      case UserHistoryResponse(value) => Future.successful(value)
+      case other =>
+        Future.failed(
+          ValidationFailedError(errors = Seq(ValidationError("status", "invalid_state", Some(other.toString))))
+        )
     }
   }
 }

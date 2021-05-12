@@ -31,7 +31,7 @@ import org.make.api.user.{
   PersistentUserToAnonymizeServiceComponent,
   UserServiceComponent
 }
-import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
+import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
 import org.make.api.userhistory.{
   OrganisationEmailChangedEvent,
   OrganisationRegisteredEvent,
@@ -403,8 +403,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
             filterQualifications = filterQualifications
           )
         )
-        withVotes <- userHistoryCoordinatorService
-          .retrieveVoteAndQualifications(RequestVoteValues(organisationId, proposalIds))
+        withVotes <- userHistoryCoordinatorService.retrieveVoteAndQualifications(organisationId, proposalIds)
       } yield withVotes
 
       futureProposalWithVotes.flatMap {

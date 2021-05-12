@@ -19,14 +19,16 @@
 
 package org.make.api.sessionhistory
 
+import akka.actor.typed.{ActorRef => TypedRef}
 import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
+import org.make.api.userhistory.UserHistoryCommand
 import org.make.core.technical.IdGenerator
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class SessionHistoryCoordinator(
-  userHistoryCoordinator: ActorRef,
+  userHistoryCoordinator: TypedRef[UserHistoryCommand],
   lockDuration: FiniteDuration,
   idGenerator: IdGenerator
 ) extends Actor {
@@ -49,7 +51,7 @@ class SessionHistoryCoordinator(
 
 object SessionHistoryCoordinator {
   def props(
-    userHistoryCoordinator: ActorRef,
+    userHistoryCoordinator: TypedRef[UserHistoryCommand],
     idGenerator: IdGenerator,
     lockDuration: FiniteDuration = 7.seconds
   ): Props =

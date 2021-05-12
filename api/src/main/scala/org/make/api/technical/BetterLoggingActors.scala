@@ -19,7 +19,7 @@
 
 package org.make.api.technical
 
-import akka.actor.typed.{ActorSystem, ActorRef => TypedActorRef}
+import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.util.Timeout
 
@@ -28,12 +28,12 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 
 object BetterLoggingActors {
 
-  implicit class BetterLoggingTypedActorRef[Req](val ref: TypedActorRef[Req]) extends AnyVal {
+  implicit class BetterLoggingTypedActorRef[Req](val ref: ActorRef[Req]) extends AnyVal {
     def ??[Res](
-      replyTo: TypedActorRef[Res] => Req
+      replyTo: ActorRef[Res] => Req
     )(implicit ec: ExecutionContext, system: ActorSystem[_], timeout: Timeout): Future[Res] = {
       val message = Promise[Req]()
-      ref.ask { sender: TypedActorRef[Res] =>
+      ref.ask { sender: ActorRef[Res] =>
         val value = replyTo(sender)
         message.success(value)
         value

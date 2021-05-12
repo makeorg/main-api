@@ -38,7 +38,6 @@ import org.make.api.extensions.{DatabaseConfiguration, MakeSettings, ThreadPoolM
 import org.make.api.sessionhistory.ShardedSessionHistory
 import org.make.api.technical.MakePersistentActor.StartShard
 import org.make.api.technical.{ClusterShardingMonitor, MemoryMonitoringActor}
-import org.make.api.userhistory.ShardedUserHistory
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
@@ -109,14 +108,12 @@ object MakeMain extends App with Logging with MakeApi {
 
   // Start the shards
   (0 until 100).foreach { i =>
-    userHistoryCoordinator ! StartShard(i.toString)
     sessionHistoryCoordinator ! StartShard(i.toString)
   }
 
   private val settings = MakeSettings(actorSystemTyped)
 
   // Initialize journals
-  actorSystem.actorOf(ShardedUserHistory.props, "fake-user") ! PoisonPill
   actorSystem.actorOf(ShardedSessionHistory.props(userHistoryCoordinator, 1.second, idGenerator), "fake-session") ! PoisonPill
 
   // Ensure database stuff is initialized

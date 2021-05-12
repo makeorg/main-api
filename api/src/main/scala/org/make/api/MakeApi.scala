@@ -117,6 +117,7 @@ import org.make.api.user.social.{
 import org.make.api.user.validation.DefaultUserRegistrationValidatorComponent
 import org.make.api.userhistory.{
   DefaultUserHistoryCoordinatorServiceComponent,
+  UserHistoryCommand,
   UserHistoryCoordinator,
   UserHistoryCoordinatorComponent
 }
@@ -291,20 +292,16 @@ trait MakeApi
     with SequenceConfigurationActorComponent
     with SessionHistoryCoordinatorComponent
     with SpawnActorRefComponent
-    with Logging
-    with UserHistoryCoordinatorComponent {
+    with UserHistoryCoordinatorComponent
+    with Logging {
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
   override lazy val proposalCoordinator: TypedActorRef[ProposalCommand] =
     Await.result(actorSystemTyped.findRefByKey(ProposalCoordinator.Key), atMost = 10.seconds)
 
-  override lazy val userHistoryCoordinator: ActorRef = Await.result(
-    actorSystem
-      .actorSelection(actorSystem / MakeGuardian.name / UserHistoryCoordinator.name)
-      .resolveOne()(Timeout(10.seconds)),
-    atMost = 10.seconds
-  )
+  override lazy val userHistoryCoordinator: TypedActorRef[UserHistoryCommand] =
+    Await.result(actorSystemTyped.findRefByKey(UserHistoryCoordinator.Key), atMost = 10.seconds)
 
   override lazy val sessionHistoryCoordinator: ActorRef = Await.result(
     actorSystem

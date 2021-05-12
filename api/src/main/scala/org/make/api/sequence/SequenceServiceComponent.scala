@@ -26,7 +26,7 @@ import org.make.api.segment.SegmentServiceComponent
 import org.make.api.sequence.SequenceBehaviour.ConsensusParam
 import org.make.api.sessionhistory._
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
-import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
+import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal._
@@ -299,7 +299,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       proposals: Seq[ProposalId]
     ): Future[Map[ProposalId, VoteAndQualifications]] =
       maybeUserId.map { userId =>
-        userHistoryCoordinatorService.retrieveVoteAndQualifications(RequestVoteValues(userId, proposals))
+        userHistoryCoordinatorService.retrieveVoteAndQualifications(userId, proposals)
       }.getOrElse {
         sessionHistoryCoordinatorService.retrieveVoteAndQualifications(
           RequestSessionVoteValues(requestContext.sessionId, proposals)
