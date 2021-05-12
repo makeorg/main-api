@@ -97,8 +97,6 @@ object OrganisationInfo {
     DefaultJsonProtocol.jsonFormat2(OrganisationInfo.apply)
 }
 
-final case class AuthorInfo(userId: UserId, firstName: Option[String], postalCode: Option[String], age: Option[Int])
-
 final case class ProposalAction(date: ZonedDateTime, user: UserId, actionType: String, arguments: Map[String, String])
 
 object ProposalAction {
