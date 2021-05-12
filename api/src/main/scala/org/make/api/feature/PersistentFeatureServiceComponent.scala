@@ -193,7 +193,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
 
           select(sqls.count)
             .from(PersistentFeature.as(featureAlias))
-            .where(sqls.toAndConditionOpt(maybeSlug.map(slug => sqls.eq(featureAlias.slug, slug))))
+            .where(sqls.toAndConditionOpt(maybeSlug.map(slug => sqls.like(featureAlias.slug, s"%$slug%"))))
         }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
