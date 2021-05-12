@@ -24,6 +24,11 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCod
 import akka.http.scaladsl.server.Route
 import cats.data.NonEmptyList
 import org.make.api.MakeApiTestBase
+import org.make.api.operation.{
+  OperationOfQuestionService,
+  OperationOfQuestionServiceComponent,
+  SearchOperationsOfQuestions
+}
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.core.{Order, RequestContext}
 import org.make.core.operation.OperationId
@@ -38,11 +43,14 @@ class ModerationTagApiTest
     extends MakeApiTestBase
     with DefaultModerationTagApiComponent
     with TagServiceComponent
-    with QuestionServiceComponent {
+    with QuestionServiceComponent
+    with OperationOfQuestionServiceComponent {
 
   override val tagService: TagService = mock[TagService]
 
   override val questionService: QuestionService = mock[QuestionService]
+
+  override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
 
   when(questionService.getQuestion(any[QuestionId])).thenReturn(
     Future.successful(
@@ -56,6 +64,18 @@ class ModerationTagApiTest
           shortTitle = None,
           operationId = Some(OperationId("1234-1234-1234-1234"))
         )
+      )
+    )
+  )
+
+  when(
+    operationOfQuestionService
+      .find(any[Start], any[Option[End]], any[Option[String]], any[Option[Order]], any[SearchOperationsOfQuestions])
+  ).thenReturn(
+    Future.successful(
+      Seq(
+        operationOfQuestion(questionId = QuestionId("question-1"), operationId = OperationId("operation-1")),
+        operationOfQuestion(questionId = QuestionId("question-2"), operationId = OperationId("operation-2"))
       )
     )
   )

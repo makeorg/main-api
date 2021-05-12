@@ -101,7 +101,7 @@ class TagApiTest
           any[Option[String]],
           any[Option[Order]],
           eqTo(true),
-          eqTo(TagFilter(questionId = Some(QuestionId("foo"))))
+          eqTo(TagFilter(questionIds = Some(Seq(QuestionId("foo")))))
         )
       ).thenReturn(Future.successful(Seq(newTag("tag1"), newTag("tag2"))))
 

@@ -68,7 +68,7 @@ trait PersistentTagService {
 
 final case class PersistentTagFilter(
   label: Option[String],
-  questionId: Option[QuestionId],
+  questionIds: Option[Seq[QuestionId]],
   tagTypeId: Option[TagTypeId]
 )
 object PersistentTagFilter {
@@ -288,8 +288,8 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
                     .map(
                       label => sqls.like(sqls"lower(${tagAlias.label})", s"%${label.toLowerCase.replace("%", "\\%")}%")
                     ),
-                  persistentTagFilter.tagTypeId.map(tagTypeId   => sqls.eq(tagAlias.tagTypeId, tagTypeId.value)),
-                  persistentTagFilter.questionId.map(questionId => sqls.eq(tagAlias.questionId, questionId.value)),
+                  persistentTagFilter.tagTypeId.map(tagTypeId => sqls.eq(tagAlias.tagTypeId, tagTypeId.value)),
+                  persistentTagFilter.questionIds.map(qIds    => sqls.in(tagAlias.questionId, qIds.map(_.value))),
                   if (onlyDisplayed) {
                     Some(
                       sqls
@@ -327,8 +327,8 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
                   .map(
                     label => sqls.like(sqls"lower(${tagAlias.label})", s"%${label.toLowerCase.replace("%", "\\%")}%")
                   ),
-                persistentTagFilter.tagTypeId.map(tagTypeId   => sqls.eq(tagAlias.tagTypeId, tagTypeId.value)),
-                persistentTagFilter.questionId.map(questionId => sqls.eq(tagAlias.questionId, questionId.value))
+                persistentTagFilter.tagTypeId.map(tagTypeId => sqls.eq(tagAlias.tagTypeId, tagTypeId.value)),
+                persistentTagFilter.questionIds.map(qIds    => sqls.in(tagAlias.questionId, qIds.map(_.value)))
               )
             )
         }.map(_.int(1)).single().apply().getOrElse(0)

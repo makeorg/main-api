@@ -40,7 +40,7 @@ trait TagServiceComponent {
 final case class TagFilter(
   label: Option[String] = None,
   tagTypeId: Option[TagTypeId] = None,
-  questionId: Option[QuestionId] = None
+  questionIds: Option[Seq[QuestionId]] = None
 )
 
 object TagFilter {
@@ -176,11 +176,7 @@ trait DefaultTagServiceComponent
             updateTag <- persistentTagService.update(
               tag.copy(
                 label = label,
-                display = if (tagType.exists(_.display == TagTypeDisplay.Hidden)) {
-                  TagDisplay.Hidden
-                } else {
-                  display
-                },
+                display = display,
                 tagTypeId = tagTypeId,
                 weight = weight,
                 operationId = question.operationId,
@@ -214,13 +210,13 @@ trait DefaultTagServiceComponent
         sort,
         order,
         onlyDisplayed,
-        PersistentTagFilter(tagFilter.label, tagFilter.questionId, tagFilter.tagTypeId)
+        PersistentTagFilter(tagFilter.label, tagFilter.questionIds, tagFilter.tagTypeId)
       )
 
     }
 
     override def count(tagFilter: TagFilter = TagFilter.empty): Future[Int] = {
-      persistentTagService.count(PersistentTagFilter(tagFilter.label, tagFilter.questionId, tagFilter.tagTypeId))
+      persistentTagService.count(PersistentTagFilter(tagFilter.label, tagFilter.questionIds, tagFilter.tagTypeId))
     }
   }
 }

@@ -306,8 +306,6 @@ class PersistentTagServiceIT
       TagType(TagTypeId("second"), label = "Second", display = TagTypeDisplay.Hidden, requiredForEnrichment = true)
     val tagTypeThird: TagType =
       TagType(TagTypeId("third"), label = "Third", display = TagTypeDisplay.Hidden, requiredForEnrichment = true)
-    val tagTypeFourth: TagType =
-      TagType(TagTypeId("fourth"), label = "Fourth", display = TagTypeDisplay.Hidden, requiredForEnrichment = false)
     val tagTypeSeventh: TagType =
       TagType(TagTypeId("seventh"), label = "Seventh", display = TagTypeDisplay.Hidden, requiredForEnrichment = false)
     val tagTypeEighth: TagType =
@@ -318,9 +316,6 @@ class PersistentTagServiceIT
     val questionSecond = questionForOperation(operationIdSecond)
     val operationIdThird: OperationId = OperationId("opethird")
     val questionThird = questionForOperation(operationIdThird)
-
-    val themeIdFirst: ThemeId = ThemeId("themefirst")
-    val questionThemeFirst = questionForTheme(themeIdFirst)
 
     val hestia: Tag =
       targaryen.copy(
@@ -354,13 +349,6 @@ class PersistentTagServiceIT
       questionId = Some(questionThird.questionId)
     )
     val clio: Tag = targaryen.copy(tagId = TagId("clio"), tagTypeId = tagTypeThird.tagTypeId, label = "cliolabel")
-    val thalia: Tag =
-      targaryen.copy(
-        tagId = TagId("thalia"),
-        tagTypeId = tagTypeFourth.tagTypeId,
-        label = "thalialabel",
-        questionId = Some(questionThemeFirst.questionId)
-      )
     val calliope: Tag =
       targaryen.copy(tagId = TagId("calliope"), tagTypeId = tagTypeEighth.tagTypeId, label = "calliopelabel")
 
@@ -410,7 +398,7 @@ class PersistentTagServiceIT
           sort = None,
           order = None,
           onlyDisplayed = false,
-          persistentTagFilter = PersistentTagFilter.empty.copy(questionId = Some(questionFirst.questionId))
+          persistentTagFilter = PersistentTagFilter.empty.copy(questionIds = Some(Seq(questionFirst.questionId)))
         )
         resultSecond <- persistentTagService.find(
           start = Start.zero,
@@ -418,7 +406,8 @@ class PersistentTagServiceIT
           sort = None,
           order = None,
           onlyDisplayed = false,
-          persistentTagFilter = PersistentTagFilter.empty.copy(questionId = Some(questionSecond.questionId))
+          persistentTagFilter =
+            PersistentTagFilter.empty.copy(questionIds = Some(Seq(questionFirst.questionId, questionSecond.questionId)))
         )
       } yield (resultFirst, resultSecond)
 
@@ -431,13 +420,15 @@ class PersistentTagServiceIT
           resultFirst.count(_.operationId.contains(operationIdFirst)) should be(resultFirst.length)
       }
 
-      When("I search tags by operation Id 'opesecond'")
+      When("I search tags by operation Ids 'opefirst' and 'opesecond'")
 
       whenReady(futureTagListResultOperations, Timeout(3.seconds)) {
-        case (_, secondFirst) =>
-          Then("I get a list with one result")
-          secondFirst.length should be(1)
-          secondFirst.count(_.operationId.contains(operationIdSecond)) should be(secondFirst.length)
+        case (_, resultSecond) =>
+          Then("I get a list with three result")
+          resultSecond.length should be(3)
+          (resultSecond.count(_.operationId.contains(operationIdFirst)) + resultSecond.count(
+            _.operationId.contains(operationIdSecond)
+          )) should be(resultSecond.length)
       }
     }
 
@@ -463,30 +454,6 @@ class PersistentTagServiceIT
         Then("I get a list with three results")
         tags.length should be(1)
         tags.count(_.tagTypeId == tagTypeThird.tagTypeId) should be(tags.length)
-      }
-    }
-
-    Scenario("Search tags by theme") {
-
-      Given(s"a persisted tag: \n ${thalia.label}")
-
-      When(s"I search tags by theme '${themeIdFirst.value}'")
-      val futureTagListResultThemeFirst: Future[Seq[Tag]] = for {
-        _ <- persistentTagTypeService.persist(tagTypeFourth)
-        _ <- persistentTagService.persist(thalia)
-        result <- persistentTagService.find(
-          start = Start.zero,
-          end = Some(End(10)),
-          sort = None,
-          order = None,
-          onlyDisplayed = false,
-          persistentTagFilter = PersistentTagFilter.empty.copy(questionId = Some(questionThemeFirst.questionId))
-        )
-      } yield result
-
-      whenReady(futureTagListResultThemeFirst, Timeout(3.seconds)) { tags =>
-        Then("I get a list with two results")
-        tags.length should be(1)
       }
     }
 
@@ -532,7 +499,7 @@ class PersistentTagServiceIT
           order = None,
           onlyDisplayed = false,
           persistentTagFilter = PersistentTagFilter.empty
-            .copy(tagTypeId = Some(hera.tagTypeId), label = Some(hera.label), questionId = hera.questionId)
+            .copy(tagTypeId = Some(hera.tagTypeId), label = Some(hera.label), questionIds = hera.questionId.map(Seq(_)))
         )
       } yield result
 
@@ -604,10 +571,10 @@ class PersistentTagServiceIT
         _              <- persistedTags
         countWithLabel <- persistentTagService.count(PersistentTagFilter.empty.copy(label = Some("barlabel")))
         countWithThemeId <- persistentTagService.count(
-          PersistentTagFilter.empty.copy(questionId = Some(themeQuestion.questionId))
+          PersistentTagFilter.empty.copy(questionIds = Some(Seq(themeQuestion.questionId)))
         )
         countWithOperationId <- persistentTagService.count(
-          PersistentTagFilter.empty.copy(questionId = Some(operationQuestion.questionId))
+          PersistentTagFilter.empty.copy(questionIds = Some(Seq(operationQuestion.questionId)))
         )
       } yield (countWithLabel, countWithThemeId, countWithOperationId)
 

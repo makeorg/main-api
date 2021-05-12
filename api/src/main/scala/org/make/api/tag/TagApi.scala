@@ -90,7 +90,7 @@ trait DefaultTagApiComponent extends TagApiComponent with MakeAuthenticationDire
                   start = start.orZero,
                   end = end,
                   onlyDisplayed = true,
-                  tagFilter = TagFilter(questionId = maybeQuestionId)
+                  tagFilter = TagFilter(questionIds = maybeQuestionId.map(Seq(_)))
                 )
               ) { tags =>
                 complete(tags)
