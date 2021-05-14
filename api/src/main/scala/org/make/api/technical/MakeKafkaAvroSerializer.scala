@@ -23,6 +23,7 @@ import com.sksamuel.avro4s.{DefaultFieldMapper, Encoder, FieldMapper, SchemaFor}
 import grizzled.slf4j.Logging
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
 import io.confluent.kafka.serializers.KafkaAvroSerializer
+import org.apache.avro.Schema
 import org.apache.kafka.common.serialization.Serializer
 
 import java.util
@@ -32,13 +33,13 @@ class MakeKafkaAvroSerializer[T: Encoder: SchemaFor](registryUrl: String, fieldM
     extends Serializer[T]
     with Logging {
 
-  private val schema: SchemaFor[T] = SchemaFor[T]
+  private val schema: Schema = SchemaFor[T].schema(DefaultFieldMapper)
   private val encoder: Encoder[T] = Encoder[T]
 
   private val identityMapCapacity = 1000
   private val delegate: Serializer[Object] = new KafkaAvroSerializer(
     new CachedSchemaRegistryClient(registryUrl, identityMapCapacity),
-    Map("value.schema" -> schema.schema(DefaultFieldMapper).toString, "schema.registry.url" -> registryUrl).asJava
+    Map("value.schema" -> schema.toString, "schema.registry.url" -> registryUrl).asJava
   )
 
   override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {
@@ -46,8 +47,7 @@ class MakeKafkaAvroSerializer[T: Encoder: SchemaFor](registryUrl: String, fieldM
   }
 
   override def serialize(topic: String, data: T): Array[Byte] = {
-
-    delegate.serialize(topic, encoder.encode(data, schema.schema(fieldMapper), fieldMapper))
+    delegate.serialize(topic, encoder.encode(data, schema, fieldMapper))
   }
 
   override def close(): Unit = {
