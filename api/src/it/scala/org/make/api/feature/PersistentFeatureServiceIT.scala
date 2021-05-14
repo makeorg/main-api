@@ -97,6 +97,10 @@ class PersistentFeatureServiceIT
       whenReady(findSlug, Timeout(3.seconds)) { features =>
         features.map(_.slug).toSet shouldBe Set("field-1-help", "stream-1")
       }
+
+      whenReady(persistentFeatureService.count(Some("-1")), Timeout(3.seconds)) { total =>
+        total shouldBe 2
+      }
     }
 
     Scenario("Get features by featureIds") {
