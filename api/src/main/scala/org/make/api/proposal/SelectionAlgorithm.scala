@@ -296,7 +296,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         proposals.map { proposal =>
           val scorer = computeProposalScores(maybeUserSegment, proposal, nonSequenceVotesWeight)
 
-          Scored(proposal, scorer.topScore.sample(nonSequenceVotesWeight))
+          Scored(proposal, scorer.topScore.cachedSample)
         }
 
       val shortList = if (proposals.length < sequenceConfiguration.intraIdeaMinCount) {
@@ -344,7 +344,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       champions: Map[IdeaId, IndexedProposal],
       maybeUserSegment: Option[String]
     ): Seq[IdeaId] = {
-      chooseIdea(_.topScore.sample(nonSequenceVotesWeight))(
+      chooseIdea(_.topScore.cachedSample)(
         nonSequenceVotesWeight,
         maybeUserSegment,
         sequenceConfiguration.interIdeaCompetitionTargetCount,
@@ -358,7 +358,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       champions: Map[IdeaId, IndexedProposal],
       maybeUserSegment: Option[String]
     ): Seq[IdeaId] = {
-      chooseIdea(_.controversy.sample(nonSequenceVotesWeight))(
+      chooseIdea(_.controversy.cachedSample)(
         nonSequenceVotesWeight,
         maybeUserSegment,
         sequenceConfiguration.interIdeaCompetitionControversialCount,
