@@ -22,6 +22,7 @@ package org.make.api.technical
 import com.sksamuel.avro4s.{Decoder, DefaultFieldMapper, FieldMapper, SchemaFor}
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
 import io.confluent.kafka.serializers.KafkaAvroDeserializer
+import org.apache.avro.Schema
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.common.serialization.Deserializer
 
@@ -32,7 +33,7 @@ class MakeKafkaAvroDeserializer[T: Decoder: SchemaFor](
   fieldMapper: FieldMapper = DefaultFieldMapper
 ) extends Deserializer[T] {
 
-  val schemaFor: SchemaFor[T] = SchemaFor[T]
+  val schema: Schema = SchemaFor[T].schema(fieldMapper)
   val decoder: Decoder[T] = Decoder[T]
 
   private val identityMapCapacity = 1000
@@ -48,10 +49,6 @@ class MakeKafkaAvroDeserializer[T: Decoder: SchemaFor](
 
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   override def deserialize(topic: String, data: Array[Byte]): T = {
-    decoder.decode(
-      delegate.deserialize(topic, data).asInstanceOf[GenericRecord],
-      schemaFor.schema(fieldMapper),
-      fieldMapper
-    )
+    decoder.decode(delegate.deserialize(topic, data).asInstanceOf[GenericRecord], schema, fieldMapper)
   }
 }
