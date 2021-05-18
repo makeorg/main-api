@@ -24,20 +24,25 @@ import akka.http.scaladsl.server._
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
+import org.make.api.operation.{OperationOfQuestionServiceComponent, SearchOperationsOfQuestions}
 
 import javax.ws.rs.Path
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
+import org.make.core.operation.OperationOfQuestion
 import org.make.core.question.QuestionId
 import org.make.core.tag.{TagDisplay, TagId, TagTypeId}
 import org.make.core.{tag, HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import org.make.core.technical.Pagination._
+
+import java.time.ZonedDateTime
 
 @Api(value = "Moderation Tags")
 @Path(value = "/moderation/tags")
@@ -150,7 +155,10 @@ trait DefaultModerationTagApiComponent
     extends ModerationTagApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors {
-  this: MakeDirectivesDependencies with TagServiceComponent with QuestionServiceComponent =>
+  this: MakeDirectivesDependencies
+    with TagServiceComponent
+    with QuestionServiceComponent
+    with OperationOfQuestionServiceComponent =>
 
   override lazy val moderationTagApi: ModerationTagApi = new DefaultModerationTagApi
 
@@ -230,7 +238,8 @@ trait DefaultModerationTagApiComponent
               "_order".as[Order].?,
               "label".?,
               "tagTypeId".as[TagTypeId].?,
-              "questionId".as[QuestionId].?
+              "questionId".as[QuestionId].?,
+              "questionEndAfter".as[ZonedDateTime].?
             ) {
               (
                 start: Option[Start],
@@ -239,28 +248,56 @@ trait DefaultModerationTagApiComponent
                 order: Option[Order],
                 maybeLabel: Option[String],
                 maybeTagTypeId: Option[TagTypeId],
-                maybeQuestionId: Option[QuestionId]
+                maybeQuestionId: Option[QuestionId],
+                questionEndAfter: Option[ZonedDateTime]
               ) =>
                 makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                   requireModerationRole(userAuth.user) {
-
-                    provideAsync(
-                      tagService
-                        .count(TagFilter(label = maybeLabel, tagTypeId = maybeTagTypeId, questionId = maybeQuestionId))
-                    ) { count =>
-                      onSuccess(
-                        tagService.find(
-                          start = start.orZero,
-                          end = end,
-                          sort = sort,
-                          order = order,
-                          tagFilter =
-                            TagFilter(label = maybeLabel, tagTypeId = maybeTagTypeId, questionId = maybeQuestionId)
-                        )
-                      ) { filteredTags =>
-                        complete(
-                          (StatusCodes.OK, List(`X-Total-Count`(count.toString)), filteredTags.map(TagResponse.apply))
-                        )
+                    val futureQuestions: Future[Option[Seq[OperationOfQuestion]]] =
+                      (maybeQuestionId, questionEndAfter) match {
+                        case (None, None) => Future.successful(None)
+                        case (_, _) =>
+                          operationOfQuestionService
+                            .find(
+                              start = Start.zero,
+                              end = None,
+                              sort = None,
+                              order = None,
+                              SearchOperationsOfQuestions(
+                                questionIds = maybeQuestionId.map(Seq(_)),
+                                endAfter = questionEndAfter
+                              )
+                            )
+                            .map(Some(_))
+                      }
+                    provideAsync(futureQuestions) { questions =>
+                      provideAsync(
+                        tagService
+                          .count(
+                            TagFilter(
+                              label = maybeLabel,
+                              tagTypeId = maybeTagTypeId,
+                              questionIds = questions.map(_.map(_.questionId))
+                            )
+                          )
+                      ) { count =>
+                        onSuccess(
+                          tagService.find(
+                            start = start.orZero,
+                            end = end,
+                            sort = sort,
+                            order = order,
+                            tagFilter = TagFilter(
+                              label = maybeLabel,
+                              tagTypeId = maybeTagTypeId,
+                              questionIds = questions.map(_.map(_.questionId))
+                            )
+                          )
+                        ) { filteredTags =>
+                          complete(
+                            (StatusCodes.OK, List(`X-Total-Count`(count.toString)), filteredTags.map(TagResponse.apply))
+                          )
+                        }
                       }
                     }
                   }
