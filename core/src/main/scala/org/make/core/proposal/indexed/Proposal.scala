@@ -282,7 +282,8 @@ final case class IndexedAuthor(
   age: Option[Int],
   avatarUrl: Option[String],
   anonymousParticipation: Boolean,
-  userType: UserType
+  userType: UserType,
+  profession: Option[String]
 )
 
 object IndexedAuthor {

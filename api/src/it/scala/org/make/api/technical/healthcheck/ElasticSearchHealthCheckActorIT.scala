@@ -43,7 +43,7 @@ import org.make.core.idea.IdeaId
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.{UserId, UserType}
+import org.make.core.user.UserId
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.DurationInt
@@ -108,17 +108,6 @@ class ElasticSearchHealthCheckActorIT
           )
       ),
       requestContext = Some(RequestContext.empty.copy(country = Some(Country("FR")), language = Some(Language("fr")))),
-      author = IndexedAuthor(
-        firstName = Some("Craig"),
-        displayName = Some("Craig"),
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = Some("92876"),
-        age = Some(25),
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
       ideaId = Some(IdeaId("idea-id"))
     )
 

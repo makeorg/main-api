@@ -320,7 +320,8 @@ trait ProposalIndexationStream
           .map(date => ChronoUnit.YEARS.between(date, LocalDate.now()).toInt),
         avatarUrl = user.profile.flatMap(_.avatarUrl),
         anonymousParticipation = user.anonymousParticipation,
-        userType = user.userType
+        userType = user.userType,
+        profession = user.profile.flatMap(_.profession)
       ),
       organisations = organisationInfos
         .map(

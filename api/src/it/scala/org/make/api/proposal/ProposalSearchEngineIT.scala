@@ -45,7 +45,7 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
-import org.make.core.{CirceFormatters, DateHelper, RequestContext}
+import org.make.core.{CirceFormatters, DateHelper, RequestContext, SlugHelper}
 import org.make.core.DateHelper.zonedDateTimeOrder
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
@@ -101,11 +101,9 @@ class ProposalSearchEngineIT
 
   private val now = DateHelper.now()
   private val decrementer = new AtomicLong()
-  private def newProposal = IndexedProposal(
+  private def newProposal = indexedProposal(
     id = ProposalId(UUID.randomUUID().toString),
     userId = UserId("user-id"),
-    content = "This is a test proposal",
-    slug = "this-is-a-test-proposal",
     createdAt = now.minusDays(decrementer.incrementAndGet()),
     updatedAt = None,
     votes = Seq(
@@ -134,41 +132,7 @@ class ProposalSearchEngineIT
         )
         )
     ),
-    votesCount = 3,
-    votesVerifiedCount = 3,
-    votesSequenceCount = 3,
-    votesSegmentCount = 3,
-    toEnrich = false,
-    scores = IndexedScores.empty,
-    segmentScores = IndexedScores.empty,
-    context = emptyContext,
-    author = IndexedAuthor(
-      firstName = None,
-      displayName = None,
-      organisationName = None,
-      organisationSlug = None,
-      postalCode = None,
-      age = None,
-      avatarUrl = None,
-      anonymousParticipation = false,
-      userType = UserType.UserTypeUser
-    ),
-    organisations = Seq.empty,
-    tags = Seq.empty,
-    selectedStakeTag = None,
-    trending = None,
-    labels = Seq(),
-    status = ProposalStatus.Refused,
-    ideaId = None,
-    operationId = None,
-    question = None,
-    sequencePool = SequencePool.Tested,
-    sequenceSegmentPool = SequencePool.Tested,
-    initialProposal = false,
-    refusalReason = None,
-    operationKind = None,
-    segment = None,
-    keywords = Nil
+    status = ProposalStatus.Refused
   )
   private def newTag(label: String, display: Boolean = true) =
     IndexedTag(TagId(UUID.randomUUID().toString), label, display)
@@ -185,11 +149,10 @@ class ProposalSearchEngineIT
     emptyContext.map(_.copy(country = Some(Country("IT")), language = Some(Language("it"))))
 
   private val acceptedProposals: Seq[IndexedProposal] = Seq(
-    IndexedProposal(
+    indexedProposal(
       id = ProposalId("f4b02e75-8670-4bd0-a1aa-6d91c4de968a"),
       userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content = "Il faut que mon/ma député(e) fasse la promotion de la permaculture",
-      slug = "il-faut-que-mon-ma-depute-fasse-la-promotion-de-la-permaculture",
       createdAt = now.minusDays(49).minusHours(4),
       updatedAt = Some(now.minusDays(49).minusHours(4)),
       votes = Seq(
@@ -224,16 +187,7 @@ class ProposalSearchEngineIT
             )
           )
       ),
-      votesCount = 287,
-      votesVerifiedCount = 287,
-      votesSequenceCount = 287,
-      votesSegmentCount = 287,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 42, 42, 0, 0, 84, 60, Consensus),
-      segmentScores = IndexedScores(1, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10, 0, Limbo),
-      context = italianContext,
-      trending = None,
-      labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Craig"),
         displayName = Some("Craig"),
@@ -243,28 +197,26 @@ class ProposalSearchEngineIT
         age = Some(25),
         avatarUrl = Some("avatar.url"),
         anonymousParticipation = false,
-        userType = UserType.UserTypeUser
+        userType = UserType.UserTypeUser,
+        profession = None
       ),
-      organisations = Seq.empty,
       tags = Seq(tagAlpha, tagBeta, tagGamma, tagDelta),
       selectedStakeTag = Some(tagGamma),
-      status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
       operationId = None,
-      question = Some(baseQuestion),
       sequencePool = SequencePool.Tested,
       sequenceSegmentPool = SequencePool.New,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None,
       keywords = Seq(IndexedProposalKeyword(ProposalKeywordKey("culture"), "permaculture"))
+    ).copy(
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 42, 42, 0, 0, 84, 60, Consensus),
+      segmentScores = IndexedScores(1, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10, 0, Limbo),
+      context = italianContext,
+      question = Some(baseQuestion)
     ),
-    IndexedProposal(
+    indexedProposal(
       id = ProposalId("9c468c22-1d1a-474b-9081-d79f1079f5e5"),
       userId = UserId("fb600b89-0e04-419a-9f16-4c3311d2c53a"),
       content = "Il faut qu'il/elle interdise les élevages et cultures intensives",
-      slug = "il-faut-qu-il-elle-interdise-les-elevages-et-cultures-intensives",
       createdAt = now.minusDays(50),
       updatedAt = Some(now.minusDays(50)),
       votes = Seq(
@@ -299,47 +251,24 @@ class ProposalSearchEngineIT
             )
           )
       ),
-      votesCount = 310,
-      votesVerifiedCount = 310,
-      votesSequenceCount = 310,
-      votesSegmentCount = 310,
       toEnrich = true,
+      tags = Seq(tagAlpha, tagBeta, tagDelta),
+      selectedStakeTag = Some(tagBeta),
+      ideaId = Some(IdeaId("idea-id")),
+      operationId = None,
+      sequencePool = SequencePool.Tested,
+      sequenceSegmentPool = SequencePool.Tested,
+      keywords = Seq(IndexedProposalKeyword(ProposalKeywordKey("culture"), "cultures"))
+    ).copy(
       scores = IndexedScores(0, 0, 0, 0, 0, 0, 54, 21, 0, 0, 0, 80, Controversy),
       segmentScores = IndexedScores.empty,
       context = frenchContext,
-      trending = None,
-      labels = Seq(),
-      author = IndexedAuthor(
-        firstName = Some("Valerie"),
-        displayName = Some("Valerie"),
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = Some("41556"),
-        age = Some(26),
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
-      organisations = Seq.empty,
-      tags = Seq(tagAlpha, tagBeta, tagDelta),
-      selectedStakeTag = Some(tagBeta),
-      status = ProposalStatus.Accepted,
-      ideaId = Some(IdeaId("idea-id")),
-      operationId = None,
-      question = Some(baseQuestion),
-      sequencePool = SequencePool.Tested,
-      sequenceSegmentPool = SequencePool.Tested,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None,
-      keywords = Seq(IndexedProposalKeyword(ProposalKeywordKey("culture"), "cultures"))
+      question = Some(baseQuestion)
     ),
-    IndexedProposal(
+    indexedProposal(
       id = ProposalId("ed8d8b66-579a-48bd-9f61-b7f6cf679e95"),
       userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content = "Il faut qu'il/elle privilégie les petites exploitations agricoles aux fermes usines",
-      slug = "il-faut-qu-il-elle-privilegie-les-petites-exploitations-agricoles-aux-fermes-usines",
       createdAt = now.minusDays(48),
       updatedAt = Some(now.minusDays(48)),
       votes = Seq(
@@ -374,49 +303,25 @@ class ProposalSearchEngineIT
             )
           )
       ),
-      votesCount = 127,
-      votesVerifiedCount = 127,
-      votesSequenceCount = 127,
-      votesSegmentCount = 127,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 35, 35, 0, 0, 0, 12, Consensus),
-      segmentScores = IndexedScores.empty,
-      status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id-2")),
-      context = italianContext,
-      trending = None,
-      labels = Seq(),
-      author = IndexedAuthor(
-        firstName = Some("Valerie"),
-        displayName = Some("Valerie"),
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = Some("41556"),
-        age = Some(26),
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
-      organisations = Seq.empty,
       tags = Seq(tagBeta),
       selectedStakeTag = Some(tagBeta),
       operationId = None,
-      question = Some(otherQuestion),
       sequencePool = SequencePool.Tested,
       sequenceSegmentPool = SequencePool.Tested,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = Some("ubik"),
-      keywords = Nil
+      segment = Some("ubik")
+    ).copy(
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 35, 35, 0, 0, 0, 12, Consensus),
+      segmentScores = IndexedScores.empty,
+      context = italianContext,
+      question = Some(otherQuestion)
     ),
-    IndexedProposal(
+    indexedProposal(
       id = ProposalId("c700b4c0-1b49-4373-a993-23c2437e857a"),
       userId = UserId("463e2937-42f4-4a18-9555-0a962531a55f"),
       content =
         "Il faut qu'il/elle protège notre agriculture locale et donne les moyens aux agriculteurs de vivre de leur métier de production",
-      slug =
-        "il-faut-qu-il-elle-protege-notre-agriculture-locale-et-donne-les-moyens-aux-agriculteurs-de-vivre-de-leur-metier-de-production",
       createdAt = now.minusDays(47),
       updatedAt = Some(now.minusDays(47)),
       votes = Seq(
@@ -451,47 +356,22 @@ class ProposalSearchEngineIT
             )
           )
       ),
-      votesCount = 353,
-      votesVerifiedCount = 353,
-      votesSequenceCount = 353,
-      votesSegmentCount = 353,
-      toEnrich = false,
+      tags = Seq(tagBeta),
+      selectedStakeTag = Some(tagDelta),
+      ideaId = Some(IdeaId("idea-id-3")),
+      operationId = None,
+      sequencePool = SequencePool.Tested,
+      sequenceSegmentPool = SequencePool.Tested
+    ).copy(
       scores = IndexedScores(0, 0, 0, 0, 0, 0, 16, 16, 0, 0, 0, 9.4, Consensus),
       segmentScores = IndexedScores.empty,
       context = frenchContext,
-      trending = None,
-      labels = Seq(),
-      author = IndexedAuthor(
-        firstName = Some("Jennifer"),
-        displayName = Some("Jennifer"),
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = Some("40734"),
-        age = Some(23),
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
-      organisations = Seq.empty,
-      tags = Seq(tagBeta),
-      selectedStakeTag = Some(tagDelta),
-      status = ProposalStatus.Accepted,
-      ideaId = Some(IdeaId("idea-id-3")),
-      operationId = None,
-      question = Some(otherQuestion),
-      sequencePool = SequencePool.Tested,
-      sequenceSegmentPool = SequencePool.Tested,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None,
-      keywords = Nil
+      question = Some(otherQuestion)
     ),
-    IndexedProposal(
+    indexedProposal(
       id = ProposalId("eac55aab-021e-495e-9664-bea941b8c51c"),
       userId = UserId("c0cbad58-b143-492d-8895-1b9c5dbe48bb"),
       content = "Il faut qu'il/elle favorise l'accès à l'alimentation issue de l'agriculture biologique",
-      slug = "il-faut-qu-il-elle-favorise-l-acces-a-l-alimentation-issue-de-l-agriculture-biologique",
       createdAt = now.minusDays(49).minusHours(8),
       updatedAt = Some(now.minusDays(49).minusHours(8)),
       votes = Seq(
@@ -526,49 +406,20 @@ class ProposalSearchEngineIT
             )
           )
       ),
-      votesCount = 368,
-      votesVerifiedCount = 368,
-      votesSequenceCount = 368,
-      votesSegmentCount = 368,
-      toEnrich = false,
+      operationId = None,
+      sequencePool = SequencePool.Tested,
+      sequenceSegmentPool = SequencePool.Tested
+    ).copy(
       scores = IndexedScores.empty,
       segmentScores = IndexedScores.empty,
       context = italianContext,
-      trending = None,
-      labels = Seq(),
-      author = IndexedAuthor(
-        firstName = Some("Laura"),
-        displayName = Some("Laura"),
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = Some("43324"),
-        age = Some(31),
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
-      organisations = Seq.empty,
-      tags = Seq.empty,
-      selectedStakeTag = None,
-      status = ProposalStatus.Accepted,
-      ideaId = None,
-      operationId = None,
-      question = Some(otherQuestion),
-      sequencePool = SequencePool.Tested,
-      sequenceSegmentPool = SequencePool.Tested,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None,
-      keywords = Nil
+      question = Some(otherQuestion)
     ),
-    IndexedProposal(
+    indexedProposal(
       id = ProposalId("5725e8fc-54a1-4b77-9246-d1de60a245c5"),
       userId = UserId("c0cbad58-b143-492d-8895-1b9c5dbe48bb"),
       content =
         "Il faut qu'il/elle dissolve la SAFER et ainsi laisser les petits paysans s'installer, avec des petites exploitations",
-      slug =
-        "il-faut-qu-il-elle-dissolve-la-SAFER-et-ainsi-laisser-les-petits-paysans-s-installer-avec-des-petites-exploitations",
       createdAt = now.minusDays(50).minusHours(1),
       updatedAt = Some(now.minusDays(50).minusHours(1)),
       votes = Seq(
@@ -603,47 +454,19 @@ class ProposalSearchEngineIT
             )
           )
       ),
-      votesCount = 305,
-      votesVerifiedCount = 305,
-      votesSequenceCount = 305,
-      votesSegmentCount = 305,
-      toEnrich = false,
+      operationId = None,
+      sequencePool = SequencePool.Tested,
+      sequenceSegmentPool = SequencePool.Tested
+    ).copy(
       scores = IndexedScores.empty.copy(zone = Consensus),
       segmentScores = IndexedScores.empty,
       context = None,
-      trending = None,
-      labels = Seq(),
-      author = IndexedAuthor(
-        firstName = Some("Laura"),
-        displayName = Some("Laura"),
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = Some("43324"),
-        age = Some(31),
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
-      organisations = Seq.empty,
-      tags = Seq.empty,
-      selectedStakeTag = None,
-      status = ProposalStatus.Accepted,
-      ideaId = None,
-      operationId = None,
-      question = Some(baseQuestion),
-      sequencePool = SequencePool.Tested,
-      sequenceSegmentPool = SequencePool.Tested,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None,
-      keywords = Nil
+      question = Some(baseQuestion)
     ),
-    IndexedProposal(
+    indexedProposal(
       id = ProposalId("d38244bc-3d39-44a2-bfa9-a30158a297a3"),
       userId = UserId("c0cbad58-b143-492d-8895-1b9c5dbe48bb"),
       content = "C'è bisogno lui / lei deve sostenere e difendere l'agricoltura nel mio dipartimento",
-      slug = "c-e-bisogno-lui-lei-deve-sostenere-e-difendere-l-agricoltura-nel-mio-dipartimento",
       createdAt = now.minusDays(46),
       updatedAt = Some(now.minusDays(46)),
       votes = Seq(
@@ -678,47 +501,19 @@ class ProposalSearchEngineIT
             )
           )
       ),
-      votesCount = 286,
-      votesVerifiedCount = 286,
-      votesSequenceCount = 286,
-      votesSegmentCount = 286,
-      toEnrich = false,
+      operationId = None,
+      sequencePool = SequencePool.Tested,
+      sequenceSegmentPool = SequencePool.Tested
+    ).copy(
       scores = IndexedScores.empty.copy(scoreLowerBound = 80, zone = Consensus),
       segmentScores = IndexedScores.empty,
       context = frenchContext,
-      trending = None,
-      labels = Seq(),
-      author = IndexedAuthor(
-        firstName = Some("Laura"),
-        displayName = Some("Laura"),
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = Some("43324"),
-        age = Some(31),
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
-      organisations = Seq.empty,
-      tags = Seq.empty,
-      selectedStakeTag = None,
-      status = ProposalStatus.Accepted,
-      ideaId = None,
-      operationId = None,
-      question = Some(baseQuestion.copy(countries = NonEmptyList.of(Country("IT")))),
-      sequencePool = SequencePool.Tested,
-      sequenceSegmentPool = SequencePool.Tested,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None,
-      keywords = Nil
+      question = Some(baseQuestion.copy(countries = NonEmptyList.of(Country("IT"))))
     ),
-    IndexedProposal(
+    indexedProposal(
       id = ProposalId("ddba011d-5950-4237-bdf1-8bf25473f366"),
       userId = UserId("c0cbad58-b143-492d-8895-1b9c5dbe48bb"),
       content = "C'è bisogno lui / lei deve favorire i produttori locali per le mense e i pasti a casa.",
-      slug = "c-e-bisogno-lui-lei-deve-favorire-i-produttori-locali-per-le-mense-e-i-pasti-a-casa",
       createdAt = now.minusDays(44),
       updatedAt = Some(now.minusDays(44)),
       votes = Seq(
@@ -753,52 +548,23 @@ class ProposalSearchEngineIT
             )
           )
       ),
-      votesCount = 162,
-      votesVerifiedCount = 162,
-      votesSequenceCount = 162,
-      votesSegmentCount = 162,
-      toEnrich = false,
+      operationId = None,
+      sequencePool = SequencePool.Tested,
+      sequenceSegmentPool = SequencePool.Tested
+    ).copy(
       scores = IndexedScores.empty.copy(zone = Consensus),
       segmentScores = IndexedScores.empty,
       context = frenchContext,
-      trending = None,
-      labels = Seq(),
-      author = IndexedAuthor(
-        firstName = Some("Laura"),
-        displayName = Some("Laura"),
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = Some("43324"),
-        age = Some(31),
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
-      organisations = Seq.empty,
-      tags = Seq.empty,
-      selectedStakeTag = None,
-      status = ProposalStatus.Accepted,
-      ideaId = None,
-      operationId = None,
-      question = Some(baseQuestion.copy(isOpen = true)),
-      sequencePool = SequencePool.Tested,
-      sequenceSegmentPool = SequencePool.Tested,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None,
-      keywords = Nil
+      question = Some(baseQuestion.copy(isOpen = true))
     )
   )
 
   private val pendingProposals: Seq[IndexedProposal] = Seq(
-    IndexedProposal(
+    indexedProposal(
       id = ProposalId("7413c8dd-9b17-44be-afc8-fb2898b12773"),
       userId = UserId("fb600b89-0e04-419a-9f16-4c3311d2c53a"),
       content =
         "Il faut qu'il/elle favorise l'agriculture qualitative plut\\u00f4t que l'agriculture intensive (plus de pesticides pour plus de rendements)",
-      slug =
-        "il-faut-qu-il-elle-favorise-l-agriculture-qualitative-plutot-que-l-agriculture-intensive-plus-de-pesticides-pour-plus-de-rendements",
       createdAt = now.minusDays(49).minusHours(1),
       updatedAt = Some(now.minusDays(49).minusHours(1)),
       votes = Seq(
@@ -833,49 +599,17 @@ class ProposalSearchEngineIT
             )
           )
       ),
-      votesCount = 178,
-      votesVerifiedCount = 178,
-      votesSequenceCount = 178,
-      votesSegmentCount = 178,
-      toEnrich = false,
-      scores = IndexedScores.empty,
-      segmentScores = IndexedScores.empty,
-      context = frenchContext,
-      trending = None,
-      labels = Seq(),
-      author = IndexedAuthor(
-        firstName = Some("Ronald"),
-        displayName = Some("Ronald"),
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = Some("41556"),
-        age = Some(26),
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
-      organisations = Seq.empty,
-      tags = Seq.empty,
-      selectedStakeTag = None,
       status = ProposalStatus.Pending,
       ideaId = Some(IdeaId("idea-id")),
       operationId = None,
-      question = None,
       sequencePool = SequencePool.Excluded,
-      sequenceSegmentPool = SequencePool.Excluded,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None,
-      keywords = Nil
-    ),
-    IndexedProposal(
+      sequenceSegmentPool = SequencePool.Excluded
+    ).copy(scores = IndexedScores.empty, segmentScores = IndexedScores.empty, context = frenchContext, question = None),
+    indexedProposal(
       id = ProposalId("3bd7ae66-d2b4-42c2-96dd-46dbdb477797"),
       userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content =
         "Il faut qu'il/elle vote une loi pour obliger l'industrie pharmaceutique d'investir dans la recherche sur les maladies rares",
-      slug =
-        "il-faut-qu-il-elle-vote-une-loi-pour-obliger-l-industrie-pharmaceutique-d-investir-dans-la-recherche-sur-les-maladies-rares",
       createdAt = now.minusDays(45),
       updatedAt = Some(now.minusDays(45)),
       votes = Seq(
@@ -910,49 +644,22 @@ class ProposalSearchEngineIT
             )
           )
       ),
-      votesCount = 131,
-      votesVerifiedCount = 131,
-      votesSequenceCount = 131,
-      votesSegmentCount = 131,
-      toEnrich = false,
+      status = ProposalStatus.Pending,
+      operationId = None,
+      sequencePool = SequencePool.Excluded,
+      sequenceSegmentPool = SequencePool.Excluded,
+      keywords = Seq(IndexedProposalKeyword(ProposalKeywordKey("maladie"), "maladies"))
+    ).copy(
       scores = IndexedScores.empty,
       segmentScores = IndexedScores.empty,
       context = italianContext,
-      trending = None,
-      labels = Seq(),
-      author = IndexedAuthor(
-        firstName = Some("Jennifer"),
-        displayName = Some("Jennifer"),
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = Some("81966"),
-        age = Some(21),
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
-      organisations = Seq.empty,
-      tags = Seq.empty,
-      selectedStakeTag = None,
-      status = ProposalStatus.Pending,
-      ideaId = None,
-      operationId = None,
-      question = None,
-      sequencePool = SequencePool.Excluded,
-      sequenceSegmentPool = SequencePool.Excluded,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None,
-      keywords = Seq(IndexedProposalKeyword(ProposalKeywordKey("maladie"), "maladies"))
+      question = None
     ),
-    IndexedProposal(
+    indexedProposal(
       id = ProposalId("bd44db77-3096-4e3b-b539-a4038307d85e"),
       userId = UserId("463e2937-42f4-4a18-9555-0a962531a55f"),
       content =
         "Il faut qu'il/elle propose d'interdire aux politiques l'utilisation du big data menant à faire des projets démagogiques",
-      slug =
-        "il-faut-qu-il-elle-propose-d-interdire-aux-politiques-l-utilisation-du-big-data-menant-a-faire-des-projets-demagogiques",
       createdAt = now.minusDays(49).minusHours(2),
       updatedAt = Some(now.minusDays(49).minusHours(2)),
       votes = Seq(
@@ -987,16 +694,6 @@ class ProposalSearchEngineIT
             )
           )
       ),
-      votesCount = 356,
-      votesVerifiedCount = 356,
-      votesSequenceCount = 356,
-      votesSegmentCount = 356,
-      toEnrich = false,
-      scores = IndexedScores.empty,
-      segmentScores = IndexedScores.empty,
-      context = frenchContext,
-      trending = None,
-      labels = Seq(),
       author = IndexedAuthor(
         firstName = None,
         displayName = Some("organisation"),
@@ -1006,30 +703,19 @@ class ProposalSearchEngineIT
         age = Some(23),
         avatarUrl = None,
         anonymousParticipation = false,
-        userType = UserType.UserTypeOrganisation
+        userType = UserType.UserTypeOrganisation,
+        profession = Some("Admin stuff")
       ),
-      organisations = Seq.empty,
-      tags = Seq.empty,
-      selectedStakeTag = None,
       status = ProposalStatus.Pending,
-      ideaId = None,
       operationId = None,
-      question = None,
       sequencePool = SequencePool.Excluded,
-      sequenceSegmentPool = SequencePool.Excluded,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None,
-      keywords = Nil
-    ),
-    IndexedProposal(
+      sequenceSegmentPool = SequencePool.Excluded
+    ).copy(scores = IndexedScores.empty, segmentScores = IndexedScores.empty, context = frenchContext, question = None),
+    indexedProposal(
       id = ProposalId("f2153c81-c031-41f0-8b02-c6ed556d62aa"),
       userId = UserId("ef418fad-2d2c-4f49-9b36-bf9d6f282aa2"),
       content =
         "Il faut qu'il/elle mette en avant la création de lieux de culture et d'échange, avec quelques petites subventions",
-      slug =
-        "Il-faut-qu-il-elle-mette-en-avant-la-creation-de-lieux-de-culture-et-d-echange-avec-quelques-petites-subventions",
       createdAt = now.minusDays(49).minusHours(3),
       updatedAt = Some(now.minusDays(49).minusHours(3)),
       votes = Seq(
@@ -1064,16 +750,6 @@ class ProposalSearchEngineIT
             )
           )
       ),
-      votesCount = 347,
-      votesVerifiedCount = 347,
-      votesSequenceCount = 347,
-      votesSegmentCount = 347,
-      toEnrich = false,
-      scores = IndexedScores.empty,
-      segmentScores = IndexedScores.empty,
-      context = italianContext,
-      trending = None,
-      labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Jennifer - Personality"),
         displayName = Some("Jennifer - Personality"),
@@ -1083,28 +759,23 @@ class ProposalSearchEngineIT
         age = Some(21),
         avatarUrl = None,
         anonymousParticipation = false,
-        userType = UserType.UserTypePersonality
+        userType = UserType.UserTypePersonality,
+        profession = None
       ),
-      organisations = Seq.empty,
-      tags = Seq.empty,
-      selectedStakeTag = None,
       status = ProposalStatus.Pending,
-      ideaId = None,
       operationId = None,
-      question = None,
       sequencePool = SequencePool.Excluded,
-      sequenceSegmentPool = SequencePool.Excluded,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None,
-      keywords = Nil
+      sequenceSegmentPool = SequencePool.Excluded
+    ).copy(
+      scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
+      context = italianContext,
+      question = None
     ),
-    IndexedProposal(
+    indexedProposal(
       id = ProposalId("13b16b9c-9293-4d33-9b82-415264820639"),
       userId = UserId("463e2937-42f4-4a18-9555-0a962531a55f"),
       content = "Il faut qu'il/elle défende un meilleur accès à la culture et à l'éducation pour tous.",
-      slug = "il-faut-qu-il-elle-defende-un-meilleur-acces-a-la-culture-et-a-l-education-pour-tous",
       createdAt = now.minusDays(49).minusHours(5),
       updatedAt = Some(now.minusDays(49).minusHours(5)),
       votes = Seq(
@@ -1139,47 +810,15 @@ class ProposalSearchEngineIT
             )
           )
       ),
-      votesCount = 267,
-      votesVerifiedCount = 267,
-      votesSequenceCount = 267,
-      votesSegmentCount = 267,
-      toEnrich = false,
-      scores = IndexedScores.empty,
-      segmentScores = IndexedScores.empty,
-      context = frenchContext,
-      trending = None,
-      labels = Seq(),
-      author = IndexedAuthor(
-        firstName = Some("Craig"),
-        displayName = Some("Craig"),
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = Some("40734"),
-        age = Some(23),
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
-      organisations = Seq.empty,
-      tags = Seq.empty,
-      selectedStakeTag = None,
       status = ProposalStatus.Pending,
-      ideaId = None,
       operationId = None,
-      question = None,
       sequencePool = SequencePool.Excluded,
-      sequenceSegmentPool = SequencePool.Excluded,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None,
-      keywords = Nil
-    ),
-    IndexedProposal(
+      sequenceSegmentPool = SequencePool.Excluded
+    ).copy(scores = IndexedScores.empty, segmentScores = IndexedScores.empty, context = frenchContext, question = None),
+    indexedProposal(
       id = ProposalId("b3198ad3-ff48-49f2-842c-2aefc3d0df5d"),
       userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content = "Il faut qu'il/elle pratique le mécennat et crée des aides pour les artistes, surtout les jeunes.",
-      slug = "il-faut-qu-il-elle-pratique-le-mecennat-et-cree-des-aides-pour-les-artistes-surtout-les-jeunes",
       createdAt = now.minusDays(49).minusHours(6),
       updatedAt = Some(now.minusDays(49).minusHours(6)),
       votes = Seq(
@@ -1214,48 +853,16 @@ class ProposalSearchEngineIT
             )
           )
       ),
-      votesCount = 204,
-      votesVerifiedCount = 204,
-      votesSequenceCount = 204,
-      votesSegmentCount = 204,
-      toEnrich = false,
-      scores = IndexedScores.empty,
-      segmentScores = IndexedScores.empty,
-      context = frenchContext,
-      trending = None,
-      labels = Seq(),
-      author = IndexedAuthor(
-        firstName = Some("Valerie"),
-        displayName = Some("Valerie"),
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = Some("92876"),
-        age = Some(25),
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
-      organisations = Seq.empty,
-      tags = Seq.empty,
-      selectedStakeTag = None,
       status = ProposalStatus.Pending,
-      ideaId = None,
       operationId = None,
-      question = None,
       sequencePool = SequencePool.Excluded,
-      sequenceSegmentPool = SequencePool.Excluded,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None,
-      keywords = Nil
-    ),
-    IndexedProposal(
+      sequenceSegmentPool = SequencePool.Excluded
+    ).copy(scores = IndexedScores.empty, segmentScores = IndexedScores.empty, context = frenchContext, question = None),
+    indexedProposal(
       id = ProposalId("cf940085-010d-46de-8bfd-dee7e8adc8b6"),
       userId = UserId("fb600b89-0e04-419a-9f16-4c3311d2c53a"),
       content =
         "C'è bisogno lui / lei deve difendere la Francofonia nel mondo combattendo contro l'egemonia dell'inglese",
-      slug = "c'e'bisogno-lui-lei-deve-difendere-la-francofonia-nel-mondo-combattendo-contro-l-egemonia-dell-inglese",
       createdAt = now.minusDays(49).minusHours(7),
       updatedAt = Some(now.minusDays(49).minusHours(7)),
       votes = Seq(
@@ -1290,42 +897,11 @@ class ProposalSearchEngineIT
             )
           )
       ),
-      votesCount = 254,
-      votesVerifiedCount = 254,
-      votesSequenceCount = 254,
-      votesSegmentCount = 254,
-      toEnrich = false,
-      scores = IndexedScores.empty,
-      segmentScores = IndexedScores.empty,
-      context = italianContext,
-      trending = None,
-      labels = Seq(),
-      author = IndexedAuthor(
-        firstName = Some("Craig"),
-        displayName = Some("Craig"),
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = Some("41556"),
-        age = Some(26),
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
-      organisations = Seq.empty,
-      tags = Seq.empty,
-      selectedStakeTag = None,
       status = ProposalStatus.Pending,
-      ideaId = None,
       operationId = None,
-      question = None,
       sequencePool = SequencePool.Excluded,
-      sequenceSegmentPool = SequencePool.Excluded,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None,
-      keywords = Nil
-    )
+      sequenceSegmentPool = SequencePool.Excluded
+    ).copy(scores = IndexedScores.empty, segmentScores = IndexedScores.empty, context = italianContext, question = None)
   )
 
   private def proposals: Seq[IndexedProposal] = acceptedProposals ++ pendingProposals
@@ -1435,7 +1011,7 @@ class ProposalSearchEngineIT
     }
 
     Scenario("searching an existing slug") {
-      val slug = "il-faut-que-mon-ma-depute-fasse-la-promotion-de-la-permaculture"
+      val slug = SlugHelper(proposals.head.content)
       val query = SearchQuery(Some(SearchFilters(slug = Some(SlugSearchFilter(slug)))))
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
@@ -1653,6 +1229,7 @@ class ProposalSearchEngineIT
         results.results.size should be(1)
         results.results.foreach(_.author.userType should be(UserType.UserTypeOrganisation))
         results.results.foreach(_.id.value should be("bd44db77-3096-4e3b-b539-a4038307d85e"))
+        results.results.foreach(_.author.profession should be(Some("Admin stuff")))
       }
     }
   }

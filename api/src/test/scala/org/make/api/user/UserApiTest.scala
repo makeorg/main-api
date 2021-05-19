@@ -52,7 +52,6 @@ import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage._
 import org.make.api.user.SocialProvider.GooglePeople
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
-import org.make.api.user.Anonymization
 import org.make.api.user.social._
 import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
 import org.make.api.userhistory.{ResetPasswordEvent, UserHistoryCoordinatorServiceComponent}
@@ -1236,78 +1235,41 @@ class UserApiTest
     }
   }
 
-  Feature("get voted proposals of an user") {
-
-    val indexedProposal1 = IndexedProposal(
-      id = ProposalId("proposal-1"),
-      userId = sylvain.userId,
-      content = "Il faut que ma proposition d'opération soit en CSV.",
-      slug = "il-faut-que-ma-proposition-d-operation-soit-en-csv",
-      createdAt = DateHelper.now(),
-      updatedAt = Some(DateHelper.now()),
-      votesCount = 0,
-      votesVerifiedCount = 0,
-      votesSequenceCount = 0,
-      votesSegmentCount = 0,
-      toEnrich = false,
-      votes = Seq.empty,
-      scores = IndexedScores.empty,
-      segmentScores = IndexedScores.empty,
-      context = None,
-      trending = None,
-      labels = Seq.empty,
-      author = IndexedAuthor(
-        firstName = Some("Paul"),
-        displayName = Some("Paul"),
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = Some("11111"),
-        age = Some(26),
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
+  val indexedProposal1: IndexedProposal = indexedProposal(
+    id = ProposalId("proposal-1"),
+    userId = sylvain.userId,
+    operationId = Some(OperationId("operation1"))
+  )
+  val indexedProposal2: IndexedProposal = indexedProposal(
+    id = ProposalId("proposal-2"),
+    userId = sylvain.userId,
+    operationId = Some(OperationId("operation2"))
+  )
+  val indexedProposal3: IndexedProposal =
+    indexedProposal(id = ProposalId("proposal-2"), userId = sylvain.userId, operationId = None)
+  val proposalsResult: Seq[ProposalResponse] =
+    Seq(
+      ProposalResponse(
+        indexedProposal = indexedProposal1,
+        myProposal = false,
+        voteAndQualifications = None,
+        proposalKey = "pr0p0541k3y"
       ),
-      organisations = Seq.empty,
-      tags = Seq.empty,
-      selectedStakeTag = None,
-      status = ProposalStatus.Accepted,
-      ideaId = None,
-      operationId = Some(OperationId("operation1")),
-      question = None,
-      sequencePool = SequencePool.New,
-      sequenceSegmentPool = SequencePool.New,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None,
-      keywords = Nil
-    )
-    val indexedProposal2 =
-      indexedProposal1.copy(id = ProposalId("proposal-2"), operationId = Some(OperationId("operation2")))
-    val indexedProposal3 =
-      indexedProposal1.copy(id = ProposalId("proposal-3"), operationId = None)
-    val proposalsResult: Seq[ProposalResponse] =
-      Seq(
-        ProposalResponse(
-          indexedProposal = indexedProposal1,
-          myProposal = false,
-          voteAndQualifications = None,
-          proposalKey = "pr0p0541k3y"
-        ),
-        ProposalResponse(
-          indexedProposal = indexedProposal2,
-          myProposal = false,
-          voteAndQualifications = None,
-          proposalKey = "pr0p0541k3y"
-        ),
-        ProposalResponse(
-          indexedProposal = indexedProposal3,
-          myProposal = false,
-          voteAndQualifications = None,
-          proposalKey = "pr0p0541k3y"
-        )
+      ProposalResponse(
+        indexedProposal = indexedProposal2,
+        myProposal = false,
+        voteAndQualifications = None,
+        proposalKey = "pr0p0541k3y"
+      ),
+      ProposalResponse(
+        indexedProposal = indexedProposal3,
+        myProposal = false,
+        voteAndQualifications = None,
+        proposalKey = "pr0p0541k3y"
       )
+    )
 
+  Feature("get voted proposals of an user") {
     when(
       proposalService
         .searchProposalsVotedByUser(
@@ -1365,75 +1327,6 @@ class UserApiTest
   }
 
   Feature("get user proposals") {
-
-    val indexedProposal1 = IndexedProposal(
-      id = ProposalId("333333-3333-3333-3333-33333333"),
-      userId = sylvain.userId,
-      content = "Il faut une proposition de Sylvain",
-      slug = "il-faut-une-proposition-de-sylvain",
-      createdAt = DateHelper.now(),
-      updatedAt = Some(DateHelper.now()),
-      votes = Seq.empty,
-      votesCount = 0,
-      votesVerifiedCount = 0,
-      votesSequenceCount = 0,
-      votesSegmentCount = 0,
-      toEnrich = false,
-      scores = IndexedScores.empty,
-      segmentScores = IndexedScores.empty,
-      context = None,
-      trending = None,
-      labels = Seq.empty,
-      author = IndexedAuthor(
-        firstName = sylvain.firstName,
-        displayName = sylvain.displayName,
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = Some("11111"),
-        age = Some(22),
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
-      organisations = Seq.empty,
-      tags = Seq.empty,
-      selectedStakeTag = None,
-      status = ProposalStatus.Accepted,
-      ideaId = None,
-      operationId = Some(OperationId("operation1")),
-      question = None,
-      sequencePool = SequencePool.New,
-      sequenceSegmentPool = SequencePool.New,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None,
-      keywords = Nil
-    )
-    val indexedProposal2 = indexedProposal1.copy(operationId = Some(OperationId("operation2")))
-    val indexedProposal3 = indexedProposal1.copy(operationId = None)
-    val proposalsResult: Seq[ProposalResponse] =
-      Seq(
-        ProposalResponse(
-          indexedProposal = indexedProposal1,
-          myProposal = true,
-          voteAndQualifications = None,
-          proposalKey = "pr0p0541k3y"
-        ),
-        ProposalResponse(
-          indexedProposal = indexedProposal2,
-          myProposal = true,
-          voteAndQualifications = None,
-          proposalKey = "pr0p0541k3y"
-        ),
-        ProposalResponse(
-          indexedProposal = indexedProposal3,
-          myProposal = true,
-          voteAndQualifications = None,
-          proposalKey = "pr0p0541k3y"
-        )
-      )
-
     when(
       proposalService
         .searchForUser(

@@ -27,12 +27,9 @@ import org.make.api.technical.elasticsearch.{
   ElasticsearchConfiguration,
   ElasticsearchConfigurationComponent
 }
-import org.make.core.DateHelper
-import org.make.core.idea.IdeaId
 import org.make.core.proposal.indexed._
-import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
-import org.make.core.reference.{Country, Language}
-import org.make.core.user.{UserId, UserType}
+import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
+import org.make.core.user.UserId
 
 import scala.collection.immutable.Seq
 
@@ -49,13 +46,9 @@ class ProposalSearchEngineTest
   when(elasticsearchConfiguration.proposalAliasName).thenReturn("fakeAliasName")
   when(elasticsearchConfiguration.indexName).thenReturn("fakeIndexName")
 
-  def proposal(nbAgree: Int, nbDisagree: Int, nbNeutral: Int): IndexedProposal = IndexedProposal(
+  def proposal(nbAgree: Int, nbDisagree: Int, nbNeutral: Int): IndexedProposal = indexedProposal(
     id = ProposalId("99999999-9999-9999-9999-999999999999"),
     userId = UserId("99999999-9999-9999-9999-999999999999"),
-    content = "Il faut faire une proposition",
-    slug = "il-faut-faire-une-proposition",
-    createdAt = DateHelper.now(),
-    updatedAt = Some(DateHelper.now()),
     votes = Seq(
       IndexedVote
         .empty(key = VoteKey.Agree)
@@ -87,52 +80,7 @@ class ProposalSearchEngineTest
             IndexedQualification.empty(key = QualificationKey.DoNotCare)
           )
         )
-    ),
-    votesCount = 3,
-    votesVerifiedCount = 3,
-    votesSequenceCount = 3,
-    votesSegmentCount = 3,
-    toEnrich = false,
-    scores = IndexedScores.empty,
-    segmentScores = IndexedScores.empty,
-    context = Some(
-      IndexedContext(
-        source = None,
-        operation = None,
-        location = None,
-        question = None,
-        country = Some(Country("FR")),
-        language = Some(Language("fr")),
-        getParameters = Seq.empty
-      )
-    ),
-    trending = None,
-    labels = Seq.empty,
-    author = IndexedAuthor(
-      firstName = Some("Boogie"),
-      displayName = Some("Boogie"),
-      organisationName = None,
-      organisationSlug = None,
-      postalCode = Some("11111"),
-      age = Some(42),
-      avatarUrl = None,
-      anonymousParticipation = false,
-      userType = UserType.UserTypeUser
-    ),
-    organisations = Seq.empty,
-    tags = Seq.empty,
-    selectedStakeTag = None,
-    status = ProposalStatus.Accepted,
-    ideaId = Some(IdeaId("idea-id")),
-    operationId = None,
-    question = None,
-    sequencePool = SequencePool.New,
-    sequenceSegmentPool = SequencePool.New,
-    initialProposal = false,
-    refusalReason = None,
-    operationKind = None,
-    segment = None,
-    keywords = Nil
+    )
   )
 
   val normalProposal: IndexedProposal = proposal(42, 1, 3)

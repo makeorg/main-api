@@ -1203,6 +1203,10 @@
             "userType": {
               "type": "keyword",
               "index": true
+            },
+            "profession": {
+              "type": "text",
+              "index": false
             }
           }
         },

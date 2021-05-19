@@ -37,15 +37,24 @@ import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
-import org.make.core.proposal.indexed.{IndexedProposal, IndexedTag, ProposalElasticsearchFieldName}
-import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
+import org.make.core.proposal.indexed.{
+  IndexedContext,
+  IndexedProposal,
+  IndexedQualification,
+  IndexedTag,
+  IndexedVote,
+  ProposalElasticsearchFieldName
+}
+import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, SearchQuery, VoteKey}
 import org.make.core.question.{Question, QuestionId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
 import org.make.core.{CirceFormatters, DateHelper, HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import java.time.ZonedDateTime
+import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -444,7 +453,10 @@ final case class AdminProposalResponse(
   status: ProposalStatus,
   tags: Seq[IndexedTag] = Seq.empty,
   createdAt: ZonedDateTime,
-  agreement: Double
+  agreement: Double,
+  context: AdminProposalResponse.Context,
+  votes: Seq[AdminProposalResponse.Vote],
+  votesCount: Int
 )
 
 object AdminProposalResponse extends CirceFormatters {
@@ -457,7 +469,10 @@ object AdminProposalResponse extends CirceFormatters {
       status = proposal.status,
       tags = proposal.tags,
       createdAt = proposal.createdAt,
-      agreement = proposal.scores.agreement
+      agreement = proposal.scores.agreement,
+      context = Context(proposal.context),
+      votes = proposal.votes.map(Vote.apply),
+      votesCount = proposal.votesCount
     )
 
   final case class Author(
@@ -465,7 +480,8 @@ object AdminProposalResponse extends CirceFormatters {
     userType: UserType,
     displayName: Option[String],
     postalCode: Option[String],
-    age: Option[Int]
+    age: Option[Int],
+    profession: Option[String]
   )
 
   object Author {
@@ -475,9 +491,53 @@ object AdminProposalResponse extends CirceFormatters {
         userType = proposal.author.userType,
         displayName = proposal.author.displayName,
         postalCode = proposal.author.postalCode,
-        age = proposal.author.age
+        age = proposal.author.age,
+        profession = proposal.author.profession
       )
     implicit val codec: Codec[Author] = deriveCodec
+  }
+
+  final case class Context(
+    source: Option[String],
+    question: Option[String],
+    country: Option[Country],
+    language: Option[Language]
+  )
+
+  object Context {
+    def apply(context: Option[IndexedContext]): Context =
+      Context(
+        source = context.flatMap(_.source),
+        question = context.flatMap(_.question),
+        country = context.flatMap(_.country),
+        language = context.flatMap(_.language)
+      )
+    implicit val codec: Codec[Context] = deriveCodec
+  }
+
+  final case class Vote(
+    @(ApiModelProperty @field)(dataType = "string", example = "agree")
+    key: VoteKey,
+    count: Int,
+    qualifications: Seq[Qualification]
+  )
+
+  object Vote {
+    def apply(vote: IndexedVote): Vote =
+      Vote(key = vote.key, count = vote.count, qualifications = vote.qualifications.map(Qualification.apply))
+    implicit val codec: Codec[Vote] = deriveCodec
+  }
+
+  final case class Qualification(
+    @(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
+    key: QualificationKey,
+    count: Int
+  )
+
+  object Qualification {
+    def apply(qualification: IndexedQualification): Qualification =
+      Qualification(key = qualification.key, count = qualification.count)
+    implicit val codec: Codec[Qualification] = deriveCodec
   }
 
   implicit val codec: Codec[AdminProposalResponse] = deriveCodec
