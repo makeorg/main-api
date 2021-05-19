@@ -22,7 +22,7 @@ package org.make.api.sequence
 import cats.data.NonEmptyList
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.DefaultSelectionAlgorithmComponent.Scored
-import org.make.api.proposal.ProposalScorer.VotesCounter
+import org.make.api.proposal.ProposalScorer.{Score, VotesCounter}
 import org.make.api.proposal._
 import org.make.api.technical.MakeRandom
 import org.make.core.DateHelper
@@ -41,9 +41,9 @@ import org.make.core.sequence.{
 }
 import org.make.core.user.{UserId, UserType}
 import org.scalatest.BeforeAndAfterEach
+
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
-
 import scala.Ordering.Double.TotalOrdering
 import scala.collection.mutable
 
@@ -799,7 +799,9 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
 
       val trials = 1000
       val samples =
-        (1 to trials).map(_ => topScore.sample(banditSequenceConfiguration.nonSequenceVotesWeight))
+        (1 to trials).map { _ =>
+          ProposalScorer(testProposal.votes, VotesCounter.SequenceVotesCounter, 0.5).topScore.cachedSample
+        }
       testProposal.votes.map(_.countVerified).sum should be(100)
       samples.max should be > testProposalScore + 0.1
       samples.min should be < testProposalScore - 0.1
@@ -819,7 +821,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       val scores = ProposalScorer(testProposal.votes, VotesCounter.SequenceVotesCounter, 0.5)
 
       val testProposalScore: Double = scores.topScore.score
-      val testProposalScoreSample: Double = scores.topScore.sample(banditSequenceConfiguration.nonSequenceVotesWeight)
+      val testProposalScoreSample: Double = scores.topScore.cachedSample
 
       testProposalScore should be > -10.0
       testProposalScoreSample should be > -10.0
@@ -1348,9 +1350,9 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       }
 
       val confidenceInterval: Double = 0.01
-      proportions(ProposalId("testedProposal100")) should equal(0.45 +- confidenceInterval)
+      proportions(ProposalId("testedProposal100")) should equal(0.47 +- confidenceInterval)
       proportions(ProposalId("testedProposal51")) should equal(0.09 +- confidenceInterval)
-      proportions(ProposalId("testedProposal50")) should equal(0.09 +- confidenceInterval)
+      proportions(ProposalId("testedProposal50")) should equal(0.08 +- confidenceInterval)
     }
 
     Scenario("check tested idea selection with idea competition with boost") {
@@ -1435,7 +1437,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
 
       val confidenceInterval: Double = 0.01
       proportions(ProposalId("testedProposal100")) should equal(0.47 +- confidenceInterval)
-      proportions(ProposalId("testedProposal51")) should equal(0.25 +- confidenceInterval)
+      proportions(ProposalId("testedProposal51")) should equal(0.089 +- confidenceInterval)
       proportions(ProposalId("testedProposal50")) should equal(0.08 +- confidenceInterval)
     }
   }
@@ -1636,16 +1638,16 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
 
   Feature("score sampling") {
     Scenario("test all scores") {
-      val scores = Seq(
-        "topScore" -> ProposalScorer.topScore,
-        "rejection" -> ProposalScorer.rejection,
-        "realistic" -> ProposalScorer.realistic,
-        "platitude" -> ProposalScorer.platitude,
-        "neutral" -> ProposalScorer.neutral,
-        "greatness" -> ProposalScorer.greatness,
-        "engagement" -> ProposalScorer.engagement,
-        "controversy" -> ProposalScorer.controversy,
-        "adhesion" -> ProposalScorer.adhesion
+      val scores: Seq[(String, ProposalScorer => Score)] = Seq[(String, ProposalScorer => Score)](
+        ("topScore", _.topScore),
+        ("rejection", _.rejection),
+        ("realistic", _.realistic),
+        ("platitude", _.platitude),
+        ("neutral", _.neutral),
+        ("greatness", _.greatness),
+        ("engagement", _.engagement),
+        ("controversy", _.controversy),
+        ("adhesion", _.adhesion)
       )
 
       val proposals: Seq[IndexedProposal] = (1 to 1000).map { i =>
@@ -1678,12 +1680,12 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       }
 
       scores.foreach {
-        case (name, algo) =>
+        case (name, scoreFunction) =>
           logger.debug(s"Validatin algorithm $name")
           proposals.foreach { proposal =>
-            val score = ProposalScorer(proposal.votes, VotesCounter.SequenceVotesCounter, 0.5).computeScore(algo)
+            val score = scoreFunction(ProposalScorer(proposal.votes, VotesCounter.SequenceVotesCounter, 0.5))
             val average = (1 to 100).map { _ =>
-              score.sample(0.5)
+              scoreFunction(ProposalScorer(proposal.votes, VotesCounter.SequenceVotesCounter, 0.5)).cachedSample
             }.sum / 100
             average should be(score.score +- score.confidence)
           }

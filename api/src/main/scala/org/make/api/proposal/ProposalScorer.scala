@@ -22,7 +22,7 @@ package org.make.api.proposal
 import grizzled.slf4j.Logging
 import org.apache.commons.math3.distribution.BetaDistribution
 import org.apache.commons.math3.random.{MersenneTwister, RandomGenerator}
-import org.make.api.proposal.ProposalScorer.{findSmoothing, Score, ScorePart, VotesCounter}
+import org.make.api.proposal.ProposalScorer.{findSmoothing, Score, VotesCounter}
 import org.make.api.technical.MakeRandom
 import org.make.core.proposal.QualificationKey.{Doable, Impossible, LikeIt, NoWay, PlatitudeAgree, PlatitudeDisagree}
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
@@ -65,45 +65,33 @@ final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, nonSeque
     ProposalScorer.confidenceInterval(specificVotes, specificVotesCount)
   }
 
-  def computeScore(part: ScorePart): Score = {
-    Score(
-      part.score(this),
-      part.confidence(this),
-      nonSequenceVotesWeight => part.sample(this, this.chooseCounter(nonSequenceVotesWeight))
-    )
-  }
+  private def keyScore(key: Key): Score = Score.forKey(this, key, this.counter)
 
-  lazy val adhesion: Score = {
-    computeScore(ProposalScorer.adhesion)
-  }
+  lazy val agree: Score = keyScore(Agree)
+  lazy val disagree: Score = keyScore(Disagree)
+  lazy val neutral: Score = keyScore(Neutral)
 
-  lazy val engagement: Score = {
-    computeScore(ProposalScorer.engagement)
-  }
+  lazy val likeIt: Score = keyScore(LikeIt)
+  lazy val doable: Score = keyScore(Doable)
+  lazy val platitudeAgree: Score = keyScore(PlatitudeAgree)
 
-  lazy val realistic: Score = {
-    computeScore(ProposalScorer.realistic)
-  }
+  lazy val impossible: Score = keyScore(Impossible)
+  lazy val noWay: Score = keyScore(NoWay)
+  lazy val platitudeDisagree: Score = keyScore(PlatitudeDisagree)
 
-  lazy val platitude: Score = {
-    computeScore(ProposalScorer.platitude)
-  }
+  lazy val platitude: Score = platitudeAgree + platitudeDisagree
+  lazy val topScore: Score = agree + likeIt + doable - noWay - impossible - platitude
+  lazy val controversy: Score = Score.min(agree, disagree) + Score.min(likeIt, noWay)
+  lazy val rejection: Score = disagree + noWay + impossible - likeIt - doable - platitude
 
-  lazy val topScore: Score = {
-    computeScore(ProposalScorer.topScore)
-  }
+  lazy val adhesion: Score = agree
+  lazy val greatness: Score = likeIt - noWay
+  lazy val realistic: Score = doable - impossible
 
-  lazy val controversy: Score = {
-    computeScore(ProposalScorer.controversy)
-  }
+  lazy val engagement: Score = greatness + realistic - platitude
 
-  lazy val rejection: Score = {
-    computeScore(ProposalScorer.rejection)
-  }
-
-  lazy val neutral: Score = {
-    computeScore(ProposalScorer.neutral)
-  }
+  lazy val zone: Zone = zone(agree.score, disagree.score, neutral.score)
+  lazy val sampledZone: Zone = zone(agree.cachedSample, disagree.cachedSample, neutral.cachedSample)
 
   /* Taken from the dial:
   if (proposition['score_v2_adhesion'] >= .6) or \
@@ -116,12 +104,12 @@ final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, nonSeque
       return 'limbo'
   return 'controversy'
    */
-  lazy val zone: Zone = {
-    if (score(Agree) >= 0.6 || (score(Neutral) < 0.4 && score(Disagree) < 0.15)) {
+  def zone(agree: Double, disagree: Double, neutral: Double): Zone = {
+    if (agree >= 0.6 || neutral < 0.4 && disagree < 0.15) {
       Zone.Consensus
-    } else if (score(Disagree) >= 0.6 || (score(Neutral) < 0.4 && score(Agree) < 0.15)) {
+    } else if (disagree >= 0.6 || (neutral < 0.4 && agree < 0.15)) {
       Zone.Rejection
-    } else if (score(Neutral) >= 0.4) {
+    } else if (neutral >= 0.4) {
       Zone.Limbo
     } else {
       Zone.Controversy
@@ -191,73 +179,46 @@ object ProposalScorer extends Logging {
     2 * standardDeviation
   }
 
-  val adhesion: ScorePart = ScorePart(Plus, Agree)
-
-  val platitude: ScorePart = ScorePart.sum(ScorePart(Plus, PlatitudeAgree), ScorePart(Plus, PlatitudeDisagree))
-
-  val greatness: ScorePart = ScorePart.sum(ScorePart(Plus, LikeIt), ScorePart(Minus, NoWay))
-
-  val realistic: ScorePart = ScorePart.sum(ScorePart(Plus, Doable), ScorePart(Minus, Impossible))
-
-  val engagement: ScorePart =
-    ScorePart.sum(ScorePart(Plus, greatness), ScorePart(Plus, realistic), ScorePart(Minus, platitude))
-
-  val topScore: ScorePart = ScorePart.sum(ScorePart(Plus, adhesion), ScorePart(Plus, engagement))
-
-  val controversy: ScorePart = ScorePart.sum(
-    CompoundScorePart(Plus, ScorePart(Plus, adhesion), ScorePart(Plus, Disagree)),
-    CompoundScorePart(Plus, ScorePart(Plus, LikeIt), ScorePart(Plus, NoWay))
-  )
-
-  val rejection: ScorePart = ScorePart.sum(
-    ScorePart(Plus, Disagree),
-    ScorePart(Minus, realistic),
-    ScorePart(Minus, greatness),
-    ScorePart(Minus, platitude)
-  )
-
-  val neutral: ScorePart = ScorePart(Plus, Neutral)
-
-  final case class Score(score: Double, confidence: Double, sample: Double => Double) {
+  final case class Score(score: Double, confidence: Double, sampleOnce: () => Double) {
+    lazy val cachedSample: Double = sampleOnce()
     val upperBound: Double = score + confidence
     val lowerBound: Double = score - confidence
-  }
 
-  sealed trait Sign {
-    def signValue(value: Double): Double
-  }
-  case object Plus extends Sign {
-    override def signValue(value: Double): Double = value
-  }
-  case object Minus extends Sign {
-    override def signValue(value: Double): Double = -value
-  }
-
-  sealed trait ScorePart {
-    def score(votes: ProposalScorer): Double
-    def confidence(votes: ProposalScorer): Double
-    def sample(votes: ProposalScorer, scorer: VotesCounter): Double
-  }
-
-  object ScorePart {
-    def apply(sign: Sign, key: Key): ScorePart = {
-      BasicScorePart(sign, key)
+    def +(other: Score): Score = {
+      Score(
+        score = this.score + other.score,
+        confidence = sumConfidenceIntervals(this.confidence, other.confidence),
+        sampleOnce = () => this.cachedSample + other.cachedSample
+      )
     }
 
-    def apply(sign: Sign, part: ScorePart): ScorePart = new ScorePart {
-      override def score(votes: ProposalScorer): Double = {
-        sign.signValue(part.score(votes))
-      }
-      override def confidence(votes: ProposalScorer): Double = {
-        part.confidence(votes)
-      }
-      override def sample(votes: ProposalScorer, scorer: VotesCounter): Double = {
-        sign.signValue(part.sample(votes, scorer))
-      }
+    def -(other: Score): Score = {
+      Score(
+        score = this.score - other.score,
+        confidence = sumConfidenceIntervals(this.confidence, other.confidence),
+        sampleOnce = () => this.cachedSample - other.cachedSample
+      )
+    }
+  }
+
+  object Score {
+    def min(first: Score, second: Score): Score = {
+      Score(
+        score = Math.min(first.score, second.score),
+        confidence = Math.max(first.confidence, second.confidence),
+        sampleOnce = () => Math.min(first.cachedSample, second.cachedSample)
+      )
     }
 
-    def sum(parts: ScorePart*): ScorePart = {
-      SumScorePart(parts)
+    def forKey(votes: ProposalScorer, key: Key, scorer: VotesCounter): Score = {
+      def sampleOnce(): Double = {
+        val successes = votes.count(key, scorer)
+        val trials: Int = votes.countVotes(scorer)
+        val smoothing = findSmoothing(key)
+        new BetaDistribution(random, successes + smoothing, trials - successes + 1).sample()
+      }
+
+      Score(score = votes.score(key), confidence = votes.confidence(key), sampleOnce = () => sampleOnce())
     }
   }
 
@@ -268,52 +229,8 @@ object ProposalScorer extends Logging {
     }
   }
 
-  final case class BasicScorePart(sign: Sign, key: Key) extends ScorePart {
-    override def score(votes: ProposalScorer): Double = {
-      sign.signValue(votes.score(key))
-    }
-    override def confidence(votes: ProposalScorer): Double = {
-      votes.confidence(key)
-    }
-    override def sample(votes: ProposalScorer, scorer: VotesCounter): Double = {
-      val successes = votes.count(key, scorer)
-      val trials: Int = votes.countVotes(scorer)
-      val smoothing = findSmoothing(key)
-      sign.signValue(new BetaDistribution(random, successes + smoothing, trials - successes + 1).sample())
-    }
-  }
-
-  final case class CompoundScorePart(sign: Sign, first: ScorePart, second: ScorePart) extends ScorePart {
-    override def score(votes: ProposalScorer): Double = {
-      sign.signValue(Math.min(first.score(votes), second.score(votes)))
-    }
-
-    override def confidence(votes: ProposalScorer): Double = {
-      Math.max(first.confidence(votes), second.confidence(votes))
-    }
-    override def sample(votes: ProposalScorer, scorer: VotesCounter): Double = {
-      sign.signValue(Math.min(first.sample(votes, scorer), second.sample(votes, scorer)))
-    }
-  }
-
-  final case class SumScorePart(parts: Seq[ScorePart]) extends ScorePart {
-    override def score(votes: ProposalScorer): Double = {
-      parts.map(_.score(votes)).sum
-    }
-
-    override def confidence(votes: ProposalScorer): Double = {
-      SumScorePart.sumConfidenceIntervals(parts.map(_.confidence(votes)): _*)
-    }
-
-    override def sample(votes: ProposalScorer, scorer: VotesCounter): Double = {
-      parts.map(_.sample(votes, scorer)).sum
-    }
-  }
-
-  object SumScorePart {
-    def sumConfidenceIntervals(confidences: Double*): Double = {
-      Math.sqrt(confidences.map(Math.pow(_, 2)).sum)
-    }
+  def sumConfidenceIntervals(confidences: Double*): Double = {
+    Math.sqrt(confidences.map(Math.pow(_, 2)).sum)
   }
 
   type VotesCounter = BaseVoteOrQualification[_] => Int
