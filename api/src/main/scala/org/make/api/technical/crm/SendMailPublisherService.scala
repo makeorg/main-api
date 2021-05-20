@@ -524,8 +524,8 @@ trait DefaultSendMailPublisherServiceComponent
     override def resendRegistration(user: User, requestContext: RequestContext): Future[Unit] = {
 
       userService.changeEmailVerificationTokenIfNeeded(user.userId).flatMap {
-        case Some(_) => publishResendRegistration(user, requestContext)
-        case None    => Future.unit
+        case Some(modifiedUser) => publishResendRegistration(modifiedUser, requestContext)
+        case None               => Future.unit
       }
     }
 

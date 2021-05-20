@@ -131,7 +131,7 @@ trait UserService extends ShortenedNames {
     userType: Option[UserType]
   ): Future[Int]
   def reconnectInfo(userId: UserId): Future[Option[ReconnectInfo]]
-  def changeEmailVerificationTokenIfNeeded(userId: UserId): Future[Option[String]]
+  def changeEmailVerificationTokenIfNeeded(userId: UserId): Future[Option[User]]
   def changeAvatarForUser(
     userId: UserId,
     avatarUrl: String,
@@ -1026,7 +1026,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
-    override def changeEmailVerificationTokenIfNeeded(userId: UserId): Future[Option[String]] = {
+    override def changeEmailVerificationTokenIfNeeded(userId: UserId): Future[Option[User]] = {
       getUser(userId).flatMap {
         case Some(user)
             // if last verification token was changed more than 10 minutes ago
@@ -1042,7 +1042,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
                     verificationTokenExpiresAt = Some(dateHelper.now().plusSeconds(validationTokenExpiresIn))
                   )
                 )
-                .map(_.verificationToken)
+                .map(Some(_))
           }
         case _ => Future.successful(None)
       }
