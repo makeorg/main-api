@@ -97,7 +97,7 @@ class DefaultAdminProposalApiComponentTest
         )
       ).thenReturn(Future.successful(ProposalsSearchResult(1, Seq(indexedProposal(ProposalId("search"))))))
       for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
-        Get("/admin/proposals?sort=agreementRate")
+        Get("/admin/proposals?_sort=agreementRate")
           .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
           status should be(StatusCodes.OK)
           header("x-total-count").map(_.value) should be(Some("1"))

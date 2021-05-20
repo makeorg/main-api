@@ -49,6 +49,7 @@ import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, Sea
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
+import org.make.core.technical.Pagination._
 import org.make.core.user.{UserId, UserType}
 import org.make.core.{CirceFormatters, DateHelper, HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
@@ -97,10 +98,10 @@ trait AdminProposalApi extends Directives {
       ),
       new ApiImplicitParam(name = "initialProposal", paramType = "query", dataType = "boolean"),
       new ApiImplicitParam(name = "tagId", paramType = "query", dataType = "string", allowMultiple = true),
-      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
-      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer"),
-      new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "order", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string")
     )
   )
   def search: Route
@@ -232,10 +233,10 @@ trait DefaultAdminProposalApiComponent
                 "userType".csv[UserType],
                 "initialProposal".as[Boolean].?,
                 "tagId".as[Seq[TagId]].?,
-                "limit".as[Int].?,
-                "skip".as[Int].?,
-                "sort".as[ProposalElasticsearchFieldName].?,
-                "order".as[Order].?
+                "_start".as[Start].?,
+                "_end".as[End].?,
+                "_sort".as[ProposalElasticsearchFieldName].?,
+                "_order".as[Order].?
               ) {
                 (
                   questionIds: Option[Seq[QuestionId]],
@@ -244,8 +245,8 @@ trait DefaultAdminProposalApiComponent
                   userTypes: Option[Seq[UserType]],
                   initialProposal: Option[Boolean],
                   tagIds: Option[Seq[TagId]],
-                  limit: Option[Int],
-                  skip: Option[Int],
+                  start: Option[Start],
+                  end: Option[End],
                   sort: Option[ProposalElasticsearchFieldName],
                   order: Option[Order]
                 ) =>
@@ -269,8 +270,8 @@ trait DefaultAdminProposalApiComponent
                     status = status,
                     sort = sort.map(_.field),
                     order = order,
-                    limit = limit,
-                    skip = skip,
+                    limit = end.map(_.value),
+                    skip = start.map(_.value),
                     userTypes = userTypes
                   )
                   val query: SearchQuery = exhaustiveSearchRequest.toSearchQuery(requestContext)
@@ -447,13 +448,13 @@ trait DefaultAdminProposalApiComponent
 }
 
 final case class AdminProposalResponse(
-  id: ProposalId,
+  @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b") id: ProposalId,
   author: AdminProposalResponse.Author,
   content: String,
-  status: ProposalStatus,
+  @(ApiModelProperty @field)(dataType = "string", example = "Pending") status: ProposalStatus,
   tags: Seq[IndexedTag] = Seq.empty,
   createdAt: ZonedDateTime,
-  agreement: Double,
+  agreementRate: Double,
   context: AdminProposalResponse.Context,
   votes: Seq[AdminProposalResponse.Vote],
   votesCount: Int
@@ -469,18 +470,18 @@ object AdminProposalResponse extends CirceFormatters {
       status = proposal.status,
       tags = proposal.tags,
       createdAt = proposal.createdAt,
-      agreement = proposal.scores.agreement,
+      agreementRate = proposal.scores.agreement,
       context = Context(proposal.context),
       votes = proposal.votes.map(Vote.apply),
       votesCount = proposal.votesCount
     )
 
   final case class Author(
-    id: UserId,
-    userType: UserType,
+    @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e") id: UserId,
+    @(ApiModelProperty @field)(dataType = "string", example = "USER") userType: UserType,
     displayName: Option[String],
     postalCode: Option[String],
-    age: Option[Int],
+    @(ApiModelProperty @field)(dataType = "integer", example = "42") age: Option[Int],
     profession: Option[String]
   )
 
@@ -500,8 +501,8 @@ object AdminProposalResponse extends CirceFormatters {
   final case class Context(
     source: Option[String],
     question: Option[String],
-    country: Option[Country],
-    language: Option[Language]
+    @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
+    @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language]
   )
 
   object Context {
