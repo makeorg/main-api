@@ -253,7 +253,6 @@ trait MakeApi
     with DefaultSecurityApiComponent
     with DefaultSecurityConfigurationComponent
     with DefaultSegmentServiceComponent
-    with DefaultSelectionAlgorithmComponent
     with DefaultSemanticComponent
     with DefaultSemanticConfigurationComponent
     with DefaultSendMailPublisherServiceComponent

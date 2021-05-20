@@ -19,7 +19,6 @@
 
 package org.make.api.sequence
 
-import cats.syntax.list._
 import grizzled.slf4j.Logging
 import org.make.api.operation.OperationOfQuestionSearchEngineComponent
 import org.make.api.proposal._
@@ -30,13 +29,12 @@ import org.make.api.technical.security.{SecurityConfigurationComponent, Security
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
-import org.make.core.proposal.indexed.{IndexedProposal, SequencePool, Zone}
 import org.make.core.proposal._
+import org.make.core.proposal.indexed.{IndexedProposal, SequencePool, Zone}
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
 import org.make.core.user._
 import org.make.core.{proposal, DateHelper, RequestContext}
-import org.make.core.sequence.SelectionAlgorithmName
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -70,7 +68,6 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     with ProposalSearchEngineComponent
     with SecurityConfigurationComponent
     with SegmentServiceComponent
-    with SelectionAlgorithmComponent
     with SequenceConfigurationComponent
     with SessionHistoryCoordinatorServiceComponent
     with OperationOfQuestionSearchEngineComponent
@@ -261,7 +258,6 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               )
           }
       }
-
     }
 
     private def chooseSequenceProposals(
@@ -269,58 +265,32 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       behaviour: SequenceBehaviour,
       proposalsToExclude: Seq[ProposalId]
     ): Future[Seq[IndexedProposal]] = {
+
       def futureFallbackProposals(
         excluded: Seq[ProposalId],
         selectedProposals: Seq[IndexedProposal]
-      ): Future[Seq[IndexedProposal]] = behaviour.fallbackProposals(
-        currentSequenceSize = selectedProposals.size,
-        search = searchProposals(
-          excluded ++ selectedProposals.map(_.id),
-          behaviour.specificConfiguration.sequenceSize - selectedProposals.size
+      ): Future[Seq[IndexedProposal]] = {
+        behaviour.fallbackProposals(
+          currentSequenceSize = selectedProposals.size,
+          search = searchProposals(
+            excluded ++ selectedProposals.map(_.id),
+            behaviour.specificConfiguration.sequenceSize - selectedProposals.size
+          )
         )
-      )
+      }
 
       val excluded = proposalsToExclude ++ includedProposalsIds
       for {
         includedProposals <- futureIncludedProposals(includedProposalsIds)
-        allNewProposals <- behaviour.newProposals(
+        newProposals <- behaviour.newProposals(
           searchProposals(excluded, behaviour.specificConfiguration.sequenceSize * 3)
         )
-        allTestedProposals <- behaviour.testedProposals(
+        testedProposals <- behaviour.testedProposals(
           searchProposals(excluded, behaviour.specificConfiguration.maxTestedProposalCount)
         )
-        selectedProposals = selectProposals(includedProposals, allNewProposals, allTestedProposals, behaviour)
+        selectedProposals = behaviour.selectProposals(includedProposals, newProposals, testedProposals)
         fallbackProposals <- futureFallbackProposals(excluded, selectedProposals)
       } yield selectedProposals ++ fallbackProposals
-    }
-
-    protected def selectProposals(
-      includedProposals: Seq[IndexedProposal],
-      allNewProposals: Seq[IndexedProposal],
-      allTestedProposals: Seq[IndexedProposal],
-      behaviour: SequenceBehaviour
-    ): Seq[IndexedProposal] = {
-      val newProposals = allNewProposals.toList.groupByNel(_.userId).values.map(_.head).toSeq
-      val testedProposals = allTestedProposals.toList.groupByNel(_.userId).values.map(_.head).toSeq
-
-      val (selectionAlgorithm, newCandidates, testedCandidates) =
-        behaviour.specificConfiguration.selectionAlgorithmName match {
-          case SelectionAlgorithmName.Bandit =>
-            (banditSelectionAlgorithm, newProposals, testedProposals)
-          case SelectionAlgorithmName.RoundRobin =>
-            (roundRobinSelectionAlgorithm, allNewProposals, allTestedProposals)
-          case SelectionAlgorithmName.Random =>
-            (randomSelectionAlgorithm, allNewProposals, allTestedProposals)
-        }
-
-      selectionAlgorithm.selectProposalsForSequence(
-        sequenceConfiguration = behaviour.specificConfiguration,
-        nonSequenceVotesWeight = behaviour.configuration.nonSequenceVotesWeight,
-        includedProposals = includedProposals,
-        newProposals = newCandidates,
-        testedProposals = testedCandidates,
-        userSegment = behaviour.maybeSegment
-      )
     }
 
     private def votesForProposals(

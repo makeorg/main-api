@@ -20,7 +20,6 @@
 package org.make.core.sequence
 
 import java.time.ZonedDateTime
-
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto._
 import io.circe.{Codec, Decoder, Encoder, Json}
@@ -142,6 +141,31 @@ object SequenceConfiguration {
 
 }
 
+sealed trait BasicSequenceConfiguration {
+  def sequenceSize: Int
+  def maxTestedProposalCount: Int
+}
+
+final case class ExplorationConfiguration(
+  sequenceSize: Int,
+  maxTestedProposalCount: Int,
+  newRatio: Double,
+  controversyRation: Double,
+  topSorter: String,
+  controversySorter: String
+) extends BasicSequenceConfiguration
+
+object ExplorationConfiguration {
+  val default: ExplorationConfiguration = ExplorationConfiguration(
+    sequenceSize = 12,
+    maxTestedProposalCount = 1000,
+    newRatio = 0.5,
+    controversyRation = 0.1,
+    topSorter = "bandit",
+    controversySorter = "bandit"
+  )
+}
+
 final case class SpecificSequenceConfiguration(
   specificSequenceConfigurationId: SpecificSequenceConfigurationId,
   sequenceSize: Int = 12,
@@ -155,7 +179,7 @@ final case class SpecificSequenceConfiguration(
   interIdeaCompetitionTargetCount: Int = 20,
   interIdeaCompetitionControversialRatio: Double = 0.0,
   interIdeaCompetitionControversialCount: Int = 2
-)
+) extends BasicSequenceConfiguration
 
 object SpecificSequenceConfiguration {
   implicit val decoder: Decoder[SpecificSequenceConfiguration] = deriveDecoder[SpecificSequenceConfiguration]

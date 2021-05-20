@@ -54,7 +54,6 @@ class SequenceServiceComponentTest
     with ProposalSearchEngineComponent
     with EventBusServiceComponent
     with UserServiceComponent
-    with SelectionAlgorithmComponent
     with SegmentServiceComponent
     with OperationOfQuestionSearchEngineComponent
     with Logging {
@@ -68,9 +67,6 @@ class SequenceServiceComponentTest
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
   override val proposalService: ProposalService = mock[ProposalService]
   override val userService: UserService = mock[UserService]
-  override val banditSelectionAlgorithm: SelectionAlgorithm = mock[SelectionAlgorithm]
-  override val roundRobinSelectionAlgorithm: SelectionAlgorithm = mock[SelectionAlgorithm]
-  override val randomSelectionAlgorithm: SelectionAlgorithm = mock[SelectionAlgorithm]
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
   override val segmentService: SegmentService = mock[SegmentService]

@@ -197,7 +197,6 @@ class SequenceServiceIT
     with DefaultReadJournalComponent
     with DefaultSecurityConfigurationComponent
     with DefaultSegmentServiceComponent
-    with DefaultSelectionAlgorithmComponent
     with DefaultSequenceServiceComponent
     with DefaultSessionHistoryCoordinatorServiceComponent
     with DefaultSpawnActorServiceComponent
