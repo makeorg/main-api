@@ -19,7 +19,6 @@
 
 package org.make.api.sequence
 
-import cats.data.NonEmptyList
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.DefaultSelectionAlgorithmComponent.Scored
 import org.make.api.proposal.ProposalScorer.{Score, VotesCounter}
@@ -31,7 +30,6 @@ import org.make.core.proposal.QualificationKey.LikeIt
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.{
   SelectionAlgorithmName,
   SequenceConfiguration,
@@ -39,7 +37,7 @@ import org.make.core.sequence.{
   SpecificSequenceConfiguration,
   SpecificSequenceConfigurationId
 }
-import org.make.core.user.{UserId, UserType}
+import org.make.core.user.UserId
 import org.scalatest.BeforeAndAfterEach
 
 import java.time.ZonedDateTime
@@ -144,12 +142,9 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
     createdAt: ZonedDateTime = DateHelper.now(),
     segment: Option[String] = None
   ): IndexedProposal = {
-    IndexedProposal(
+    indexedProposal(
       id = id,
       userId = UserId(s"fake-$id"),
-      content = "fake",
-      slug = "fake",
-      status = ProposalStatus.Accepted,
       createdAt = createdAt,
       updatedAt = None,
       votes = votes.map {
@@ -172,52 +167,13 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
             }
           )
       }.toSeq,
-      votesCount = votes.values.map(_._1).sum,
-      votesVerifiedCount = votes.values.map(_._1).sum,
-      votesSequenceCount = votes.values.map(_._1).sum,
-      votesSegmentCount = votes.values.map(_._1).sum,
-      toEnrich = false,
-      scores = IndexedScores.empty,
-      segmentScores = IndexedScores.empty,
-      context = None,
-      trending = None,
-      labels = Seq.empty,
-      author = IndexedAuthor(
-        firstName = None,
-        displayName = None,
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = None,
-        age = None,
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
-      organisations = Seq.empty,
-      question = Some(
-        IndexedProposalQuestion(
-          questionId = QuestionId("test-question"),
-          slug = "test-question",
-          title = "test question",
-          question = "test question ?",
-          countries = NonEmptyList.of(Country("FR")),
-          language = Language("fr"),
-          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
-          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
-          isOpen = true
-        )
-      ),
-      tags = Seq.empty,
-      selectedStakeTag = None,
+      questionId = QuestionId("test-question"),
       ideaId = idea,
-      operationId = None,
+      startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+      endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
       sequencePool = sequencePool,
       sequenceSegmentPool = sequencePool,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = segment,
-      keywords = Nil
+      segment = segment
     )
   }
 
@@ -230,12 +186,10 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
     segment: Option[String] = None,
     boost: Int = 1
   ): IndexedProposal = {
-    IndexedProposal(
+    indexedProposal(
       id = id,
       userId = UserId(s"fake-$id"),
       content = "fake",
-      slug = "fake",
-      status = ProposalStatus.Accepted,
       createdAt = createdAt,
       updatedAt = None,
       votes = votes.map {
@@ -258,52 +212,13 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
             }.toSeq
           )
       }.toSeq,
-      votesCount = votes.values.map(_._1).sum,
-      votesVerifiedCount = votes.values.map(_._1).sum,
-      votesSequenceCount = votes.values.map(_._1).sum,
-      votesSegmentCount = votes.values.map(_._1).sum,
-      toEnrich = false,
-      scores = IndexedScores.empty,
-      segmentScores = IndexedScores.empty,
-      context = None,
-      trending = None,
-      labels = Seq.empty,
-      author = IndexedAuthor(
-        firstName = None,
-        displayName = None,
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = None,
-        age = None,
-        avatarUrl = None,
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
-      organisations = Seq.empty,
-      question = Some(
-        IndexedProposalQuestion(
-          questionId = QuestionId("test-question"),
-          slug = "test-question",
-          title = "test question",
-          question = "test question ?",
-          countries = NonEmptyList.of(Country("FR")),
-          language = Language("fr"),
-          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
-          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
-          isOpen = true
-        )
-      ),
-      tags = Seq.empty,
-      selectedStakeTag = None,
+      questionId = QuestionId("test-question"),
+      startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+      endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
       ideaId = idea,
-      operationId = None,
       sequencePool = sequencePool,
       sequenceSegmentPool = sequencePool,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = segment,
-      keywords = Nil
+      segment = segment
     )
   }
 

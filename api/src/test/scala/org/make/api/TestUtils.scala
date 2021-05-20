@@ -197,7 +197,8 @@ trait TestUtils {
     age = Some(25),
     avatarUrl = Some("http://some-url"),
     anonymousParticipation = false,
-    userType = UserType.UserTypeUser
+    userType = UserType.UserTypeUser,
+    profession = Some("Tarot Reader")
   )
 
   def indexedProposal(
@@ -222,7 +223,10 @@ trait TestUtils {
     updatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T15:10:10.000Z")),
     toEnrich: Boolean = false,
     keywords: Seq[IndexedProposalKeyword] = Nil,
-    tags: Seq[IndexedTag] = Nil
+    tags: Seq[IndexedTag] = Nil,
+    sequencePool: SequencePool = SequencePool.New,
+    sequenceSegmentPool: SequencePool = SequencePool.New,
+    segment: Option[String] = None
   ): IndexedProposal = {
 
     val regularScore = ProposalScorer(votes, VotesCounter.SequenceVotesCounter, 0.5)
@@ -292,12 +296,12 @@ trait TestUtils {
           isOpen = true
         )
       ),
-      sequencePool = SequencePool.New,
-      sequenceSegmentPool = SequencePool.New,
+      sequencePool = sequencePool,
+      sequenceSegmentPool = sequenceSegmentPool,
       initialProposal = initialProposal,
       refusalReason = refusalReason,
       operationKind = None,
-      segment = None,
+      segment = segment,
       keywords = keywords
     )
   }

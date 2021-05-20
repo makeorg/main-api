@@ -50,8 +50,6 @@ import org.make.core.operation._
 import org.make.core.proposal.ProposalActionType.ProposalVoteAction
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.Zone.Limbo
-import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.session.SessionId
@@ -978,117 +976,33 @@ class CrmServiceComponentTest
       val proposal2Date = ZonedDateTime.parse("2019-03-18T23:21:03.501Z")
 
       val proposals = Seq(
-        IndexedProposal(
+        indexedProposal(
           id = ProposalId("proposal-1"),
           userId = userId,
           content = "proposal 1",
-          slug = "proposal-1",
           status = Accepted,
           createdAt = proposal1Date,
           updatedAt = None,
-          votes = Seq.empty,
-          votesCount = 42,
-          votesVerifiedCount = 42,
-          votesSequenceCount = 42,
-          votesSegmentCount = 42,
-          toEnrich = true,
-          scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Limbo),
-          segmentScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Limbo),
-          context = None,
-          trending = None,
-          labels = Seq.empty,
-          author = IndexedAuthor(
-            firstName = None,
-            displayName = None,
-            organisationName = None,
-            organisationSlug = None,
-            postalCode = None,
-            age = None,
-            avatarUrl = None,
-            anonymousParticipation = false,
-            userType = UserType.UserTypeUser
-          ),
-          organisations = Seq.empty,
-          question = Some(
-            IndexedProposalQuestion(
-              questionId1,
-              "question-1",
-              "",
-              "",
-              NonEmptyList.of(Country("FR")),
-              Language("fr"),
-              ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
-              ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
-              isOpen = true
-            )
-          ),
-          tags = Seq.empty,
-          selectedStakeTag = None,
-          ideaId = None,
-          operationId = Some(OperationId("")),
-          sequencePool = SequencePool.New,
-          sequenceSegmentPool = SequencePool.New,
-          initialProposal = false,
-          refusalReason = None,
-          operationKind = None,
-          segment = None,
-          keywords = Nil
+          questionId = questionId1,
+          countries = NonEmptyList.of(Country("FR")),
+          language = Language("fr"),
+          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
+          operationId = Some(OperationId(""))
         ),
-        IndexedProposal(
+        indexedProposal(
           id = ProposalId("proposal-2"),
           userId = userId,
           content = "proposal 2",
-          slug = "proposal-2",
           status = Accepted,
           createdAt = proposal2Date,
           updatedAt = None,
-          votes = Seq.empty,
-          votesCount = 42,
-          votesVerifiedCount = 42,
-          votesSequenceCount = 42,
-          votesSegmentCount = 42,
-          toEnrich = true,
-          scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Limbo),
-          segmentScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Limbo),
-          context = None,
-          trending = None,
-          labels = Seq.empty,
-          author = IndexedAuthor(
-            firstName = None,
-            displayName = None,
-            organisationName = None,
-            organisationSlug = None,
-            postalCode = None,
-            age = None,
-            avatarUrl = None,
-            anonymousParticipation = false,
-            userType = UserType.UserTypeUser
-          ),
-          organisations = Seq.empty,
-          question = Some(
-            IndexedProposalQuestion(
-              questionId2,
-              "question-2",
-              "",
-              "",
-              NonEmptyList.of(Country("FR")),
-              Language("fr"),
-              ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
-              ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
-              isOpen = true
-            )
-          ),
-          tags = Seq.empty,
-          selectedStakeTag = None,
-          ideaId = None,
-          operationId = Some(OperationId("")),
-          sequencePool = SequencePool.New,
-          sequenceSegmentPool = SequencePool.New,
-          initialProposal = false,
-          refusalReason = None,
-          operationKind = None,
-          segment = None,
-          keywords = Nil
+          questionId = questionId2,
+          countries = NonEmptyList.of(Country("FR")),
+          language = Language("fr"),
+          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
+          operationId = Some(OperationId(""))
         )
       )
 
