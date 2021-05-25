@@ -227,12 +227,12 @@ trait DefaultAdminProposalApiComponent
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireAdminRole(userAuth.user) {
               parameters(
-                "questionId".as[Seq[QuestionId]].?,
+                "questionId".csv[QuestionId],
                 "content".?,
                 "status".csv[ProposalStatus],
                 "userType".csv[UserType],
                 "initialProposal".as[Boolean].?,
-                "tagId".as[Seq[TagId]].?,
+                "tagId".csv[TagId],
                 "_start".as[Start].?,
                 "_end".as[End].?,
                 "_sort".as[ProposalElasticsearchFieldName].?,
