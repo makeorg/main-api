@@ -36,6 +36,7 @@ import org.make.core.proposal.ProposalId
 import org.make.core.user.{User, UserId, UserType}
 import org.mockito.{ArgumentCaptor, Mockito}
 
+import java.time.ZonedDateTime
 import scala.concurrent.Future
 
 class SendMailPublisherServiceTest
@@ -91,8 +92,17 @@ class SendMailPublisherServiceTest
   when(proposalCoordinatorService.getProposal(userProposal.proposalId))
     .thenReturn(Future.successful(Some(userProposal)))
   when(questionService.getQuestion(question.questionId)).thenReturn(Future.successful(Some(question)))
-  when(userService.changeEmailVerificationTokenIfNeeded(any[UserId]))
-    .thenReturn(Future.successful(Some("verification")))
+  when(userService.changeEmailVerificationTokenIfNeeded(any[UserId])).thenAnswer { id: UserId =>
+    Future.successful(
+      Some(
+        user(
+          id,
+          verificationToken = Some("verification"),
+          verificationTokenExpiresAt = Some(ZonedDateTime.now().plusDays(1))
+        )
+      )
+    )
+  }
   when(userService.getUser(organisation.userId)).thenReturn(Future.successful(Some(organisation)))
   when(userService.getUser(user.userId)).thenReturn(Future.successful(Some(user)))
 
