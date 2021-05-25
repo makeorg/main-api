@@ -624,6 +624,45 @@ class DefaultAdminProposalApiComponentTest
     }
   }
 
+  Feature("get history") {
+    val fakeId = ProposalId("id-history-fake")
+    val proposalId = ProposalId("id-history-1")
+    val date = DateHelper.now()
+    val actionResponse = ProposalActionResponse(
+      date,
+      Some(ProposalActionAuthorResponse(UserId("user-id"), Some("display name"))),
+      "action",
+      Map("arg-1" -> "value 1", "arg-2" -> "value 2")
+    )
+    when(proposalService.getHistory(eqTo(fakeId))).thenReturn(Future.successful(None))
+    when(proposalService.getHistory(eqTo(proposalId)))
+      .thenReturn(Future.successful(Some(Seq(actionResponse))))
+
+    Scenario("forbidden to non-admins") {
+      for (maybeToken <- Seq(None, Some(tokenCitizen), Some(tokenModerator)))
+        Get(s"/admin/proposals/${proposalId.value}/history")
+          .withHeaders(maybeToken.toList.map(token => Authorization(OAuth2BearerToken(token)))) ~> routes ~> check {
+          status shouldBe maybeToken.fold(StatusCodes.Unauthorized)(_ => StatusCodes.Forbidden)
+        }
+    }
+
+    Scenario("it works for admins") {
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get(s"/admin/proposals/${proposalId.value}/history")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.OK
+          val response = entityAs[Seq[ProposalActionResponse]]
+          response should contain theSameElementsAs Seq(actionResponse)
+        }
+        Get(s"/admin/proposals/${fakeId.value}/history")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status shouldBe StatusCodes.NotFound
+        }
+      }
+    }
+
+  }
+
   private def proposal(id: ProposalId): ModerationProposalResponse = {
     ModerationProposalResponse(
       id = id,

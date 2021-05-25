@@ -281,6 +281,8 @@ trait ProposalService {
     moderator: UserId,
     requestContext: RequestContext
   ): Future[BulkActionResponse]
+
+  def getHistory(proposalId: ProposalId): Future[Option[Seq[ProposalActionResponse]]]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with Logging {
@@ -619,6 +621,23 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
+    private def getEvents(proposal: Proposal): Future[Seq[ProposalActionResponse]] = {
+      val eventsUserIds: Seq[UserId] = proposal.events.map(_.user).distinct
+      val futureEventsUsers: Future[Seq[User]] = userService.getUsersByUserIds(eventsUserIds)
+
+      futureEventsUsers.map { eventsUsers =>
+        val userById = eventsUsers.map(u => u.userId -> u.displayName).toMap
+        proposal.events.map { action =>
+          ProposalActionResponse(
+            date = action.date,
+            user = userById.get(action.user).map(name => ProposalActionAuthorResponse(action.user, name)),
+            actionType = action.actionType,
+            arguments = action.arguments
+          )
+        }
+      }
+    }
+
     private def toModerationProposalResponse(
       futureProposal: Future[Option[Proposal]]
     ): Future[Option[ModerationProposalResponse]] = {
@@ -632,20 +651,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       futureMaybeProposalAuthor.flatMap {
         case None => Future.successful(None)
         case Some((proposal, author)) =>
-          val eventsUserIds: Seq[UserId] = proposal.events.map(_.user).distinct
-          val futureEventsUsers: Future[Seq[User]] = userService.getUsersByUserIds(eventsUserIds)
-
-          futureEventsUsers.map { eventsUsers =>
-            val events: Seq[ProposalActionResponse] = proposal.events.map { action =>
-              ProposalActionResponse(
-                date = action.date,
-                user = eventsUsers
-                  .find(_.userId.value == action.user.value)
-                  .map(user => ProposalActionAuthorResponse(user.userId, user.displayName)),
-                actionType = action.actionType,
-                arguments = action.arguments
-              )
-            }
+          getEvents(proposal).map { events =>
             Some(
               ModerationProposalResponse(
                 id = proposal.proposalId,
@@ -1532,6 +1538,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         val (successes, failures) = actions.partition(_.key == ActionKey.OK)
         BulkActionResponse(successes.map(_.proposalId), failures)
       }
+    }
+
+    override def getHistory(proposalId: ProposalId): Future[Option[Seq[ProposalActionResponse]]] = {
+      for {
+        proposal <- proposalCoordinatorService.getProposal(proposalId)
+        events   <- proposal.traverse(getEvents)
+      } yield events
     }
   }
 }
