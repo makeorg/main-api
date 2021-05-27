@@ -54,7 +54,14 @@ import org.make.core.question.TopProposalsMode.IdeaMode
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.tag.{Tag, TagId}
 import org.make.core.user._
-import org.make.core.{BusinessConfig, CirceFormatters, CountryConfiguration, DateHelper, RequestContext}
+import org.make.core.{
+  BusinessConfig,
+  CirceFormatters,
+  CountryConfiguration,
+  DateHelper,
+  RequestContext,
+  ValidationFailedError
+}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -254,6 +261,26 @@ trait ProposalService {
     proposalKeywordsList: Seq[ProposalKeywordRequest],
     requestContext: RequestContext
   ): Future[Seq[ProposalKeywordsResponse]]
+
+  def acceptAll(
+    proposalIds: Seq[ProposalId],
+    moderator: UserId,
+    requestContext: RequestContext
+  ): Future[BulkActionResponse]
+
+  def addTagsToAll(
+    proposalIds: Seq[ProposalId],
+    tagIds: Seq[TagId],
+    moderator: UserId,
+    requestContext: RequestContext
+  ): Future[BulkActionResponse]
+
+  def deleteTagFromAll(
+    proposalIds: Seq[ProposalId],
+    tagId: TagId,
+    moderator: UserId,
+    requestContext: RequestContext
+  ): Future[BulkActionResponse]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with Logging {
@@ -1015,6 +1042,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
+    // Very permissive (no event generated etc), use carefully and only for one shot migrations.
     override def patchProposal(
       proposalId: ProposalId,
       userId: UserId,
@@ -1385,5 +1413,125 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         .runWith(Sink.seq)
     }
 
+    override def acceptAll(
+      proposalIds: Seq[ProposalId],
+      moderator: UserId,
+      requestContext: RequestContext
+    ): Future[BulkActionResponse] = {
+      bulkAction(acceptAction(moderator, requestContext), proposalIds)
+    }
+
+    override def addTagsToAll(
+      proposalIds: Seq[ProposalId],
+      tagIds: Seq[TagId],
+      moderator: UserId,
+      requestContext: RequestContext
+    ): Future[BulkActionResponse] = {
+      bulkAction(updateTagsAction(moderator, requestContext, current => (current ++ tagIds).distinct), proposalIds)
+    }
+
+    override def deleteTagFromAll(
+      proposalIds: Seq[ProposalId],
+      tagId: TagId,
+      moderator: UserId,
+      requestContext: RequestContext
+    ): Future[BulkActionResponse] = {
+      bulkAction(updateTagsAction(moderator, requestContext, _.filterNot(_ == tagId)), proposalIds)
+    }
+
+    private def acceptAction(
+      moderator: UserId,
+      requestContext: RequestContext
+    )(proposal: IndexedProposal, question: Question): Future[Option[Proposal]] =
+      proposalCoordinatorService
+        .accept(
+          proposalId = proposal.id,
+          moderator = moderator,
+          requestContext = requestContext,
+          sendNotificationEmail = true,
+          newContent = None,
+          question = question,
+          labels = Seq.empty,
+          tags = proposal.tags.map(_.tagId),
+          idea = None
+        )
+
+    private def updateTagsAction(
+      moderator: UserId,
+      requestContext: RequestContext,
+      transformTags: Seq[TagId] => Seq[TagId]
+    )(proposal: IndexedProposal, question: Question): Future[Option[Proposal]] =
+      proposalCoordinatorService
+        .update(
+          moderator = moderator,
+          proposalId = proposal.id,
+          requestContext = requestContext,
+          updatedAt = DateHelper.now(),
+          newContent = None,
+          labels = Seq.empty,
+          tags = transformTags(proposal.tags.map(_.tagId)),
+          idea = None,
+          question = question
+        )
+
+    private def bulkAction(
+      action: (IndexedProposal, Question) => Future[Option[Proposal]],
+      proposalIds: Seq[ProposalId]
+    ): Future[BulkActionResponse] = {
+      val getProposals: Future[Map[ProposalId, (IndexedProposal, Option[QuestionId])]] =
+        elasticsearchProposalAPI
+          .searchProposals(
+            SearchQuery(filters = Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds)))))
+          )
+          .map(_.results.map(p => (p.id, (p, p.question.map(_.questionId)))).toMap)
+
+      def getQuestions(proposalMap: Map[ProposalId, (IndexedProposal, Option[QuestionId])]): Future[Seq[Question]] =
+        questionService.getQuestions(proposalMap.values.collect { case (_, Some(id)) => id }.toSeq.distinct)
+
+      def runActionOnAll(
+        action: (IndexedProposal, Question) => Future[Option[Proposal]],
+        proposalIds: Seq[ProposalId],
+        proposals: Map[ProposalId, (IndexedProposal, Option[QuestionId])],
+        questions: Seq[Question]
+      ): Future[Seq[SingleActionResponse]] = {
+        Source(proposalIds).map { id =>
+          proposals.get(id) match {
+            case Some((p, Some(qId))) => (id, Some(p), questions.find(_.questionId == qId), Some(qId))
+            case Some((p, None))      => (id, Some(p), None, None)
+            case None                 => (id, None, None, None)
+          }
+        }.mapAsync(5) {
+            case (_, Some(proposal), Some(question), _) => runAction(proposal.id, action(proposal, question))
+            case (id, None, _, _) =>
+              Future.successful(SingleActionResponse(id, ActionKey.NotFound, Some("Proposal not found")))
+            case (id, Some(_), _, qId) =>
+              Future.successful(
+                SingleActionResponse(id, ActionKey.QuestionNotFound, Some(s"Question not found from id $qId"))
+              )
+          }
+          .runWith(Sink.seq)
+      }
+
+      def runAction(id: ProposalId, action: Future[Option[Proposal]]): Future[SingleActionResponse] = {
+        action.map {
+          case None => SingleActionResponse(id, ActionKey.NotFound, Some(s"Proposal not found"))
+          case _    => SingleActionResponse(id, ActionKey.OK, None)
+        }.recover {
+          case ValidationFailedError(Seq(error)) =>
+            SingleActionResponse(id, ActionKey.ValidationError(error.key), error.message)
+          case e =>
+            SingleActionResponse(id, ActionKey.Unknown, Some(e.getMessage))
+        }
+      }
+
+      for {
+        proposalMap <- getProposals
+        questions   <- getQuestions(proposalMap)
+        actions     <- runActionOnAll(action, proposalIds, proposalMap, questions)
+      } yield {
+        val (successes, failures) = actions.partition(_.key == ActionKey.OK)
+        BulkActionResponse(successes.map(_.proposalId), failures)
+      }
+    }
   }
 }

@@ -580,6 +580,50 @@ class DefaultAdminProposalApiComponentTest
 
   }
 
+  when(proposalService.acceptAll(any[Seq[ProposalId]], any[UserId], any[RequestContext]))
+    .thenReturn(Future.successful(BulkActionResponse(Seq.empty, Seq.empty)))
+  when(proposalService.addTagsToAll(any[Seq[ProposalId]], any[Seq[TagId]], any[UserId], any[RequestContext]))
+    .thenReturn(Future.successful(BulkActionResponse(Seq.empty, Seq.empty)))
+  when(proposalService.deleteTagFromAll(any[Seq[ProposalId]], any[TagId], any[UserId], any[RequestContext]))
+    .thenReturn(Future.successful(BulkActionResponse(Seq.empty, Seq.empty)))
+  val acceptAll = BulkAcceptProposal(Seq(ProposalId("proposal-id"))).asJson
+  val tagAll = BulkTagProposal(Seq(ProposalId("proposal-id")), Seq(TagId("tag-id"))).asJson
+  val deleteTag = BulkDeleteTagProposal(Seq(ProposalId("proposal-id")), TagId("tag-id")).asJson
+
+  for ((action, verb, entity) <- Seq(("accept", Post, acceptAll), ("tag", Post, tagAll), ("tag", Delete, deleteTag))) {
+    Feature(s"bulk ${verb.method.value} $action") {
+      Scenario("unauthorized user") {
+        verb(s"/admin/proposals/$action") ~> routes ~> check {
+          status should be(StatusCodes.Unauthorized)
+        }
+      }
+
+      Scenario("forbidden citizen") {
+        verb(s"/admin/proposals/$action")
+          .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
+          status should be(StatusCodes.Forbidden)
+        }
+      }
+
+      Scenario("forbidden moderator") {
+        verb(s"/admin/proposals/$action")
+          .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
+          status should be(StatusCodes.Forbidden)
+        }
+      }
+
+      Scenario("allowed admin") {
+        for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+          verb(s"/admin/proposals/$action")
+            .withHeaders(Authorization(OAuth2BearerToken(token)))
+            .withEntity(ContentTypes.`application/json`, entity.toString()) ~> routes ~> check {
+            status should be(StatusCodes.OK)
+          }
+        }
+      }
+    }
+  }
+
   private def proposal(id: ProposalId): ModerationProposalResponse = {
     ModerationProposalResponse(
       id = id,

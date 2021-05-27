@@ -66,7 +66,7 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.session.SessionId
 import org.make.core.tag._
 import org.make.core.user.{Role, User, UserId, UserType}
-import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
+import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.make.core.proposal.Vote
 
@@ -76,6 +76,8 @@ import org.make.api.technical.crm.QuestionResolver
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.technical.IdGenerator
 import org.make.core.technical.Pagination.Start
+import org.mockito.Mockito.clearInvocations
+import org.scalatest.Assertion
 
 class ProposalServiceTest
     extends MakeUnitTest
@@ -2706,17 +2708,19 @@ class ProposalServiceTest
         )
       )
 
-      val partnerSearchQuery = SearchQuery(
-        filters = Some(
-          SearchFilters(
-            question = Some(QuestionSearchFilter(Seq(questionId))),
-            users = Some(UserSearchFilter(Seq(UserId("orga-id"))))
-          )
-        ),
-        sortAlgorithm = Some(RandomAlgorithm(any[Int])),
-        limit = Some(1)
+      val partnerSearchQuery = SearchQuery(filters = Some(
+        SearchFilters(
+          question = Some(QuestionSearchFilter(Seq(questionId))),
+          users = Some(UserSearchFilter(Seq(UserId("orga-id"))))
+        )
       )
-      when(elasticsearchProposalAPI.searchProposals(partnerSearchQuery))
+      )
+      when(elasticsearchProposalAPI.searchProposals(argThat[SearchQuery] { query =>
+        query.filters == partnerSearchQuery.filters && query.sortAlgorithm.exists(_ match {
+          case RandomAlgorithm(_) => true
+          case _                  => false
+        }) && query.limit.contains(1)
+      }))
         .thenReturn(
           Future.successful(
             ProposalsSearchResult(total = 1, results = Seq(indexedProposal(ProposalId("a-partner-result"))))
@@ -2807,4 +2811,296 @@ class ProposalServiceTest
     }
   }
 
+  Feature("bulk actions") {
+    val adminId = UserId("admin-bulk")
+    val fakeId = ProposalId("fake")
+    val p1Id = ProposalId("bulk-p-1-success")
+    val p1bisId = ProposalId("bulk-p-1-bis-success")
+    val p2Id = ProposalId("bulk-p-2-invalidstate")
+    val p3Id = ProposalId("bulk-p-3-unknownerror")
+    val p4Id = ProposalId("bulk-p-4-notfound")
+    val p5Id = ProposalId("bulk-p-5-questionnotfound")
+    val proposalIds = Seq(fakeId, p1Id, p1bisId, p2Id, p3Id, p4Id, p5Id)
+    val q1Id = QuestionId("bulk-q-1")
+    val q1 = question(q1Id)
+    val tags = Seq(TagId("tag-1"), TagId("tag-2"))
+    val indexedTags = tags.map(id => IndexedTag(id, id.value, display = true))
+    val newTags = Seq(TagId("tag-2"), TagId("tag-3"))
+    val deleteTag = TagId("tag-2")
+    when(
+      elasticsearchProposalAPI
+        .searchProposals(
+          eqTo(SearchQuery(filters = Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds))))))
+        )
+    ).thenReturn(
+      Future.successful(
+        ProposalsSearchResult(
+          6,
+          Seq(
+            indexedProposal(p1Id, questionId = q1Id, tags = indexedTags),
+            indexedProposal(p1bisId, questionId = q1Id, tags = Seq.empty),
+            indexedProposal(p2Id, questionId = q1Id, tags = indexedTags),
+            indexedProposal(p3Id, questionId = q1Id, tags = indexedTags),
+            indexedProposal(p4Id, questionId = q1Id, tags = indexedTags),
+            indexedProposal(p5Id, tags = indexedTags).copy(question = None)
+          )
+        )
+      )
+    )
+    when(questionService.getQuestions(eqTo(Seq(q1Id)))).thenReturn(Future.successful(Seq(q1)))
+
+    when(ideaMappingService.getOrCreateMapping(q1Id, None, None))
+      .thenReturn(Future.successful(IdeaMapping(IdeaMappingId("mapping"), q1Id, None, None, IdeaId("my-idea"))))
+
+    def bulkCheck(customMessage: String): BulkActionResponse => Assertion = {
+      case BulkActionResponse(successes, failures) =>
+        successes shouldBe Seq(p1Id, p1bisId)
+        failures.toSet shouldBe Set(
+          SingleActionResponse(fakeId, ActionKey.NotFound, Some("Proposal not found")),
+          SingleActionResponse(p3Id, ActionKey.Unknown, Some("whatever exception")),
+          SingleActionResponse(p4Id, ActionKey.NotFound, Some(s"Proposal not found")),
+          SingleActionResponse(p5Id, ActionKey.QuestionNotFound, Some("Question not found from id None")),
+          SingleActionResponse(p2Id, ActionKey.ValidationError("invalid_state"), Some(customMessage))
+        )
+    }
+
+    Scenario("accept") {
+      when(
+        proposalCoordinatorService.accept(
+          proposalId = p1Id,
+          moderator = adminId,
+          requestContext = RequestContext.empty,
+          sendNotificationEmail = true,
+          newContent = None,
+          question = q1,
+          labels = Seq.empty,
+          tags = tags,
+          idea = None
+        )
+      ).thenReturn(Future.successful(Some(proposal(p1Id))))
+
+      when(
+        proposalCoordinatorService.accept(
+          proposalId = p1bisId,
+          moderator = adminId,
+          requestContext = RequestContext.empty,
+          sendNotificationEmail = true,
+          newContent = None,
+          question = q1,
+          labels = Seq.empty,
+          tags = Seq.empty,
+          idea = None
+        )
+      ).thenReturn(Future.successful(Some(proposal(p1bisId))))
+
+      when(
+        proposalCoordinatorService.accept(
+          proposalId = p2Id,
+          moderator = adminId,
+          requestContext = RequestContext.empty,
+          sendNotificationEmail = true,
+          newContent = None,
+          question = q1,
+          labels = Seq.empty,
+          tags = tags,
+          idea = None
+        )
+      ).thenReturn(
+        Future.failed(
+          ValidationFailedError(errors =
+            Seq(ValidationError("status", "invalid_state", Some(s"Proposal $p2Id is already validated")))
+          )
+        )
+      )
+
+      when(
+        proposalCoordinatorService.accept(
+          proposalId = p3Id,
+          moderator = adminId,
+          requestContext = RequestContext.empty,
+          sendNotificationEmail = true,
+          newContent = None,
+          question = q1,
+          labels = Seq.empty,
+          tags = tags,
+          idea = None
+        )
+      ).thenReturn(Future.failed(new Exception("whatever exception")))
+
+      when(
+        proposalCoordinatorService.accept(
+          proposalId = p4Id,
+          moderator = adminId,
+          requestContext = RequestContext.empty,
+          sendNotificationEmail = true,
+          newContent = None,
+          question = q1,
+          labels = Seq.empty,
+          tags = tags,
+          idea = None
+        )
+      ).thenReturn(Future.successful(None))
+
+      clearInvocations(proposalCoordinatorService)
+      whenReady(proposalService.acceptAll(proposalIds, adminId, RequestContext.empty), Timeout(5.seconds)) { response =>
+        bulkCheck(s"Proposal $p2Id is already validated")(response)
+        for (id <- Seq(p1Id, p1bisId, p2Id, p3Id, p4Id)) {
+          verify(proposalCoordinatorService, times(1)).accept(
+            moderator = eqTo(adminId),
+            proposalId = eqTo(id),
+            requestContext = eqTo(RequestContext.empty),
+            sendNotificationEmail = eqTo(true),
+            newContent = eqTo(None),
+            question = eqTo(q1),
+            labels = eqTo(Seq.empty),
+            tags = any[Seq[TagId]],
+            idea = eqTo(None)
+          )
+        }
+        verifyNoMoreInteractions(proposalCoordinatorService)
+      }
+    }
+
+    when(
+      proposalCoordinatorService.update(
+        moderator = eqTo(adminId),
+        proposalId = eqTo(p1bisId),
+        requestContext = eqTo(RequestContext.empty),
+        updatedAt = any[ZonedDateTime],
+        newContent = eqTo(None),
+        labels = eqTo(Seq.empty),
+        tags = eqTo(newTags),
+        idea = eqTo(None),
+        question = eqTo(q1)
+      )
+    ).thenReturn(Future.successful(Some(proposal(p1bisId))))
+
+    when(
+      proposalCoordinatorService.update(
+        moderator = eqTo(adminId),
+        proposalId = eqTo(p1bisId),
+        requestContext = eqTo(RequestContext.empty),
+        updatedAt = any[ZonedDateTime],
+        newContent = eqTo(None),
+        labels = eqTo(Seq.empty),
+        tags = eqTo(Seq.empty),
+        idea = eqTo(None),
+        question = eqTo(q1)
+      )
+    ).thenReturn(Future.successful(Some(proposal(p1bisId))))
+
+    for (actionTags <- Seq((tags ++ newTags).distinct, Seq(TagId("tag-1")))) {
+      when(
+        proposalCoordinatorService.update(
+          moderator = eqTo(adminId),
+          proposalId = eqTo(p1Id),
+          requestContext = eqTo(RequestContext.empty),
+          updatedAt = any[ZonedDateTime],
+          newContent = eqTo(None),
+          labels = eqTo(Seq.empty),
+          tags = eqTo(actionTags),
+          idea = eqTo(None),
+          question = eqTo(q1)
+        )
+      ).thenReturn(Future.successful(Some(proposal(p1Id))))
+
+      when(
+        proposalCoordinatorService.update(
+          moderator = eqTo(adminId),
+          proposalId = eqTo(p2Id),
+          requestContext = eqTo(RequestContext.empty),
+          updatedAt = any[ZonedDateTime],
+          newContent = eqTo(None),
+          labels = eqTo(Seq.empty),
+          tags = eqTo(actionTags),
+          idea = eqTo(None),
+          question = eqTo(q1)
+        )
+      ).thenReturn(
+        Future.failed(
+          ValidationFailedError(errors = Seq(
+            ValidationError("status", "invalid_state", Some(s"Proposal $p2Id is not accepted and cannot be updated"))
+          )
+          )
+        )
+      )
+
+      when(
+        proposalCoordinatorService.update(
+          moderator = eqTo(adminId),
+          proposalId = eqTo(p3Id),
+          requestContext = eqTo(RequestContext.empty),
+          updatedAt = any[ZonedDateTime],
+          newContent = eqTo(None),
+          labels = eqTo(Seq.empty),
+          tags = eqTo(actionTags),
+          idea = eqTo(None),
+          question = eqTo(q1)
+        )
+      ).thenReturn(Future.failed(new Exception("whatever exception")))
+
+      when(
+        proposalCoordinatorService.update(
+          moderator = eqTo(adminId),
+          proposalId = eqTo(p4Id),
+          requestContext = eqTo(RequestContext.empty),
+          updatedAt = any[ZonedDateTime],
+          newContent = eqTo(None),
+          labels = eqTo(Seq.empty),
+          tags = eqTo(actionTags),
+          idea = eqTo(None),
+          question = eqTo(q1)
+        )
+      ).thenReturn(Future.successful(None))
+    }
+
+    Scenario(s"add tags") {
+      clearInvocations(proposalCoordinatorService)
+      whenReady(proposalService.addTagsToAll(proposalIds, newTags, adminId, RequestContext.empty), Timeout(5.seconds)) {
+        response =>
+          bulkCheck(s"Proposal $p2Id is not accepted and cannot be updated")(response)
+          for (id <- Seq(p1Id, p1bisId, p2Id, p3Id, p4Id)) {
+            val verifyTags = if (id == p1bisId) newTags else (tags ++ newTags).distinct
+            verify(proposalCoordinatorService, times(1)).update(
+              moderator = eqTo(adminId),
+              proposalId = eqTo(id),
+              requestContext = eqTo(RequestContext.empty),
+              updatedAt = any[ZonedDateTime],
+              newContent = eqTo(None),
+              labels = eqTo(Seq.empty),
+              tags = eqTo(verifyTags),
+              idea = eqTo(None),
+              question = eqTo(q1)
+            )
+          }
+          verifyNoMoreInteractions(proposalCoordinatorService)
+      }
+    }
+
+    Scenario(s"delete tags") {
+      clearInvocations(proposalCoordinatorService)
+      whenReady(
+        proposalService.deleteTagFromAll(proposalIds, deleteTag, adminId, RequestContext.empty),
+        Timeout(5.seconds)
+      ) { response =>
+        bulkCheck(s"Proposal $p2Id is not accepted and cannot be updated")(response)
+        for (id <- Seq(p1Id, p1bisId, p2Id, p3Id, p4Id)) {
+          val verifyTags = if (id == p1bisId) Seq.empty else Seq(TagId("tag-1"))
+          verify(proposalCoordinatorService, times(1)).update(
+            moderator = eqTo(adminId),
+            proposalId = eqTo(id),
+            requestContext = eqTo(RequestContext.empty),
+            updatedAt = any[ZonedDateTime],
+            newContent = eqTo(None),
+            labels = eqTo(Seq.empty),
+            tags = eqTo(verifyTags),
+            idea = eqTo(None),
+            question = eqTo(q1)
+          )
+        }
+        verifyNoMoreInteractions(proposalCoordinatorService)
+      }
+
+    }
+  }
 }
