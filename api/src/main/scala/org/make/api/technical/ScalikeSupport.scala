@@ -30,6 +30,7 @@ import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
+import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.user.{UserId, UserType}
 import scalikejdbc.{Binders, ParameterBinderFactory, TypeBinder}
 
@@ -60,6 +61,8 @@ object ScalikeSupport {
   implicit val operationIdBinders: Binders[OperationId] = stringValueBinders(OperationId.apply)
   implicit val questionIdBinders: Binders[QuestionId] = stringValueBinders(QuestionId.apply)
   implicit val sequenceIdBinders: Binders[SequenceId] = stringValueBinders(SequenceId.apply)
+  implicit val tagIdBinders: Binders[TagId] = stringValueBinders(TagId.apply)
+  implicit val tagTypeIdBinders: Binders[TagTypeId] = stringValueBinders(TagTypeId.apply)
   implicit val templateIdBinders: Binders[TemplateId] = stringValueBinders(TemplateId.apply)
   implicit val userIdBinders: Binders[UserId] = stringValueBinders(UserId.apply)
 

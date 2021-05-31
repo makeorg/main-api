@@ -352,6 +352,31 @@ class PersistentTagServiceIT
     val calliope: Tag =
       targaryen.copy(tagId = TagId("calliope"), tagTypeId = tagTypeEighth.tagTypeId, label = "calliopelabel")
 
+    Scenario("Search tags by tagIds") {
+      val tagIds = Seq(TagId("search-by-id-1"), TagId("search-by-id-2"), TagId("search-by-id-3"))
+      val tags = tagIds.map(id => tag(id, display = TagDisplay.Hidden))
+      val filter = PersistentTagFilter.empty.copy(tagIds = Some(tagIds))
+
+      val futureTagListResultByIds = for {
+        _ <- Future.traverse(tags)(persistentTagService.persist)
+        result <- persistentTagService.find(
+          start = Start.zero,
+          end = Some(End(10)),
+          sort = None,
+          order = None,
+          onlyDisplayed = false,
+          persistentTagFilter = filter
+        )
+        count <- persistentTagService.count(filter)
+      } yield (result, count)
+
+      whenReady(futureTagListResultByIds, Timeout(3.seconds)) {
+        case (tags, count) =>
+          tags should contain theSameElementsAs tags
+          count shouldBe 3
+      }
+    }
+
     Scenario("Search tags by label") {
 
       Given(s"a persisted tag: '${calliope.label}'")
