@@ -81,7 +81,7 @@ class UserEmailConsumerBehavior(userService: UserService, sendMailPublisherServi
 
   def handleUserB2BRegisteredEvent(event: B2BRegisteredEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).flatMap {
-      case Some(user) if user.isB2B =>
+      case Some(user) if user.isB2B && user.hashedPassword.isEmpty =>
         sendMailPublisherService.publishRegistrationB2B(user, event.requestContext)
       case _ => Future.unit
     }
