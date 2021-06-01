@@ -19,6 +19,8 @@
 
 package org.make.api.sequence
 
+import eu.timepit.refined.types.numeric.PosInt
+import io.circe.refined._
 import io.circe.{Codec, Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
@@ -90,11 +92,11 @@ final case class SpecificSequenceConfigurationResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
   specificSequenceConfigurationId: SpecificSequenceConfigurationId,
   @(ApiModelProperty @field)(dataType = "int", example = "12")
-  sequenceSize: Int,
+  sequenceSize: PosInt,
   @(ApiModelProperty @field)(dataType = "double", example = "0.5")
   newProposalsRatio: Double,
   @(ApiModelProperty @field)(dataType = "int", example = "1000")
-  maxTestedProposalCount: Int,
+  maxTestedProposalCount: PosInt,
   @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
   selectionAlgorithmName: SelectionAlgorithmName,
   @(ApiModelProperty @field)(dataType = "boolean", example = "false")

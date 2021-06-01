@@ -32,6 +32,8 @@ import org.make.core.sequence._
 import org.make.core.session.SessionId
 import org.make.core.tag.TagId
 
+import eu.timepit.refined.auto._
+
 import scala.concurrent.Future
 
 sealed trait SequenceBehaviour {

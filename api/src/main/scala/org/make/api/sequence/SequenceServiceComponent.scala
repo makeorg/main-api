@@ -35,7 +35,7 @@ import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
 import org.make.core.user._
 import org.make.core.{proposal, DateHelper, RequestContext}
-
+import eu.timepit.refined.auto._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 

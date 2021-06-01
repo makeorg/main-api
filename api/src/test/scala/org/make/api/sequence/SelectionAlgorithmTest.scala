@@ -19,6 +19,7 @@
 
 package org.make.api.sequence
 
+import eu.timepit.refined.auto._
 import org.make.api.MakeUnitTest
 import org.make.api.proposal._
 import org.make.api.sequence.SelectionAlgorithm.ExplorationSelectionAlgorithm._
@@ -208,8 +209,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with BeforeAndAfterEach {
           testedProposals = Seq.empty
         )
 
-      selectedProposals.size should be(roundRobinSequenceConfiguration.mainSequence.sequenceSize)
-      selectedProposals.toSet.size should be(roundRobinSequenceConfiguration.mainSequence.sequenceSize)
+      selectedProposals.size should be(roundRobinSequenceConfiguration.mainSequence.sequenceSize.value)
+      selectedProposals.toSet.size should be(roundRobinSequenceConfiguration.mainSequence.sequenceSize.value)
     }
 
     Scenario("valid proposal selection") {
@@ -232,7 +233,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with BeforeAndAfterEach {
           testedProposals = testedProposals
         )
 
-      selectedProposals.size should be(roundRobinSequenceConfiguration.mainSequence.sequenceSize)
+      selectedProposals.size should be(roundRobinSequenceConfiguration.mainSequence.sequenceSize.value)
       selectedProposals.toSet should be(
         testedProposals.take(roundRobinSequenceConfiguration.mainSequence.sequenceSize).toSet
       )
@@ -287,7 +288,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with BeforeAndAfterEach {
             testedProposals = proposals
           )
 
-        selectedProposals.size should be(randomSequenceConfiguration.mainSequence.sequenceSize)
+        selectedProposals.size should be(randomSequenceConfiguration.mainSequence.sequenceSize.value)
         selectedProposals.take(included.size) should be(included)
       }
     }

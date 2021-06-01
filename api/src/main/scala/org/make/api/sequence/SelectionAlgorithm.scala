@@ -27,7 +27,7 @@ import org.make.core.proposal.indexed.SequencePool.Tested
 import org.make.core.proposal.indexed.Zone.{Consensus, Controversy}
 import org.make.core.proposal.indexed.{IndexedProposal, Zone}
 import org.make.core.sequence.{ExplorationConfiguration, SpecificSequenceConfiguration}
-
+import eu.timepit.refined.auto._
 import scala.Ordering.Double.IeeeOrdering
 import scala.annotation.tailrec
 
