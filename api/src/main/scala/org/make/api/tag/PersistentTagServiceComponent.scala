@@ -67,12 +67,13 @@ trait PersistentTagService {
 }
 
 final case class PersistentTagFilter(
+  tagIds: Option[Seq[TagId]],
   label: Option[String],
   questionIds: Option[Seq[QuestionId]],
   tagTypeId: Option[TagTypeId]
 )
 object PersistentTagFilter {
-  def empty: PersistentTagFilter = PersistentTagFilter(None, None, None)
+  def empty: PersistentTagFilter = PersistentTagFilter(None, None, None, None)
 }
 
 trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent {
@@ -93,7 +94,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
         withSQL {
           select
             .from(PersistentTag.as(tagAlias))
-            .where(sqls.eq(tagAlias.questionId, questionId.value))
+            .where(sqls.eq(tagAlias.questionId, questionId))
         }.map(PersistentTag.apply()).list().apply()
       })
 
@@ -106,7 +107,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
         withSQL {
           select
             .from(PersistentTag.as(tagAlias))
-            .where(sqls.eq(tagAlias.id, tagId.value))
+            .where(sqls.eq(tagAlias.id, tagId))
         }.map(PersistentTag.apply()).single().apply()
       })
 
@@ -128,12 +129,11 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
 
     override def findAllFromIds(tagsIds: Seq[TagId]): Future[Seq[Tag]] = {
       implicit val context: EC = readExecutionContext
-      val uniqueTagsIds: Seq[String] = tagsIds.distinct.map(_.value)
       val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentTag.as(tagAlias))
-            .where(sqls.in(tagAlias.id, uniqueTagsIds))
+            .where(sqls.in(tagAlias.id, tagsIds.distinct))
         }.map(PersistentTag.apply()).list().apply()
       })
 
@@ -200,12 +200,12 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
           insert
             .into(PersistentTag)
             .namedValues(
-              column.id -> tag.tagId.value,
+              column.id -> tag.tagId,
               column.label -> tag.label,
               column.display -> tag.display,
-              column.tagTypeId -> tag.tagTypeId.value,
-              column.operationId -> tag.operationId.map(_.value),
-              column.questionId -> tag.questionId.map(_.value),
+              column.tagTypeId -> tag.tagTypeId,
+              column.operationId -> tag.operationId,
+              column.questionId -> tag.questionId,
               column.weight -> tag.weight,
               column.createdAt -> nowDate,
               column.updatedAt -> nowDate
@@ -224,13 +224,13 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
             .set(
               column.label -> tag.label,
               column.display -> tag.display,
-              column.tagTypeId -> tag.tagTypeId.value,
-              column.operationId -> tag.operationId.map(_.value),
-              column.questionId -> tag.questionId.map(_.value),
+              column.tagTypeId -> tag.tagTypeId,
+              column.operationId -> tag.operationId,
+              column.questionId -> tag.questionId,
               column.weight -> tag.weight,
               column.updatedAt -> nowDate
             )
-            .where(sqls.eq(column.id, tag.tagId.value))
+            .where(sqls.eq(column.id, tag.tagId))
         }.executeUpdate().apply()
       }).map {
         case 1 => Some(tag)
@@ -246,7 +246,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
         withSQL {
           delete
             .from(PersistentTag.as(tagAlias))
-            .where(sqls.eq(tagAlias.id, tagId.value))
+            .where(sqls.eq(tagAlias.id, tagId))
         }.update().apply()
       })
 
@@ -284,12 +284,13 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
               .on(tagAlias.tagTypeId, tagTypeAlias.id)
               .where(
                 sqls.toAndConditionOpt(
+                  persistentTagFilter.tagIds.map(tIds => sqls.in(tagAlias.id, tIds)),
                   persistentTagFilter.label
                     .map(
                       label => sqls.like(sqls"lower(${tagAlias.label})", s"%${label.toLowerCase.replace("%", "\\%")}%")
                     ),
-                  persistentTagFilter.tagTypeId.map(tagTypeId => sqls.eq(tagAlias.tagTypeId, tagTypeId.value)),
-                  persistentTagFilter.questionIds.map(qIds    => sqls.in(tagAlias.questionId, qIds.map(_.value))),
+                  persistentTagFilter.tagTypeId.map(tagTypeId => sqls.eq(tagAlias.tagTypeId, tagTypeId)),
+                  persistentTagFilter.questionIds.map(qIds    => sqls.in(tagAlias.questionId, qIds)),
                   if (onlyDisplayed) {
                     Some(
                       sqls
@@ -323,12 +324,13 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
             .from(PersistentTag.as(tagAlias))
             .where(
               sqls.toAndConditionOpt(
+                persistentTagFilter.tagIds.map(tIds => sqls.in(tagAlias.id, tIds)),
                 persistentTagFilter.label
                   .map(
                     label => sqls.like(sqls"lower(${tagAlias.label})", s"%${label.toLowerCase.replace("%", "\\%")}%")
                   ),
-                persistentTagFilter.tagTypeId.map(tagTypeId => sqls.eq(tagAlias.tagTypeId, tagTypeId.value)),
-                persistentTagFilter.questionIds.map(qIds    => sqls.in(tagAlias.questionId, qIds.map(_.value)))
+                persistentTagFilter.tagTypeId.map(tagTypeId => sqls.eq(tagAlias.tagTypeId, tagTypeId)),
+                persistentTagFilter.questionIds.map(qIds    => sqls.in(tagAlias.questionId, qIds))
               )
             )
         }.map(_.int(1)).single().apply().getOrElse(0)

@@ -38,6 +38,7 @@ trait TagServiceComponent {
 }
 
 final case class TagFilter(
+  tagIds: Option[Seq[TagId]] = None,
   label: Option[String] = None,
   tagTypeId: Option[TagTypeId] = None,
   questionIds: Option[Seq[QuestionId]] = None
@@ -210,13 +211,15 @@ trait DefaultTagServiceComponent
         sort,
         order,
         onlyDisplayed,
-        PersistentTagFilter(tagFilter.label, tagFilter.questionIds, tagFilter.tagTypeId)
+        PersistentTagFilter(tagFilter.tagIds, tagFilter.label, tagFilter.questionIds, tagFilter.tagTypeId)
       )
 
     }
 
     override def count(tagFilter: TagFilter = TagFilter.empty): Future[Int] = {
-      persistentTagService.count(PersistentTagFilter(tagFilter.label, tagFilter.questionIds, tagFilter.tagTypeId))
+      persistentTagService.count(
+        PersistentTagFilter(tagFilter.tagIds, tagFilter.label, tagFilter.questionIds, tagFilter.tagTypeId)
+      )
     }
   }
 }

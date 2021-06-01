@@ -774,11 +774,14 @@ object ProposalActor extends Logging {
       def applyProposalUpdated(state: Proposal, event: ProposalUpdated): Proposal = {
 
         val arguments: Map[String, String] = Map(
-          "question" -> event.question.map(_.value).getOrElse(""),
-          "tags" -> event.tags.map(_.value).mkString(", "),
-          "labels" -> event.labels.map(_.value).mkString(", "),
-          "idea" -> event.idea.map(_.value).getOrElse(""),
-          "operation" -> event.operation.map(_.value).getOrElse("")
+          "oldQuestion" -> state.questionId.filterNot(event.question.contains).map(_.value).getOrElse(""),
+          "newQuestion" -> event.question.filterNot(state.questionId.contains).map(_.value).getOrElse(""),
+          "oldOperation" -> state.operation.filterNot(event.operation.contains).map(_.value).getOrElse(""),
+          "newOperation" -> event.operation.filterNot(state.operation.contains).map(_.value).getOrElse(""),
+          "oldContent" -> event.edition.map(_.oldVersion).getOrElse(""),
+          "newContent" -> event.edition.map(_.newVersion).getOrElse(""),
+          "removedTags" -> state.tags.diff(event.tags).map(_.value).mkString(","),
+          "addedTags" -> event.tags.diff(state.tags).map(_.value).mkString(",")
         ).filter {
           case (_, value) => value.nonEmpty
         }
@@ -844,11 +847,10 @@ object ProposalActor extends Logging {
 
       def applyProposalAccepted(state: Proposal, event: ProposalAccepted): Proposal = {
         val arguments: Map[String, String] = Map(
-          "question" -> event.question.map(_.value).getOrElse(""),
-          "tags" -> event.tags.map(_.value).mkString(", "),
-          "labels" -> event.labels.map(_.value).mkString(", "),
-          "idea" -> event.idea.map(_.value).getOrElse(""),
-          "operation" -> event.operation.map(_.value).getOrElse("")
+          "initialContent" -> event.edition.map(_.oldVersion).getOrElse(""),
+          "moderatedContent" -> event.edition.map(_.newVersion).getOrElse(""),
+          "tags" -> event.tags.map(_.value).mkString(","),
+          "userNotified" -> event.sendValidationEmail.toString
         ).filter {
           case (_, value) => value.nonEmpty
         }
@@ -879,10 +881,12 @@ object ProposalActor extends Logging {
       }
 
       def applyProposalRefused(state: Proposal, event: ProposalRefused): Proposal = {
-        val arguments: Map[String, String] =
-          Map("refusalReason" -> event.refusalReason.getOrElse("")).filter {
-            case (_, value) => value.nonEmpty
-          }
+        val arguments: Map[String, String] = Map(
+          "refusalReason" -> event.refusalReason.getOrElse(""),
+          "userNotified" -> event.sendRefuseEmail.toString
+        ).filter {
+          case (_, value) => value.nonEmpty
+        }
         val action =
           ProposalAction(date = event.eventDate, user = event.moderator, actionType = "refuse", arguments = arguments)
         state.copy(

@@ -28,6 +28,7 @@ import org.make.api.operation.{OperationOfQuestionServiceComponent, SearchOperat
 
 import javax.ws.rs.Path
 import org.make.api.question.QuestionServiceComponent
+import org.make.api.technical.CsvReceptacle.RepeatedCsvFlatteningParamOps
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
@@ -236,6 +237,7 @@ trait DefaultModerationTagApiComponent
               "_end".as[End].?,
               "_sort".?,
               "_order".as[Order].?,
+              "tagId".csv[TagId],
               "label".?,
               "tagTypeId".as[TagTypeId].?,
               "questionId".as[QuestionId].?,
@@ -246,6 +248,7 @@ trait DefaultModerationTagApiComponent
                 end: Option[End],
                 sort: Option[String],
                 order: Option[Order],
+                tagIds: Option[Seq[TagId]],
                 maybeLabel: Option[String],
                 maybeTagTypeId: Option[TagTypeId],
                 maybeQuestionId: Option[QuestionId],
@@ -271,28 +274,16 @@ trait DefaultModerationTagApiComponent
                             .map(Some(_))
                       }
                     provideAsync(futureQuestions) { questions =>
-                      provideAsync(
-                        tagService
-                          .count(
-                            TagFilter(
-                              label = maybeLabel,
-                              tagTypeId = maybeTagTypeId,
-                              questionIds = questions.map(_.map(_.questionId))
-                            )
-                          )
-                      ) { count =>
+                      val filter = TagFilter(
+                        tagIds = tagIds,
+                        label = maybeLabel,
+                        tagTypeId = maybeTagTypeId,
+                        questionIds = questions.map(_.map(_.questionId))
+                      )
+                      provideAsync(tagService.count(filter)) { count =>
                         onSuccess(
-                          tagService.find(
-                            start = start.orZero,
-                            end = end,
-                            sort = sort,
-                            order = order,
-                            tagFilter = TagFilter(
-                              label = maybeLabel,
-                              tagTypeId = maybeTagTypeId,
-                              questionIds = questions.map(_.map(_.questionId))
-                            )
-                          )
+                          tagService
+                            .find(start = start.orZero, end = end, sort = sort, order = order, tagFilter = filter)
                         ) { filteredTags =>
                           complete(
                             (StatusCodes.OK, List(`X-Total-Count`(count.toString)), filteredTags.map(TagResponse.apply))
