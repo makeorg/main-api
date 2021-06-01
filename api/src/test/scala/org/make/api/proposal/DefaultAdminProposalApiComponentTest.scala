@@ -580,15 +580,23 @@ class DefaultAdminProposalApiComponentTest
 
   }
 
+  val tagId1: TagId = TagId("tag-id-bulk")
+  val tagIdFake: TagId = TagId("tag-id-fake")
+
+  when(tagService.findByTagIds(eqTo(Seq(tagId1)))).thenReturn(Future.successful(Seq(tag(tagId1))))
+  when(tagService.getTag(eqTo(tagId1))).thenReturn(Future.successful(Some(tag(tagId1))))
+
   when(proposalService.acceptAll(any[Seq[ProposalId]], any[UserId], any[RequestContext]))
     .thenReturn(Future.successful(BulkActionResponse(Seq.empty, Seq.empty)))
   when(proposalService.addTagsToAll(any[Seq[ProposalId]], any[Seq[TagId]], any[UserId], any[RequestContext]))
     .thenReturn(Future.successful(BulkActionResponse(Seq.empty, Seq.empty)))
   when(proposalService.deleteTagFromAll(any[Seq[ProposalId]], any[TagId], any[UserId], any[RequestContext]))
     .thenReturn(Future.successful(BulkActionResponse(Seq.empty, Seq.empty)))
-  val acceptAll = BulkAcceptProposal(Seq(ProposalId("proposal-id"))).asJson
-  val tagAll = BulkTagProposal(Seq(ProposalId("proposal-id")), Seq(TagId("tag-id"))).asJson
-  val deleteTag = BulkDeleteTagProposal(Seq(ProposalId("proposal-id")), TagId("tag-id")).asJson
+
+  val proposalIdBulk: ProposalId = ProposalId("proposal-id-bulk")
+  val acceptAll = BulkAcceptProposal(Seq(proposalIdBulk)).asJson
+  val tagAll = BulkTagProposal(Seq(proposalIdBulk), Seq(tagId1)).asJson
+  val deleteTag = BulkDeleteTagProposal(Seq(proposalIdBulk), tagId1).asJson
 
   for ((action, verb, entity) <- Seq(("accept", Post, acceptAll), ("tag", Post, tagAll), ("tag", Delete, deleteTag))) {
     Feature(s"bulk ${verb.method.value} $action") {
@@ -660,7 +668,35 @@ class DefaultAdminProposalApiComponentTest
         }
       }
     }
+  }
 
+  Feature("bulk tag fails if a tag doesn't exist") {
+    Scenario("Add") {
+      val entity = BulkTagProposal(Seq(proposalIdBulk), Seq(tagId1, tagIdFake))
+      when(tagService.findByTagIds(eqTo(Seq(tagId1, tagIdFake)))).thenReturn(Future.successful(Seq(tag(tagId1))))
+      Post(s"/admin/proposals/tag")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(ContentTypes.`application/json`, entity.asJson.toString()) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size shouldBe 1
+        errors.head.field shouldBe "tagId"
+      }
+    }
+
+    Scenario("Delete") {
+      val entity = BulkDeleteTagProposal(Seq(proposalIdBulk), tagIdFake).asJson
+      when(tagService.getTag(eqTo(tagIdFake))).thenReturn(Future.successful(None))
+      Delete(s"/admin/proposals/tag")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(ContentTypes.`application/json`, entity.asJson.toString()) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size shouldBe 1
+        errors.head.field shouldBe "tagId"
+      }
+
+    }
   }
 
   private def proposal(id: ProposalId): ModerationProposalResponse = {

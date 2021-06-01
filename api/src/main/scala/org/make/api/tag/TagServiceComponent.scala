@@ -49,7 +49,7 @@ object TagFilter {
 }
 
 trait TagService extends ShortenedNames {
-  def getTag(slug: TagId): Future[Option[Tag]]
+  def getTag(tagId: TagId): Future[Option[Tag]]
   def createTag(
     label: String,
     tagTypeId: TagTypeId,
