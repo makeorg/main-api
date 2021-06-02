@@ -260,8 +260,27 @@ trait AdminProposalApi extends Directives {
   @Path(value = "/tag")
   def bulkDeleteTagProposal: Route
 
+  @ApiOperation(
+    value = "get-proposal-history",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[ProposalActionResponse]]))
+  )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
+  @Path(value = "/{proposalId}/history")
+  def getProposalHistory: Route
+
   def routes: Route =
-    search ~ patchProposal ~ updateProposalVotes ~ resetVotes ~ setProposalKeywords ~ bulkAcceptProposal ~ bulkTagProposal ~ bulkDeleteTagProposal
+    search ~ patchProposal ~ updateProposalVotes ~ resetVotes ~ setProposalKeywords ~ bulkAcceptProposal ~ bulkTagProposal ~ bulkDeleteTagProposal ~ getProposalHistory
 }
 
 trait AdminProposalApiComponent {
@@ -571,6 +590,19 @@ trait DefaultAdminProposalApiComponent
       }
     }
 
+    override def getProposalHistory: Route = get {
+      path("admin" / "proposals" / adminProposalId / "history") { id =>
+        makeOperation("GetProposalHistory") { _ =>
+          makeOAuth2 { userAuth =>
+            requireAdminRole(userAuth.user) {
+              provideAsyncOrNotFound(proposalService.getHistory(id)) { response =>
+                complete(response)
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
 }

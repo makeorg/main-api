@@ -59,7 +59,7 @@ import org.make.core.proposal.QualificationKey.{
   PlatitudeDisagree
 }
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
-import org.make.core.proposal._
+import org.make.core.proposal.{ProposalAction, Vote, _}
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
@@ -68,16 +68,18 @@ import org.make.core.tag._
 import org.make.core.user.{Role, User, UserId, UserType}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import org.make.core.proposal.Vote
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import org.make.api.technical.crm.QuestionResolver
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
+import org.make.core.proposal.ProposalActionType.{ProposalAcceptAction, ProposalProposeAction}
 import org.make.core.technical.IdGenerator
 import org.make.core.technical.Pagination.Start
 import org.mockito.Mockito.clearInvocations
 import org.scalatest.Assertion
+
+import java.time.temporal.ChronoUnit
 
 class ProposalServiceTest
     extends MakeUnitTest
@@ -3101,6 +3103,83 @@ class ProposalServiceTest
         verifyNoMoreInteractions(proposalCoordinatorService)
       }
 
+    }
+  }
+
+  Feature("proposal history") {
+    Scenario("get history") {
+      val proposalId = ProposalId("id-history")
+      val fakeId = ProposalId("id-fake")
+      val authorId = UserId("author-id-history")
+      val moderatorId = UserId("moderator-id-history")
+      val date1 = DateHelper.now().minus(1, ChronoUnit.MINUTES)
+      val date2 = DateHelper.now().minus(20, ChronoUnit.SECONDS)
+      val date3 = DateHelper.now()
+      val events = List(
+        ProposalAction(
+          date = date1,
+          user = authorId,
+          actionType = ProposalProposeAction.value,
+          arguments = Map("content" -> "il faut content")
+        ),
+        ProposalAction(
+          date = date2,
+          user = moderatorId,
+          actionType = "lock",
+          arguments = Map("moderatorName" -> "Moderator-History")
+        ),
+        ProposalAction(
+          date = date3,
+          user = moderatorId,
+          actionType = ProposalAcceptAction.value,
+          arguments = Map(
+            "question" -> "question-id-history",
+            "tags" -> "tag-1-history,tag-2-history",
+            "operation" -> "operation-id-history"
+          )
+        )
+      )
+
+      when(proposalCoordinatorService.getProposal(eqTo(proposalId)))
+        .thenReturn(Future.successful(Some(proposal(proposalId, author = authorId, events = events))))
+      when(proposalCoordinatorService.getProposal(eqTo(fakeId))).thenReturn(Future.successful(None))
+      when(userService.getUsersByUserIds(Seq(authorId, moderatorId))).thenReturn(
+        Future.successful(
+          Seq(
+            user(authorId, firstName = Some("Author-History")),
+            user(moderatorId, firstName = Some("Moderator-History"))
+          )
+        )
+      )
+      whenReady(proposalService.getHistory(fakeId), Timeout(5.seconds))(_ should not be defined)
+      whenReady(proposalService.getHistory(proposalId), Timeout(5.seconds)) {
+        case None => fail()
+        case Some(events) =>
+          events should contain theSameElementsAs Seq(
+            ProposalActionResponse(
+              date = date1,
+              user = Some(ProposalActionAuthorResponse(authorId, Some("Author-History"))),
+              actionType = ProposalProposeAction.value,
+              arguments = Map("content" -> "il faut content")
+            ),
+            ProposalActionResponse(
+              date = date2,
+              user = Some(ProposalActionAuthorResponse(moderatorId, Some("Moderator-History"))),
+              actionType = "lock",
+              arguments = Map("moderatorName" -> "Moderator-History")
+            ),
+            ProposalActionResponse(
+              date = date3,
+              user = Some(ProposalActionAuthorResponse(moderatorId, Some("Moderator-History"))),
+              actionType = ProposalAcceptAction.value,
+              arguments = Map(
+                "question" -> "question-id-history",
+                "tags" -> "tag-1-history,tag-2-history",
+                "operation" -> "operation-id-history"
+              )
+            )
+          )
+      }
     }
   }
 }
