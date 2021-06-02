@@ -1487,7 +1487,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       val getProposals: Future[Map[ProposalId, (IndexedProposal, Option[QuestionId])]] =
         elasticsearchProposalAPI
           .searchProposals(
-            SearchQuery(filters = Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds)))))
+            SearchQuery(filters = Some(
+              SearchFilters(
+                proposal = Some(ProposalSearchFilter(proposalIds)),
+                status = Some(StatusSearchFilter(ProposalStatus.values))
+              )
+            )
+            )
           )
           .map(_.results.map(p => (p.id, (p, p.question.map(_.questionId)))).toMap)
 

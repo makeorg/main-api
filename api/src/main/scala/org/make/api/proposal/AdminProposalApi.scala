@@ -555,11 +555,21 @@ trait DefaultAdminProposalApiComponent
             requireAdminRole(userAuth.user) {
               decodeRequest {
                 entity(as[BulkTagProposal]) { request =>
-                  provideAsync(
-                    proposalService
-                      .addTagsToAll(request.proposalIds, request.tagIds, userAuth.user.userId, requestContext)
-                  ) { response =>
-                    complete(response)
+                  provideAsync(tagService.findByTagIds(request.tagIds)) { foundTags =>
+                    Validation.validate(request.tagIds.diff(foundTags.map(_.tagId)).map { tagId =>
+                      Validation.validateField(
+                        field = "tagId",
+                        key = "invalid_value",
+                        condition = false,
+                        message = s"Tag $tagId does not exist."
+                      )
+                    }: _*)
+                    provideAsync(
+                      proposalService
+                        .addTagsToAll(request.proposalIds, request.tagIds, userAuth.user.userId, requestContext)
+                    ) { response =>
+                      complete(response)
+                    }
                   }
                 }
               }
@@ -576,11 +586,21 @@ trait DefaultAdminProposalApiComponent
             requireAdminRole(userAuth.user) {
               decodeRequest {
                 entity(as[BulkDeleteTagProposal]) { request =>
-                  provideAsync(
-                    proposalService
-                      .deleteTagFromAll(request.proposalIds, request.tagId, userAuth.user.userId, requestContext)
-                  ) { response =>
-                    complete(response)
+                  provideAsync(tagService.getTag(request.tagId)) { maybeTag =>
+                    Validation.validate(
+                      Validation.validateField(
+                        field = "tagId",
+                        key = "invalid_value",
+                        condition = maybeTag.isDefined,
+                        message = s"Tag ${request.tagId} does not exist."
+                      )
+                    )
+                    provideAsync(
+                      proposalService
+                        .deleteTagFromAll(request.proposalIds, request.tagId, userAuth.user.userId, requestContext)
+                    ) { response =>
+                      complete(response)
+                    }
                   }
                 }
               }

@@ -2832,7 +2832,15 @@ class ProposalServiceTest
     when(
       elasticsearchProposalAPI
         .searchProposals(
-          eqTo(SearchQuery(filters = Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds))))))
+          eqTo(
+            SearchQuery(filters = Some(
+              SearchFilters(
+                proposal = Some(ProposalSearchFilter(proposalIds)),
+                status = Some(StatusSearchFilter(ProposalStatus.values))
+              )
+            )
+            )
+          )
         )
     ).thenReturn(
       Future.successful(
