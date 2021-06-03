@@ -193,15 +193,8 @@ class UserEmailConsumerBehaviorIT
   }
 
   Feature("consume B2BRegistered") {
-    Scenario("organisation register") {
-      val orgaProbe = testKit.createTestProbe[String]()
-      when(
-        sendMailPublisherService
-          .publishRegistrationB2B(eqTo(organisation), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: RequestContext) =>
-        orgaProbe.ref ! "sendMailPublisherService.publishRegistrationB2B called"
-        Future.unit
-      }
+
+    def event(organisation: User): UserEventWrapper = {
       val eventOrganisation: OrganisationRegisteredEvent = OrganisationRegisteredEvent(
         connectedUserId = None,
         eventDate = dateNow,
@@ -211,17 +204,38 @@ class UserEmailConsumerBehaviorIT
         country = country,
         eventId = Some(EventId("organisation register"))
       )
-      val wrappedEventOrganisation =
-        UserEventWrapper(
-          MakeSerializable.V1,
-          "some-event",
-          dateNow,
-          "OrganisationRegisteredEvent",
-          eventOrganisation,
-          eventOrganisation.eventId
-        )
+      UserEventWrapper(
+        MakeSerializable.V1,
+        "some-event",
+        dateNow,
+        "OrganisationRegisteredEvent",
+        eventOrganisation,
+        eventOrganisation.eventId
+      )
+    }
 
-      send(wrappedEventOrganisation)
+    Scenario("organisation register with password") {
+      val organisationWithPassword = organisation.copy(
+        userId = organisation.userId.copy(organisation.userId.value + "-with-password"),
+        hashedPassword = Some("password")
+      )
+      send(event(organisationWithPassword))
+      verifyZeroInteractions(
+        sendMailPublisherService.publishRegistrationB2B(organisationWithPassword, RequestContext.empty)
+      )
+    }
+
+    Scenario("organisation register without password") {
+      val orgaProbe = testKit.createTestProbe[String]()
+      when(
+        sendMailPublisherService
+          .publishRegistrationB2B(eqTo(organisation), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: RequestContext) =>
+        orgaProbe.ref ! "sendMailPublisherService.publishRegistrationB2B called"
+        Future.unit
+      }
+
+      send(event(organisation))
 
       orgaProbe.expectMessage(2.seconds, "sendMailPublisherService.publishRegistrationB2B called")
     }
