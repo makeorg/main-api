@@ -19,29 +19,23 @@
 
 package org.make.api.sequence
 
-import java.time.ZonedDateTime
-
+import eu.timepit.refined.types.numeric._
 import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
-import org.make.api.technical.ScalikeSupport._
 import org.make.api.sequence.DefaultPersistentSequenceConfigurationServiceComponent.{
   PersistentSequenceConfiguration,
   PersistentSpecificSequenceConfiguration
 }
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.Futures._
+import org.make.api.technical.ScalikeSupport._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
 import org.make.core.question.QuestionId
-import org.make.core.sequence.{
-  SelectionAlgorithmName,
-  SequenceConfiguration,
-  SequenceId,
-  SpecificSequenceConfiguration,
-  SpecificSequenceConfigurationId
-}
+import org.make.core.sequence._
 import scalikejdbc._
 
+import java.time.ZonedDateTime
 import scala.concurrent.Future
 
 trait PersistentSequenceConfigurationComponent {
@@ -58,6 +52,9 @@ trait PersistentSequenceConfigurationService {
 
 trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentSequenceConfigurationComponent {
   this: MakeDBExecutionContextComponent =>
+
+  implicit val specificSequenceConfigurationIdBinder: Binders[SpecificSequenceConfigurationId] =
+    stringValueBinders[SpecificSequenceConfigurationId](SpecificSequenceConfigurationId.apply)
 
   override lazy val persistentSequenceConfigurationService: PersistentSequenceConfigurationService =
     new DefaultPersistentSequenceConfigurationService
@@ -145,12 +142,12 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
           insert
             .into(PersistentSequenceConfiguration)
             .namedValues(
-              column.sequenceId -> sequenceConfig.sequenceId.value,
-              column.questionId -> sequenceConfig.questionId.value,
-              column.main -> sequenceConfig.mainSequence.specificSequenceConfigurationId.value,
-              column.controversial -> sequenceConfig.controversial.specificSequenceConfigurationId.value,
-              column.popular -> sequenceConfig.popular.specificSequenceConfigurationId.value,
-              column.keyword -> sequenceConfig.keyword.specificSequenceConfigurationId.value,
+              column.sequenceId -> sequenceConfig.sequenceId,
+              column.questionId -> sequenceConfig.questionId,
+              column.main -> sequenceConfig.mainSequence.specificSequenceConfigurationId,
+              column.controversial -> sequenceConfig.controversial.specificSequenceConfigurationId,
+              column.popular -> sequenceConfig.popular.specificSequenceConfigurationId,
+              column.keyword -> sequenceConfig.keyword.specificSequenceConfigurationId,
               column.newProposalsVoteThreshold -> sequenceConfig.newProposalsVoteThreshold,
               column.testedProposalsEngagementThreshold -> sequenceConfig.testedProposalsEngagementThreshold,
               column.testedProposalsScoreThreshold -> sequenceConfig.testedProposalsScoreThreshold,
@@ -171,11 +168,11 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
           insert
             .into(PersistentSpecificSequenceConfiguration)
             .namedValues(
-              specificColumn.id -> specificSequenceConfig.specificSequenceConfigurationId.value,
+              specificColumn.id -> specificSequenceConfig.specificSequenceConfigurationId,
               specificColumn.sequenceSize -> specificSequenceConfig.sequenceSize,
               specificColumn.newProposalsRatio -> specificSequenceConfig.newProposalsRatio,
               specificColumn.maxTestedProposalCount -> specificSequenceConfig.maxTestedProposalCount,
-              specificColumn.selectionAlgorithmName -> specificSequenceConfig.selectionAlgorithmName.value,
+              specificColumn.selectionAlgorithmName -> specificSequenceConfig.selectionAlgorithmName,
               specificColumn.intraIdeaEnabled -> specificSequenceConfig.intraIdeaEnabled,
               specificColumn.intraIdeaMinCount -> specificSequenceConfig.intraIdeaMinCount,
               specificColumn.intraIdeaProposalsRatio -> specificSequenceConfig.intraIdeaProposalsRatio,
@@ -194,10 +191,10 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
         withSQL {
           update(PersistentSequenceConfiguration)
             .set(
-              column.main -> sequenceConfig.mainSequence.specificSequenceConfigurationId.value,
-              column.controversial -> sequenceConfig.controversial.specificSequenceConfigurationId.value,
-              column.popular -> sequenceConfig.popular.specificSequenceConfigurationId.value,
-              column.keyword -> sequenceConfig.keyword.specificSequenceConfigurationId.value,
+              column.main -> sequenceConfig.mainSequence.specificSequenceConfigurationId,
+              column.controversial -> sequenceConfig.controversial.specificSequenceConfigurationId,
+              column.popular -> sequenceConfig.popular.specificSequenceConfigurationId,
+              column.keyword -> sequenceConfig.keyword.specificSequenceConfigurationId,
               column.newProposalsVoteThreshold -> sequenceConfig.newProposalsVoteThreshold,
               column.testedProposalsEngagementThreshold -> sequenceConfig.testedProposalsEngagementThreshold,
               column.testedProposalsScoreThreshold -> sequenceConfig.testedProposalsScoreThreshold,
@@ -208,8 +205,8 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
             )
             .where(
               sqls
-                .eq(column.sequenceId, sequenceConfig.sequenceId.value)
-                .or(sqls.eq(column.questionId, sequenceConfig.questionId.value))
+                .eq(column.sequenceId, sequenceConfig.sequenceId)
+                .or(sqls.eq(column.questionId, sequenceConfig.questionId))
             )
         }.update().apply()
       })
@@ -224,7 +221,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
               specificColumn.sequenceSize -> specificSequenceConfig.sequenceSize,
               specificColumn.newProposalsRatio -> specificSequenceConfig.newProposalsRatio,
               specificColumn.maxTestedProposalCount -> specificSequenceConfig.maxTestedProposalCount,
-              specificColumn.selectionAlgorithmName -> specificSequenceConfig.selectionAlgorithmName.value,
+              specificColumn.selectionAlgorithmName -> specificSequenceConfig.selectionAlgorithmName,
               specificColumn.intraIdeaEnabled -> specificSequenceConfig.intraIdeaEnabled,
               specificColumn.intraIdeaMinCount -> specificSequenceConfig.intraIdeaMinCount,
               specificColumn.intraIdeaProposalsRatio -> specificSequenceConfig.intraIdeaProposalsRatio,
@@ -412,9 +409,9 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
 
   final case class PersistentSpecificSequenceConfiguration(
     id: String,
-    sequenceSize: Int,
+    sequenceSize: PosInt,
     newProposalsRatio: Double,
-    maxTestedProposalCount: Int,
+    maxTestedProposalCount: PosInt,
     selectionAlgorithmName: String,
     intraIdeaEnabled: Boolean,
     intraIdeaMinCount: Int,
@@ -474,9 +471,9 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
     )(resultSet: WrappedResultSet): PersistentSpecificSequenceConfiguration = {
       PersistentSpecificSequenceConfiguration.apply(
         id = resultSet.string(resultName.id),
-        sequenceSize = resultSet.int(resultName.sequenceSize),
+        sequenceSize = resultSet.get[PosInt](resultName.sequenceSize),
         newProposalsRatio = resultSet.double(resultName.newProposalsRatio),
-        maxTestedProposalCount = resultSet.int(resultName.maxTestedProposalCount),
+        maxTestedProposalCount = resultSet.get[PosInt](resultName.maxTestedProposalCount),
         selectionAlgorithmName = resultSet.string(resultName.selectionAlgorithmName),
         intraIdeaEnabled = resultSet.boolean(resultName.intraIdeaEnabled),
         intraIdeaMinCount = resultSet.int(resultName.intraIdeaMinCount),

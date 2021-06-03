@@ -20,8 +20,9 @@
 package org.make.api.proposal
 
 import org.make.api.MakeUnitTest
-import org.make.api.proposal.ProposalScorer.VotesCounter
+import org.make.api.proposal.ProposalScorer.{Score, VotesCounter}
 import org.make.api.proposal.ProposalScorerTest.ExpectedScores
+import org.make.api.technical.MakeRandom
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.QualificationKey.{
   DoNotCare,
@@ -36,7 +37,7 @@ import org.make.core.proposal.QualificationKey.{
 }
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.SequencePool
+import org.make.core.proposal.indexed.{IndexedProposal, IndexedQualification, IndexedVote, SequencePool}
 import org.make.core.question.QuestionId
 import org.make.core.sequence.{SequenceConfiguration, SequenceId}
 
@@ -321,6 +322,116 @@ class ProposalScorerTest extends MakeUnitTest {
       }
     }
   }
+
+  Feature("score sampling") {
+    Scenario("test all scores") {
+      val scores: Seq[(String, ProposalScorer => Score)] = Seq[(String, ProposalScorer => Score)](
+        ("topScore", _.topScore),
+        ("rejection", _.rejection),
+        ("realistic", _.realistic),
+        ("platitude", _.platitude),
+        ("neutral", _.neutral),
+        ("greatness", _.greatness),
+        ("engagement", _.engagement),
+        ("controversy", _.controversy),
+        ("adhesion", _.adhesion)
+      )
+
+      val proposals: Seq[IndexedProposal] = (1 to 1000).map { i =>
+        val agree = MakeRandom.nextInt(100) + 100
+        val disagree = MakeRandom.nextInt(100) + 100
+        val neutral = MakeRandom.nextInt(10) + 1
+
+        val likeIt = MakeRandom.nextInt(agree)
+        val platitudeAgree = MakeRandom.nextInt(agree / 10)
+
+        val noWay = MakeRandom.nextInt(disagree)
+        val platitudeDisagree = MakeRandom.nextInt(disagree / 10)
+
+        val doNotCare = MakeRandom.nextInt(disagree)
+
+        val votes =
+          Seq(
+            IndexedVote(
+              key = Agree,
+              count = agree,
+              countVerified = agree,
+              countSequence = agree,
+              countSegment = 0,
+              qualifications = Seq(
+                IndexedQualification(
+                  key = LikeIt,
+                  count = likeIt,
+                  countVerified = likeIt,
+                  countSequence = likeIt,
+                  countSegment = 0
+                ),
+                IndexedQualification(
+                  key = PlatitudeAgree,
+                  count = platitudeAgree,
+                  countVerified = platitudeAgree,
+                  countSequence = platitudeAgree,
+                  countSegment = 0
+                )
+              )
+            ),
+            IndexedVote(
+              key = Disagree,
+              count = disagree,
+              countVerified = disagree,
+              countSequence = disagree,
+              countSegment = 0,
+              qualifications = Seq(
+                IndexedQualification(
+                  key = NoWay,
+                  count = noWay,
+                  countVerified = noWay,
+                  countSequence = noWay,
+                  countSegment = 0
+                ),
+                IndexedQualification(
+                  key = PlatitudeDisagree,
+                  count = platitudeDisagree,
+                  countVerified = platitudeDisagree,
+                  countSequence = platitudeDisagree,
+                  countSegment = 0
+                )
+              )
+            ),
+            IndexedVote(
+              key = Neutral,
+              count = neutral,
+              countVerified = neutral,
+              countSequence = neutral,
+              countSegment = 0,
+              qualifications = Seq(
+                IndexedQualification(
+                  key = DoNotCare,
+                  count = doNotCare,
+                  countVerified = doNotCare,
+                  countSequence = doNotCare,
+                  countSegment = 0
+                )
+              )
+            )
+          )
+        indexedProposal(id = ProposalId(s"tested$i"), votes = votes, sequencePool = SequencePool.Tested)
+      }
+
+      scores.foreach {
+        case (name, scoreFunction) =>
+          logger.debug(s"Validatin algorithm $name")
+          proposals.foreach { proposal =>
+            val score = scoreFunction(ProposalScorer(proposal.votes, VotesCounter.SequenceVotesCounter, 0.5))
+            val average = (1 to 100).map { _ =>
+              scoreFunction(ProposalScorer(proposal.votes, VotesCounter.SequenceVotesCounter, 0.5)).cachedSample
+            }.sum / 100
+            average should be(score.score +- score.confidence)
+          }
+      }
+    }
+  }
+
 }
 
 object ProposalScorerTest {

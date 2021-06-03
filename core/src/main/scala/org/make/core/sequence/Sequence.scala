@@ -19,20 +19,24 @@
 
 package org.make.core.sequence
 
-import java.time.ZonedDateTime
-
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
+import eu.timepit.refined.auto._
+import eu.timepit.refined.types.numeric._
 import io.circe.generic.semiauto._
 import io.circe.{Codec, Decoder, Encoder, Json}
+import io.circe.refined._
 import org.make.core.SprayJsonFormatters._
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
 import org.make.core.reference.Language
+import org.make.core.technical.RefinedTypes.Ratio
 import org.make.core.user.UserId
-import org.make.core.{MakeSerializable, RequestContext, SprayJsonFormatters, StringValue, Timestamped}
+import org.make.core._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
+
+import java.time.ZonedDateTime
 
 final case class SequenceTranslation(slug: String, title: String, language: Language) extends MakeSerializable
 
@@ -142,11 +146,36 @@ object SequenceConfiguration {
 
 }
 
+sealed trait BasicSequenceConfiguration {
+  def sequenceSize: PosInt
+  def maxTestedProposalCount: PosInt
+}
+
+final case class ExplorationConfiguration(
+  sequenceSize: PosInt,
+  maxTestedProposalCount: PosInt,
+  newRatio: Ratio,
+  controversyRatio: Ratio,
+  topSorter: String,
+  controversySorter: String
+) extends BasicSequenceConfiguration
+
+object ExplorationConfiguration {
+  val default: ExplorationConfiguration = ExplorationConfiguration(
+    sequenceSize = 12,
+    maxTestedProposalCount = 1000,
+    newRatio = 0.5,
+    controversyRatio = 0.1,
+    topSorter = "bandit",
+    controversySorter = "bandit"
+  )
+}
+
 final case class SpecificSequenceConfiguration(
   specificSequenceConfigurationId: SpecificSequenceConfigurationId,
-  sequenceSize: Int = 12,
+  sequenceSize: PosInt = 12,
   newProposalsRatio: Double = 0.3,
-  maxTestedProposalCount: Int = 1000,
+  maxTestedProposalCount: PosInt = 1000,
   selectionAlgorithmName: SelectionAlgorithmName = SelectionAlgorithmName.Bandit,
   intraIdeaEnabled: Boolean = true,
   intraIdeaMinCount: Int = 1,
@@ -155,7 +184,7 @@ final case class SpecificSequenceConfiguration(
   interIdeaCompetitionTargetCount: Int = 20,
   interIdeaCompetitionControversialRatio: Double = 0.0,
   interIdeaCompetitionControversialCount: Int = 2
-)
+) extends BasicSequenceConfiguration
 
 object SpecificSequenceConfiguration {
   implicit val decoder: Decoder[SpecificSequenceConfiguration] = deriveDecoder[SpecificSequenceConfiguration]

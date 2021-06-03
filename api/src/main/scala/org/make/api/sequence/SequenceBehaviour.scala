@@ -21,19 +21,24 @@ package org.make.api.sequence
 
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import grizzled.slf4j.Logging
+import SelectionAlgorithm.{ExplorationSelectionAlgorithm, RandomSelectionAlgorithm, RoundRobinSelectionAlgorithm}
 import org.make.api.sequence.SequenceBehaviour.ConsensusParam
 import org.make.api.technical.MakeRandom
 import org.make.core.proposal
-import org.make.core.proposal.indexed.{IndexedProposal, SequencePool, Zone}
 import org.make.core.proposal._
+import org.make.core.proposal.indexed.{IndexedProposal, SequencePool, Zone}
 import org.make.core.question.QuestionId
-import org.make.core.sequence.{SequenceConfiguration, SpecificSequenceConfiguration}
+import org.make.core.sequence._
 import org.make.core.session.SessionId
 import org.make.core.tag.TagId
+
+import eu.timepit.refined.auto._
 
 import scala.concurrent.Future
 
 sealed trait SequenceBehaviour {
+  type Configuration <: BasicSequenceConfiguration
+
   type SearchFunction = (
     QuestionId,
     Option[String],
@@ -43,7 +48,7 @@ sealed trait SequenceBehaviour {
   ) => Future[Seq[IndexedProposal]]
 
   val configuration: SequenceConfiguration
-  val specificConfiguration: SpecificSequenceConfiguration
+  def specificConfiguration: Configuration
   val questionId: QuestionId
   val maybeSegment: Option[String]
   val sessionId: SessionId
@@ -52,18 +57,85 @@ sealed trait SequenceBehaviour {
   def testedProposals(search: SearchFunction): Future[Seq[IndexedProposal]] = Future.successful(Nil)
   def fallbackProposals(currentSequenceSize: Int, search: SearchFunction): Future[Seq[IndexedProposal]] =
     Future.successful(Nil)
+  def selectProposals(
+    includedProposals: Seq[IndexedProposal],
+    newProposals: Seq[IndexedProposal],
+    testedProposals: Seq[IndexedProposal]
+  ): Seq[IndexedProposal]
 }
 
 object SequenceBehaviour extends Logging {
+  trait RoundRobinOrRandomBehavior {
+    self: SequenceBehaviour =>
+
+    override type Configuration = SpecificSequenceConfiguration
+
+    override def selectProposals(
+      includedProposals: Seq[IndexedProposal],
+      newProposals: Seq[IndexedProposal],
+      testedProposals: Seq[IndexedProposal]
+    ): Seq[IndexedProposal] = {
+      specificConfiguration.selectionAlgorithmName match {
+        case SelectionAlgorithmName.RoundRobin =>
+          RoundRobinSelectionAlgorithm.selectProposalsForSequence(
+            self.specificConfiguration,
+            includedProposals,
+            newProposals,
+            testedProposals
+          )
+        case _ =>
+          RandomSelectionAlgorithm.selectProposalsForSequence(
+            self.specificConfiguration,
+            includedProposals,
+            newProposals,
+            testedProposals
+          )
+      }
+    }
+  }
+
+  trait ExplorationBehavior {
+    self: SequenceBehaviour =>
+
+    override type Configuration = ExplorationConfiguration
+
+    override def specificConfiguration: ExplorationConfiguration = ExplorationConfiguration.default
+
+    override def selectProposals(
+      includedProposals: Seq[IndexedProposal],
+      newProposals: Seq[IndexedProposal],
+      testedProposals: Seq[IndexedProposal]
+    ): Seq[IndexedProposal] = {
+      ExplorationSelectionAlgorithm.selectProposalsForSequence(
+        specificConfiguration,
+        self.configuration.nonSequenceVotesWeight,
+        includedProposals,
+        newProposals,
+        testedProposals,
+        self.maybeSegment
+      )
+    }
+
+    override def fallbackProposals(currentSequenceSize: Int, search: SearchFunction): Future[Seq[IndexedProposal]] = {
+      if (currentSequenceSize < specificConfiguration.sequenceSize) {
+        logger.warn(s"Sequence fallback for session ${sessionId.value} and question ${questionId.value}")
+        def sortAlgorithm: SortAlgorithm =
+          maybeSegment.fold[SortAlgorithm](CreationDateAlgorithm(SortOrder.Desc))(SegmentFirstAlgorithm.apply)
+
+        search(questionId, maybeSegment, None, proposal.SearchQuery(), sortAlgorithm)
+      } else {
+        Future.successful(Nil)
+      }
+    }
+  }
 
   final case class Standard(
     override val configuration: SequenceConfiguration,
     questionId: QuestionId,
     maybeSegment: Option[String],
     sessionId: SessionId
-  ) extends SequenceBehaviour {
-
-    override val specificConfiguration: SpecificSequenceConfiguration = configuration.mainSequence
+  ) extends SequenceBehaviour
+      with ExplorationBehavior {
 
     override def newProposals(search: SearchFunction): Future[Seq[IndexedProposal]] = {
       search(
@@ -84,28 +156,18 @@ object SequenceBehaviour extends Logging {
         RandomAlgorithm(MakeRandom.nextInt())
       )
     }
-
-    override def fallbackProposals(currentSequenceSize: Int, search: SearchFunction): Future[Seq[IndexedProposal]] = {
-      if (currentSequenceSize < specificConfiguration.sequenceSize) {
-        logger.warn(s"Sequence fallback for session ${sessionId.value} and question ${questionId.value}")
-        def sortAlgorithm: SortAlgorithm =
-          maybeSegment.fold[SortAlgorithm](CreationDateAlgorithm(SortOrder.Desc))(SegmentFirstAlgorithm.apply)
-
-        search(questionId, maybeSegment, None, proposal.SearchQuery(), sortAlgorithm)
-      } else {
-        Future.successful(Nil)
-      }
-    }
   }
 
   final case class ConsensusParam(top20ConsensusThreshold: Option[Double])
+
   final case class Consensus(
     consensusParam: ConsensusParam,
     override val configuration: SequenceConfiguration,
     questionId: QuestionId,
     maybeSegment: Option[String],
     sessionId: SessionId
-  ) extends SequenceBehaviour {
+  ) extends SequenceBehaviour
+      with RoundRobinOrRandomBehavior {
     override val specificConfiguration: SpecificSequenceConfiguration = configuration.popular
 
     override def testedProposals(search: SearchFunction): Future[Seq[IndexedProposal]] = {
@@ -130,7 +192,8 @@ object SequenceBehaviour extends Logging {
     questionId: QuestionId,
     maybeSegment: Option[String],
     sessionId: SessionId
-  ) extends SequenceBehaviour {
+  ) extends SequenceBehaviour
+      with RoundRobinOrRandomBehavior {
 
     override val specificConfiguration: SpecificSequenceConfiguration = configuration.controversial
 
@@ -151,7 +214,8 @@ object SequenceBehaviour extends Logging {
     questionId: QuestionId,
     maybeSegment: Option[String],
     sessionId: SessionId
-  ) extends SequenceBehaviour {
+  ) extends SequenceBehaviour
+      with RoundRobinOrRandomBehavior {
 
     override val specificConfiguration: SpecificSequenceConfiguration = configuration.keyword
 
@@ -184,9 +248,8 @@ object SequenceBehaviour extends Logging {
     questionId: QuestionId,
     maybeSegment: Option[String],
     sessionId: SessionId
-  ) extends SequenceBehaviour {
-
-    override val specificConfiguration: SpecificSequenceConfiguration = configuration.mainSequence
+  ) extends SequenceBehaviour
+      with ExplorationBehavior {
 
     override def newProposals(search: SearchFunction): Future[Seq[IndexedProposal]] = {
       search(
