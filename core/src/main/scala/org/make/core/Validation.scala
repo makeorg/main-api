@@ -21,12 +21,14 @@ package org.make.core
 
 import java.time.LocalDate
 
+import enumeratum.values.StringEnum
 import grizzled.slf4j.Logging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 import org.jsoup.Jsoup
 import org.jsoup.safety.{Cleaner, Whitelist}
+import org.make.core.elasticsearch.ElasticsearchFieldName
 
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
@@ -265,6 +267,18 @@ object Validation extends Logging {
       "invalid_postal_code",
       condition,
       message.getOrElse("Invalid postal code. Must be formatted '01234'")
+    )
+  }
+
+  def validateSort[T <: ElasticsearchFieldName](
+    fieldName: String
+  )(sort: T)(implicit enum: StringEnum[T]): Requirement = {
+    val choices = enum.values.filter(_.sortable)
+    Validation.validChoices(
+      fieldName = fieldName,
+      message = Some(s"Invalid sort. Got $sort but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"),
+      Seq(sort),
+      choices
     )
   }
 

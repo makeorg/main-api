@@ -518,17 +518,7 @@ trait DefaultQuestionApiComponent
               sort: Option[OperationOfQuestionElasticsearchFieldName],
               order: Option[Order]
             ) =>
-              Validation.validate(sort.map { sortValue =>
-                val choices = OperationOfQuestionElasticsearchFieldName.values.filter(_.sortable)
-                Validation.validChoices(
-                  fieldName = "sort",
-                  message = Some(
-                    s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
-                  ),
-                  Seq(sortValue),
-                  choices
-                )
-              }.toList: _*)
+              Validation.validate(sort.map(Validation.validateSort("sort")).toList: _*)
               val filters: Option[OperationOfQuestionSearchFilters] = Some(
                 OperationOfQuestionSearchFilters(
                   questionIds = questionIds.map(QuestionIdsSearchFilter.apply),

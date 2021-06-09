@@ -359,17 +359,7 @@ trait DefaultAdminProposalApiComponent
                   sort: Option[ProposalElasticsearchFieldName],
                   order: Option[Order]
                 ) =>
-                  Validation.validate(sort.map { sortValue =>
-                    val choices = ProposalElasticsearchFieldName.values.filter(_.sortable)
-                    Validation.validChoices(
-                      fieldName = "sort",
-                      message = Some(
-                        s"Invalid sort. Got $sortValue but expected one of: ${choices.map(_.parameter).mkString("\"", "\", \"", "\"")}"
-                      ),
-                      Seq(sortValue),
-                      choices
-                    )
-                  }.toList: _*)
+                  Validation.validate(sort.map(Validation.validateSort("_sort")).toList: _*)
 
                   val exhaustiveSearchRequest: ExhaustiveSearchRequest = ExhaustiveSearchRequest(
                     initialProposal = initialProposal,

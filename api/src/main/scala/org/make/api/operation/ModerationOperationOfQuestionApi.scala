@@ -31,7 +31,7 @@ import eu.timepit.refined.collection.MaxSize
 import grizzled.slf4j.Logging
 import io.circe.refined._
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder}
+import io.circe.{Codec, Decoder, Encoder}
 import io.swagger.annotations._
 
 import javax.ws.rs.Path
@@ -52,6 +52,11 @@ import org.make.core.auth.UserRights
 import org.make.core.operation.OperationKind.GreatCause
 import org.make.core.operation.OperationOfQuestion.{Status => QuestionStatus}
 import org.make.core.operation._
+import org.make.core.operation.indexed.{
+  IndexedOperationOfQuestion,
+  OperationOfQuestionElasticsearchFieldName,
+  OperationOfQuestionSearchResult
+}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
@@ -213,8 +218,44 @@ trait ModerationOperationOfQuestionApi extends Directives {
   @Path(value = "/")
   def createOperationOfQuestionAndQuestion: Route
 
+  @ApiOperation(
+    value = "search-operations-of-questions",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(
+      new ApiResponse(
+        code = HttpCodes.OK,
+        message = "Ok",
+        response = classOf[Array[ModerationOperationOfQuestionSearchResult]]
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "_start", paramType = "query", required = false, dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", required = false, dataType = "integer"),
+      new ApiImplicitParam(name = "_sort", paramType = "query", required = false, dataType = "string"),
+      new ApiImplicitParam(name = "_order", paramType = "query", required = false, dataType = "string"),
+      new ApiImplicitParam(name = "slug", paramType = "query", required = false, dataType = "string")
+    )
+  )
+  @Path(value = "/search")
+  def searchOperationsOfQuestions: Route
+
   def routes: Route =
     listOperationOfQuestions ~
+      searchOperationsOfQuestions ~
       getOperationOfQuestion ~
       modifyOperationOfQuestion ~
       deleteOperationOfQuestionAndQuestion ~
@@ -513,6 +554,67 @@ trait DefaultModerationOperationOfQuestionApiComponent
         }
       }
     }
+
+    override def searchOperationsOfQuestions: Route = get {
+      path("moderation" / "operations-of-questions" / "search") {
+        makeOperation("SearchOperationsOfQuestions") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireModerationRole(auth.user) {
+              parameters(
+                "_start".as[Start].?,
+                "_end".as[End].?,
+                "_sort".as[OperationOfQuestionElasticsearchFieldName].?,
+                "_order".as[Order].?,
+                "slug".as[String].?
+              ) {
+                (
+                  start: Option[Start],
+                  end: Option[End],
+                  sort: Option[OperationOfQuestionElasticsearchFieldName],
+                  order: Option[Order],
+                  slug
+                ) =>
+                  Validation.validate(sort.map(Validation.validateSort("_sort")).toList: _*)
+                  val questions: Option[Seq[QuestionId]] = {
+                    if (auth.user.roles.contains(RoleAdmin)) {
+                      None
+                    } else {
+                      Some(auth.user.availableQuestions)
+                    }
+                  }
+                  provideAsync(
+                    operationOfQuestionService
+                      .search(
+                        OperationOfQuestionSearchQuery(
+                          filters = Some(
+                            OperationOfQuestionSearchFilters(
+                              questionIds = questions.map(QuestionIdsSearchFilter),
+                              slug = slug.map(SlugSearchFilter),
+                              operationKinds = Some(OperationKindsSearchFilter(OperationKind.values))
+                            )
+                          ),
+                          limit = end.map(_.value),
+                          skip = start.map(_.value),
+                          sort = sort,
+                          order = order
+                        )
+                      )
+                  ) { result: OperationOfQuestionSearchResult =>
+                    complete(
+                      (
+                        StatusCodes.OK,
+                        List(`X-Total-Count`(result.total.toString)),
+                        result.results.map(ModerationOperationOfQuestionSearchResult.apply)
+                      )
+                    )
+                  }
+              }
+            }
+          }
+        }
+      }
+    }
+
   }
 }
 
@@ -777,4 +879,18 @@ object OperationOfQuestionResponse extends CirceFormatters {
       createdAt = operationOfQuestion.createdAt
     )
   }
+}
+
+@ApiModel
+final case class ModerationOperationOfQuestionSearchResult(
+  @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8") id: QuestionId,
+  slug: String
+)
+
+object ModerationOperationOfQuestionSearchResult {
+
+  def apply(ooq: IndexedOperationOfQuestion): ModerationOperationOfQuestionSearchResult =
+    ModerationOperationOfQuestionSearchResult(ooq.questionId, ooq.slug)
+
+  implicit val codec: Codec[ModerationOperationOfQuestionSearchResult] = deriveCodec
 }
