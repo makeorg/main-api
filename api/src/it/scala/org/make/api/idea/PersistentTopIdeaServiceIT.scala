@@ -37,8 +37,6 @@ class PersistentTopIdeaServiceIT
     with DefaultPersistentTopIdeaServiceComponent
     with DefaultPersistentIdeaServiceComponent {
 
-  override protected val cockroachExposedPort: Int = 40020
-
   val findTopIdea: (
     Start,
     Option[End],

@@ -323,18 +323,6 @@ final class UserHistorySerializers(securityConfiguration: SecurityConfiguration)
         )
     )
 
-  private val logUserSearchSequencesEventSerializer: JsonPersister[LogUserSearchSequencesEvent, V3] =
-    json.persister[LogUserSearchSequencesEvent, V3](
-      "user-history-search-sequence",
-      from[V1]
-        .to[V2](_.update("context" / "customData" ! set[Map[String, String]](Map.empty)))
-        .to[V3](
-          _.update(
-            "context" ! modify[JsObject](MakeEventSerializer.setIpAddressAndHash(securityConfiguration.secureHashSalt))
-          )
-        )
-    )
-
   private val logUserStartSequenceEventSerializer: JsonPersister[LogUserStartSequenceEvent, V5] =
     json.persister[LogUserStartSequenceEvent, V5](
       "user-history-start-sequence",
@@ -464,7 +452,6 @@ final class UserHistorySerializers(securityConfiguration: SecurityConfiguration)
       logUserAddProposalsSequenceEventSerializer,
       logUserRemoveSequenceEventSerializer,
       logGetProposalDuplicatesEventSerializer,
-      logUserSearchSequencesEventSerializer,
       logUserStartSequenceEventSerializer,
       userVotesAndQualifications,
       logUserAnonymizedEventSerializer,

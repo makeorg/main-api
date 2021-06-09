@@ -141,6 +141,8 @@ import org.make.core.proposal.{
 }
 import org.make.core.question.QuestionId
 import org.make.core.sequence.{
+  ExplorationSequenceConfiguration,
+  ExplorationSequenceConfigurationId,
   SequenceConfiguration,
   SequenceId,
   SpecificSequenceConfiguration,
@@ -290,11 +292,13 @@ class SequenceServiceIT
   private val requestContext = RequestContext.empty.copy(sessionId = idGenerator.nextSessionId())
   private def specificSequence =
     SpecificSequenceConfiguration(SpecificSequenceConfigurationId(questionId.value))
+  private def explorationSequence =
+    ExplorationSequenceConfiguration.default(ExplorationSequenceConfigurationId(questionId.value))
   private def sequenceConfiguration =
     SequenceConfiguration.default.copy(
       sequenceId = SequenceId(questionId.value),
       questionId = questionId,
-      mainSequence = specificSequence,
+      mainSequence = explorationSequence,
       controversial = specificSequence,
       popular = specificSequence,
       keyword = specificSequence,
@@ -597,5 +601,5 @@ object SequenceServiceIT {
       .withFallback(ConfigFactory.load("default-application.conf"))
       .resolve()
 
-  val actorSystem = ActorSystem("SequenceServiceIT", fullConfiguration)
+  val actorSystem: ActorSystem = ActorSystem("SequenceServiceIT", fullConfiguration)
 }

@@ -97,9 +97,9 @@ object SequenceBehaviour extends Logging {
   trait ExplorationBehavior {
     self: SequenceBehaviour =>
 
-    override type Configuration = ExplorationConfiguration
+    override type Configuration = ExplorationSequenceConfiguration
 
-    override def specificConfiguration: ExplorationConfiguration = ExplorationConfiguration.default
+    override def specificConfiguration: ExplorationSequenceConfiguration = self.configuration.mainSequence
 
     override def selectProposals(
       includedProposals: Seq[IndexedProposal],

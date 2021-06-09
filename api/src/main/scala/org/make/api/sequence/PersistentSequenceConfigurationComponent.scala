@@ -23,6 +23,7 @@ import eu.timepit.refined.types.numeric._
 import grizzled.slf4j.Logging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.sequence.DefaultPersistentSequenceConfigurationServiceComponent.{
+  PersistentExplorationSequenceConfiguration,
   PersistentSequenceConfiguration,
   PersistentSpecificSequenceConfiguration
 }
@@ -65,19 +66,20 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
       with Logging {
 
     private val alias = PersistentSequenceConfiguration.alias
-    private val mainSequenceAlias = PersistentSpecificSequenceConfiguration.syntax("main_sequence_configuration")
+    private val mainSequenceAlias = PersistentExplorationSequenceConfiguration.syntax("main_sequence_configuration")
     private val controversialSequenceAlias =
       PersistentSpecificSequenceConfiguration.syntax("controversial_sequence_configuration")
     private val popularSequenceAlias = PersistentSpecificSequenceConfiguration.syntax("popular_sequence_configuration")
     private val keywordSequenceAlias = PersistentSpecificSequenceConfiguration.syntax("keyword_sequence_configuration")
     private val column = PersistentSequenceConfiguration.column
     private val specificColumn = PersistentSpecificSequenceConfiguration.column
+    private val explorationColumn = PersistentExplorationSequenceConfiguration.column
 
     private def selectSequenceConfiguration[T]: scalikejdbc.SelectSQLBuilder[T] =
       select
         .from(PersistentSequenceConfiguration.as(alias))
-        .leftJoin(PersistentSpecificSequenceConfiguration.as(mainSequenceAlias))
-        .on(alias.main, mainSequenceAlias.id)
+        .leftJoin(PersistentExplorationSequenceConfiguration.as(mainSequenceAlias))
+        .on(alias.main, mainSequenceAlias.explorationSequenceConfigurationId)
         .leftJoin(PersistentSpecificSequenceConfiguration.as(controversialSequenceAlias))
         .on(alias.controversial, controversialSequenceAlias.id)
         .leftJoin(PersistentSpecificSequenceConfiguration.as(popularSequenceAlias))
@@ -144,7 +146,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
             .namedValues(
               column.sequenceId -> sequenceConfig.sequenceId,
               column.questionId -> sequenceConfig.questionId,
-              column.main -> sequenceConfig.mainSequence.specificSequenceConfigurationId,
+              column.main -> sequenceConfig.mainSequence.explorationSequenceConfigurationId,
               column.controversial -> sequenceConfig.controversial.specificSequenceConfigurationId,
               column.popular -> sequenceConfig.popular.specificSequenceConfigurationId,
               column.keyword -> sequenceConfig.keyword.specificSequenceConfigurationId,
@@ -185,13 +187,24 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
       })
     }
 
+    private def insertExplorationConfig(explorationConfig: ExplorationSequenceConfiguration): Future[Boolean] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
+        withSQL {
+          insert
+            .into(PersistentExplorationSequenceConfiguration)
+            .namedValues(autoNamedValues(explorationConfig, explorationColumn))
+        }.execute().apply()
+      })
+    }
+
     private def updateConfig(sequenceConfig: SequenceConfiguration): Future[Int] = {
       implicit val context: EC = writeExecutionContext
       Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentSequenceConfiguration)
             .set(
-              column.main -> sequenceConfig.mainSequence.specificSequenceConfigurationId,
+              column.main -> sequenceConfig.mainSequence.explorationSequenceConfigurationId,
               column.controversial -> sequenceConfig.controversial.specificSequenceConfigurationId,
               column.popular -> sequenceConfig.popular.specificSequenceConfigurationId,
               column.keyword -> sequenceConfig.keyword.specificSequenceConfigurationId,
@@ -232,7 +245,20 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
             )
             .where(
               sqls
-                .eq(specificColumn.id, specificSequenceConfig.specificSequenceConfigurationId.value)
+                .eq(specificColumn.id, specificSequenceConfig.specificSequenceConfigurationId)
+            )
+        }.update().apply()
+      })
+    }
+
+    private def updateExplorationConfig(config: ExplorationSequenceConfiguration): Future[Int] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
+        withSQL {
+          update(PersistentExplorationSequenceConfiguration)
+            .set(autoNamedValues(config, explorationColumn, "explorationSequenceConfigurationId"))
+            .where(
+              sqls.eq(explorationColumn.explorationSequenceConfigurationId, config.explorationSequenceConfigurationId)
             )
         }.update().apply()
       })
@@ -253,7 +279,19 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
       Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           deleteFrom(PersistentSpecificSequenceConfiguration)
-            .where(sqls.eq(PersistentSpecificSequenceConfiguration.column.id, specificSequenceConfigurationId.value))
+            .where(sqls.eq(PersistentSpecificSequenceConfiguration.column.id, specificSequenceConfigurationId))
+        }.execute().apply()
+      }).toUnit
+    }
+
+    private def deleteExplorationConfig(
+      explorationSequenceConfigurationId: ExplorationSequenceConfigurationId
+    ): Future[Unit] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
+        withSQL {
+          deleteFrom(PersistentExplorationSequenceConfiguration)
+            .where(sqls.eq(explorationColumn.explorationSequenceConfigurationId, explorationSequenceConfigurationId))
         }.execute().apply()
       }).toUnit
     }
@@ -261,7 +299,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
     private def insertAllConfig(sequenceConfiguration: SequenceConfiguration): Future[Boolean] = {
       implicit val context: EC = writeExecutionContext
       for {
-        _      <- insertSpecificConfig(sequenceConfiguration.mainSequence)
+        _      <- insertExplorationConfig(sequenceConfiguration.mainSequence)
         _      <- insertSpecificConfig(sequenceConfiguration.controversial)
         _      <- insertSpecificConfig(sequenceConfiguration.popular)
         _      <- insertSpecificConfig(sequenceConfiguration.keyword)
@@ -272,7 +310,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
     private def updateAllConfig(sequenceConfiguration: SequenceConfiguration): Future[Int] = {
       implicit val context: EC = writeExecutionContext
       for {
-        _      <- updateSpecificConfig(sequenceConfiguration.mainSequence)
+        _      <- updateExplorationConfig(sequenceConfiguration.mainSequence)
         _      <- updateSpecificConfig(sequenceConfiguration.controversial)
         _      <- updateSpecificConfig(sequenceConfiguration.popular)
         _      <- updateSpecificConfig(sequenceConfiguration.keyword)
@@ -283,11 +321,11 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
     private def deleteAllConfig(sequenceConfiguration: SequenceConfiguration): Future[Unit] = {
       implicit val context: EC = writeExecutionContext
       for {
-        _ <- deleteSpecificConfig(sequenceConfiguration.mainSequence.specificSequenceConfigurationId)
+        _ <- deleteConfig(sequenceConfiguration.questionId)
+        _ <- deleteExplorationConfig(sequenceConfiguration.mainSequence.explorationSequenceConfigurationId)
         _ <- deleteSpecificConfig(sequenceConfiguration.controversial.specificSequenceConfigurationId)
         _ <- deleteSpecificConfig(sequenceConfiguration.popular.specificSequenceConfigurationId)
         _ <- deleteSpecificConfig(sequenceConfiguration.keyword.specificSequenceConfigurationId)
-        _ <- deleteConfig(sequenceConfiguration.questionId)
       } yield {}
     }
 
@@ -314,7 +352,7 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
   final case class PersistentSequenceConfiguration(
     sequenceId: String,
     questionId: String,
-    main: PersistentSpecificSequenceConfiguration,
+    main: ExplorationSequenceConfiguration,
     controversial: PersistentSpecificSequenceConfiguration,
     popular: PersistentSpecificSequenceConfiguration,
     keyword: PersistentSpecificSequenceConfiguration,
@@ -331,7 +369,7 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
       SequenceConfiguration(
         sequenceId = SequenceId(sequenceId),
         questionId = QuestionId(questionId),
-        mainSequence = main.toSpecificSequenceConfiguration,
+        mainSequence = main,
         controversial = controversial.toSpecificSequenceConfiguration,
         popular = popular.toSpecificSequenceConfiguration,
         keyword = keyword.toSpecificSequenceConfiguration,
@@ -378,20 +416,16 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
       PersistentSpecificSequenceConfiguration.alias.resultName
 
     def apply(
-      resultName: ResultName[PersistentSequenceConfiguration] = alias.resultName,
-      mainSequenceResultName: ResultName[PersistentSpecificSequenceConfiguration] =
-        specificSequenceConfigurationResultName,
-      controversialSequenceResultName: ResultName[PersistentSpecificSequenceConfiguration] =
-        specificSequenceConfigurationResultName,
-      popularSequenceResultName: ResultName[PersistentSpecificSequenceConfiguration] =
-        specificSequenceConfigurationResultName,
-      keywordSequenceResultName: ResultName[PersistentSpecificSequenceConfiguration] =
-        specificSequenceConfigurationResultName
+      resultName: ResultName[PersistentSequenceConfiguration],
+      mainSequenceResultName: ResultName[ExplorationSequenceConfiguration],
+      controversialSequenceResultName: ResultName[PersistentSpecificSequenceConfiguration],
+      popularSequenceResultName: ResultName[PersistentSpecificSequenceConfiguration],
+      keywordSequenceResultName: ResultName[PersistentSpecificSequenceConfiguration]
     )(resultSet: WrappedResultSet): PersistentSequenceConfiguration = {
       PersistentSequenceConfiguration.apply(
         sequenceId = resultSet.string(resultName.sequenceId),
         questionId = resultSet.string(resultName.questionId),
-        main = PersistentSpecificSequenceConfiguration(mainSequenceResultName)(resultSet),
+        main = PersistentExplorationSequenceConfiguration(mainSequenceResultName)(resultSet),
         controversial = PersistentSpecificSequenceConfiguration(controversialSequenceResultName)(resultSet),
         popular = PersistentSpecificSequenceConfiguration(popularSequenceResultName)(resultSet),
         keyword = PersistentSpecificSequenceConfiguration(keywordSequenceResultName)(resultSet),
@@ -405,6 +439,16 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         nonSequenceVotesWeight = resultSet.double(resultName.nonSequenceVotesWeight)
       )
     }
+  }
+
+  object PersistentExplorationSequenceConfiguration extends SQLSyntaxSupport[ExplorationSequenceConfiguration] {
+    override lazy val columns: scala.collection.Seq[String] = autoColumns[ExplorationSequenceConfiguration]()
+    override def tableName: String = "exploration_sequence_configuration"
+
+    def apply(
+      rn: ResultName[ExplorationSequenceConfiguration]
+    )(rs: WrappedResultSet): ExplorationSequenceConfiguration =
+      autoConstruct(rs, rn)
   }
 
   final case class PersistentSpecificSequenceConfiguration(

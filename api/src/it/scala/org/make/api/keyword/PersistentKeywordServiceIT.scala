@@ -33,7 +33,6 @@ class PersistentKeywordServiceIT
     with DefaultPersistentKeywordServiceComponent
     with DefaultPersistentQuestionServiceComponent {
 
-  override protected val cockroachExposedPort: Int = 40025
   val questionId: QuestionId = QuestionId("question-id")
   val otherQuestionId: QuestionId = QuestionId("other-question-id")
   val thirdQuestionId: QuestionId = QuestionId("third-question-id")

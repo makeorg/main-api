@@ -51,8 +51,6 @@ class OperationServiceIT
     with OperationOfQuestionServiceComponent
     with ActorSystemComponent {
 
-  override protected val cockroachExposedPort: Int = 40007
-
   override val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
 

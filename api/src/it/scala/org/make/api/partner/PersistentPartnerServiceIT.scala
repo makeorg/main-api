@@ -35,8 +35,6 @@ class PersistentPartnerServiceIT
     with DefaultPersistentPartnerServiceComponent
     with DefaultPersistentQuestionServiceComponent {
 
-  override protected val cockroachExposedPort: Int = 40014
-
   val partner: Partner = Partner(
     partnerId = PartnerId("partner"),
     name = "name",

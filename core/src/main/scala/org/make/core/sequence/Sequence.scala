@@ -22,59 +22,11 @@ package org.make.core.sequence
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import eu.timepit.refined.auto._
 import eu.timepit.refined.types.numeric._
-import io.circe.generic.semiauto._
 import io.circe.{Codec, Decoder, Encoder, Json}
-import io.circe.refined._
-import org.make.core.SprayJsonFormatters._
-import org.make.core.operation.OperationId
-import org.make.core.proposal.ProposalId
-import org.make.core.question.QuestionId
-import org.make.core.reference.Language
-import org.make.core.technical.RefinedTypes.Ratio
-import org.make.core.user.UserId
 import org.make.core._
-import spray.json.DefaultJsonProtocol._
-import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
-
-import java.time.ZonedDateTime
-
-final case class SequenceTranslation(slug: String, title: String, language: Language) extends MakeSerializable
-
-object SequenceTranslation {
-  implicit val encoder: Encoder[SequenceTranslation] = deriveEncoder[SequenceTranslation]
-  implicit val decoder: Decoder[SequenceTranslation] = deriveDecoder[SequenceTranslation]
-
-  implicit val sequenceTranslationFormatter: RootJsonFormat[SequenceTranslation] =
-    DefaultJsonProtocol.jsonFormat3(SequenceTranslation.apply)
-
-}
-final case class SequenceAction(date: ZonedDateTime, user: UserId, actionType: String, arguments: Map[String, String])
-
-object SequenceAction {
-  implicit val sequenceActionFormatter: RootJsonFormat[SequenceAction] =
-    DefaultJsonProtocol.jsonFormat4(SequenceAction.apply)
-}
-
-final case class Sequence(
-  sequenceId: SequenceId,
-  title: String,
-  slug: String,
-  proposalIds: Seq[ProposalId] = Seq.empty,
-  operationId: Option[OperationId] = None,
-  override val createdAt: Option[ZonedDateTime],
-  override val updatedAt: Option[ZonedDateTime],
-  status: SequenceStatus = SequenceStatus.Unpublished,
-  creationContext: RequestContext,
-  sequenceTranslation: Seq[SequenceTranslation] = Seq.empty,
-  events: List[SequenceAction],
-  searchable: Boolean
-) extends MakeSerializable
-    with Timestamped
-
-object Sequence {
-  implicit val sequenceFormatter: RootJsonFormat[Sequence] =
-    DefaultJsonProtocol.jsonFormat12(Sequence.apply)
-}
+import org.make.core.question.QuestionId
+import org.make.core.technical.RefinedTypes.Ratio
+import spray.json.JsonFormat
 
 final case class SequenceId(value: String) extends StringValue
 
@@ -112,7 +64,7 @@ object SelectionAlgorithmName extends StringEnum[SelectionAlgorithmName] with St
 final case class SequenceConfiguration(
   sequenceId: SequenceId,
   questionId: QuestionId,
-  mainSequence: SpecificSequenceConfiguration,
+  mainSequence: ExplorationSequenceConfiguration,
   controversial: SpecificSequenceConfiguration,
   popular: SpecificSequenceConfiguration,
   keyword: SpecificSequenceConfiguration,
@@ -125,13 +77,11 @@ final case class SequenceConfiguration(
 )
 
 object SequenceConfiguration {
-  implicit val decoder: Decoder[SequenceConfiguration] = deriveDecoder[SequenceConfiguration]
-  implicit val encoder: Encoder[SequenceConfiguration] = deriveEncoder[SequenceConfiguration]
 
   val default: SequenceConfiguration = SequenceConfiguration(
     sequenceId = SequenceId("default-sequence"),
     questionId = QuestionId("default-question"),
-    mainSequence = SpecificSequenceConfiguration(SpecificSequenceConfigurationId("default-main")),
+    mainSequence = ExplorationSequenceConfiguration.default(ExplorationSequenceConfigurationId("default-sequence")),
     controversial =
       SpecificSequenceConfiguration.otherSequenceDefault(SpecificSequenceConfigurationId("default-controversial")),
     popular = SpecificSequenceConfiguration.otherSequenceDefault(SpecificSequenceConfigurationId("default-popular")),
@@ -151,24 +101,48 @@ sealed trait BasicSequenceConfiguration {
   def maxTestedProposalCount: PosInt
 }
 
-final case class ExplorationConfiguration(
+final case class ExplorationSequenceConfiguration(
+  explorationSequenceConfigurationId: ExplorationSequenceConfigurationId,
   sequenceSize: PosInt,
   maxTestedProposalCount: PosInt,
   newRatio: Ratio,
   controversyRatio: Ratio,
-  topSorter: String,
-  controversySorter: String
+  topSorter: ExplorationSortAlgorithm,
+  controversySorter: ExplorationSortAlgorithm
 ) extends BasicSequenceConfiguration
 
-object ExplorationConfiguration {
-  val default: ExplorationConfiguration = ExplorationConfiguration(
-    sequenceSize = 12,
-    maxTestedProposalCount = 1000,
-    newRatio = 0.5,
-    controversyRatio = 0.1,
-    topSorter = "bandit",
-    controversySorter = "bandit"
-  )
+object ExplorationSequenceConfiguration {
+  def default(id: ExplorationSequenceConfigurationId): ExplorationSequenceConfiguration =
+    ExplorationSequenceConfiguration(
+      id,
+      sequenceSize = 12,
+      maxTestedProposalCount = 1000,
+      newRatio = 0.5,
+      controversyRatio = 0.1,
+      topSorter = ExplorationSortAlgorithm.Bandit,
+      controversySorter = ExplorationSortAlgorithm.Bandit
+    )
+}
+
+final case class ExplorationSequenceConfigurationId(value: String) extends StringValue
+
+object ExplorationSequenceConfigurationId {
+  implicit val codec: Codec[ExplorationSequenceConfigurationId] =
+    Codec.from(Decoder[String].map(ExplorationSequenceConfigurationId.apply), Encoder[String].contramap(_.value))
+}
+
+sealed abstract class ExplorationSortAlgorithm(val value: String) extends StringEnumEntry
+
+object ExplorationSortAlgorithm
+    extends StringEnum[ExplorationSortAlgorithm]
+    with StringCirceEnum[ExplorationSortAlgorithm] {
+
+  case object Bandit extends ExplorationSortAlgorithm("bandit")
+  case object Random extends ExplorationSortAlgorithm("random")
+  case object RoundRobin extends ExplorationSortAlgorithm("round-robin")
+
+  override def values: IndexedSeq[ExplorationSortAlgorithm] = findValues
+
 }
 
 final case class SpecificSequenceConfiguration(
@@ -187,8 +161,6 @@ final case class SpecificSequenceConfiguration(
 ) extends BasicSequenceConfiguration
 
 object SpecificSequenceConfiguration {
-  implicit val decoder: Decoder[SpecificSequenceConfiguration] = deriveDecoder[SpecificSequenceConfiguration]
-  implicit val encoder: Encoder[SpecificSequenceConfiguration] = deriveEncoder[SpecificSequenceConfiguration]
 
   def otherSequenceDefault(id: SpecificSequenceConfigurationId): SpecificSequenceConfiguration =
     SpecificSequenceConfiguration(
@@ -208,7 +180,4 @@ final case class SpecificSequenceConfigurationId(value: String) extends StringVa
 object SpecificSequenceConfigurationId {
   implicit val specificSequenceConfigurationIdCodec: Codec[SpecificSequenceConfigurationId] =
     Codec.from(Decoder[String].map(SpecificSequenceConfigurationId.apply), Encoder[String].contramap(_.value))
-
-  implicit val specificSequenceConfigurationIdFormatter: JsonFormat[SpecificSequenceConfigurationId] =
-    SprayJsonFormatters.forStringValue(SpecificSequenceConfigurationId.apply)
 }

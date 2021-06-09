@@ -37,8 +37,6 @@ class PersistentActiveFeatureServiceIT
     with DefaultPersistentQuestionServiceComponent
     with DefaultIdGeneratorComponent {
 
-  override protected val cockroachExposedPort: Int = 40009
-
   override def beforeAll(): Unit = {
     super.beforeAll()
     val futurePersistQuestions: Future[Unit] = for {

@@ -27,6 +27,8 @@ import akka.testkit.TestDuration
 import org.make.api.MakeApiTestBase
 import org.make.core.question.QuestionId
 import org.make.core.sequence.{
+  ExplorationSequenceConfiguration,
+  ExplorationSequenceConfigurationId,
   SequenceConfiguration,
   SequenceId,
   SpecificSequenceConfiguration,
@@ -49,18 +51,13 @@ class AdminSequenceApiTest
 
   val setSequenceConfigurationPayload: String = """{
                                                   |  "main": {
-                                                  |    "specificSequenceConfigurationId": "main-id",
-                                                  |    "newProposalsRatio": 0.5,
-                                                  |    "intraIdeaEnabled": true,
-                                                  |    "intraIdeaMinCount": 1,
-                                                  |    "intraIdeaProposalsRatio": 0,
-                                                  |    "interIdeaCompetitionEnabled": false,
-                                                  |    "interIdeaCompetitionTargetCount": 50,
-                                                  |    "interIdeaCompetitionControversialRatio": 0,
-                                                  |    "interIdeaCompetitionControversialCount": 0,
-                                                  |    "maxTestedProposalCount": 1000,
+                                                  |    "explorationSequenceConfigurationId": "main-id",
                                                   |    "sequenceSize": 12,
-                                                  |    "selectionAlgorithmName": "Bandit"
+                                                  |    "maxTestedProposalCount": 1000,
+                                                  |    "newRatio": 0.5,
+                                                  |    "controversyRatio": 0.1,
+                                                  |    "topSorter": "bandit",
+                                                  |    "controversySorter": "bandit"
                                                   |  },
                                                   |  "controversial": {
                                                   |    "specificSequenceConfigurationId": "controversial-id",
@@ -117,13 +114,7 @@ class AdminSequenceApiTest
   val sequenceConfiguration: SequenceConfiguration = SequenceConfiguration(
     sequenceId = SequenceId("mySequence"),
     questionId = QuestionId("myQuestion"),
-    mainSequence = SpecificSequenceConfiguration(
-      specificSequenceConfigurationId = SpecificSequenceConfigurationId("main-id"),
-      intraIdeaEnabled = true,
-      intraIdeaMinCount = 3,
-      intraIdeaProposalsRatio = .3,
-      newProposalsRatio = 0.5
-    ),
+    mainSequence = ExplorationSequenceConfiguration.default(ExplorationSequenceConfigurationId("main-id")),
     controversial = SpecificSequenceConfiguration(specificSequenceConfigurationId =
       SpecificSequenceConfigurationId("controversial-id")
     ),

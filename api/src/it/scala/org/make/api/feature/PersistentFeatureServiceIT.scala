@@ -33,8 +33,6 @@ class PersistentFeatureServiceIT
     with DefaultPersistentFeatureServiceComponent
     with DefaultIdGeneratorComponent {
 
-  override protected val cockroachExposedPort: Int = 40009
-
   def newFeature(slug: String): Feat =
     Feat(featureId = idGenerator.nextFeatureId(), slug = slug, name = "feature name")
 

@@ -43,8 +43,6 @@ class PersistentTagServiceIT
     with DefaultPersistentQuestionServiceComponent
     with DefaultIdGeneratorComponent {
 
-  override protected val cockroachExposedPort: Int = 40003
-
   val fakeOperation: SimpleOperation =
     simpleOperation(id = OperationId("fakeOperation"), slug = "fake-operation")
 

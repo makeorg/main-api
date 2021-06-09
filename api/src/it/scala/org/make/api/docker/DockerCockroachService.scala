@@ -22,11 +22,13 @@ package org.make.api.docker
 import com.whisk.docker.{DockerContainer, DockerReadyChecker}
 import org.scalatest.Suite
 
+import java.util.concurrent.atomic.AtomicInteger
+
 trait DockerCockroachService extends DockerBaseTest {
   self: Suite =>
 
   private val defaultCockroachPort = 26257
-  protected def cockroachExposedPort: Int
+  protected val cockroachExposedPort: Int = DockerCockroachService.CockroachPortProvider.getAndIncrement()
 
   private def cockroachContainer: DockerContainer =
     DockerContainer(image = "cockroachdb/cockroach:v19.1.1", name = Some(s"${getClass.getSimpleName}-cockroach"))
@@ -36,4 +38,8 @@ trait DockerCockroachService extends DockerBaseTest {
 
   abstract override def dockerContainers: List[DockerContainer] =
     cockroachContainer :: super.dockerContainers
+}
+
+object DockerCockroachService {
+  val CockroachPortProvider: AtomicInteger = new AtomicInteger(40000)
 }

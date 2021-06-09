@@ -30,8 +30,6 @@ class PersistentCrmLanguageTemplateServiceIT
     extends DatabaseTest
     with DefaultPersistentCrmLanguageTemplateServiceComponent {
 
-  override protected val cockroachExposedPort: Int = 40022
-
   Feature("CRUD crm language templates") {
 
     Scenario("insert templates") {

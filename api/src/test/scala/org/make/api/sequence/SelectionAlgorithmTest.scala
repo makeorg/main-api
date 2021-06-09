@@ -48,15 +48,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with BeforeAndAfterEach {
   private val roundRobinSequenceConfiguration: SequenceConfiguration = SequenceConfiguration(
     sequenceId = SequenceId("test-sequence-round-robin"),
     questionId = QuestionId("test-question-round-robin"),
-    mainSequence = SpecificSequenceConfiguration(
-      specificSequenceConfigurationId = SpecificSequenceConfigurationId("main-id"),
-      sequenceSize = 20,
-      newProposalsRatio = 1.0,
-      intraIdeaEnabled = false,
-      intraIdeaMinCount = 0,
-      interIdeaCompetitionEnabled = false,
-      selectionAlgorithmName = SelectionAlgorithmName.RoundRobin
-    ),
+    mainSequence = ExplorationSequenceConfiguration.default(ExplorationSequenceConfigurationId("main-id")),
     controversial = SpecificSequenceConfiguration(specificSequenceConfigurationId =
       SpecificSequenceConfigurationId("controversial-id")
     ),
@@ -74,11 +66,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with BeforeAndAfterEach {
   private val randomSequenceConfiguration: SequenceConfiguration = SequenceConfiguration(
     sequenceId = SequenceId("test-sequence-random"),
     questionId = QuestionId("test-question-random"),
-    mainSequence = SpecificSequenceConfiguration(
-      specificSequenceConfigurationId = SpecificSequenceConfigurationId("main-id"),
-      sequenceSize = 20,
-      selectionAlgorithmName = SelectionAlgorithmName.Random
-    ),
+    mainSequence = ExplorationSequenceConfiguration.default(ExplorationSequenceConfigurationId("main-id")),
     controversial = SpecificSequenceConfiguration(specificSequenceConfigurationId =
       SpecificSequenceConfigurationId("controversial-id")
     ),
@@ -189,7 +177,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with BeforeAndAfterEach {
     Scenario("no proposals") {
       val chosen =
         RoundRobinSelectionAlgorithm.selectProposalsForSequence(
-          sequenceConfiguration = roundRobinSequenceConfiguration.mainSequence,
+          sequenceConfiguration = roundRobinSequenceConfiguration.popular,
           includedProposals = Seq.empty,
           newProposals = Seq.empty,
           testedProposals = Seq.empty
@@ -203,7 +191,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with BeforeAndAfterEach {
 
       val selectedProposals =
         RoundRobinSelectionAlgorithm.selectProposalsForSequence(
-          sequenceConfiguration = roundRobinSequenceConfiguration.mainSequence,
+          sequenceConfiguration = roundRobinSequenceConfiguration.popular,
           includedProposals = proposals,
           newProposals = Seq.empty,
           testedProposals = Seq.empty
@@ -227,15 +215,15 @@ class SelectionAlgorithmTest extends MakeUnitTest with BeforeAndAfterEach {
         }
       val selectedProposals =
         RoundRobinSelectionAlgorithm.selectProposalsForSequence(
-          sequenceConfiguration = roundRobinSequenceConfiguration.mainSequence,
+          sequenceConfiguration = roundRobinSequenceConfiguration.popular,
           includedProposals = Seq.empty,
           newProposals = Seq.empty,
           testedProposals = testedProposals
         )
 
-      selectedProposals.size should be(roundRobinSequenceConfiguration.mainSequence.sequenceSize.value)
+      selectedProposals.size should be(roundRobinSequenceConfiguration.popular.sequenceSize.value)
       selectedProposals.toSet should be(
-        testedProposals.take(roundRobinSequenceConfiguration.mainSequence.sequenceSize).toSet
+        testedProposals.take(roundRobinSequenceConfiguration.popular.sequenceSize).toSet
       )
     }
   }
@@ -244,7 +232,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with BeforeAndAfterEach {
     Scenario("no proposal") {
       val chosen =
         RandomSelectionAlgorithm.selectProposalsForSequence(
-          sequenceConfiguration = randomSequenceConfiguration.mainSequence,
+          sequenceConfiguration = randomSequenceConfiguration.popular,
           includedProposals = Seq.empty,
           newProposals = Seq.empty,
           testedProposals = Seq.empty
@@ -259,7 +247,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with BeforeAndAfterEach {
 
       val selectedProposals =
         RandomSelectionAlgorithm.selectProposalsForSequence(
-          sequenceConfiguration = randomSequenceConfiguration.mainSequence,
+          sequenceConfiguration = randomSequenceConfiguration.popular,
           includedProposals = proposals,
           newProposals = Seq.empty,
           testedProposals = Seq.empty
@@ -282,13 +270,13 @@ class SelectionAlgorithmTest extends MakeUnitTest with BeforeAndAfterEach {
         val included = MakeRandom.shuffleSeq(proposals).take(3)
         val selectedProposals =
           RandomSelectionAlgorithm.selectProposalsForSequence(
-            sequenceConfiguration = randomSequenceConfiguration.mainSequence,
+            sequenceConfiguration = randomSequenceConfiguration.popular,
             includedProposals = included,
             newProposals = newProposals,
             testedProposals = proposals
           )
 
-        selectedProposals.size should be(randomSequenceConfiguration.mainSequence.sequenceSize.value)
+        selectedProposals.size should be(randomSequenceConfiguration.popular.sequenceSize.value)
         selectedProposals.take(included.size) should be(included)
       }
     }

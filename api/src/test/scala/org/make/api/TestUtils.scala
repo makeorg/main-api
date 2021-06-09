@@ -28,6 +28,8 @@ import eu.timepit.refined.types.numeric.NonNegInt
 import org.make.api.proposal.ProposalScorer
 import org.make.api.proposal.ProposalScorer.VotesCounter
 import org.make.core.sequence.{
+  ExplorationSequenceConfiguration,
+  ExplorationSequenceConfigurationId,
   SequenceConfiguration,
   SequenceId,
   SpecificSequenceConfiguration,
@@ -62,6 +64,7 @@ import org.make.core.tag.{Tag, TagDisplay, TagId, TagType, TagTypeId}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
 import org.make.core.{RequestContext, SlugHelper}
+
 import java.net.URL
 import java.time.ZonedDateTime
 
@@ -644,9 +647,8 @@ trait TestUtils {
   def sequenceConfiguration(
     questionId: QuestionId,
     sequenceId: SequenceId = SequenceId("deprecated-sequence-id"),
-    mainSequence: SpecificSequenceConfiguration = SpecificSequenceConfiguration(
-      SpecificSequenceConfigurationId("main-id")
-    ),
+    mainSequence: ExplorationSequenceConfiguration =
+      ExplorationSequenceConfiguration.default(ExplorationSequenceConfigurationId("main-id")),
     controversial: SpecificSequenceConfiguration = SpecificSequenceConfiguration(
       SpecificSequenceConfigurationId("controversial-id")
     ),

@@ -283,11 +283,12 @@ class OperationOfQuestionServiceTest
       when(idGenerator.nextSequenceId()).thenReturn(sequenceConfiguration.sequenceId)
       when(idGenerator.nextSpecificSequenceConfigurationId())
         .thenReturn(
-          sequenceConfiguration.mainSequence.specificSequenceConfigurationId,
           sequenceConfiguration.controversial.specificSequenceConfigurationId,
           sequenceConfiguration.popular.specificSequenceConfigurationId,
           sequenceConfiguration.keyword.specificSequenceConfigurationId
         )
+      when(idGenerator.nextExplorationSequenceConfigurationId())
+        .thenReturn(sequenceConfiguration.mainSequence.explorationSequenceConfigurationId)
       when(persistentQuestionService.persist(eqTo(questionCreate)))
         .thenReturn(Future.successful(questionCreate))
       when(persistentSequenceConfigurationService.persist(eqTo(sequenceConfiguration)))
