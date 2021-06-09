@@ -59,6 +59,7 @@ import org.make.core.{
   CountryConfiguration,
   DateHelper,
   RequestContext,
+  ValidationError,
   ValidationFailedError
 }
 
@@ -263,6 +264,12 @@ trait ProposalService {
   ): Future[Seq[ProposalKeywordsResponse]]
 
   def acceptAll(
+    proposalIds: Seq[ProposalId],
+    moderator: UserId,
+    requestContext: RequestContext
+  ): Future[BulkActionResponse]
+
+  def refuseAll(
     proposalIds: Seq[ProposalId],
     moderator: UserId,
     requestContext: RequestContext
@@ -1422,6 +1429,14 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       bulkAction(acceptAction(moderator, requestContext), proposalIds)
     }
 
+    override def refuseAll(
+      proposalIds: Seq[ProposalId],
+      moderator: UserId,
+      requestContext: RequestContext
+    ): Future[BulkActionResponse] = {
+      bulkAction(refuseAction(moderator, requestContext), proposalIds)
+    }
+
     override def addTagsToAll(
       proposalIds: Seq[ProposalId],
       tagIds: Seq[TagId],
@@ -1456,6 +1471,27 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           tags = proposal.tags.map(_.tagId),
           idea = None
         )
+
+    private def refuseAction(
+      moderator: UserId,
+      requestContext: RequestContext
+    )(proposal: IndexedProposal, question: Question): Future[Option[Proposal]] =
+      if (proposal.initialProposal) {
+        proposalCoordinatorService
+          .refuse(
+            proposalId = proposal.id,
+            moderator = moderator,
+            requestContext = requestContext,
+            sendNotificationEmail = false,
+            refusalReason = Some("other")
+          )
+      } else {
+        Future.failed(
+          ValidationFailedError(
+            Seq(ValidationError(field = "initial", key = "not-initial", message = Some("The proposal is not initial")))
+          )
+        )
+      }
 
     private def updateTagsAction(
       moderator: UserId,

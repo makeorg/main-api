@@ -217,6 +217,28 @@ trait AdminProposalApi extends Directives {
   def bulkAcceptProposal: Route
 
   @ApiOperation(
+    value = "bulk-refuse-proposal",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.BulkRefuseProposal")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[BulkActionResponse]))
+  )
+  @Path(value = "/refuse-initials-proposals")
+  def bulkRefuseInitialsProposals: Route
+
+  @ApiOperation(
     value = "bulk-tag-proposal",
     httpMethod = "POST",
     code = HttpCodes.OK,
@@ -280,7 +302,8 @@ trait AdminProposalApi extends Directives {
   def getProposalHistory: Route
 
   def routes: Route =
-    search ~ patchProposal ~ updateProposalVotes ~ resetVotes ~ setProposalKeywords ~ bulkAcceptProposal ~ bulkTagProposal ~ bulkDeleteTagProposal ~ getProposalHistory
+    search ~ patchProposal ~ updateProposalVotes ~ resetVotes ~ setProposalKeywords ~ bulkAcceptProposal ~
+      bulkTagProposal ~ bulkDeleteTagProposal ~ getProposalHistory ~ bulkRefuseInitialsProposals
 }
 
 trait AdminProposalApiComponent {
@@ -539,6 +562,27 @@ trait DefaultAdminProposalApiComponent
                   provideAsync(proposalService.acceptAll(request.proposalIds, userAuth.user.userId, requestContext)) {
                     response =>
                       complete(response)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def bulkRefuseInitialsProposals: Route = post {
+      path("admin" / "proposals" / "refuse-initials-proposals") {
+        makeOperation("BulkRefuseInitialsProposals") { requestContext =>
+          makeOAuth2 { userAuth =>
+            requireAdminRole(userAuth.user) {
+              decodeRequest {
+                entity(as[BulkRefuseProposal]) { request =>
+                  provideAsync(
+                    proposalService
+                      .refuseAll(request.proposalIds, userAuth.user.userId, requestContext)
+                  ) { response =>
+                    complete(response)
                   }
                 }
               }
