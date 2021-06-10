@@ -19,15 +19,18 @@
 
 package org.make.api.sessionhistory
 
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.{ask, AskTimeoutException}
 import akka.stream.scaladsl.{Sink, Source}
-import akka.testkit.{ImplicitSender, TestKit, TestProbe}
+import akka.testkit.{ImplicitSender, TestKit}
 import akka.util
 import com.typesafe.config.{Config, ConfigFactory}
 import enumeratum.values.scalacheck._
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{DefaultIdGeneratorComponent, TimeSettings}
+import org.make.api.userhistory.UserHistoryActor
 import org.make.api.{ActorSystemComponent, ShardingActorTest, TestHelper}
 import org.make.core.history.HistoryActions
 import org.make.core.history.HistoryActions.VoteTrust
@@ -58,13 +61,16 @@ class SessionHistoryCoordinatorTest
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
+    testKit.shutdownTestKit()
     super.afterAll()
   }
 
   override val makeSettings: MakeSettings = mock[MakeSettings]
   when(makeSettings.maxHistoryProposalsPerPage).thenReturn(100)
 
-  val userHistoryCoordinatorProbe: TestProbe = TestProbe()(system)
+  val testKit = ActorTestKit(system.toTyped)
+
+  val userHistoryCoordinatorProbe = testKit.spawn(UserHistoryActor())
 
   override implicit val actorSystem: ActorSystem = system
   actorSystem.actorOf(
@@ -200,7 +206,7 @@ object SessionHistoryCoordinatorTest {
   val configSeed: Config =
     ConfigFactory
       .parseString(customSeedConfiguration)
-      .withFallback(actorSystem.settings.config)
+      .withFallback(conf)
       .resolve()
 
   val actorSystemSeed: ActorSystem = TestHelper.defaultActorSystem(configSeed)

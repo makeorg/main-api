@@ -33,7 +33,7 @@ import org.make.core.user.{User, UserId}
 
 import java.time.{LocalDate, ZonedDateTime}
 
-trait UserHistoryActorProtocol extends ActorProtocol
+trait UserHistoryActorEventProtocol extends ActorProtocol
 
 trait VotedProposals {
   val proposals: Seq[ProposalId]
@@ -42,9 +42,7 @@ trait VotesValues {
   val votesValues: Map[ProposalId, VoteAndQualifications]
 }
 
-final case class UserHistoryEnvelope[T <: UserPersistentEvent](userId: UserId, command: T) extends UserRelatedEvent
-
-trait UserRelatedEvent extends UserHistoryActorProtocol {
+trait UserRelatedEventEvent extends UserHistoryActorEventProtocol {
   def userId: UserId
 }
 
@@ -275,7 +273,7 @@ final case class OrganisationInitializationEvent(
   override def version(): Int = MakeSerializable.V1
 }
 
-final case class SnapshotUser(override val userId: UserId) extends UserRelatedEvent
+final case class SnapshotUserEvent(override val userId: UserId) extends UserRelatedEventEvent
 
 @AvroSortPriority(6)
 final case class UserUpdatedOptInNewsletterEvent(

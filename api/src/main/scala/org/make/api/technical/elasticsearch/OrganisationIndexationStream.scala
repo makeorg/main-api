@@ -28,7 +28,7 @@ import org.make.api.organisation.{OrganisationSearchEngine, OrganisationSearchEn
 import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.tagtype.PersistentTagTypeServiceComponent
 import org.make.api.user.PersistentUserServiceComponent
-import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
+import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal._
@@ -78,7 +78,7 @@ trait OrganisationIndexationStream
       proposalIds: Seq[ProposalId],
       organisationId: UserId
     ): Future[Map[ProposalId, VoteAndQualifications]] =
-      userHistoryCoordinatorService.retrieveVoteAndQualifications(RequestVoteValues(organisationId, proposalIds))
+      userHistoryCoordinatorService.retrieveVoteAndQualifications(organisationId, proposalIds)
 
     def futureProposalsCountByQuestion(organisationId: UserId): Future[Map[QuestionId, Long]] =
       elasticsearchProposalAPI.countProposalsByQuestion(

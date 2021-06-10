@@ -41,7 +41,6 @@ import org.make.api.tagtype.TagTypeServiceComponent
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeRandom, ReadJournalComponent}
 import org.make.api.user.UserServiceComponent
-import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory._
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.{VoteAndQualifications, VoteTrust}
@@ -66,6 +65,7 @@ import org.make.core.{
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import org.make.api.technical.crm.QuestionResolver
+import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
 import org.make.core.partner.Partner
 import org.make.core.reference.Country
 import org.make.core.session.SessionId
@@ -366,9 +366,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           proposalIds <- userHistoryCoordinatorService.retrieveVotedProposals(
             RequestUserVotedProposals(userId = userId, filterVotes, filterQualifications)
           )
-          withVote <- userHistoryCoordinatorService.retrieveVoteAndQualifications(
-            RequestVoteValues(userId, proposalIds)
-          )
+          withVote <- userHistoryCoordinatorService.retrieveVoteAndQualifications(userId, proposalIds)
         } yield withVote
 
       votedProposals.flatMap {
@@ -455,9 +453,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     ): Future[ProposalsResultResponse] = {
       search(maybeUserId, requestContext).flatMap { searchResult =>
         maybeUserId.map { userId =>
-          userHistoryCoordinatorService.retrieveVoteAndQualifications(
-            RequestVoteValues(userId = userId, searchResult.results.map(_.id))
-          )
+          userHistoryCoordinatorService.retrieveVoteAndQualifications(userId = userId, searchResult.results.map(_.id))
         }.getOrElse {
           sessionHistoryCoordinatorService
             .retrieveVoteAndQualifications(
@@ -788,8 +784,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     ): Future[Map[ProposalId, VoteAndQualifications]] = {
       val votesHistory = maybeUserId match {
         case Some(userId) =>
-          userHistoryCoordinatorService
-            .retrieveVoteAndQualifications(RequestVoteValues(userId, Seq(proposalId)))
+          userHistoryCoordinatorService.retrieveVoteAndQualifications(userId, Seq(proposalId))
         case None =>
           sessionHistoryCoordinatorService
             .retrieveVoteAndQualifications(

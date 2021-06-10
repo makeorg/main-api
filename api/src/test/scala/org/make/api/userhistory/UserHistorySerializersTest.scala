@@ -31,7 +31,6 @@ import org.make.api.proposal.PublishedProposalEvent.{
 import org.make.api.technical.security.SecurityConfiguration
 import org.make.api.user.Anonymization
 import org.make.api.userhistory
-import org.make.api.userhistory.UserHistoryActor.{UserHistory, UserVotesAndQualifications}
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.history.HistoryActions.VoteTrust.Trusted
@@ -283,24 +282,6 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
       )
     )
 
-    val registerCitizenEventIt = LogRegisterCitizenEvent(
-      userId = userId,
-      requestContext =
-        requestContext.copy(source = Some("core"), language = Some(Language("it")), country = Some(Country("IT"))),
-      action = UserAction(
-        date = eventDate,
-        actionType = LogRegisterCitizenEvent.action,
-        arguments = UserRegistered(
-          email = "me@make.org",
-          dateOfBirth = Some(LocalDate.parse("1970-01-01")),
-          firstName = Some("me"),
-          lastName = Some("myself"),
-          profession = Some("doer"),
-          postalCode = Some("75011")
-        )
-      )
-    )
-
     val recentRegisterCitizenEvent = LogRegisterCitizenEvent(
       userId = userId,
       requestContext = requestContext,
@@ -470,57 +451,7 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
       PersistableSample[V4]("explicit", explicitUserAnonymizedEvent, Some("with explicit anonymization")),
       sample(userOptInNewsletterEvent),
       sample(userOptOutNewsletterEvent),
-      sample(userUserConnectedEvent),
-      sample(
-        UserHistory(
-          List(
-            userAddProposalsSequenceEvent,
-            userUnvoteEvent,
-            userStartSequenceEvent,
-            searchProposalsEvent,
-            acceptProposalEvent,
-            userQualificationEvent,
-            postponeProposalEvent,
-            userRemoveProposalsSequenceEvent,
-            userSearchSequencesEvent,
-            userVoteEvent,
-            getProposalDuplicatesEvent,
-            refuseProposalEvent,
-            userUnqualificationEvent,
-            userProposalEvent,
-            userUpdateSequenceEvent,
-            registerCitizenEvent,
-            lockProposalEvent,
-            userCreateSequenceEvent
-          )
-        )
-      ),
-      PersistableSample[V1](
-        "it",
-        UserHistory(
-          List(
-            userAddProposalsSequenceEvent,
-            userUnvoteEvent,
-            userStartSequenceEvent,
-            searchProposalsEvent,
-            acceptProposalEvent,
-            userQualificationEvent,
-            postponeProposalEvent,
-            userRemoveProposalsSequenceEvent,
-            userSearchSequencesEvent,
-            userVoteEvent,
-            getProposalDuplicatesEvent,
-            refuseProposalEvent,
-            userUnqualificationEvent,
-            userProposalEvent,
-            userUpdateSequenceEvent,
-            registerCitizenEventIt,
-            lockProposalEvent,
-            userCreateSequenceEvent
-          )
-        ),
-        Some("italian user history")
-      )
+      sample(userUserConnectedEvent)
     )
   }
 }

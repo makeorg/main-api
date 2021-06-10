@@ -36,7 +36,7 @@ import org.make.api.technical.job.JobCoordinator
 import org.make.api.technical.tracking.TrackingProducerBehavior
 import org.make.api.technical.{ActorSystemHelper, DeadLettersListenerActor, MakeDowningActor}
 import org.make.api.user.UserSupervisor
-import org.make.api.userhistory.UserHistoryCoordinator
+import org.make.api.userhistory.{UserHistoryCommand, UserHistoryCoordinator}
 import org.make.core.job.Job
 
 class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
@@ -46,8 +46,9 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
 
     context.watch(context.spawn(DeadLettersListenerActor(), DeadLettersListenerActor.name))
 
-    val userHistoryCoordinator =
-      context.watch(context.actorOf(UserHistoryCoordinator.props, UserHistoryCoordinator.name))
+    val userHistoryCoordinator: ActorRef[UserHistoryCommand] = UserHistoryCoordinator(system = context.system.toTyped)
+    context.watch(userHistoryCoordinator)
+    context.system.toTyped.receptionist ! Receptionist.Register(UserHistoryCoordinator.Key, userHistoryCoordinator)
 
     context.watch(
       context.actorOf(

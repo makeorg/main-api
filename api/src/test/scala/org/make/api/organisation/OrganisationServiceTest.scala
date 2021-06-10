@@ -20,7 +20,6 @@
 package org.make.api.organisation
 
 import java.time.ZonedDateTime
-
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.api.proposal.{
@@ -36,6 +35,7 @@ import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGene
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user._
+import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
 import org.make.api.userhistory.{
   OrganisationEmailChangedEvent,
   OrganisationRegisteredEvent,
@@ -43,7 +43,6 @@ import org.make.api.userhistory.{
   UserHistoryCoordinatorService,
   UserHistoryCoordinatorServiceComponent
 }
-import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.profile.Profile
@@ -209,7 +208,7 @@ class OrganisationServiceTest
       ).thenReturn(Future.successful(ProposalsSearchResult(0, Seq.empty)))
       when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
         .thenReturn(Future.successful(Seq.empty))
-      when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
+      when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[UserId], any[Seq[ProposalId]]))
         .thenReturn(Future.successful(Map[ProposalId, VoteAndQualifications]()))
       when(persistentUserToAnonymizeService.create(oldEmail))
         .thenReturn(Future.unit)
@@ -386,7 +385,7 @@ class OrganisationServiceTest
 
       when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
         .thenReturn(Future.successful(Seq(ProposalId("proposal1"), ProposalId("proposal2"))))
-      when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
+      when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[UserId], any[Seq[ProposalId]]))
         .thenReturn(
           Future.successful(
             Map(
@@ -452,7 +451,7 @@ class OrganisationServiceTest
     Scenario("successful return when no proposal are voted") {
       when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
         .thenReturn(Future.successful(Seq.empty))
-      when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
+      when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[UserId], any[Seq[ProposalId]]))
         .thenReturn(Future.successful(Map[ProposalId, VoteAndQualifications]()))
 
       val futureProposalsVoted =

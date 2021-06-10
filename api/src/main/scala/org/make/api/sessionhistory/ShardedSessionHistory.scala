@@ -19,18 +19,23 @@
 
 package org.make.api.sessionhistory
 
-import akka.actor.{ActorLogging, ActorRef, Props, ReceiveTimeout}
+import akka.actor.typed.ActorRef
+import akka.actor.{ActorLogging, Props, ReceiveTimeout}
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
 import org.make.api.extensions.MakeSettingsExtension
 import org.make.api.technical.MakePersistentActor.StartShard
+import org.make.api.userhistory.UserHistoryCommand
 import org.make.core.technical.IdGenerator
 
 import scala.concurrent.duration.FiniteDuration
 
-class ShardedSessionHistory(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration, idGenerator: IdGenerator)
-    extends SessionHistoryActor(userHistoryCoordinator, lockDuration, idGenerator)
+class ShardedSessionHistory(
+  userHistoryCoordinator: ActorRef[UserHistoryCommand],
+  lockDuration: FiniteDuration,
+  idGenerator: IdGenerator
+) extends SessionHistoryActor(userHistoryCoordinator, lockDuration, idGenerator)
     with ActorLogging
     with MakeSettingsExtension {
 
@@ -52,7 +57,11 @@ object ShardedSessionHistory {
   val snapshotStore: String = "make-api.event-sourcing.sessions.snapshot"
   val queryJournal: String = "make-api.event-sourcing.sessions.query"
 
-  def props(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration, idGenerator: IdGenerator): Props =
+  def props(
+    userHistoryCoordinator: ActorRef[UserHistoryCommand],
+    lockDuration: FiniteDuration,
+    idGenerator: IdGenerator
+  ): Props =
     Props(new ShardedSessionHistory(userHistoryCoordinator, lockDuration, idGenerator))
   val shardName: String = "session-history"
 

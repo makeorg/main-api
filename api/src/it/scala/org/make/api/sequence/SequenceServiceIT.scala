@@ -122,6 +122,7 @@ import org.make.api.user.{
 import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
 import org.make.api.userhistory.{
   DefaultUserHistoryCoordinatorServiceComponent,
+  UserHistoryCommand,
   UserHistoryCoordinator,
   UserHistoryCoordinatorComponent
 }
@@ -244,7 +245,9 @@ class SequenceServiceIT
     actorSystem.actorOf(SessionHistoryCoordinator.props(userHistoryCoordinator, idGenerator))
   override val spawnActorRef: typed.ActorRef[SpawnProtocol.Command] =
     actorSystemTyped.systemActorOf(SpawnProtocol(), "spawner")
-  override lazy val userHistoryCoordinator: ActorRef = actorSystem.actorOf(UserHistoryCoordinator.props)
+  override lazy val userHistoryCoordinator: typed.ActorRef[UserHistoryCommand] = UserHistoryCoordinator(
+    actorSystemTyped
+  )
 
   override val makeSettings: MakeSettings = mock[MakeSettings]
   when(makeSettings.defaultAdmin).thenReturn(DefaultAdmin("firstName", "admin@make.org", "password"))

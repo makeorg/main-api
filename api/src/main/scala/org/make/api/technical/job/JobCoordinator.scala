@@ -37,7 +37,7 @@ object JobCoordinator {
   def apply(system: ActorSystem[_], heartRate: Duration): ActorRef[JobActor.Protocol.Command] = {
     ClusterSharding(system).init(
       Entity(TypeKey)(_ => JobActor(heartRate))
-        .withMessageExtractor(ShardingNoEnvelopeMessageExtractor[JobActor.Protocol.Command](5))
+        .withMessageExtractor(ShardingNoEnvelopeMessageExtractor[JobActor.Protocol.Command](numberOfShards = 5))
     )
   }
 }

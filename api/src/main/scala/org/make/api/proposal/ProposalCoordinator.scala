@@ -45,7 +45,7 @@ object ProposalCoordinator {
   ): ActorRef[ProposalCommand] = {
     ClusterSharding(system).init(
       Entity(TypeKey)(_ => ProposalActor(sessionHistoryCoordinatorService, lockDuration, idGenerator))
-        .withMessageExtractor(ShardingNoEnvelopeMessageExtractor[ProposalCommand](5))
+        .withMessageExtractor(ShardingNoEnvelopeMessageExtractor[ProposalCommand](numberOfShards = 128))
     )
   }
 }

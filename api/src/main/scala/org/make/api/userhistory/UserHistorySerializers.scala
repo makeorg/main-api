@@ -22,13 +22,12 @@ package org.make.api.userhistory
 import org.make.api.technical.MakeEventSerializer
 import org.make.api.technical.security.SecurityConfiguration
 import org.make.api.user.Anonymization
+import org.make.api.userhistory.UserVotesAndQualifications
 
 import java.time.ZonedDateTime
-import org.make.api.userhistory.UserHistoryActor.{UserHistory, UserVotesAndQualifications}
 import org.make.core.SprayJsonFormatters
 import spray.json.DefaultJsonProtocol._
 import spray.json.lenses.JsonLenses._
-import spray.json.lenses.SeqLens
 import spray.json.{JsArray, JsObject, JsString, JsValue}
 import stamina._
 import stamina.json._
@@ -232,99 +231,6 @@ final class UserHistorySerializers(securityConfiguration: SecurityConfiguration)
         .to[V4](
           _.update(
             "context" ! modify[JsObject](MakeEventSerializer.setIpAddressAndHash(securityConfiguration.secureHashSalt))
-          )
-        )
-    )
-
-  private val filterWithRequestContextInAction: SeqLens = filter(
-    "type".is[String](
-      eventType =>
-        Seq(
-          "LogUserCreateSequenceEvent",
-          "LogUserAddProposalsSequenceEvent",
-          "LogUserRemoveProposalsSequenceEvent",
-          "LogUserUpdateSequenceEvent",
-          "LogLockProposalEvent",
-          "LogPostponeProposalEvent",
-          "LogRefuseProposalEvent",
-          "LogAcceptProposalEvent"
-        ).contains(eventType)
-    )
-  )
-  private val userHistorySerializer: JsonPersister[UserHistory, V7] =
-    json.persister[UserHistory, V7](
-      "user-history",
-      from[V1]
-        .to[V2](
-          _.update(
-            "events" / filter("type".is[String](_ == "LogRegisterCitizenEvent")) / "action" / "arguments" / "language" !
-              set[String]("fr")
-          ).update(
-            "events" / filter("type".is[String](_ == "LogRegisterCitizenEvent")) / "action" / "arguments" / "country" !
-              set[String]("FR")
-          )
-        )
-        .to[V3](
-          _.update(
-            "events" / filter("type".is[String](_ == "LogUserStartSequenceEvent")) / "action" / "arguments" / "includedProposals" !
-              set[Seq[String]](Seq.empty)
-          )
-        )
-        .to[V4] { json =>
-          json.update("events" / filter("type".is[String](_ == "LogRegisterCitizenEvent")) ! modify[JsValue] {
-            event =>
-              val isBeforeDateFix: Boolean =
-                ZonedDateTime.parse(event.extract[String]("action" / "date")).isBefore(countryFixDate)
-
-              if (isBeforeDateFix) {
-                event.extract[String]("context" / "language".?).getOrElse("fr") match {
-                  case "it" =>
-                    event
-                      .update("context" / "country" ! set[String]("IT"))
-                      .update("context" / "source" ! set[String]("core"))
-                  case "en" =>
-                    event
-                      .update("context" / "country" ! set[String]("GB"))
-                      .update("context" / "source" ! set[String]("core"))
-                  case _ =>
-                    event
-                      .update("context" / "language" ! set[String]("fr"))
-                      .update("context" / "country" ! set[String]("FR"))
-                      .update("context" / "source" ! set[String]("core"))
-                }
-              } else {
-                event
-              }
-          })
-        }
-        .to[V5] { json =>
-          val migratedEvents =
-            Set("LogUserVoteEvent", "LogUserUnvoteEvent", "LogUserQualificationEvent", "LogUserUnqualificationEvent")
-          json.update(
-            "events" /
-              filter("type".is[String](event => migratedEvents.contains(event))) /
-              "action" /
-              "arguments" /
-              "trust" !
-              set[String]("trusted")
-          )
-        }
-        .to[V6](
-          _.update("events" / * / "context" / "customData" ! set[Map[String, String]](Map.empty))
-            .update(
-              "events" / filterWithRequestContextInAction / "action" / "arguments" / "requestContext" / "customData" !
-                set[Map[String, String]](Map.empty)
-            )
-        )
-        .to[V7](
-          _.update(
-            "events" / * / "context" ! modify[JsObject](
-              MakeEventSerializer.setIpAddressAndHash(securityConfiguration.secureHashSalt)
-            )
-          ).update(
-            "events" / filterWithRequestContextInAction / "action" / "arguments" / "requestContext" ! modify[JsObject](
-              MakeEventSerializer.setIpAddressAndHash(securityConfiguration.secureHashSalt)
-            )
           )
         )
     )
@@ -553,7 +459,6 @@ final class UserHistorySerializers(securityConfiguration: SecurityConfiguration)
       logUserUnvoteEventSerializer,
       logUserQualificationEventSerializer,
       logUserUnqualificationEventSerializer,
-      userHistorySerializer,
       logUserCreateSequenceEventSerializer,
       logUserUpdateSequenceEventSerializer,
       logUserAddProposalsSequenceEventSerializer,

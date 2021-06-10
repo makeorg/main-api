@@ -37,7 +37,6 @@ import org.make.api.tagtype.{TagTypeService, TagTypeServiceComponent}
 import org.make.api.technical._
 import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.user.{UserService, UserServiceComponent}
-import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.core.common.indexed.Sort
@@ -72,6 +71,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import org.make.api.technical.crm.QuestionResolver
+import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.proposal.ProposalActionType.{ProposalAcceptAction, ProposalProposeAction}
 import org.make.core.technical.IdGenerator
@@ -791,7 +791,7 @@ class ProposalServiceTest
           .retrieveVotedProposals(eqTo(RequestUserVotedProposals(userId = paul.userId)))
       ).thenReturn(Future.successful(Seq.empty))
 
-      when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
+      when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[UserId], any[Seq[ProposalId]]))
         .thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
 
       whenReady(
@@ -844,7 +844,7 @@ class ProposalServiceTest
           )
         )
 
-      when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
+      when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[UserId], any[Seq[ProposalId]]))
         .thenReturn(
           Future.successful(
             Map(

@@ -22,15 +22,15 @@ package org.make.api.proposal
 import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, ZoneOffset}
 import akka.actor.typed.{ActorRef, Behavior}
-import akka.actor.typed.eventstream.EventStream
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.{PersistenceId, SnapshotAdapter}
-import akka.persistence.typed.scaladsl.{Effect, EffectBuilder, EventSourcedBehavior, ReplyEffect, RetentionCriteria}
+import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, ReplyEffect, RetentionCriteria}
 import grizzled.slf4j.Logging
 import org.make.api.proposal.ProposalEvent._
 import org.make.api.proposal.ProposalActorResponse._
 import org.make.api.proposal.ProposalActorResponse.Error._
 import org.make.api.proposal.PublishedProposalEvent._
+import org.make.api.technical.EffectBuilderHelper._
 import org.make.api.sessionhistory._
 import org.make.core._
 import org.make.core.history.HistoryActions.VoteTrust
@@ -1169,11 +1169,6 @@ object ProposalActor extends Logging {
         .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 10, keepNSnapshots = 50))
         .snapshotAdapter(snapshotAdapter)
     }
-  }
-
-  implicit class PublishOps[E, S](val effect: EffectBuilder[E, S]) extends AnyVal {
-    def thenPublish(event: E)(implicit context: ActorContext[_]): EffectBuilder[E, S] =
-      effect.thenRun(_ => context.system.eventStream ! EventStream.Publish(event))
   }
 
   implicit class UnvotedOps[T](val event: T) extends AnyVal {

@@ -19,28 +19,24 @@
 
 package org.make.api.userhistory
 
-import akka.actor.{Actor, ActorRef, Props}
-import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
-
-class UserHistoryCoordinator extends Actor {
-  ClusterSharding(context.system).start(
-    ShardedUserHistory.shardName,
-    ShardedUserHistory.props,
-    ClusterShardingSettings(context.system),
-    ShardedUserHistory.extractEntityId,
-    ShardedUserHistory.extractShardId
-  )
-
-  def shardedUserHistory: ActorRef = {
-    ClusterSharding(context.system).shardRegion(ShardedUserHistory.shardName)
-  }
-
-  override def receive: Receive = {
-    case cmd: UserRelatedEvent => shardedUserHistory.forward(cmd)
-  }
-}
+import akka.actor.typed.{ActorRef, ActorSystem}
+import akka.actor.typed.receptionist.ServiceKey
+import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityTypeKey}
+import org.make.api.technical.ShardingNoEnvelopeMessageExtractor
 
 object UserHistoryCoordinator {
-  val props: Props = Props[UserHistoryCoordinator]()
+
   val name: String = "user-history-coordinator"
+
+  val TypeKey: EntityTypeKey[UserHistoryCommand] =
+    EntityTypeKey[UserHistoryCommand]("user-history")
+
+  val Key: ServiceKey[UserHistoryCommand] = ServiceKey(name)
+
+  def apply(system: ActorSystem[_]): ActorRef[UserHistoryCommand] = {
+    ClusterSharding(system).init(
+      Entity(TypeKey)(_ => UserHistoryActor())
+        .withMessageExtractor(ShardingNoEnvelopeMessageExtractor[UserHistoryCommand](numberOfShards = 128))
+    )
+  }
 }
