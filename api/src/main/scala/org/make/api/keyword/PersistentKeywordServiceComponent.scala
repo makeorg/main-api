@@ -142,7 +142,12 @@ trait DefaultPersistentKeywordServiceComponent extends PersistentKeywordServiceC
       Future(NamedDB("WRITE").retryableTx { implicit session =>
         items.foreach { keyword =>
           withSQL {
-            update(keywords).set(autoNamedValues(keyword, keywords.column, "key")).where.eq(kw.key, keyword.key)
+            update(keywords)
+              .set(autoNamedValues(keyword, keywords.column, "key", "questionId"))
+              .where
+              .eq(kw.key, keyword.key)
+              .and
+              .eq(kw.questionId, keyword.questionId)
           }.update().apply()
         }
       })

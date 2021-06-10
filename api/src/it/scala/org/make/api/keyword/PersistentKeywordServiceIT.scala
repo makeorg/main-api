@@ -102,7 +102,7 @@ class PersistentKeywordServiceIT
         _ <- persistentKeywordService.createKeywords(thirdQuestionId, keywords)
         _ <- persistentKeywordService.createKeywords(
           questionId,
-          Seq(keyword(questionId, "check-top", topKeyword = true))
+          Seq(keyword(questionId, "check-top", topKeyword = true), keyword(questionId, "tata", topKeyword = true))
         )
         _   <- persistentKeywordService.resetTop(thirdQuestionId)
         _   <- persistentKeywordService.updateTop(thirdQuestionId, update)
