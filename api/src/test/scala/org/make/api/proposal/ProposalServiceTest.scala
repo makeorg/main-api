@@ -2822,7 +2822,7 @@ class ProposalServiceTest
     val p3Id = ProposalId("bulk-p-3-unknownerror")
     val p4Id = ProposalId("bulk-p-4-notfound")
     val p5Id = ProposalId("bulk-p-5-questionnotfound")
-    val proposalIds = Seq(fakeId, p1Id, p1bisId, p2Id, p3Id, p4Id, p5Id)
+    val acceptProposalIds = Seq(fakeId, p1Id, p1bisId, p2Id, p3Id, p4Id, p5Id)
     val q1Id = QuestionId("bulk-q-1")
     val q1 = question(q1Id)
     val tags = Seq(TagId("tag-1"), TagId("tag-2"))
@@ -2835,7 +2835,7 @@ class ProposalServiceTest
           eqTo(
             SearchQuery(filters = Some(
               SearchFilters(
-                proposal = Some(ProposalSearchFilter(proposalIds)),
+                proposal = Some(ProposalSearchFilter(acceptProposalIds)),
                 status = Some(StatusSearchFilter(ProposalStatus.values))
               )
             )
@@ -2847,7 +2847,7 @@ class ProposalServiceTest
         ProposalsSearchResult(
           6,
           Seq(
-            indexedProposal(p1Id, questionId = q1Id, tags = indexedTags),
+            indexedProposal(p1Id, questionId = q1Id, tags = indexedTags, initialProposal = true),
             indexedProposal(p1bisId, questionId = q1Id, tags = Seq.empty),
             indexedProposal(p2Id, questionId = q1Id, tags = indexedTags),
             indexedProposal(p3Id, questionId = q1Id, tags = indexedTags),
@@ -2862,7 +2862,7 @@ class ProposalServiceTest
     when(ideaMappingService.getOrCreateMapping(q1Id, None, None))
       .thenReturn(Future.successful(IdeaMapping(IdeaMappingId("mapping"), q1Id, None, None, IdeaId("my-idea"))))
 
-    def bulkCheck(customMessage: String): BulkActionResponse => Assertion = {
+    def acceptCheck(customMessage: String): BulkActionResponse => Assertion = {
       case BulkActionResponse(successes, failures) =>
         successes shouldBe Seq(p1Id, p1bisId)
         failures.toSet shouldBe Set(
@@ -2952,22 +2952,23 @@ class ProposalServiceTest
       ).thenReturn(Future.successful(None))
 
       clearInvocations(proposalCoordinatorService)
-      whenReady(proposalService.acceptAll(proposalIds, adminId, RequestContext.empty), Timeout(5.seconds)) { response =>
-        bulkCheck(s"Proposal $p2Id is already validated")(response)
-        for (id <- Seq(p1Id, p1bisId, p2Id, p3Id, p4Id)) {
-          verify(proposalCoordinatorService, times(1)).accept(
-            moderator = eqTo(adminId),
-            proposalId = eqTo(id),
-            requestContext = eqTo(RequestContext.empty),
-            sendNotificationEmail = eqTo(true),
-            newContent = eqTo(None),
-            question = eqTo(q1),
-            labels = eqTo(Seq.empty),
-            tags = any[Seq[TagId]],
-            idea = eqTo(None)
-          )
-        }
-        verifyNoMoreInteractions(proposalCoordinatorService)
+      whenReady(proposalService.acceptAll(acceptProposalIds, adminId, RequestContext.empty), Timeout(5.seconds)) {
+        response =>
+          acceptCheck(s"Proposal $p2Id is already validated")(response)
+          for (id <- Seq(p1Id, p1bisId, p2Id, p3Id, p4Id)) {
+            verify(proposalCoordinatorService, times(1)).accept(
+              moderator = eqTo(adminId),
+              proposalId = eqTo(id),
+              requestContext = eqTo(RequestContext.empty),
+              sendNotificationEmail = eqTo(true),
+              newContent = eqTo(None),
+              question = eqTo(q1),
+              labels = eqTo(Seq.empty),
+              tags = any[Seq[TagId]],
+              idea = eqTo(None)
+            )
+          }
+          verifyNoMoreInteractions(proposalCoordinatorService)
       }
     }
 
@@ -3066,34 +3067,36 @@ class ProposalServiceTest
 
     Scenario(s"add tags") {
       clearInvocations(proposalCoordinatorService)
-      whenReady(proposalService.addTagsToAll(proposalIds, newTags, adminId, RequestContext.empty), Timeout(5.seconds)) {
-        response =>
-          bulkCheck(s"Proposal $p2Id is not accepted and cannot be updated")(response)
-          for (id <- Seq(p1Id, p1bisId, p2Id, p3Id, p4Id)) {
-            val verifyTags = if (id == p1bisId) newTags else (tags ++ newTags).distinct
-            verify(proposalCoordinatorService, times(1)).update(
-              moderator = eqTo(adminId),
-              proposalId = eqTo(id),
-              requestContext = eqTo(RequestContext.empty),
-              updatedAt = any[ZonedDateTime],
-              newContent = eqTo(None),
-              labels = eqTo(Seq.empty),
-              tags = eqTo(verifyTags),
-              idea = eqTo(None),
-              question = eqTo(q1)
-            )
-          }
-          verifyNoMoreInteractions(proposalCoordinatorService)
+      whenReady(
+        proposalService.addTagsToAll(acceptProposalIds, newTags, adminId, RequestContext.empty),
+        Timeout(5.seconds)
+      ) { response =>
+        acceptCheck(s"Proposal $p2Id is not accepted and cannot be updated")(response)
+        for (id <- Seq(p1Id, p1bisId, p2Id, p3Id, p4Id)) {
+          val verifyTags = if (id == p1bisId) newTags else (tags ++ newTags).distinct
+          verify(proposalCoordinatorService, times(1)).update(
+            moderator = eqTo(adminId),
+            proposalId = eqTo(id),
+            requestContext = eqTo(RequestContext.empty),
+            updatedAt = any[ZonedDateTime],
+            newContent = eqTo(None),
+            labels = eqTo(Seq.empty),
+            tags = eqTo(verifyTags),
+            idea = eqTo(None),
+            question = eqTo(q1)
+          )
+        }
+        verifyNoMoreInteractions(proposalCoordinatorService)
       }
     }
 
     Scenario(s"delete tags") {
       clearInvocations(proposalCoordinatorService)
       whenReady(
-        proposalService.deleteTagFromAll(proposalIds, deleteTag, adminId, RequestContext.empty),
+        proposalService.deleteTagFromAll(acceptProposalIds, deleteTag, adminId, RequestContext.empty),
         Timeout(5.seconds)
       ) { response =>
-        bulkCheck(s"Proposal $p2Id is not accepted and cannot be updated")(response)
+        acceptCheck(s"Proposal $p2Id is not accepted and cannot be updated")(response)
         for (id <- Seq(p1Id, p1bisId, p2Id, p3Id, p4Id)) {
           val verifyTags = if (id == p1bisId) Seq.empty else Seq(TagId("tag-1"))
           verify(proposalCoordinatorService, times(1)).update(

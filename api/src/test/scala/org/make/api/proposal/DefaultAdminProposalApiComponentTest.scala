@@ -588,6 +588,8 @@ class DefaultAdminProposalApiComponentTest
 
   when(proposalService.acceptAll(any[Seq[ProposalId]], any[UserId], any[RequestContext]))
     .thenReturn(Future.successful(BulkActionResponse(Seq.empty, Seq.empty)))
+  when(proposalService.refuseAll(any[Seq[ProposalId]], any[UserId], any[RequestContext]))
+    .thenReturn(Future.successful(BulkActionResponse(Seq.empty, Seq.empty)))
   when(proposalService.addTagsToAll(any[Seq[ProposalId]], any[Seq[TagId]], any[UserId], any[RequestContext]))
     .thenReturn(Future.successful(BulkActionResponse(Seq.empty, Seq.empty)))
   when(proposalService.deleteTagFromAll(any[Seq[ProposalId]], any[TagId], any[UserId], any[RequestContext]))
@@ -595,10 +597,16 @@ class DefaultAdminProposalApiComponentTest
 
   val proposalIdBulk: ProposalId = ProposalId("proposal-id-bulk")
   val acceptAll = BulkAcceptProposal(Seq(proposalIdBulk)).asJson
+  val refuseAll = BulkRefuseProposal(Seq(proposalIdBulk)).asJson
   val tagAll = BulkTagProposal(Seq(proposalIdBulk), Seq(tagId1)).asJson
   val deleteTag = BulkDeleteTagProposal(Seq(proposalIdBulk), tagId1).asJson
 
-  for ((action, verb, entity) <- Seq(("accept", Post, acceptAll), ("tag", Post, tagAll), ("tag", Delete, deleteTag))) {
+  for ((action, verb, entity) <- Seq(
+         ("accept", Post, acceptAll),
+         ("refuse-initials-proposals", Post, refuseAll),
+         ("tag", Post, tagAll),
+         ("tag", Delete, deleteTag)
+       )) {
     Feature(s"bulk ${verb.method.value} $action") {
       Scenario("unauthorized user") {
         verb(s"/admin/proposals/$action") ~> routes ~> check {

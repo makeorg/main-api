@@ -480,6 +480,12 @@ object BulkAcceptProposal {
   implicit val codec: Codec[BulkAcceptProposal] = deriveCodec[BulkAcceptProposal]
 }
 
+final case class BulkRefuseProposal(@(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId])
+
+object BulkRefuseProposal {
+  implicit val codec: Codec[BulkRefuseProposal] = deriveCodec[BulkRefuseProposal]
+}
+
 final case class BulkTagProposal(
   @(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId],
   @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId]
