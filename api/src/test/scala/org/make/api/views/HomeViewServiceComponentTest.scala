@@ -276,7 +276,20 @@ class HomeViewServiceComponentTest
                 arg match {
                   case OperationOfQuestionSearchQuery(
                       Some(
-                        OperationOfQuestionSearchFilters(_, _, _, _, _, _, _, _, Some(FeaturedSearchFilter(true)), _, _)
+                        OperationOfQuestionSearchFilters(
+                          _,
+                          _,
+                          _,
+                          _,
+                          _,
+                          _,
+                          _,
+                          _,
+                          _,
+                          Some(FeaturedSearchFilter(true)),
+                          _,
+                          _
+                        )
                       ),
                       _,
                       _,
@@ -301,7 +314,9 @@ class HomeViewServiceComponentTest
               (arg: OperationOfQuestionSearchQuery) =>
                 arg match {
                   case OperationOfQuestionSearchQuery(
-                      Some(OperationOfQuestionSearchFilters(_, _, _, _, _, _, _, _, _, Some(StatusSearchFilter(_)), _)),
+                      Some(
+                        OperationOfQuestionSearchFilters(_, _, _, _, _, _, _, _, _, _, Some(StatusSearchFilter(_)), _)
+                      ),
                       _,
                       _,
                       _,

@@ -25,6 +25,7 @@ import enumeratum.{Circe, Enum, EnumEntry}
 import io.circe.generic.semiauto._
 import io.circe.{Codec, Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
+import org.make.core.elasticsearch.ElasticsearchFieldName
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
@@ -38,12 +39,7 @@ import java.time.ZonedDateTime
 import scala.annotation.meta.field
 
 sealed abstract class ProposalElasticsearchFieldName(val value: String, val sortable: Boolean = false)
-    extends StringEnumEntry
-    with Product
-    with Serializable {
-  def field: String
-  def parameter: String
-}
+    extends ElasticsearchFieldName
 
 object ProposalElasticsearchFieldName extends StringEnum[ProposalElasticsearchFieldName] {
 

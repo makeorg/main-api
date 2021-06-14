@@ -213,7 +213,7 @@ class OperationOfQuestionSearchEngineIT
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-french-accent"),
       question = "Question sur les aînés avec accents ?",
-      slug = "aines-question",
+      slug = "french-aines-question",
       questionShortTitle = Some("aines-short-title"),
       startDate = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       endDate = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
@@ -289,7 +289,7 @@ class OperationOfQuestionSearchEngineIT
       }
       whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
         result.total should be > 0L
-        result.results.exists(_.slug == "aines-question") shouldBe true
+        result.results.exists(_.slug == "french-aines-question") shouldBe true
       }
     }
 
@@ -306,6 +306,21 @@ class OperationOfQuestionSearchEngineIT
       }
       whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
         result.total == 0 shouldBe true
+      }
+    }
+  }
+
+  Feature("search by slug") {
+    Scenario("should return a list of operation of question") {
+      val query = OperationOfQuestionSearchQuery(filters =
+        Some(OperationOfQuestionSearchFilters(slug = Some(SlugSearchFilter(slug = "aines"))))
+      )
+      whenReady(elasticsearchOperationOfQuestionAPI.count(query), Timeout(3.seconds)) { result =>
+        result should be(1)
+      }
+      whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
+        result.total should be(1)
+        result.results.head.slug should be("french-aines-question")
       }
     }
   }

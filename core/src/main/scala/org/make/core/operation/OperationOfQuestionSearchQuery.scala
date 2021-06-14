@@ -45,6 +45,7 @@ final case class OperationOfQuestionSearchQuery(
 final case class OperationOfQuestionSearchFilters(
   questionIds: Option[QuestionIdsSearchFilter] = None,
   question: Option[QuestionContentSearchFilter] = None,
+  slug: Option[SlugSearchFilter] = None,
   description: Option[DescriptionSearchFilter] = None,
   country: Option[CountrySearchFilter] = None,
   language: Option[LanguageSearchFilter] = None,
@@ -61,6 +62,7 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
   def parse(
     questionIds: Option[QuestionIdsSearchFilter],
     question: Option[QuestionContentSearchFilter],
+    slug: Option[SlugSearchFilter] = None,
     description: Option[DescriptionSearchFilter] = None,
     country: Option[CountrySearchFilter] = None,
     language: Option[LanguageSearchFilter] = None,
@@ -70,13 +72,14 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     featured: Option[FeaturedSearchFilter] = None,
     status: Option[StatusSearchFilter] = None
   ): Option[OperationOfQuestionSearchFilters] = {
-    (questionIds, question, description, country, language, startDate, endDate, operationKind, featured, status) match {
-      case (None, None, None, None, None, None, None, None, None, None) => None
+    (questionIds, question, slug, description, country, language, startDate, endDate, operationKind, featured, status) match {
+      case (None, None, None, None, None, None, None, None, None, None, None) => None
       case _ =>
         Some(
           OperationOfQuestionSearchFilters(
             questionIds,
             question,
+            slug,
             description,
             country,
             language,
@@ -96,6 +99,7 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     Seq(
       buildQuestionIdsSearchFilter(operationOfQuestionSearchQuery),
       buildQuestionContentSearchFilter(operationOfQuestionSearchQuery),
+      buildSlugSearchFilter(operationOfQuestionSearchQuery),
       buildDescriptionSearchFilter(operationOfQuestionSearchQuery),
       buildCountrySearchFilter(operationOfQuestionSearchQuery),
       buildLanguageSearchFilter(operationOfQuestionSearchQuery),
@@ -163,6 +167,16 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     }
 
     query
+  }
+
+  def buildSlugSearchFilter(operationOfQuestionSearchQuery: OperationOfQuestionSearchQuery): Option[Query] = {
+    operationOfQuestionSearchQuery.filters.flatMap {
+      _.slug match {
+        case Some(SlugSearchFilter(slug)) =>
+          Some(ElasticApi.wildcardQuery(OperationOfQuestionElasticsearchFieldName.slug.field, s"*$slug*"))
+        case None => None
+      }
+    }
   }
 
   def buildDescriptionSearchFilter(operationOfQuestionSearchQuery: OperationOfQuestionSearchQuery): Option[Query] = {
@@ -288,6 +302,7 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
 
 final case class QuestionIdsSearchFilter(questionIds: Seq[QuestionId])
 final case class QuestionContentSearchFilter(text: String, fuzzy: Option[Fuzziness] = None)
+final case class SlugSearchFilter(slug: String)
 final case class DescriptionSearchFilter(description: String)
 final case class CountrySearchFilter(country: Country)
 final case class LanguageSearchFilter(language: Language)

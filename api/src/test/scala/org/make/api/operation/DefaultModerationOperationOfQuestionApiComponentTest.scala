@@ -27,14 +27,20 @@ import eu.timepit.refined.auto._
 import io.circe.syntax._
 import org.make.api.MakeApiTestBase
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
+import org.make.core.auth.UserRights
 import org.make.core.operation.OperationKind.GreatCause
 import org.make.core.{Order, ValidationError}
 import org.make.core.operation._
+import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldName, OperationOfQuestionSearchResult}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import org.make.core.technical.Pagination.{End, Start}
+import org.make.core.user.Role
+import scalaoauth2.provider.AuthInfo
+
+import scala.concurrent.duration.DurationInt
 
 class DefaultModerationOperationOfQuestionApiComponentTest
     extends MakeApiTestBase
@@ -772,12 +778,112 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     }
   }
 
-  Feature("search operation of question") {
-    Scenario("search as moderator") {
+  Feature("list operation of question") {
+    Scenario("list as moderator") {
       Get("/moderation/operations-of-questions?openAt=2018-01-01")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
 
         status should be(StatusCodes.OK)
+      }
+    }
+  }
+
+  Feature("search operation of question") {
+    Scenario("forbidden when not moderator or admin") {
+      for (token <- Seq(None, Some(tokenCitizen))) {
+        Get("/moderation/operations-of-questions/search")
+          .withHeaders(token.map(t => Authorization(OAuth2BearerToken(t))).toList) ~> routes ~> check {
+          status should be(token.fold(StatusCodes.Unauthorized)(_ => StatusCodes.Forbidden))
+        }
+      }
+    }
+    Scenario("works for moderators") {
+      when(
+        operationOfQuestionService.search(
+          eqTo(
+            OperationOfQuestionSearchQuery(
+              filters = Some(
+                OperationOfQuestionSearchFilters(
+                  questionIds = Some(QuestionIdsSearchFilter(Nil)),
+                  operationKinds = Some(OperationKindsSearchFilter(OperationKind.values))
+                )
+              ),
+              sort = Some(OperationOfQuestionElasticsearchFieldName.slug)
+            )
+          )
+        )
+      ).thenReturn(
+        Future.successful(
+          OperationOfQuestionSearchResult(
+            1,
+            Seq(indexedOperationOfQuestion(QuestionId("foo"), OperationId("bar"), slug = "foobar"))
+          )
+        )
+      )
+      Get("/moderation/operations-of-questions/search?_sort=slug")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        header("x-total-count").map(_.value) should be(Some("1"))
+        val results = entityAs[Seq[ModerationOperationOfQuestionSearchResult]]
+        results.size should be(1)
+        results.head.id.value should be("foo")
+        results.head.slug should be("foobar")
+
+      }
+    }
+    Scenario("works for admins") {
+      when(
+        operationOfQuestionService.search(
+          eqTo(
+            OperationOfQuestionSearchQuery(
+              filters = Some(
+                OperationOfQuestionSearchFilters(operationKinds = Some(OperationKindsSearchFilter(OperationKind.values))
+                )
+              ),
+              sort = Some(OperationOfQuestionElasticsearchFieldName.slug)
+            )
+          )
+        )
+      ).thenReturn(
+        Future.successful(
+          OperationOfQuestionSearchResult(
+            1,
+            Seq(indexedOperationOfQuestion(QuestionId("baz"), OperationId("buz"), slug = "bazbuz"))
+          )
+        )
+      )
+
+      // TODO questions ACL assume that superadmins have admin role too, we should abstract these ACL better
+      // in the meantime, grant admin role to superadmin for this test
+      val superAdminToken = Await.result(oauth2DataHandler.findAccessToken(tokenSuperAdmin), 3.seconds).get
+      when(oauth2DataHandler.findAuthInfoByAccessToken(eqTo(superAdminToken))).thenReturn(
+        Future.successful(
+          Some(
+            AuthInfo(
+              UserRights(
+                userId = defaultSuperAdminUser.userId,
+                roles = defaultSuperAdminUser.roles :+ Role.RoleAdmin,
+                availableQuestions = defaultSuperAdminUser.availableQuestions,
+                emailVerified = defaultSuperAdminUser.emailVerified
+              ),
+              None,
+              None,
+              None
+            )
+          )
+        )
+      )
+
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Get("/moderation/operations-of-questions/search?_sort=slug")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+          header("x-total-count").map(_.value) should be(Some("1"))
+          val results = entityAs[Seq[ModerationOperationOfQuestionSearchResult]]
+          results.size should be(1)
+          results.head.id.value should be("baz")
+          results.head.slug should be("bazbuz")
+        }
       }
     }
   }

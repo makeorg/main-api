@@ -23,7 +23,7 @@ import java.time.ZonedDateTime
 
 import cats.Show
 import cats.data.NonEmptyList
-import enumeratum.values.{StringEnum, StringEnumEntry}
+import enumeratum.values.StringEnum
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import io.circe.refined._
@@ -31,6 +31,7 @@ import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.MaxSize
 import io.swagger.annotations.ApiModelProperty
+import org.make.core.elasticsearch.ElasticsearchFieldName
 import org.make.core.{BusinessConfig, CirceFormatters}
 import org.make.core.operation.{OperationId, OperationOfQuestion, QuestionTheme, ResultsLink, SimpleOperation}
 import org.make.core.question.{Question, QuestionId}
@@ -39,12 +40,7 @@ import org.make.core.reference.{Country, Language}
 import scala.annotation.meta.field
 
 sealed abstract class OperationOfQuestionElasticsearchFieldName(val value: String, val sortable: Boolean = false)
-    extends StringEnumEntry
-    with Product
-    with Serializable {
-  def field: String
-  def parameter: String
-}
+    extends ElasticsearchFieldName
 
 object OperationOfQuestionElasticsearchFieldName extends StringEnum[OperationOfQuestionElasticsearchFieldName] {
 
@@ -65,7 +61,7 @@ object OperationOfQuestionElasticsearchFieldName extends StringEnum[OperationOfQ
   case object question extends Simple("question", sortable = true)
   case object questionKeyword extends Simple("question.keyword")
   case object questionGeneral extends Simple("question.general")
-  case object slug extends Simple("slug")
+  case object slug extends Simple("slug", sortable = true)
   case object startDate extends Simple("startDate", sortable = true)
   case object endDate extends Simple("endDate", sortable = true)
   case object description extends Simple(" description", sortable = true)

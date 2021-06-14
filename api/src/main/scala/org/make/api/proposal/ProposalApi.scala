@@ -332,17 +332,7 @@ trait DefaultProposalApiComponent
                       Seq(countryValue),
                       BusinessConfig.supportedCountries.map(_.countryCode)
                     )
-                  }, sort.map { sortValue =>
-                    val choices = ProposalElasticsearchFieldName.values.filter(_.sortable)
-                    Validation.validChoices(
-                      fieldName = "sort",
-                      message = Some(
-                        s"Invalid sort. Got $sortValue but expected one of: ${choices.map(_.parameter).mkString("\"", "\", \"", "\"")}"
-                      ),
-                      Seq(sortValue),
-                      choices
-                    )
-                  }, sortAlgorithm.map { sortAlgo =>
+                  }, sort.map(Validation.validateSort("sort")), sortAlgorithm.map { sortAlgo =>
                     Validation.validChoices(
                       fieldName = "sortAlgorithm",
                       message = Some(s"Invalid algorithm. Expected one of: ${AlgorithmSelector.keys}"),
