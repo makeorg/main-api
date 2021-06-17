@@ -929,6 +929,28 @@ class ProposalSearchEngineIT
     }
   }
 
+  Feature("sort proposals by content") {
+    val query =
+      SearchQuery(
+        filters = Some(
+          SearchFilters(
+            content = Some(ContentSearchFilter(text = "Il faut qu'il/elle")),
+            status = Some(StatusSearchFilter(ProposalStatus.values))
+          )
+        ),
+        sort = Some(Sort(Some("content.keyword"), None)),
+        limit = Some(100)
+      )
+
+    Scenario("should return a sorted list of proposals") {
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        result.results.map(_.content) should be(
+          proposals.map(_.content).filter(_.startsWith("Il faut qu'il/elle")).sorted
+        )
+      }
+    }
+  }
+
   Feature("empty query returns accepted proposals only") {
     Given("searching without query")
     val query = SearchQuery()
