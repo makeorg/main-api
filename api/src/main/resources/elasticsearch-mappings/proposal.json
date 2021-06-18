@@ -893,6 +893,9 @@
             },
             "general": {
               "type": "text"
+            },
+            "keyword": {
+              "type": "keyword"
             }
           }
         },
