@@ -21,18 +21,22 @@ package org.make.api.sequence
 
 import eu.timepit.refined.types.numeric.PosInt
 import io.circe.refined._
-import io.circe.{Codec, Decoder, Encoder}
-import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
+import io.circe.Encoder
+import io.circe.generic.semiauto.deriveEncoder
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.proposal.ProposalResponse
 import org.make.core.question.QuestionId
 import org.make.core.sequence.{
+  ExplorationSequenceConfiguration,
+  ExplorationSequenceConfigurationId,
+  ExplorationSortAlgorithm,
   SelectionAlgorithmName,
   SequenceConfiguration,
   SequenceId,
   SpecificSequenceConfiguration,
   SpecificSequenceConfigurationId
 }
+import org.make.core.technical.RefinedTypes.Ratio
 
 import scala.annotation.meta.field
 
@@ -41,13 +45,46 @@ final case class SequenceResult(proposals: Seq[ProposalResponse])
 object SequenceResult {
   implicit val encoder: Encoder[SequenceResult] = deriveEncoder[SequenceResult]
 }
+
+final case class ExplorationSequenceConfigurationResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "9963fff6-85c7-4cb5-8698-31c5e8204d6e")
+  explorationSequenceConfigurationId: ExplorationSequenceConfigurationId,
+  @(ApiModelProperty @field)(dataType = "int", example = "12")
+  sequenceSize: PosInt,
+  @(ApiModelProperty @field)(dataType = "int", example = "1000")
+  maxTestedProposalCount: PosInt,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.5")
+  newRatio: Ratio,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.1")
+  controversyRatio: Ratio,
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "bandit,random,round-robin", example = "bandit")
+  topSorter: ExplorationSortAlgorithm,
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "bandit,random,round-robin", example = "bandit")
+  controversySorter: ExplorationSortAlgorithm
+)
+
+object ExplorationSequenceConfigurationResponse {
+  implicit val encoder: Encoder[ExplorationSequenceConfigurationResponse] = deriveEncoder
+
+  def fromExplorationConfiguration(conf: ExplorationSequenceConfiguration): ExplorationSequenceConfigurationResponse =
+    ExplorationSequenceConfigurationResponse(
+      conf.explorationSequenceConfigurationId,
+      conf.sequenceSize,
+      conf.maxTestedProposalCount,
+      conf.newRatio,
+      conf.controversyRatio,
+      conf.topSorter,
+      conf.controversySorter
+    )
+}
+
 @ApiModel
 final case class SequenceConfigurationResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
   id: QuestionId,
   @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
   sequenceId: SequenceId,
-  main: SpecificSequenceConfigurationResponse,
+  main: ExplorationSequenceConfigurationResponse,
   controversial: SpecificSequenceConfigurationResponse,
   popular: SpecificSequenceConfigurationResponse,
   keyword: SpecificSequenceConfigurationResponse,
@@ -66,14 +103,13 @@ final case class SequenceConfigurationResponse(
 )
 
 object SequenceConfigurationResponse {
-  implicit val decoder: Decoder[SequenceConfigurationResponse] = deriveDecoder[SequenceConfigurationResponse]
   implicit val encoder: Encoder[SequenceConfigurationResponse] = deriveEncoder[SequenceConfigurationResponse]
 
   def fromSequenceConfiguration(configuration: SequenceConfiguration): SequenceConfigurationResponse = {
     SequenceConfigurationResponse(
       id = configuration.questionId,
       sequenceId = configuration.sequenceId,
-      main = SpecificSequenceConfigurationResponse.fromSpecificSequenceConfiguration(configuration.mainSequence),
+      main = ExplorationSequenceConfigurationResponse.fromExplorationConfiguration(configuration.mainSequence),
       controversial =
         SpecificSequenceConfigurationResponse.fromSpecificSequenceConfiguration(configuration.controversial),
       popular = SpecificSequenceConfigurationResponse.fromSpecificSequenceConfiguration(configuration.popular),
@@ -116,7 +152,7 @@ final case class SpecificSequenceConfigurationResponse(
 )
 
 object SpecificSequenceConfigurationResponse {
-  implicit val decoder: Codec[SpecificSequenceConfigurationResponse] = deriveCodec
+  implicit val encoder: Encoder[SpecificSequenceConfigurationResponse] = deriveEncoder
 
   def fromSpecificSequenceConfiguration(
     configuration: SpecificSequenceConfiguration

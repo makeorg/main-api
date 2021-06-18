@@ -24,9 +24,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.concurrent.duration.DurationInt
 
 class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmUserServiceComponent {
-  override protected val cockroachExposedPort: Int = 40017
-
-  val defaultUser = PersistentCrmUser(
+  val defaultUser: PersistentCrmUser = PersistentCrmUser(
     userId = "test-crm-user",
     fullName = "Toto la Carotte",
     email = "test@make.org",

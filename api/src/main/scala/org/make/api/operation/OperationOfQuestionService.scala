@@ -19,7 +19,6 @@
 
 package org.make.api.operation
 import java.time.ZonedDateTime
-
 import cats.data.{NonEmptyList, OptionT}
 import cats.implicits._
 import eu.timepit.refined.W
@@ -34,7 +33,12 @@ import org.make.core.operation._
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.sequence.{SequenceConfiguration, SpecificSequenceConfiguration}
+import org.make.core.sequence.{
+  ExplorationSequenceConfiguration,
+  SequenceConfiguration,
+  SequenceId,
+  SpecificSequenceConfiguration
+}
 import org.make.core.{DateHelper, Order}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -217,7 +221,6 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
     override def create(parameters: CreateOperationOfQuestion): Future[OperationOfQuestion] = {
       val questionId = idGenerator.nextQuestionId()
       val sequenceId = idGenerator.nextSequenceId()
-      def specificSequenceConfigurationId() = idGenerator.nextSpecificSequenceConfigurationId()
 
       val question = Question(
         questionId = questionId,
@@ -257,7 +260,21 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         createdAt = DateHelper.now()
       )
 
-      val mainSequence = SpecificSequenceConfiguration(specificSequenceConfigurationId())
+      val sequenceConfiguration: SequenceConfiguration = createSequenceConfiguration(questionId, sequenceId)
+
+      for {
+        _         <- persistentQuestionService.persist(question)
+        _         <- persistentSequenceConfigurationService.persist(sequenceConfiguration)
+        persisted <- persistentOperationOfQuestionService.persist(operationOfQuestion)
+        _         <- indexById(questionId)
+      } yield persisted
+
+    }
+
+    private def createSequenceConfiguration(questionId: QuestionId, sequenceId: SequenceId) = {
+      def specificSequenceConfigurationId() = idGenerator.nextSpecificSequenceConfigurationId()
+
+      val mainSequence = ExplorationSequenceConfiguration.default(idGenerator.nextExplorationSequenceConfigurationId())
       val controversialSequence = SpecificSequenceConfiguration.otherSequenceDefault(specificSequenceConfigurationId())
       val popularSequence = SpecificSequenceConfiguration.otherSequenceDefault(specificSequenceConfigurationId())
       val keywordSequence = SpecificSequenceConfiguration.otherSequenceDefault(specificSequenceConfigurationId())
@@ -271,14 +288,7 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
           popular = popularSequence,
           keyword = keywordSequence
         )
-
-      for {
-        _         <- persistentQuestionService.persist(question)
-        _         <- persistentSequenceConfigurationService.persist(sequenceConfiguration)
-        persisted <- persistentOperationOfQuestionService.persist(operationOfQuestion)
-        _         <- indexById(questionId)
-      } yield persisted
-
+      sequenceConfiguration
     }
 
     override def count(request: SearchOperationsOfQuestions): Future[Int] = {

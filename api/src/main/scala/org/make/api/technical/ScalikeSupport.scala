@@ -29,7 +29,7 @@ import org.make.core.feature.{ActiveFeatureId, FeatureId}
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
-import org.make.core.sequence.SequenceId
+import org.make.core.sequence.{ExplorationSequenceConfigurationId, ExplorationSortAlgorithm, SequenceId}
 import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.user.{UserId, UserType}
 import scalikejdbc.{Binders, ParameterBinderFactory, TypeBinder}
@@ -65,8 +65,12 @@ object ScalikeSupport {
   implicit val tagTypeIdBinders: Binders[TagTypeId] = stringValueBinders(TagTypeId.apply)
   implicit val templateIdBinders: Binders[TemplateId] = stringValueBinders(TemplateId.apply)
   implicit val userIdBinders: Binders[UserId] = stringValueBinders(UserId.apply)
+  implicit val ExplorationSequenceConfigurationIdBinders: Binders[ExplorationSequenceConfigurationId] =
+    stringValueBinders(ExplorationSequenceConfigurationId.apply)
 
   implicit val userTypeBinders: Binders[UserType] = stringEnumBinders[UserType]
+  implicit val explorationSortAlgorithmBinders: Binders[ExplorationSortAlgorithm] =
+    stringEnumBinders[ExplorationSortAlgorithm]
 
   /*
    * The following code is a copy-paste from https://github.com/katainaka0503/scalikejdbc-refined

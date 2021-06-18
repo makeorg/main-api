@@ -40,8 +40,6 @@ class PersistentQuestionPersonalityServiceIT
     with DefaultPersistentUserServiceComponent
     with DefaultPersistentPersonalityRoleServiceComponent {
 
-  override protected val cockroachExposedPort: Int = 40019
-
   val personality: Personality = Personality(
     personalityId = PersonalityId("personality"),
     userId = UserId("user-id"),

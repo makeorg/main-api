@@ -32,8 +32,6 @@ import scala.concurrent.duration.DurationInt
 import org.make.core.technical.Pagination.{End, Start}
 
 class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with DefaultPersistentQuestionServiceComponent {
-  override protected val cockroachExposedPort: Int = 40010
-
   Feature("inserting a new question") {
 
     Scenario("insert and then retrieve question") {

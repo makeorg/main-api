@@ -32,8 +32,6 @@ import org.make.core.technical.Pagination.Start
 
 class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClientServiceComponent {
 
-  override protected val cockroachExposedPort: Int = 40006
-
   Feature("Persist a oauth client") {
     info("As a programmer")
     info("I want to be able to persist a oauth client")

@@ -28,8 +28,6 @@ import org.make.core.technical.Pagination.Start
 
 class PersistentPersonalityRoleServiceIT extends DatabaseTest with DefaultPersistentPersonalityRoleServiceComponent {
 
-  override protected val cockroachExposedPort: Int = 40019
-
   val personalityRole: PersonalityRole =
     PersonalityRole(personalityRoleId = PersonalityRoleId("candidate"), name = "CANDIDATE_TEST")
 

@@ -32,8 +32,6 @@ class PersistentPersonalityRoleFieldServiceIT
     with DefaultPersistentPersonalityRoleFieldServiceComponent
     with DefaultPersistentPersonalityRoleServiceComponent {
 
-  override protected val cockroachExposedPort: Int = 40019
-
   val personalityRoleField: PersonalityRoleField =
     PersonalityRoleField(
       personalityRoleFieldId = PersonalityRoleFieldId("string-field"),

@@ -24,29 +24,14 @@ import io.circe.refined._
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations.ApiModelProperty
-import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
 import org.make.core.sequence._
+import org.make.core.technical.RefinedTypes.Ratio
 
 import scala.annotation.meta.field
 
-final case class ContextFilterRequest(
-  operation: Option[OperationId] = None,
-  source: Option[String] = None,
-  location: Option[String] = None,
-  question: Option[String] = None
-) {
-  def toContext: ContextSearchFilter = {
-    ContextSearchFilter(operation, source, location, question)
-  }
-}
-
-object ContextFilterRequest {
-  implicit val decoder: Decoder[ContextFilterRequest] = deriveDecoder[ContextFilterRequest]
-}
-
 final case class SequenceConfigurationRequest(
-  main: SpecificSequenceConfigurationRequest,
+  main: ExplorationSequenceConfigurationRequest,
   controversial: SpecificSequenceConfigurationRequest,
   popular: SpecificSequenceConfigurationRequest,
   keyword: SpecificSequenceConfigurationRequest,
@@ -64,7 +49,7 @@ final case class SequenceConfigurationRequest(
     SequenceConfiguration(
       sequenceId = sequenceId,
       questionId = questionId,
-      mainSequence = main.toSpecificSequenceConfiguration,
+      mainSequence = main.toExplorationConfiguration,
       controversial = controversial.toSpecificSequenceConfiguration,
       popular = popular.toSpecificSequenceConfiguration,
       keyword = keyword.toSpecificSequenceConfiguration,
@@ -80,6 +65,37 @@ final case class SequenceConfigurationRequest(
 
 object SequenceConfigurationRequest {
   implicit val decoder: Decoder[SequenceConfigurationRequest] = deriveDecoder[SequenceConfigurationRequest]
+}
+
+final case class ExplorationSequenceConfigurationRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "9963fff6-85c7-4cb5-8698-31c5e8204d6e")
+  explorationSequenceConfigurationId: ExplorationSequenceConfigurationId,
+  @(ApiModelProperty @field)(dataType = "int", example = "12")
+  sequenceSize: PosInt,
+  @(ApiModelProperty @field)(dataType = "int", example = "1000")
+  maxTestedProposalCount: PosInt,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.5")
+  newRatio: Ratio,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.1")
+  controversyRatio: Ratio,
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "bandit,random,round-robin", example = "bandit")
+  topSorter: ExplorationSortAlgorithm,
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "bandit,random,round-robin", example = "bandit")
+  controversySorter: ExplorationSortAlgorithm
+) {
+  def toExplorationConfiguration: ExplorationSequenceConfiguration = ExplorationSequenceConfiguration(
+    explorationSequenceConfigurationId,
+    sequenceSize,
+    maxTestedProposalCount,
+    newRatio,
+    controversyRatio,
+    topSorter,
+    controversySorter
+  )
+}
+
+object ExplorationSequenceConfigurationRequest {
+  implicit val decoder: Decoder[ExplorationSequenceConfigurationRequest] = deriveDecoder
 }
 
 final case class SpecificSequenceConfigurationRequest(

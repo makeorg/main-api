@@ -31,8 +31,6 @@ class PersistentUserToAnonymizeServiceIT
     with DefaultPersistentUserToAnonymizeServiceComponent
     with DefaultIdGeneratorComponent {
 
-  override protected val cockroachExposedPort: Int = 40015
-
   Feature("create") {
     Scenario("create an entry") {
       whenReady(persistentUserToAnonymizeService.create("toto-mail"), Timeout(3.seconds)) { result =>

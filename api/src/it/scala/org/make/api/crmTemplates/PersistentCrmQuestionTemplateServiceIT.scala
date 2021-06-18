@@ -32,8 +32,6 @@ class PersistentCrmQuestionTemplateServiceIT
     with DefaultPersistentCrmQuestionTemplateServiceComponent
     with DefaultPersistentQuestionServiceComponent {
 
-  override protected val cockroachExposedPort: Int = 40023
-
   override def beforeAll(): Unit = {
     super.beforeAll()
     whenReady(persistentQuestionService.persist(question(id = QuestionId("foo"), slug = "foo")), Timeout(2.seconds)) {

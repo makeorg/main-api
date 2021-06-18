@@ -40,8 +40,6 @@ class PersistentIdeaMappingServiceIT
     with DefaultPersistentIdeaServiceComponent
     with DefaultPersistentTagServiceComponent {
 
-  override protected val cockroachExposedPort: Int = 40012
-
   def persistMapping(mapping: IdeaMapping): Future[IdeaMapping] = persistentIdeaMappingService.persist(mapping)
 
   val findMapping: (

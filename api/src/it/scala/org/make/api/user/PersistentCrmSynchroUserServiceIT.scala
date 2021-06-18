@@ -32,8 +32,6 @@ class PersistentCrmSynchroUserServiceIT
     with DefaultPersistentUserServiceComponent
     with DefaultPersistentCrmSynchroUserServiceComponent {
 
-  override protected val cockroachExposedPort: Int = 40026
-
   Feature("listing users") {
     val usersCount = 50
     Scenario("listing users") {

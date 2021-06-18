@@ -39,7 +39,7 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalActionType._
 import org.make.core.proposal._
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
-import org.make.core.sequence.{SearchQuery, SequenceId, SequenceStatus}
+import org.make.core.sequence.{SequenceId, SequenceStatus}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.scalatest.wordspec.AnyWordSpec
@@ -50,9 +50,9 @@ import java.time.{LocalDate, ZonedDateTime}
 
 class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
 
-  val conf = SecurityConfiguration(UserHistorySerializersTest.system)
-  val persisters = Persisters(UserHistorySerializers(conf).serializers.toList)
-  val userId = UserId("my-user-id")
+  val conf: SecurityConfiguration = SecurityConfiguration(UserHistorySerializersTest.system)
+  val persisters: Persisters = Persisters(UserHistorySerializers(conf).serializers.toList)
+  val userId: UserId = UserId("my-user-id")
   val requestContext: RequestContext =
     RequestContext.empty
   val eventDate: ZonedDateTime = ZonedDateTime.parse("2018-03-01T16:09:30.441Z")
@@ -168,16 +168,6 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
           eventDate = eventDate,
           userId = userId
         )
-      )
-    )
-
-    val userSearchSequencesEvent = LogUserSearchSequencesEvent(
-      userId = userId,
-      requestContext = requestContext,
-      action = UserAction(
-        date = eventDate,
-        actionType = LogUserSearchSequencesEvent.action,
-        arguments = SearchSequenceParameters(query = SearchQuery()) // TODO: have parameters here
       )
     )
 
@@ -426,7 +416,6 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
       sample(userQualificationEvent),
       sample(postponeProposalEvent),
       sample(userRemoveProposalsSequenceEvent),
-      sample(userSearchSequencesEvent),
       sample(userVoteEvent),
       sample(getProposalDuplicatesEvent),
       sample(refuseProposalEvent),

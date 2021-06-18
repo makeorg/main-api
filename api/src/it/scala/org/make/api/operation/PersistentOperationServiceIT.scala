@@ -52,8 +52,6 @@ class PersistentOperationServiceIT
     with DefaultIdGeneratorComponent
     with ActorSystemComponent {
 
-  override protected val cockroachExposedPort: Int = 40008
-
   override val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   val userId: UserId = idGenerator.nextUserId()

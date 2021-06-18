@@ -46,8 +46,6 @@ class PersistentOperationOfQuestionServiceIT
     with DefaultPersistentQuestionServiceComponent
     with DefaultIdGeneratorComponent {
 
-  override protected val cockroachExposedPort: Int = 40011
-
   val now: ZonedDateTime = DateHelper.now()
   val sequenceIdFR: SequenceId = idGenerator.nextSequenceId()
   val sequenceIdGB: SequenceId = idGenerator.nextSequenceId()

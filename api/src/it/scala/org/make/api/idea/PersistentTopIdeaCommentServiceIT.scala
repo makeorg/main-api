@@ -42,8 +42,6 @@ class PersistentTopIdeaCommentServiceIT
     with DefaultPersistentUserServiceComponent
     with DefaultPersistentIdeaServiceComponent {
 
-  override protected val cockroachExposedPort: Int = 40021
-
   private val question: Question = Question(
     questionId = QuestionId("question"),
     slug = "question-slug",

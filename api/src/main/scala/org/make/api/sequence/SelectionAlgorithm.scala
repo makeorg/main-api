@@ -26,8 +26,13 @@ import org.make.core.DateHelper._
 import org.make.core.proposal.indexed.SequencePool.Tested
 import org.make.core.proposal.indexed.Zone.{Consensus, Controversy}
 import org.make.core.proposal.indexed.{IndexedProposal, Zone}
-import org.make.core.sequence.{ExplorationConfiguration, SpecificSequenceConfiguration}
+import org.make.core.sequence.{
+  ExplorationSequenceConfiguration,
+  ExplorationSortAlgorithm,
+  SpecificSequenceConfiguration
+}
 import eu.timepit.refined.auto._
+
 import scala.Ordering.Double.IeeeOrdering
 import scala.annotation.tailrec
 
@@ -35,7 +40,7 @@ object SelectionAlgorithm {
 
   object ExplorationSelectionAlgorithm {
     def selectProposalsForSequence(
-      configuration: ExplorationConfiguration,
+      configuration: ExplorationSequenceConfiguration,
       nonSequenceVotesWeight: Double,
       includedProposals: Seq[IndexedProposal],
       newProposals: Seq[IndexedProposal],
@@ -118,11 +123,11 @@ object SelectionAlgorithm {
     }
 
     object Sorter {
-      def parse(name: String): Sorter = {
+      def parse(name: ExplorationSortAlgorithm): Sorter = {
         name match {
-          case "bandit"      => BanditSorter
-          case "round-robin" => RoundRobinSorter
-          case _             => RandomSorter
+          case ExplorationSortAlgorithm.Bandit     => BanditSorter
+          case ExplorationSortAlgorithm.RoundRobin => RoundRobinSorter
+          case ExplorationSortAlgorithm.Random     => RandomSorter
         }
       }
     }

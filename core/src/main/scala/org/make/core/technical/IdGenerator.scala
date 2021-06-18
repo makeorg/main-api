@@ -22,7 +22,6 @@ package org.make.core.technical
 import org.make.core.EventId
 
 import java.util.UUID
-
 import org.make.core.idea.IdeaMappingId
 import org.make.core.auth.ClientId
 import org.make.core.crmTemplate.CrmQuestionTemplateId
@@ -34,7 +33,7 @@ import org.make.core.partner.PartnerId
 import org.make.core.personality.{PersonalityId, PersonalityRoleFieldId, PersonalityRoleId}
 import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
-import org.make.core.sequence.{SequenceId, SpecificSequenceConfigurationId}
+import org.make.core.sequence.{ExplorationSequenceConfigurationId, SequenceId, SpecificSequenceConfigurationId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.user.UserId
@@ -64,6 +63,8 @@ trait IdGenerator {
   def nextSessionId(): SessionId = SessionId(nextId())
   def nextEventId(): EventId = EventId(nextId())
   def nextSpecificSequenceConfigurationId(): SpecificSequenceConfigurationId = SpecificSequenceConfigurationId(nextId())
+  def nextExplorationSequenceConfigurationId(): ExplorationSequenceConfigurationId =
+    ExplorationSequenceConfigurationId(nextId())
 
   def nextId(): String
 }
