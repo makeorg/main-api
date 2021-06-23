@@ -21,6 +21,7 @@ package org.make.api.technical.directives
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directive1, Directives}
+import org.make.core.{ValidationError, ValidationFailedError}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -38,5 +39,11 @@ trait FutureDirectives extends Directives {
     provideAsync(provider).flatMap {
       case Some(value) => provide(value)
       case None        => complete(StatusCodes.NotFound)
+    }
+
+  def provideAsyncOrBadRequest[T](provider: => Future[Option[T]], error: ValidationError): Directive1[T] =
+    provideAsync(provider).flatMap {
+      case Some(value) => provide(value)
+      case None        => failWith(ValidationFailedError(Seq(error)))
     }
 }

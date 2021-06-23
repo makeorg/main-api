@@ -19,27 +19,32 @@
 
 package org.make.api.technical.tracking
 
-import javax.ws.rs.Path
-import io.swagger.annotations._
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.{Directives, Route}
+import akka.http.scaladsl.server.{Route, RouteConcatenation}
+import cats.data.NonEmptyList
+import cats.data.Validated.{Invalid, Valid}
 import grizzled.slf4j.Logging
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
+import io.swagger.annotations._
+import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.monitoring.MonitoringServiceComponent
 import org.make.api.technical.{EndpointType, EventBusServiceComponent, MakeAuthenticationDirectives, MakeDirectives}
-import org.make.core.{HttpCodes, RequestContext}
 import org.make.core.auth.UserRights
+import org.make.core.question.QuestionId
+import org.make.core.reference.Country
+import org.make.core.{HttpCodes, RequestContext, ValidationError, Validator}
 import org.slf4j.event.Level
 import scalaoauth2.provider.AuthInfo
 
+import javax.ws.rs.Path
 import scala.annotation.meta.field
 import scala.util.Try
 
 @Api(value = "Tracking")
 @Path(value = "/tracking")
-trait TrackingApi extends Directives {
+trait TrackingApi extends RouteConcatenation {
 
   @ApiOperation(value = "front-events", httpMethod = "POST", code = HttpCodes.NoContent)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
@@ -83,7 +88,21 @@ trait TrackingApi extends Directives {
   @Path(value = "/backoffice/logs")
   def backofficeLogs: Route
 
-  final def routes: Route = backofficeLogs ~ frontTracking ~ trackFrontPerformances
+  @ApiOperation(value = "track-demographics", httpMethod = "POST", code = HttpCodes.NoContent)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "body",
+        paramType = "body",
+        dataType = "org.make.api.technical.tracking.DemographicsTrackingRequest"
+      )
+    )
+  )
+  @Path(value = "/demographics")
+  def trackDemographics: Route
+
+  final def routes: Route = backofficeLogs ~ frontTracking ~ trackFrontPerformances ~ trackDemographics
 }
 
 trait TrackingApiComponent {
@@ -95,6 +114,7 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
     with EventBusServiceComponent
     with MakeAuthenticationDirectives
     with MonitoringServiceComponent
+    with QuestionServiceComponent
     with Logging =>
 
   override lazy val trackingApi: TrackingApi = new DefaultTrackingApi
@@ -157,6 +177,33 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
         }
       }
 
+    def trackDemographics: Route = {
+      post {
+        path("tracking" / "demographics") {
+          makeOperation("DemographicsTracking", EndpointType.Public) { requestContext: RequestContext =>
+            decodeRequest {
+              entity(as[DemographicsTrackingRequest]) { request =>
+                provideAsyncOrBadRequest(
+                  questionService.getQuestion(request.questionId),
+                  ValidationError(
+                    "questionId",
+                    "not_found",
+                    Some(s"Question ${request.questionId.value} doesn't exist")
+                  )
+                ) { _ =>
+                  validate(request, DemographicsTrackingRequest.validator) {
+                    eventBusService.publish(
+                      DemographicEvent.fromDemographicRequest(request, requestContext.applicationName)
+                    )
+                    complete(StatusCodes.NoContent)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 
@@ -172,6 +219,11 @@ final case class FrontTrackingRequest(
   eventName: Option[String],
   @(ApiModelProperty @field)(dataType = "map[string]") eventParameters: Option[Map[String, String]]
 )
+
+object FrontTrackingRequest {
+  implicit val decoder: Decoder[FrontTrackingRequest] =
+    Decoder.forProduct3("eventType", "eventName", "eventParameters")(FrontTrackingRequest.apply)
+}
 
 final case class FrontPerformanceRequest(applicationName: String, timings: FrontPerformanceTimings)
 
@@ -206,7 +258,74 @@ object FrontPerformanceTimings {
   implicit val decoder: Decoder[FrontPerformanceTimings] = deriveDecoder[FrontPerformanceTimings]
 }
 
-object FrontTrackingRequest {
-  implicit val decoder: Decoder[FrontTrackingRequest] =
-    Decoder.forProduct3("eventType", "eventName", "eventParameters")(FrontTrackingRequest.apply)
+final case class DemographicsTrackingRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "age")
+  demographic: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "18-24")
+  value: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "4ee15013-b5a6-415c-8270-da8438766644")
+  questionId: QuestionId,
+  @(ApiModelProperty @field)(dataType = "string", example = "core")
+  source: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Country,
+  @(ApiModelProperty @field)(dataType = "map[string]")
+  parameters: Map[String, String]
+)
+
+object DemographicsTrackingRequest {
+  implicit val decoder: Decoder[DemographicsTrackingRequest] = deriveDecoder
+  val skipped: String = "SKIPPED"
+  val validValues: Map[String, Set[String]] = Map(
+    "age" -> Set("8-15", "16-24", "25-34", "35-44", "45-54", "55-64", "65+"),
+    "region" -> Set( // see iso 3166-2
+      "FR-ARA",
+      "FR-BFC",
+      "FR-BRE",
+      "FR-CVL",
+      "FR-COR",
+      "FR-GES",
+      "FR-HDF",
+      "FR-IDF",
+      "FR-NOR",
+      "FR-NAQ",
+      "FR-OCC",
+      "FR-PDL",
+      "FR-PAC",
+      "FR-GUA",
+      "FR-GUF",
+      "FR-MTQ",
+      "FR-LRE",
+      "FR-MAY"
+    ),
+    "gender" -> Set("M", "F", "O")
+  )
+
+  val validator: Validator[DemographicsTrackingRequest] = (e: DemographicsTrackingRequest) => {
+    validValues.get(e.demographic).map(_.contains(e.value) || e.value == skipped) match {
+      case Some(true) => Valid(e)
+      case Some(false) =>
+        Invalid(
+          NonEmptyList.one(
+            ValidationError(
+              "value",
+              "unknown",
+              Some(s"${e.value} is not valid for ${e.demographic}, expected one of ${validValues(e.demographic)
+                .mkString("'", "', '", "'")}")
+            )
+          )
+        )
+      case None =>
+        Invalid(
+          NonEmptyList.one(
+            ValidationError(
+              "demographic",
+              "unknown",
+              Some(s"${e.demographic} is not a known demographic, expected one of ${validValues.keys
+                .mkString("'", "', '", "'")}")
+            )
+          )
+        )
+    }
+  }
 }

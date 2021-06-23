@@ -19,8 +19,9 @@
 
 package org.make.core
 
-import java.time.LocalDate
+import cats.data.ValidatedNel
 
+import java.time.LocalDate
 import enumeratum.values.StringEnum
 import grizzled.slf4j.Logging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
@@ -28,6 +29,7 @@ import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 import org.jsoup.Jsoup
 import org.jsoup.safety.{Cleaner, Whitelist}
+import org.make.core.Validator.ValidatedValue
 import org.make.core.elasticsearch.ElasticsearchFieldName
 
 import scala.util.matching.Regex
@@ -305,4 +307,14 @@ final case class ValidationError(field: String, key: String, message: Option[Str
 object ValidationError {
   implicit val encoder: Encoder[ValidationError] = deriveEncoder[ValidationError]
   implicit val decoder: Decoder[ValidationError] = deriveDecoder[ValidationError]
+}
+
+trait Validator[T] {
+  def validate(value: T): ValidatedValue[T]
+}
+
+object Validator {
+  def apply[T](validator: T => ValidatedValue[T]): Validator[T] = (value: T) => validator(value)
+
+  type ValidatedValue[T] = ValidatedNel[ValidationError, T]
 }

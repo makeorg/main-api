@@ -27,7 +27,7 @@ import org.make.api.idea.IdeaEventWrapper
 import org.make.api.proposal.PublishedProposalEvent.ProposalEventWrapper
 import org.make.api.semantic.{PredictDuplicateEventWrapper, PredictionsEventWrapper}
 import org.make.api.technical.crm.{MailJetEventWrapper, SendEmail}
-import org.make.api.technical.tracking.TrackingEventWrapper
+import org.make.api.technical.tracking.{DemographicEventWrapper, TrackingEventWrapper}
 import org.make.api.userhistory.UserEventWrapper
 import org.make.core.AvroSerializers
 
@@ -43,7 +43,8 @@ class AvroCompatibilityTest extends MakeUnitTest with AvroSerializers with Loggi
       ("TrackingEventWrapper", TrackingEventWrapper.schemaFor),
       ("PredictionsEventWrapper", PredictionsEventWrapper.schemaFor),
       ("IdeaEventWrapper", IdeaEventWrapper.schemaFor),
-      ("PredictDuplicateEventWrapper", PredictDuplicateEventWrapper.schemaFor)
+      ("PredictDuplicateEventWrapper", PredictDuplicateEventWrapper.schemaFor),
+      ("DemographicEventWrapper", DemographicEventWrapper.schemaFor)
     ).foreach {
       case (name, schema) =>
         Scenario(s"check avro compatibility for $name") {
