@@ -23,7 +23,7 @@ import org.make.api.proposal.ProposalScorer
 import org.make.api.proposal.ProposalScorer.VotesCounter
 import org.make.api.technical.MakeRandom
 import org.make.core.DateHelper._
-import org.make.core.proposal.indexed.SequencePool.Tested
+import org.make.core.proposal.indexed.SequencePool.New
 import org.make.core.proposal.indexed.Zone.{Consensus, Controversy}
 import org.make.core.proposal.indexed.{IndexedProposal, Zone}
 import org.make.core.sequence.{
@@ -48,25 +48,60 @@ object SelectionAlgorithm {
       userSegment: Option[String]
     ): Seq[IndexedProposal] = {
 
-      val neededTested: Int = Math.max(
-        Math.ceil((1 - configuration.newRatio) * configuration.sequenceSize).toInt -
-          includedProposals.count(_.sequencePool == Tested),
+      // Choose new proposals first and complete with enough tested proposals.
+      // this setting will give more sequence fallbacks in the beginning of consultations
+      // but should remove the need of fallback in the end of consultations, in the "vote-only" phase
+      val chosenNewProposals: Seq[IndexedProposal] = chooseNewProposals(configuration, includedProposals, newProposals)
+
+      val testedProposalsConfiguration = createTestedProposalsConfiguration(
+        configuration,
+        nonSequenceVotesWeight,
+        includedProposals,
+        userSegment,
+        chosenNewProposals.size
+      )
+
+      val chosenTestedProposals = chooseTestedProposal(testedProposals, testedProposalsConfiguration)
+
+      includedProposals ++ MakeRandom.shuffleSeq(chosenNewProposals ++ chosenTestedProposals)
+    }
+
+    private def chooseNewProposals(
+      configuration: ExplorationSequenceConfiguration,
+      includedProposals: Seq[IndexedProposal],
+      newProposals: Seq[IndexedProposal]
+    ): Seq[IndexedProposal] = {
+
+      val neededNewProposals: Int = Math.max(
+        Math.ceil(configuration.newRatio * configuration.sequenceSize).toInt -
+          includedProposals.count(_.sequencePool == New),
         0
       )
 
-      val neededControversies: Int = Math.round(neededTested * configuration.controversyRatio).toInt
-      val neededTops = neededTested - neededControversies
+      NewProposalsChooser.choose(newProposals, neededNewProposals)
+    }
 
+    private def createTestedProposalsConfiguration(
+      configuration: ExplorationSequenceConfiguration,
+      nonSequenceVotesWeight: Double,
+      includedProposals: Seq[IndexedProposal],
+      userSegment: Option[String],
+      chosenNewProposalsCount: Int
+    ): TestedProposalsSelectionConfiguration = {
       val votesCounter = if (userSegment.isDefined) {
         VotesCounter.SegmentVotesCounter
       } else {
         VotesCounter.SequenceVotesCounter
       }
 
+      val neededTested = Math.max(configuration.sequenceSize - chosenNewProposalsCount - includedProposals.size, 0)
+      val neededControversies: Int = Math.round(neededTested * configuration.controversyRatio).toInt
+      val neededTops = neededTested - neededControversies
+
       val controversySorter = Sorter.parse(configuration.controversySorter)
       val topSorter = Sorter.parse(configuration.topSorter)
 
-      val testedProposalsConfiguration = TestedProposalsSelectionConfiguration(
+      TestedProposalsSelectionConfiguration(
         votesCounter = votesCounter,
         ratio = nonSequenceVotesWeight,
         neededControversies = neededControversies,
@@ -74,14 +109,6 @@ object SelectionAlgorithm {
         neededTops = neededTops,
         topSorter = topSorter
       )
-      val chosenTestedProposals = chooseTestedProposal(testedProposals, testedProposalsConfiguration)
-      val chosenNewProposals: Seq[IndexedProposal] =
-        NewProposalsChooser.choose(
-          newProposals,
-          Math.max(configuration.sequenceSize - includedProposals.size - chosenTestedProposals.size, 0)
-        )
-
-      includedProposals ++ MakeRandom.shuffleSeq(chosenNewProposals ++ chosenTestedProposals)
     }
 
     private def chooseTestedProposal(
@@ -100,11 +127,14 @@ object SelectionAlgorithm {
         }
       }.partition(_.zone == Consensus)
 
+      // Applying the different selection algorithms consists in sorting the proposals in some order,
+      // and then take enough of them, using the same de-duplication + equalizer everytime.
+
       val sortedControversies = configuration.controversySorter.sort(controversies)
       val sortedTops = configuration.topSorter.sort(tops)
 
-      Equalizer.choose(sortedControversies, configuration.neededControversies) ++
-        Equalizer.choose(sortedTops, configuration.neededTops)
+      TestedProposalsChooser.choose(sortedControversies, configuration.neededControversies) ++
+        TestedProposalsChooser.choose(sortedTops, configuration.neededTops)
     }
 
     final case class TestedProposalsSelectionConfiguration(
@@ -125,9 +155,9 @@ object SelectionAlgorithm {
     object Sorter {
       def parse(name: ExplorationSortAlgorithm): Sorter = {
         name match {
-          case ExplorationSortAlgorithm.Bandit     => BanditSorter
-          case ExplorationSortAlgorithm.RoundRobin => RoundRobinSorter
-          case ExplorationSortAlgorithm.Random     => RandomSorter
+          case ExplorationSortAlgorithm.Bandit    => BanditSorter
+          case ExplorationSortAlgorithm.Equalizer => EqualizerSorter
+          case ExplorationSortAlgorithm.Random    => RandomSorter
         }
       }
     }
@@ -144,7 +174,7 @@ object SelectionAlgorithm {
       }
     }
 
-    object RoundRobinSorter extends Sorter {
+    object EqualizerSorter extends Sorter {
       override def sort(proposals: Seq[ZonedProposal]): Seq[IndexedProposal] = {
         proposals.map(_.proposal).sortBy(_.votesSequenceCount)
       }
@@ -156,9 +186,25 @@ object SelectionAlgorithm {
       }
     }
 
-    object Equalizer {
+    object TestedProposalsChooser {
       private val candidatesPool: Int = 10
 
+      /**
+        * Chooses some proposals in a sorted list of proposals and preserve a few properties:
+        * - no keyword duplication in the list (ie. a given keyword should appear only once)
+        * - no author duplication in the list
+        * - proposals with fewer votes will be boosted (see below)
+        *
+        * In order to boost the proposals with fewer votes, instead of taking the first element of the list,
+        * the one with the fewest number of sequence votes in the 10 first proposals is chosen.
+        * The proposal pool is then cleaned of proposals sharing any keyword / author with that proposal
+        * before choosing the next proposal.
+        *
+        * @param candidates the whole pool of proposals from which to choose
+        * @param neededCount the target number of proposals needed
+        * @return a list consisting of at most the required number of proposals, without any duplication.
+        *         The result can be empty or contain fewer elements than required.
+        */
       def choose(candidates: Seq[IndexedProposal], neededCount: Int): Seq[IndexedProposal] = {
         chooseRecursively(Seq.empty, candidates, neededCount)
       }
@@ -172,7 +218,7 @@ object SelectionAlgorithm {
         if (neededCount <= 0) {
           accumulator
         } else {
-          candidates.take(candidatesPool).sortBy(_.createdAt).headOption match {
+          candidates.take(candidatesPool).sortBy(_.votesSequenceCount).headOption match {
             case None => accumulator
             case Some(chosen) =>
               chooseRecursively(

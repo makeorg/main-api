@@ -117,7 +117,7 @@ object ExplorationSequenceConfiguration {
       id,
       sequenceSize = 12,
       maxTestedProposalCount = 1000,
-      newRatio = 0.5,
+      newRatio = 0.3,
       controversyRatio = 0.1,
       topSorter = ExplorationSortAlgorithm.Bandit,
       controversySorter = ExplorationSortAlgorithm.Bandit
@@ -139,7 +139,7 @@ object ExplorationSortAlgorithm
 
   case object Bandit extends ExplorationSortAlgorithm("bandit")
   case object Random extends ExplorationSortAlgorithm("random")
-  case object RoundRobin extends ExplorationSortAlgorithm("round-robin")
+  case object Equalizer extends ExplorationSortAlgorithm("equalizer")
 
   override def values: IndexedSeq[ExplorationSortAlgorithm] = findValues
 
