@@ -73,7 +73,6 @@ import org.make.core.user.{CountrySearchFilter => _, DescriptionSearchFilter => 
 import org.make.core.{HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
-import java.time.ZonedDateTime
 import javax.ws.rs.Path
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -494,8 +493,6 @@ trait DefaultQuestionApiComponent
             "questionIds".as[Seq[QuestionId]].?,
             "questionContent".?,
             "description".?,
-            "startDate".as[ZonedDateTime].?,
-            "endDate".as[ZonedDateTime].?,
             "operationKinds".as[Seq[OperationKind]].?,
             "language".as[Language].?,
             "country".as[Country].?,
@@ -508,8 +505,6 @@ trait DefaultQuestionApiComponent
               questionIds: Option[Seq[QuestionId]],
               questionContent: Option[String],
               description: Option[String],
-              startDate: Option[ZonedDateTime],
-              endDate: Option[ZonedDateTime],
               operationKinds: Option[Seq[OperationKind]],
               language: Option[Language],
               country: Option[Country],
@@ -526,8 +521,6 @@ trait DefaultQuestionApiComponent
                   description = description.map(DescriptionSearchFilter.apply),
                   country = country.map(CountrySearchFilter.apply),
                   language = language.map(LanguageSearchFilter.apply),
-                  startDate = startDate.map(StartDateSearchFilter.apply),
-                  endDate = endDate.map(EndDateSearchFilter.apply),
                   operationKinds = operationKinds.map(OperationKindsSearchFilter.apply)
                 )
               )

@@ -84,7 +84,8 @@ trait OrganisationIndexationStream
       elasticsearchProposalAPI.countProposalsByQuestion(
         maybeQuestionIds = None,
         status = Some(Seq(ProposalStatus.Accepted)),
-        maybeUserId = Some(organisationId)
+        maybeUserId = Some(organisationId),
+        toEnrich = None
       )
 
     def generateProposalsAndVotesCountsByQuestion(

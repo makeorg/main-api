@@ -23,6 +23,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import cats.data.NonEmptyList
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import eu.timepit.refined.W
 import eu.timepit.refined.auto._
 import eu.timepit.refined.api.Refined
@@ -35,7 +36,7 @@ import io.circe.{Codec, Decoder, Encoder}
 import io.swagger.annotations._
 
 import javax.ws.rs.Path
-import org.make.api.question.QuestionServiceComponent
+import org.make.api.question.{QuestionServiceComponent, SimpleQuestionWordingResponse}
 import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
@@ -253,8 +254,39 @@ trait ModerationOperationOfQuestionApi extends Directives {
   @Path(value = "/search")
   def searchOperationsOfQuestions: Route
 
+  @ApiOperation(
+    value = "operations-of-questions-infos",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(
+      new ApiResponse(
+        code = HttpCodes.OK,
+        message = "Ok",
+        response = classOf[Array[ModerationOperationOfQuestionInfosResponse]]
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value =
+      Array(new ApiImplicitParam(name = "moderationMode", paramType = "query", required = true, dataType = "string"))
+  )
+  @Path(value = "/infos")
+  def infosOperationsOfQuestions: Route
+
   def routes: Route =
     listOperationOfQuestions ~
+      infosOperationsOfQuestions ~
       searchOperationsOfQuestions ~
       getOperationOfQuestion ~
       modifyOperationOfQuestion ~
@@ -615,6 +647,29 @@ trait DefaultModerationOperationOfQuestionApiComponent
       }
     }
 
+    override def infosOperationsOfQuestions: Route = get {
+      path("moderation" / "operations-of-questions" / "infos") {
+        makeOperation("InfosOperationsOfQuestions") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireModerationRole(auth.user) {
+              parameters("moderationMode".as[ModerationMode]) { moderationMode =>
+                val questionIds: Option[Seq[QuestionId]] = {
+                  if (auth.user.roles.contains(RoleAdmin)) {
+                    None
+                  } else {
+                    Some(auth.user.availableQuestions)
+                  }
+                }
+                provideAsync(operationOfQuestionService.getQuestionsInfos(questionIds, moderationMode)) { infos =>
+                  complete((StatusCodes.OK, List(`X-Total-Count`(infos.size.toString)), infos))
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
   }
 }
 
@@ -893,4 +948,50 @@ object ModerationOperationOfQuestionSearchResult {
     ModerationOperationOfQuestionSearchResult(ooq.questionId, ooq.slug)
 
   implicit val codec: Codec[ModerationOperationOfQuestionSearchResult] = deriveCodec
+}
+
+sealed abstract class ModerationMode(val value: String) extends StringEnumEntry with Product with Serializable
+
+object ModerationMode extends StringEnum[ModerationMode] with StringCirceEnum[ModerationMode] {
+
+  case object Enrichment extends ModerationMode("Enrichment")
+  case object Moderation extends ModerationMode("Moderation")
+
+  override def values: IndexedSeq[ModerationMode] = findValues
+}
+
+final case class ModerationOperationOfQuestionInfosResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "a90d4223-a198-480b-b412-53970c5f1151")
+  questionId: QuestionId,
+  slug: String,
+  @(ApiModelProperty @field)(dataType = "org.make.api.question.SimpleQuestionWordingResponse")
+  wording: SimpleQuestionWordingResponse,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  countries: NonEmptyList[Country],
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Language,
+  @(ApiModelProperty @field)(dataType = "dateTime") startDate: ZonedDateTime,
+  @(ApiModelProperty @field)(dataType = "dateTime") endDate: ZonedDateTime,
+  totalProposalCount: Int,
+  proposalToModerateCount: Int
+)
+
+object ModerationOperationOfQuestionInfosResponse {
+  def apply(
+    question: IndexedOperationOfQuestion,
+    proposalToModerateCount: Int,
+    totalProposalCount: Int
+  ): ModerationOperationOfQuestionInfosResponse = ModerationOperationOfQuestionInfosResponse(
+    questionId = question.questionId,
+    slug = question.slug,
+    wording = SimpleQuestionWordingResponse(question.operationTitle, question.question),
+    countries = question.countries,
+    language = question.language,
+    startDate = question.startDate,
+    endDate = question.endDate,
+    totalProposalCount = totalProposalCount,
+    proposalToModerateCount = proposalToModerateCount
+  )
+
+  implicit val codec: Codec[ModerationOperationOfQuestionInfosResponse] = deriveCodec
 }

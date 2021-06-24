@@ -22,11 +22,10 @@ package operation
 
 import java.time.{ZoneOffset, ZonedDateTime}
 import java.time.format.DateTimeFormatter
-
 import cats.data.NonEmptyList
 import com.sksamuel.elastic4s.{ElasticApi, Operator}
 import com.sksamuel.elastic4s.http.ElasticDsl
-import com.sksamuel.elastic4s.searches.queries.Query
+import com.sksamuel.elastic4s.searches.queries.{Query, RangeQuery}
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.core.operation.indexed.OperationOfQuestionElasticsearchFieldName
@@ -209,16 +208,27 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     }
   }
 
+  private def dateRangeQuery(
+    fieldName: String,
+    lte: Option[ZonedDateTime],
+    gte: Option[ZonedDateTime]
+  ): Option[RangeQuery] = {
+    val dateFormatter: DateTimeFormatter =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC)
+    val query = ElasticApi.rangeQuery(fieldName)
+    (lte.map(_.format(dateFormatter)), gte.map(_.format(dateFormatter))) match {
+      case (Some(l), Some(g)) => Some(query.lte(l).gte(g))
+      case (Some(l), None)    => Some(query.lte(l))
+      case (None, Some(g))    => Some(query.gte(g))
+      case (None, None)       => None
+    }
+  }
+
   def buildStartDateSearchFilter(operationOfQuestionSearchQuery: OperationOfQuestionSearchQuery): Option[Query] = {
     operationOfQuestionSearchQuery.filters.flatMap {
       _.startDate match {
-        case Some(StartDateSearchFilter(startDate)) =>
-          val dateFormatter: DateTimeFormatter =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC)
-          Some(
-            ElasticApi
-              .termQuery(OperationOfQuestionElasticsearchFieldName.startDate.field, startDate.format(dateFormatter))
-          )
+        case Some(StartDateSearchFilter(lte, gte)) =>
+          dateRangeQuery(OperationOfQuestionElasticsearchFieldName.startDate.field, lte, gte)
         case None => None
       }
     }
@@ -227,12 +237,8 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
   def buildEndDateSearchFilter(operationOfQuestionSearchQuery: OperationOfQuestionSearchQuery): Option[Query] = {
     operationOfQuestionSearchQuery.filters.flatMap {
       _.endDate match {
-        case Some(EndDateSearchFilter(endDate)) =>
-          val dateFormatter: DateTimeFormatter =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC)
-          Some(
-            ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldName.endDate.field, endDate.format(dateFormatter))
-          )
+        case Some(EndDateSearchFilter(lte, gte)) =>
+          dateRangeQuery(OperationOfQuestionElasticsearchFieldName.endDate.field, lte, gte)
         case None => None
       }
     }
@@ -306,8 +312,8 @@ final case class SlugSearchFilter(slug: String)
 final case class DescriptionSearchFilter(description: String)
 final case class CountrySearchFilter(country: Country)
 final case class LanguageSearchFilter(language: Language)
-final case class StartDateSearchFilter(startDate: ZonedDateTime)
-final case class EndDateSearchFilter(endDate: ZonedDateTime)
+final case class StartDateSearchFilter(lte: Option[ZonedDateTime], gte: Option[ZonedDateTime])
+final case class EndDateSearchFilter(lte: Option[ZonedDateTime], gte: Option[ZonedDateTime])
 final case class OperationKindsSearchFilter(operationKinds: Seq[OperationKind])
 final case class FeaturedSearchFilter(featured: Boolean)
 case object HasResultsSearchFilter

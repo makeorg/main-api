@@ -21,8 +21,8 @@ package org.make.api.operation
 
 import java.time.ZonedDateTime
 import java.util.UUID
-
 import org.make.api.extensions.MakeDBExecutionContextComponent
+import org.make.api.proposal.{ProposalSearchEngine, ProposalSearchEngineComponent}
 import org.make.api.question._
 import org.make.api.sequence.{PersistentSequenceConfigurationComponent, PersistentSequenceConfigurationService}
 import org.make.api.technical.IdGeneratorComponent
@@ -30,7 +30,8 @@ import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.core.{DateHelper, Order}
 import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation._
-import org.make.core.operation.indexed.IndexedOperationOfQuestion
+import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
+import org.make.core.proposal.ProposalStatus
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.sequence.{SequenceConfiguration, SequenceId}
 import org.make.core.technical.IdGenerator
@@ -51,6 +52,7 @@ class OperationOfQuestionServiceTest
     with PersistentSequenceConfigurationComponent
     with PersistentOperationOfQuestionServiceComponent
     with OperationOfQuestionSearchEngineComponent
+    with ProposalSearchEngineComponent
     with QuestionServiceComponent
     with OperationServiceComponent {
 
@@ -64,6 +66,7 @@ class OperationOfQuestionServiceTest
     mock[PersistentOperationOfQuestionService]
   override val elasticsearchOperationOfQuestionAPI: OperationOfQuestionSearchEngine =
     mock[OperationOfQuestionSearchEngine]
+  override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val questionService: QuestionService = mock[QuestionService]
   override val operationService: OperationService = mock[OperationService]
   override val writeExecutionContext: ExecutionContext = mock[ExecutionContext]
@@ -447,5 +450,44 @@ class OperationOfQuestionServiceTest
       }
     }
 
+  }
+
+  Feature("infos") {
+    Scenario("ooq infos") {
+      val qId = QuestionId("q-id-infos")
+      when(
+        elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query = argThat[OperationOfQuestionSearchQuery] {
+          query: OperationOfQuestionSearchQuery =>
+            query.filters.isDefined && query.filters.flatMap(_.question).isEmpty
+        })
+      ).thenReturn(
+        Future.successful(
+          OperationOfQuestionSearchResult(1L, Seq(indexedOperationOfQuestion(qId, OperationId("o-id-infos"))))
+        )
+      )
+      when(
+        elasticsearchProposalAPI.countProposalsByQuestion(
+          maybeQuestionIds = Some(Seq(qId)),
+          status = Some(Seq(ProposalStatus.Pending)),
+          maybeUserId = None,
+          toEnrich = None
+        )
+      ).thenReturn(Future.successful(Map(qId -> 42L)))
+      when(
+        elasticsearchProposalAPI.countProposalsByQuestion(
+          maybeQuestionIds = Some(Seq(qId)),
+          status = Some(ProposalStatus.values),
+          maybeUserId = None,
+          toEnrich = None
+        )
+      ).thenReturn(Future.successful(Map(qId -> 420L)))
+      whenReady(operationOfQuestionService.getQuestionsInfos(None, ModerationMode.Moderation), Timeout(3.seconds)) {
+        res =>
+          res.size shouldBe 1
+          res.head.questionId shouldBe qId
+          res.head.proposalToModerateCount shouldBe 42
+          res.head.totalProposalCount shouldBe 420
+      }
+    }
   }
 }

@@ -888,4 +888,58 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     }
   }
 
+  Feature("ooq infos") {
+    Scenario("forbidden when not moderator or admin") {
+      for (token <- Seq(None, Some(tokenCitizen))) {
+        Get("/moderation/operations-of-questions/infos?moderationMode=Enrichment")
+          .withHeaders(token.map(t => Authorization(OAuth2BearerToken(t))).toList) ~> routes ~> check {
+          status should be(token.fold(StatusCodes.Unauthorized)(_ => StatusCodes.Forbidden))
+        }
+      }
+    }
+
+    Scenario("works for moderators") {
+      when(
+        operationOfQuestionService.getQuestionsInfos(
+          questionIds = eqTo(Some(defaultModeratorUser.availableQuestions)),
+          moderationMode = eqTo(ModerationMode.Moderation)
+        )
+      ).thenReturn(Future.successful(Seq.empty))
+      Get("/moderation/operations-of-questions/infos?moderationMode=Moderation")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        header("x-total-count").map(_.value) should be(Some("0"))
+        val results = entityAs[Seq[ModerationOperationOfQuestionSearchResult]]
+        results shouldBe empty
+      }
+    }
+
+    Scenario("works for admins") {
+      when(
+        operationOfQuestionService
+          .getQuestionsInfos(questionIds = eqTo(None), moderationMode = eqTo(ModerationMode.Enrichment))
+      ).thenReturn(
+        Future.successful(
+          Seq(
+            ModerationOperationOfQuestionInfosResponse(
+              indexedOperationOfQuestion(QuestionId("q-id-infos"), OperationId("o-id-infos")),
+              42,
+              420
+            )
+          )
+        )
+      )
+
+      Get("/moderation/operations-of-questions/infos?moderationMode=Enrichment")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        header("x-total-count").map(_.value) should be(Some("1"))
+        val results = entityAs[Seq[ModerationOperationOfQuestionInfosResponse]]
+        results.size should be(1)
+        results.head.questionId shouldBe QuestionId("q-id-infos")
+        results.head.proposalToModerateCount shouldBe 42
+      }
+    }
+  }
+
 }

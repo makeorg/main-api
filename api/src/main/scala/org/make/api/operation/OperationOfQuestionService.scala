@@ -18,19 +18,21 @@
  */
 
 package org.make.api.operation
-import java.time.ZonedDateTime
 import cats.data.{NonEmptyList, OptionT}
 import cats.implicits._
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.MaxSize
 import grizzled.slf4j.Logging
+import org.make.api.operation.ModerationMode.Enrichment
+import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.question.{PersistentQuestionServiceComponent, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sequence.PersistentSequenceConfigurationComponent
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation._
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
+import org.make.core.proposal.ProposalStatus
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.{
@@ -39,11 +41,12 @@ import org.make.core.sequence.{
   SequenceId,
   SpecificSequenceConfiguration
 }
+import org.make.core.technical.Pagination._
 import org.make.core.{DateHelper, Order}
 
+import java.time.ZonedDateTime
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import org.make.core.technical.Pagination._
 
 trait OperationOfQuestionService {
   // TODO: do we really need all these to be separate?
@@ -83,6 +86,10 @@ trait OperationOfQuestionService {
   def create(parameters: CreateOperationOfQuestion): Future[OperationOfQuestion]
 
   def indexById(questionId: QuestionId): Future[Option[IndexationStatus]]
+  def getQuestionsInfos(
+    questionIds: Option[Seq[QuestionId]],
+    moderationMode: ModerationMode
+  ): Future[Seq[ModerationOperationOfQuestionInfosResponse]]
 }
 
 final case class CreateOperationOfQuestion(
@@ -121,6 +128,7 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
     with PersistentSequenceConfigurationComponent
     with PersistentOperationOfQuestionServiceComponent
     with OperationOfQuestionSearchEngineComponent
+    with ProposalSearchEngineComponent
     with IdGeneratorComponent
     with QuestionServiceComponent
     with OperationServiceComponent =>
@@ -319,6 +327,54 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
           elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(operationOfQuestion, None).map(Some(_))
       }
 
+    }
+
+    override def getQuestionsInfos(
+      questionIds: Option[Seq[QuestionId]],
+      moderationMode: ModerationMode
+    ): Future[Seq[ModerationOperationOfQuestionInfosResponse]] = {
+      elasticsearchOperationOfQuestionAPI
+        .searchOperationOfQuestions(
+          OperationOfQuestionSearchQuery(
+            filters = Some(
+              OperationOfQuestionSearchFilters(
+                questionIds = questionIds.map(QuestionIdsSearchFilter),
+                startDate = Some(StartDateSearchFilter(lte = Some(DateHelper.now()), gte = None)),
+                endDate = Some(EndDateSearchFilter(lte = None, gte = Some(DateHelper.now().minusWeeks(2)))),
+                operationKinds = Some(OperationKindsSearchFilter(OperationKind.values))
+              )
+            ),
+            limit = questionIds.map(_.length + 1).orElse(Some(10000))
+          )
+        )
+        .flatMap { questions =>
+          val futureProposalToModerateByQuestion = elasticsearchProposalAPI.countProposalsByQuestion(
+            maybeQuestionIds = Some(questions.results.map(_.questionId)),
+            status =
+              if (moderationMode == Enrichment) Some(Seq(ProposalStatus.Accepted))
+              else Some(Seq(ProposalStatus.Pending)),
+            maybeUserId = None,
+            toEnrich = if (moderationMode == Enrichment) Some(true) else None
+          )
+          val futureProposalCountByQuestion = elasticsearchProposalAPI.countProposalsByQuestion(
+            maybeQuestionIds = Some(questions.results.map(_.questionId)),
+            status = Some(ProposalStatus.values),
+            maybeUserId = None,
+            toEnrich = None
+          )
+          for {
+            moderateCount <- futureProposalToModerateByQuestion
+            totalCount    <- futureProposalCountByQuestion
+          } yield {
+            questions.results.map { q =>
+              ModerationOperationOfQuestionInfosResponse(
+                q,
+                moderateCount.getOrElse(q.questionId, 0L).toInt,
+                totalCount.getOrElse(q.questionId, 0L).toInt
+              )
+            }.sortBy(_.proposalToModerateCount * -1)
+          }
+        }
     }
 
   }
