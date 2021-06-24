@@ -36,7 +36,7 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.api.technical.directives.FutureDirectives
+import org.make.api.technical.directives.{FutureDirectives, ValidationDirectives}
 import org.make.api.technical.monitoring.MonitoringMessageHelper
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.technical.storage.Content
@@ -67,7 +67,8 @@ trait MakeDirectives
     with ErrorAccumulatingCirceSupport
     with CirceFormatters
     with FutureDirectives
-    with TracingDirectives {
+    with TracingDirectives
+    with ValidationDirectives {
   this: MakeDirectivesDependencies =>
 
   lazy val authorizedUris: Seq[String] = makeSettings.authorizedCorsUri
