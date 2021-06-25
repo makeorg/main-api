@@ -27,16 +27,7 @@ import com.typesafe.config.Config
 class KafkaConfiguration(override protected val configuration: Config) extends Extension with ConfigurationSupport {
 
   val connectionString: String = configuration.getString("connection-string")
-  val topics: Map[String, String] = Map(
-    "users" -> configuration.getString("topics.users"),
-    "emails" -> configuration.getString("topics.emails"),
-    "proposals" -> configuration.getString("topics.proposals"),
-    "mailjet-events" -> configuration.getString("topics.mailjet-events"),
-    "duplicates-predicted" -> configuration.getString("topics.duplicates-predicted"),
-    "tracking-events" -> configuration.getString("topics.tracking-events"),
-    "ideas" -> configuration.getString("topics.ideas"),
-    "predictions" -> configuration.getString("topics.predictions")
-  )
+  def topic(name: String): String = configuration.getString(s"topics.$name")
 
   val pollTimeout: Long = configuration.getLong("poll-timeout")
   val schemaRegistry: String = configuration.getString("schema-registry")

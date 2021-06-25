@@ -63,7 +63,7 @@ abstract class KafkaProducerBehavior[Event: ClassTag, Wrapper: SchemaFor: Encode
   def createBehavior(name: String): Behavior[Event] = {
     Behaviors.setup { context =>
       val kafkaConfiguration = KafkaConfiguration(context.system)
-      val topic = kafkaConfiguration.topics(topicKey)
+      val topic = kafkaConfiguration.topic(topicKey)
       val producer = createProducer(kafkaConfiguration, name)
       context.system.eventStream ! Subscribe(context.self)
 

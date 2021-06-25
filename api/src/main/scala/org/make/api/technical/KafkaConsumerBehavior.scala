@@ -60,7 +60,7 @@ abstract class KafkaConsumerBehavior[T: SchemaFor: Decoder] {
       new StringDeserializer(),
       new MakeKafkaAvroDeserializer(kafkaConfiguration.schemaRegistry)
     )
-    consumer.subscribe(util.Arrays.asList(kafkaConfiguration.topics(topicKey)))
+    consumer.subscribe(util.Arrays.asList(kafkaConfiguration.topic(topicKey)))
     consumer
   }
 
