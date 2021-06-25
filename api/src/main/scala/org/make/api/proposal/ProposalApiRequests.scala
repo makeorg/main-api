@@ -301,7 +301,8 @@ final case class ExhaustiveSearchRequest(
   skip: Option[Int] = None,
   createdBefore: Option[ZonedDateTime] = None,
   userTypes: Option[Seq[UserType]] = None,
-  keywords: Option[Seq[ProposalKeywordKey]] = None
+  keywords: Option[Seq[ProposalKeywordKey]] = None,
+  userId: Option[UserId] = None
 ) {
   def toSearchQuery(requestContext: RequestContext): SearchQuery = {
     val filters: Option[SearchFilters] =
@@ -322,7 +323,8 @@ final case class ExhaustiveSearchRequest(
         language = language.map(LanguageSearchFilter.apply),
         country = country.map(CountrySearchFilter.apply),
         createdAt = createdBefore.map(createdBeforeDate => CreatedAtSearchFilter(Some(createdBeforeDate), None)),
-        userTypes = userTypes.map(UserTypesSearchFilter.apply)
+        userTypes = userTypes.map(UserTypesSearchFilter.apply),
+        user = userId.map(userId => UserSearchFilter(Seq(userId)))
       )
 
     SearchQuery(
