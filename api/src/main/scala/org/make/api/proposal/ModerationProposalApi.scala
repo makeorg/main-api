@@ -46,7 +46,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleAdmin
-import org.make.core.user.UserType
+import org.make.core.user.{UserId, UserType}
 import org.make.core.{
   BusinessConfig,
   DateHelper,
@@ -446,7 +446,8 @@ trait DefaultModerationProposalApiComponent
                   "language".as[Language].?,
                   "country".as[Country].?,
                   "userType".csv[UserType],
-                  "keywords".as[Seq[ProposalKeywordKey]].?
+                  "keywords".as[Seq[ProposalKeywordKey]].?,
+                  "userId".as[UserId].?
                 ) {
                   (
                     proposalIds: Option[Seq[ProposalId]],
@@ -467,7 +468,8 @@ trait DefaultModerationProposalApiComponent
                     language: Option[Language],
                     country: Option[Country],
                     userTypes: Option[Seq[UserType]],
-                    keywords: Option[Seq[ProposalKeywordKey]]
+                    keywords: Option[Seq[ProposalKeywordKey]],
+                    userId: Option[UserId]
                   ) =>
                     parameters("limit".as[Int].?, "skip".as[Int].?, "sort".?, "order".as[Order].?) {
                       (limit: Option[Int], skip: Option[Int], sort: Option[String], order: Option[Order]) =>
@@ -537,7 +539,8 @@ trait DefaultModerationProposalApiComponent
                           skip = skip,
                           createdBefore = createdBefore,
                           userTypes = userTypes,
-                          keywords = keywords
+                          keywords = keywords,
+                          userId = userId
                         )
                         val query: SearchQuery = exhaustiveSearchRequest.toSearchQuery(requestContext)
                         provideAsync(
