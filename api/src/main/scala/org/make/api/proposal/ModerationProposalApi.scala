@@ -41,7 +41,14 @@ import org.make.core.auth.UserRights
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalsSearchResult
-import org.make.core.proposal.{ProposalId, ProposalKeywordKey, ProposalStatus, SearchQuery}
+import org.make.core.proposal.{
+  ProposalId,
+  ProposalKeywordKey,
+  ProposalSearchFilter,
+  ProposalStatus,
+  SearchFilters,
+  SearchQuery
+}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
@@ -273,6 +280,29 @@ trait ModerationProposalApi extends Directives {
   def lock: Route
 
   @ApiOperation(
+    value = "lock-multiple-proposal",
+    httpMethod = "POST",
+    code = HttpCodes.NoContent,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.LockProposalsRequest")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
+  @Path(value = "/lock")
+  def lockMultiple: Route
+
+  @ApiOperation(
     value = "duplicates",
     httpMethod = "GET",
     code = HttpCodes.OK,
@@ -368,6 +398,7 @@ trait ModerationProposalApi extends Directives {
       refuseProposal ~
       postponeProposal ~
       lock ~
+      lockMultiple ~
       getDuplicates ~
       changeProposalsIdea ~
       getModerationProposal ~
@@ -727,15 +758,66 @@ trait DefaultModerationProposalApiComponent
             requireModerationRole(auth.user) {
               provideAsyncOrNotFound(proposalCoordinatorService.getProposal(proposalId)) { proposal =>
                 requireRightsOnQuestion(auth.user, proposal.questionId) {
-                  provideAsyncOrNotFound(
+                  provideAsyncOrNotFound(userService.getUser(auth.user.userId)) { moderator =>
+                    provideAsync(
+                      proposalService
+                        .lockProposal(
+                          proposalId = proposalId,
+                          moderatorId = moderator.userId,
+                          moderatorDisplayName = moderator.displayName,
+                          requestContext = requestContext
+                        )
+                    ) { _ =>
+                      complete(StatusCodes.NoContent)
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def lockMultiple: Route = post {
+      path("moderation" / "proposals" / "lock") {
+        makeOperation("LockMultipleProposals") { requestContext =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireModerationRole(auth.user) {
+              decodeRequest {
+                entity(as[LockProposalsRequest]) { request =>
+                  val query = SearchQuery(filters =
+                    Some(SearchFilters(proposal = Some(ProposalSearchFilter(request.proposalIds.toSeq))))
+                  )
+                  provideAsync(
                     proposalService
-                      .lockProposal(
-                        proposalId = proposalId,
-                        moderatorId = auth.user.userId,
-                        requestContext = requestContext
+                      .search(userId = Some(auth.user.userId), query = query, requestContext = requestContext)
+                  ) { proposals =>
+                    val proposalIds = proposals.results.map(_.id)
+                    val notFoundIds = request.proposalIds.diff(proposalIds.toSet)
+                    Validation.validate(
+                      Validation.validateField(
+                        field = "proposalIds",
+                        key = "invalid_value",
+                        condition = notFoundIds.isEmpty,
+                        message = s"Proposals not found: ${notFoundIds.mkString(", ")}"
                       )
-                  ) { _ =>
-                    complete(StatusCodes.NoContent)
+                    )
+                    requireRightsOnQuestion(auth.user, proposals.results.flatMap(_.question.map(_.questionId))) {
+                      provideAsyncOrNotFound(userService.getUser(auth.user.userId)) { moderator =>
+                        provideAsync(
+                          proposalService
+                            .lockProposals(
+                              proposalIds = proposalIds,
+                              moderatorId = moderator.userId,
+                              moderatorDisplayName = moderator.displayName,
+                              requestContext = requestContext
+                            )
+                        ) { _ =>
+                          complete(StatusCodes.NoContent)
+                        }
+                      }
+                    }
                   }
                 }
               }
