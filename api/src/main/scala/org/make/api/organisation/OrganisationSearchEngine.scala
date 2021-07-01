@@ -26,6 +26,7 @@ import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.queries.BoolQuery
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import grizzled.slf4j.Logging
+import io.circe.{Json, Printer}
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
 import org.make.core.CirceFormatters
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
@@ -62,6 +63,9 @@ trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineC
 
     private val organisationAlias: IndexAndType =
       elasticsearchConfiguration.organisationAliasName / OrganisationSearchEngine.organisationIndexName
+
+    // TODO remove once elastic4s-circe upgrades to circe 0.14
+    private implicit val printer: Json => String = Printer.noSpaces.print
 
     override def findOrganisationById(organisationId: UserId): Future[Option[IndexedOrganisation]] = {
       client.executeAsFuture(get(id = organisationId.value).from(organisationAlias)).map(_.toOpt[IndexedOrganisation])

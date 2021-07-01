@@ -40,6 +40,7 @@ import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import com.sksamuel.elastic4s.searches.{IncludeExclude, SearchRequest => ElasticSearchRequest}
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import grizzled.slf4j.Logging
+import io.circe.{Json, Printer}
 import org.make.api.question.{AvatarsAndProposalsCount, PopularTagResponse}
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
 import org.make.core.DateHelper._
@@ -126,6 +127,9 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
     private val proposalAlias: IndexAndType =
       elasticsearchConfiguration.proposalAliasName / ProposalSearchEngine.proposalIndexName
+
+    // TODO remove once elastic4s-circe upgrades to circe 0.14
+    private implicit val printer: Json => String = Printer.noSpaces.print
 
     override def findProposalById(proposalId: ProposalId): Future[Option[IndexedProposal]] = {
       client.executeAsFuture(get(id = proposalId.value).from(proposalAlias)).map(_.toOpt[IndexedProposal])
