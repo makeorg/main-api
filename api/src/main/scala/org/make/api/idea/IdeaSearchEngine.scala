@@ -26,6 +26,7 @@ import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.queries.BoolQuery
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import grizzled.slf4j.Logging
+import io.circe.{Json, Printer}
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
 import org.make.core.CirceFormatters
 import org.make.core.idea.indexed.{IdeaSearchResult, IndexedIdea}
@@ -60,6 +61,9 @@ trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with Ci
     private lazy val client = elasticsearchClient.client
 
     private val ideaAlias: IndexAndType = elasticsearchConfiguration.ideaAliasName / IdeaSearchEngine.ideaIndexName
+
+    // TODO remove once elastic4s-circe upgrades to circe 0.14
+    private implicit val printer: Json => String = Printer.noSpaces.print
 
     override def findIdeaById(ideaId: IdeaId): Future[Option[IndexedIdea]] = {
       client

@@ -26,6 +26,7 @@ import com.sksamuel.elastic4s.searches.queries.BoolQuery
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import grizzled.slf4j.Logging
+import io.circe.{Json, Printer}
 import org.make.api.technical.elasticsearch.{ElasticsearchClientComponent, ElasticsearchConfigurationComponent, _}
 import org.make.api.views.HomePageViewResponse.Highlights
 import org.make.core.CirceFormatters
@@ -79,6 +80,9 @@ trait DefaultOperationOfQuestionSearchEngineComponent
 
     private val operationOfQuestionAlias: IndexAndType =
       elasticsearchConfiguration.operationOfQuestionAliasName / OperationOfQuestionSearchEngine.operationOfQuestionIndexName
+
+    // TODO remove once elastic4s-circe upgrades to circe 0.14
+    private implicit val printer: Json => String = Printer.noSpaces.print
 
     override def findOperationOfQuestionById(questionId: QuestionId): Future[Option[IndexedOperationOfQuestion]] = {
       client

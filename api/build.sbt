@@ -119,9 +119,14 @@ fork in run             := true
 fork in Test            := true
 fork in IntegrationTest := true
 
+val kamonInstrumentationWorkaround = Seq("--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED")
+
 javaOptions in run ++= Seq(
   "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=127.0.0.1:5005",
   "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"
-) ++ SbtKanelaRunner.jvmForkOptions.value
+) ++ kamonInstrumentationWorkaround ++ SbtKanelaRunner.jvmForkOptions.value
+
+javaOptions in Test            ++= kamonInstrumentationWorkaround
+javaOptions in IntegrationTest ++= kamonInstrumentationWorkaround
 
 enablePlugins(BuildInfoPlugin)

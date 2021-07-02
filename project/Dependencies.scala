@@ -21,19 +21,20 @@ import sbt._
 
 object Dependencies {
 
-  private val akkaVersion = "2.6.14"
+  private val akkaVersion = "2.6.15"
   private val akkaHttpVersion = "10.2.4"
   private val alpakkaVersion = "1.1.2"
-  private val nettyVersion = "4.1.63.Final"
+  private val nettyVersion = "4.1.65.Final"
   private val kafkaVersion = "1.1.0"
   private val elastic4sVersion = "6.7.8"
+  private val enumeratumVersion = "1.7.0"
   private val jerseyVersion = "2.32"
-  private val kamonVersion = "2.1.17"
+  private val kamonVersion = "2.2.1"
   private val log4jVersion = "2.14.1"
-  private val circeVersion = "0.13.0"
-  val kanelaVersion: String = "1.0.9"
+  private val circeVersion = "0.14.1"
+  val kanelaVersion: String = "1.0.11"
   val swaggerUiVersion: String = "3.20.9"
-  private val refinedVersion: String = "0.9.24"
+  private val refinedVersion: String = "0.9.26"
   private val scalikeVersion = "3.5.0"
   private val staminaVersion: String = "0.1.5+1-74109b8e"
   private val calibanVersion = "0.9.1"
@@ -43,7 +44,7 @@ object Dependencies {
   val grizzledSlf4j: ModuleID = "org.clapper"             %% "grizzled-slf4j"  % "1.3.4"
   val logger: ModuleID = "org.apache.logging.log4j"       % "log4j"            % log4jVersion
   val loggerBridge: ModuleID = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4jVersion
-  val commonsLoggingBridge: ModuleID = "org.slf4j"        % "jcl-over-slf4j"   % "1.7.30"
+  val commonsLoggingBridge: ModuleID = "org.slf4j"        % "jcl-over-slf4j"   % "1.7.31"
   val log4jJul: ModuleID = "org.apache.logging.log4j"     % "log4j-jul"        % log4jVersion
 
   val nettyEpoll: ModuleID = ("io.netty" % "netty-transport-native-epoll" % nettyVersion).classifier("linux-x86_64")
@@ -98,7 +99,7 @@ object Dependencies {
 
   val scalike: ModuleID = "org.scalikejdbc"       %% "scalikejdbc"                      % scalikeVersion
   val scalikeMacros: ModuleID = "org.scalikejdbc" %% "scalikejdbc-syntax-support-macro" % scalikeVersion
-  val postgresql: ModuleID = "org.postgresql"     % "postgresql"                        % "42.2.20"
+  val postgresql: ModuleID = "org.postgresql"     % "postgresql"                        % "42.2.22"
   val flywaydb: ModuleID = "org.flywaydb"         % "flyway-core"                       % "7.7.3"
 
   val slugify: ModuleID = "com.github.slugify" % "slugify" % "2.5"
@@ -125,7 +126,7 @@ object Dependencies {
   val stamina: ModuleID = "com.scalapenos"    %% "stamina-json" % staminaVersion
   val sprayJson: ModuleID = "io.spray"        %% "spray-json"   % "1.3.5"
   val jsonLenses = "net.virtual-void"         %% "json-lenses"  % "0.6.2"
-  val scalaCheck: ModuleID = "org.scalacheck" %% "scalacheck"   % "1.15.3"
+  val scalaCheck: ModuleID = "org.scalacheck" %% "scalacheck"   % "1.15.4"
 
   val zio: ModuleID = "dev.zio"                           %% "zio"               % zioVersion
   val zioStreams: ModuleID = "dev.zio"                    %% "zio-streams"       % zioVersion
@@ -135,8 +136,8 @@ object Dependencies {
   // Test related dependencies
   val akkaTest: ModuleID = "com.typesafe.akka"            %% "akka-actor-testkit-typed" % akkaVersion     % "it,test"
   val akkaStreamTest: ModuleID = "com.typesafe.akka"      %% "akka-stream-testkit"      % akkaVersion     % "it,test"
-  val scalaTest: ModuleID = "org.scalatest"               %% "scalatest"                % "3.2.8"         % "it,test"
-  val scalaTestScalaCheck: ModuleID = "org.scalatestplus" %% "scalacheck-1-15"          % "3.2.8.0"       % "it,test"
+  val scalaTest: ModuleID = "org.scalatest"               %% "scalatest"                % "3.2.9"         % "it,test"
+  val scalaTestScalaCheck: ModuleID = "org.scalatestplus" %% "scalacheck-1-15"          % "3.2.9.0"       % "it,test"
   val akkaHttpTest: ModuleID = "com.typesafe.akka"        %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
   val mockito: ModuleID = "org.mockito"                   %% "mockito-scala"            % mockitoVersion  % "it,test"
   val mockitoScalatest: ModuleID = "org.mockito"          %% "mockito-scala-scalatest"  % mockitoVersion  % "it,test"
@@ -158,7 +159,7 @@ object Dependencies {
   val refinedCirce: ModuleID = "io.circe"        %% "circe-refined"      % circeVersion
   val refinedScalaCheck: ModuleID = "eu.timepit" %% "refined-scalacheck" % refinedVersion
 
-  val enumeratum: ModuleID = "com.beachape"           %% "enumeratum"            % "1.6.1"
-  val enumeratumCirce: ModuleID = "com.beachape"      %% "enumeratum-circe"      % "1.6.1"
-  val enumeratumScalacheck: ModuleID = "com.beachape" %% "enumeratum-scalacheck" % "1.6.1"
+  val enumeratum: ModuleID = "com.beachape"           %% "enumeratum"            % enumeratumVersion
+  val enumeratumCirce: ModuleID = "com.beachape"      %% "enumeratum-circe"      % enumeratumVersion
+  val enumeratumScalacheck: ModuleID = "com.beachape" %% "enumeratum-scalacheck" % enumeratumVersion
 }

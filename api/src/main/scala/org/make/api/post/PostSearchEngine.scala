@@ -25,6 +25,7 @@ import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.queries.BoolQuery
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import grizzled.slf4j.Logging
+import io.circe.{Json, Printer}
 import org.make.api.technical.elasticsearch.{ElasticsearchClientComponent, ElasticsearchConfigurationComponent, _}
 import org.make.core.CirceFormatters
 import org.make.core.elasticsearch.IndexationStatus
@@ -60,6 +61,9 @@ trait DefaultPostSearchEngineComponent extends PostSearchEngineComponent with Ci
 
     private val postAlias: IndexAndType =
       elasticsearchConfiguration.postAliasName / PostSearchEngine.postIndexName
+
+    // TODO remove once elastic4s-circe upgrades to circe 0.14
+    private implicit val printer: Json => String = Printer.noSpaces.print
 
     override def findPostById(postId: PostId): Future[Option[IndexedPost]] = {
       client
