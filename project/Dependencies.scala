@@ -133,6 +133,16 @@ object Dependencies {
   val caliban: ModuleID = "com.github.ghostdogpr"         %% "caliban"           % calibanVersion
   val calibanAkkaHttp: ModuleID = "com.github.ghostdogpr" %% "caliban-akka-http" % calibanVersion
 
+  val apacheMath: ModuleID = "org.apache.commons" % "commons-math3" % "3.6.1"
+
+  val refinedScala: ModuleID = "eu.timepit"      %% "refined"            % refinedVersion
+  val refinedCirce: ModuleID = "io.circe"        %% "circe-refined"      % circeVersion
+  val refinedScalaCheck: ModuleID = "eu.timepit" %% "refined-scalacheck" % refinedVersion
+
+  val enumeratum: ModuleID = "com.beachape"           %% "enumeratum"            % "1.6.1"
+  val enumeratumCirce: ModuleID = "com.beachape"      %% "enumeratum-circe"      % "1.6.1"
+  val enumeratumScalacheck: ModuleID = "com.beachape" %% "enumeratum-scalacheck" % "1.6.1"
+
   // Test related dependencies
   val akkaTest: ModuleID = "com.typesafe.akka"            %% "akka-actor-testkit-typed" % akkaVersion     % "it,test"
   val akkaStreamTest: ModuleID = "com.typesafe.akka"      %% "akka-stream-testkit"      % akkaVersion     % "it,test"
@@ -152,14 +162,5 @@ object Dependencies {
   val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2"     % "it,test"
   val staminaTestKit: ModuleID = "com.scalapenos"               %% "stamina-testkit"           % staminaVersion % "test"
 
-  // apache math
-  val apacheMath: ModuleID = "org.apache.commons" % "commons-math3" % "3.6.1"
-
-  val refinedScala: ModuleID = "eu.timepit"      %% "refined"            % refinedVersion
-  val refinedCirce: ModuleID = "io.circe"        %% "circe-refined"      % circeVersion
-  val refinedScalaCheck: ModuleID = "eu.timepit" %% "refined-scalacheck" % refinedVersion
-
-  val enumeratum: ModuleID = "com.beachape"           %% "enumeratum"            % enumeratumVersion
-  val enumeratumCirce: ModuleID = "com.beachape"      %% "enumeratum-circe"      % enumeratumVersion
-  val enumeratumScalacheck: ModuleID = "com.beachape" %% "enumeratum-scalacheck" % enumeratumVersion
+  val scalaCsv: ModuleID = "com.github.tototoshi" %% "scala-csv" % "1.3.8" % "test"
 }
