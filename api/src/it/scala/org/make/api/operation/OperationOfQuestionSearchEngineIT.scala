@@ -74,14 +74,19 @@ class OperationOfQuestionSearchEngineIT
     initializeElasticsearch(_.questionId)
   }
 
+  val refDate = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))
+  val oldDate = refDate.minusYears(1)
+  val recentDate = refDate.minusWeeks(1)
+  val futureDate = refDate.plusYears(1)
+
   val indexedOperationOfQuestions: immutable.Seq[IndexedOperationOfQuestion] = immutable.Seq(
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-1"),
       question = "First question ?",
       slug = "first-question",
       questionShortTitle = Some("first-short-title"),
-      startDate = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      endDate = ZonedDateTime.from(dateFormatter.parse("2019-06-02T01:01:01.123Z")),
+      startDate = oldDate,
+      endDate = oldDate.plusWeeks(1),
       theme = QuestionTheme(color = "#424242", fontColor = "#424242"),
       description = "some random description",
       consultationImage = None,
@@ -107,8 +112,8 @@ class OperationOfQuestionSearchEngineIT
       question = "Second question ?",
       slug = "second-question",
       questionShortTitle = Some("second-short-title"),
-      startDate = ZonedDateTime.from(dateFormatter.parse("2019-06-02T01:01:01.123Z")),
-      endDate = ZonedDateTime.from(dateFormatter.parse("2020-06-02T01:01:01.123Z")),
+      startDate = oldDate,
+      endDate = futureDate,
       theme = QuestionTheme(color = "#424242", fontColor = "#424242"),
       description = "some random description",
       consultationImage = None,
@@ -134,8 +139,8 @@ class OperationOfQuestionSearchEngineIT
       question = "Third question ?",
       slug = "third-question",
       questionShortTitle = None,
-      startDate = ZonedDateTime.from(dateFormatter.parse("2018-11-22T01:01:01.123Z")),
-      endDate = ZonedDateTime.from(dateFormatter.parse("2019-06-02T01:01:01.123Z")),
+      startDate = oldDate,
+      endDate = recentDate,
       theme = QuestionTheme(color = "#424242", fontColor = "#424242"),
       description = "some random description",
       consultationImage = None,
@@ -161,8 +166,8 @@ class OperationOfQuestionSearchEngineIT
       question = "Fourth question ?",
       slug = "fourth-question",
       questionShortTitle = None,
-      startDate = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      endDate = ZonedDateTime.from(dateFormatter.parse("2018-06-02T01:01:01.123Z")),
+      startDate = recentDate,
+      endDate = futureDate,
       theme = QuestionTheme(color = "#424242", fontColor = "#424242"),
       description = "some random description",
       consultationImage = None,
@@ -188,8 +193,8 @@ class OperationOfQuestionSearchEngineIT
       question = "Fifth question ?",
       slug = "fifth-question",
       questionShortTitle = Some("fifth-short-title"),
-      startDate = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      endDate = ZonedDateTime.from(dateFormatter.parse("2067-06-02T01:01:01.123Z")),
+      startDate = futureDate,
+      endDate = futureDate.plusWeeks(1),
       theme = QuestionTheme(color = "#424242", fontColor = "#424242"),
       description = "some random description",
       consultationImage = None,
@@ -215,8 +220,8 @@ class OperationOfQuestionSearchEngineIT
       question = "Question sur les aînés avec accents ?",
       slug = "french-aines-question",
       questionShortTitle = Some("aines-short-title"),
-      startDate = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      endDate = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
+      startDate = futureDate,
+      endDate = futureDate.plusWeeks(1),
       theme = QuestionTheme(color = "#424242", fontColor = "#424242"),
       description = "some random description",
       consultationImage = None,
@@ -387,6 +392,35 @@ class OperationOfQuestionSearchEngineIT
         Timeout(3.seconds)
       ) { result =>
         result.results.size should be > 0
+        result.results.foreach {
+          _.resultsLink should be(defined)
+        }
+      }
+    }
+
+  }
+
+  Feature("dates") {
+
+    Scenario("get all questions that match one of the dates") {
+      whenReady(
+        elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(
+          OperationOfQuestionSearchQuery(filters = Some(
+            OperationOfQuestionSearchFilters(
+              startDate = Some(StartDateSearchFilter(lte = Some(refDate), gte = None)),
+              endDate = Some(EndDateSearchFilter(lte = None, gte = Some(refDate.minusWeeks(2))))
+            )
+          )
+          )
+        ),
+        Timeout(3.seconds)
+      ) { result =>
+        result.results.size should be(3)
+        result.results.map(_.questionId) should contain theSameElementsAs Seq(
+          QuestionId("question-2"),
+          QuestionId("question-3"),
+          QuestionId("question-4")
+        )
         result.results.foreach {
           _.resultsLink should be(defined)
         }
