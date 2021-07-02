@@ -151,13 +151,7 @@ final case class SpecificSequenceConfiguration(
   newProposalsRatio: Double = 0.3,
   maxTestedProposalCount: PosInt = 1000,
   selectionAlgorithmName: SelectionAlgorithmName = SelectionAlgorithmName.Bandit,
-  intraIdeaEnabled: Boolean = true,
-  intraIdeaMinCount: Int = 1,
-  intraIdeaProposalsRatio: Double = 0.0,
-  interIdeaCompetitionEnabled: Boolean = true,
-  interIdeaCompetitionTargetCount: Int = 20,
-  interIdeaCompetitionControversialRatio: Double = 0.0,
-  interIdeaCompetitionControversialCount: Int = 2
+  intraIdeaEnabled: Boolean = true
 ) extends BasicSequenceConfiguration
 
 object SpecificSequenceConfiguration {
@@ -167,11 +161,7 @@ object SpecificSequenceConfiguration {
       specificSequenceConfigurationId = id,
       newProposalsRatio = 0,
       selectionAlgorithmName = SelectionAlgorithmName.Random,
-      intraIdeaEnabled = false,
-      intraIdeaMinCount = 0,
-      interIdeaCompetitionEnabled = false,
-      interIdeaCompetitionTargetCount = 0,
-      interIdeaCompetitionControversialCount = 0
+      intraIdeaEnabled = false
     )
 }
 

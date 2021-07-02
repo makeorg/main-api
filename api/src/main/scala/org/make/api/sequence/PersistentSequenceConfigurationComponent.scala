@@ -174,14 +174,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
               specificColumn.sequenceSize -> specificSequenceConfig.sequenceSize,
               specificColumn.newProposalsRatio -> specificSequenceConfig.newProposalsRatio,
               specificColumn.maxTestedProposalCount -> specificSequenceConfig.maxTestedProposalCount,
-              specificColumn.selectionAlgorithmName -> specificSequenceConfig.selectionAlgorithmName,
-              specificColumn.intraIdeaEnabled -> specificSequenceConfig.intraIdeaEnabled,
-              specificColumn.intraIdeaMinCount -> specificSequenceConfig.intraIdeaMinCount,
-              specificColumn.intraIdeaProposalsRatio -> specificSequenceConfig.intraIdeaProposalsRatio,
-              specificColumn.interIdeaCompetitionEnabled -> specificSequenceConfig.interIdeaCompetitionEnabled,
-              specificColumn.interIdeaCompetitionTargetCount -> specificSequenceConfig.interIdeaCompetitionTargetCount,
-              specificColumn.interIdeaCompetitionControversialRatio -> specificSequenceConfig.interIdeaCompetitionControversialRatio,
-              specificColumn.interIdeaCompetitionControversialCount -> specificSequenceConfig.interIdeaCompetitionControversialCount
+              specificColumn.selectionAlgorithmName -> specificSequenceConfig.selectionAlgorithmName
             )
         }.execute().apply()
       })
@@ -234,14 +227,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
               specificColumn.sequenceSize -> specificSequenceConfig.sequenceSize,
               specificColumn.newProposalsRatio -> specificSequenceConfig.newProposalsRatio,
               specificColumn.maxTestedProposalCount -> specificSequenceConfig.maxTestedProposalCount,
-              specificColumn.selectionAlgorithmName -> specificSequenceConfig.selectionAlgorithmName,
-              specificColumn.intraIdeaEnabled -> specificSequenceConfig.intraIdeaEnabled,
-              specificColumn.intraIdeaMinCount -> specificSequenceConfig.intraIdeaMinCount,
-              specificColumn.intraIdeaProposalsRatio -> specificSequenceConfig.intraIdeaProposalsRatio,
-              specificColumn.interIdeaCompetitionEnabled -> specificSequenceConfig.interIdeaCompetitionEnabled,
-              specificColumn.interIdeaCompetitionTargetCount -> specificSequenceConfig.interIdeaCompetitionTargetCount,
-              specificColumn.interIdeaCompetitionControversialRatio -> specificSequenceConfig.interIdeaCompetitionControversialRatio,
-              specificColumn.interIdeaCompetitionControversialCount -> specificSequenceConfig.interIdeaCompetitionControversialCount
+              specificColumn.selectionAlgorithmName -> specificSequenceConfig.selectionAlgorithmName
             )
             .where(
               sqls
@@ -456,14 +442,7 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
     sequenceSize: PosInt,
     newProposalsRatio: Double,
     maxTestedProposalCount: PosInt,
-    selectionAlgorithmName: String,
-    intraIdeaEnabled: Boolean,
-    intraIdeaMinCount: Int,
-    intraIdeaProposalsRatio: Double,
-    interIdeaCompetitionEnabled: Boolean,
-    interIdeaCompetitionTargetCount: Int,
-    interIdeaCompetitionControversialRatio: Double,
-    interIdeaCompetitionControversialCount: Int
+    selectionAlgorithmName: String
   ) {
     def toSpecificSequenceConfiguration: SpecificSequenceConfiguration = {
       SpecificSequenceConfiguration(
@@ -471,14 +450,7 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         sequenceSize = sequenceSize,
         newProposalsRatio = newProposalsRatio,
         maxTestedProposalCount = maxTestedProposalCount,
-        selectionAlgorithmName = SelectionAlgorithmName.withValue(selectionAlgorithmName),
-        intraIdeaEnabled = intraIdeaEnabled,
-        intraIdeaMinCount = intraIdeaMinCount,
-        intraIdeaProposalsRatio = intraIdeaProposalsRatio,
-        interIdeaCompetitionEnabled = interIdeaCompetitionEnabled,
-        interIdeaCompetitionTargetCount = interIdeaCompetitionTargetCount,
-        interIdeaCompetitionControversialRatio = interIdeaCompetitionControversialRatio,
-        interIdeaCompetitionControversialCount = interIdeaCompetitionControversialCount
+        selectionAlgorithmName = SelectionAlgorithmName.withValue(selectionAlgorithmName)
       )
     }
   }
@@ -489,20 +461,7 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
       with Logging {
 
     override val columnNames: Seq[String] =
-      Seq(
-        "id",
-        "sequence_size",
-        "new_proposals_ratio",
-        "max_tested_proposal_count",
-        "selection_algorithm_name",
-        "intra_idea_enabled",
-        "intra_idea_min_count",
-        "intra_idea_proposals_ratio",
-        "inter_idea_competition_enabled",
-        "inter_idea_competition_target_count",
-        "inter_idea_competition_controversial_ratio",
-        "inter_idea_competition_controversial_count"
-      )
+      Seq("id", "sequence_size", "new_proposals_ratio", "max_tested_proposal_count", "selection_algorithm_name")
 
     override val tableName: String = "specific_sequence_configuration"
 
@@ -518,14 +477,7 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         sequenceSize = resultSet.get[PosInt](resultName.sequenceSize),
         newProposalsRatio = resultSet.double(resultName.newProposalsRatio),
         maxTestedProposalCount = resultSet.get[PosInt](resultName.maxTestedProposalCount),
-        selectionAlgorithmName = resultSet.string(resultName.selectionAlgorithmName),
-        intraIdeaEnabled = resultSet.boolean(resultName.intraIdeaEnabled),
-        intraIdeaMinCount = resultSet.int(resultName.intraIdeaMinCount),
-        intraIdeaProposalsRatio = resultSet.double(resultName.intraIdeaProposalsRatio),
-        interIdeaCompetitionEnabled = resultSet.boolean(resultName.interIdeaCompetitionEnabled),
-        interIdeaCompetitionTargetCount = resultSet.int(resultName.interIdeaCompetitionTargetCount),
-        interIdeaCompetitionControversialRatio = resultSet.double(resultName.interIdeaCompetitionControversialRatio),
-        interIdeaCompetitionControversialCount = resultSet.int(resultName.interIdeaCompetitionControversialCount)
+        selectionAlgorithmName = resultSet.string(resultName.selectionAlgorithmName)
       )
     }
   }
