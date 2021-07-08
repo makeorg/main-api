@@ -81,16 +81,22 @@ final case class ExplorationSequenceConfigurationRequest(
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "bandit,random,round-robin", example = "bandit")
   topSorter: ExplorationSortAlgorithm,
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "bandit,random,round-robin", example = "bandit")
-  controversySorter: ExplorationSortAlgorithm
+  controversySorter: ExplorationSortAlgorithm,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.2")
+  keywordsThreshold: Ratio,
+  @(ApiModelProperty @field)(dataType = "int", example = "2")
+  candidatesPoolSize: Int
 ) {
   def toExplorationConfiguration: ExplorationSequenceConfiguration = ExplorationSequenceConfiguration(
-    explorationSequenceConfigurationId,
-    sequenceSize,
-    maxTestedProposalCount,
-    newRatio,
-    controversyRatio,
-    topSorter,
-    controversySorter
+    explorationSequenceConfigurationId = explorationSequenceConfigurationId,
+    sequenceSize = sequenceSize,
+    maxTestedProposalCount = maxTestedProposalCount,
+    newRatio = newRatio,
+    controversyRatio = controversyRatio,
+    topSorter = topSorter,
+    controversySorter = controversySorter,
+    keywordsThreshold = keywordsThreshold,
+    candidatesPoolSize = candidatesPoolSize
   )
 }
 

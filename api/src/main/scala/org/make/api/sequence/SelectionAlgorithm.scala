@@ -32,6 +32,8 @@ import org.make.core.sequence.{
   SpecificSequenceConfiguration
 }
 import eu.timepit.refined.auto._
+import org.make.core.proposal.ProposalKeywordKey
+import org.make.core.technical.RefinedTypes.Ratio
 
 import scala.Ordering.Double.IeeeOrdering
 import scala.annotation.tailrec
@@ -107,8 +109,25 @@ object SelectionAlgorithm {
         neededControversies = neededControversies,
         controversySorter = controversySorter,
         neededTops = neededTops,
-        topSorter = topSorter
+        topSorter = topSorter,
+        keywordsThreshold = configuration.keywordsThreshold,
+        candidatesPoolSize = configuration.candidatesPoolSize
       )
+    }
+
+    def resolveIgnoredKeywords(proposals: Seq[IndexedProposal], keywordsThreshold: Ratio): Set[ProposalKeywordKey] = {
+      if (proposals.isEmpty) {
+        Set.empty
+      } else {
+        val maxOccurrences = Math.floor(keywordsThreshold * proposals.size).toInt
+        proposals
+          .flatMap(_.keywords.map(_.key))
+          .groupBy(identity)
+          .collect {
+            case (key, values) if values.size >= maxOccurrences => key
+          }
+          .toSet
+      }
     }
 
     private def chooseTestedProposal(
@@ -133,8 +152,20 @@ object SelectionAlgorithm {
       val sortedControversies = configuration.controversySorter.sort(controversies)
       val sortedTops = configuration.topSorter.sort(tops)
 
-      TestedProposalsChooser.choose(sortedControversies, configuration.neededControversies) ++
-        TestedProposalsChooser.choose(sortedTops, configuration.neededTops)
+      val ignoredKeywords = resolveIgnoredKeywords(testedProposals, configuration.keywordsThreshold)
+
+      TestedProposalsChooser.choose(
+        sortedControversies,
+        configuration.neededControversies,
+        ignoredKeywords,
+        configuration.candidatesPoolSize
+      ) ++
+        TestedProposalsChooser.choose(
+          sortedTops,
+          configuration.neededTops,
+          ignoredKeywords,
+          configuration.candidatesPoolSize
+        )
     }
 
     final case class TestedProposalsSelectionConfiguration(
@@ -143,7 +174,9 @@ object SelectionAlgorithm {
       neededControversies: Int,
       controversySorter: Sorter,
       neededTops: Int,
-      topSorter: Sorter
+      topSorter: Sorter,
+      keywordsThreshold: Ratio,
+      candidatesPoolSize: Int
     )
 
     final case class ZonedProposal(proposal: IndexedProposal, zone: Zone, score: Double)
@@ -187,7 +220,6 @@ object SelectionAlgorithm {
     }
 
     object TestedProposalsChooser {
-      private val candidatesPool: Int = 10
 
       /**
         * Chooses some proposals in a sorted list of proposals and preserve a few properties:
@@ -202,37 +234,52 @@ object SelectionAlgorithm {
         *
         * @param candidates the whole pool of proposals from which to choose
         * @param neededCount the target number of proposals needed
+        * @param ignoredKeywords keywords that shouldn't be used to deduplicate proposals
         * @return a list consisting of at most the required number of proposals, without any duplication.
         *         The result can be empty or contain fewer elements than required.
         */
-      def choose(candidates: Seq[IndexedProposal], neededCount: Int): Seq[IndexedProposal] = {
-        chooseRecursively(Seq.empty, candidates, neededCount)
+      def choose(
+        candidates: Seq[IndexedProposal],
+        neededCount: Int,
+        ignoredKeywords: Set[ProposalKeywordKey],
+        candidatesPoolSize: Int
+      ): Seq[IndexedProposal] = {
+        chooseRecursively(Seq.empty, candidates, neededCount, ignoredKeywords, candidatesPoolSize)
       }
 
       @tailrec
       private def chooseRecursively(
         accumulator: Seq[IndexedProposal],
         candidates: Seq[IndexedProposal],
-        neededCount: Int
+        neededCount: Int,
+        ignoredKeywords: Set[ProposalKeywordKey],
+        candidatesPoolSize: Int
       ): Seq[IndexedProposal] = {
         if (neededCount <= 0) {
           accumulator
         } else {
-          candidates.take(candidatesPool).sortBy(_.votesSequenceCount).headOption match {
+          candidates.take(candidatesPoolSize).sortBy(_.votesSequenceCount).headOption match {
             case None => accumulator
             case Some(chosen) =>
               chooseRecursively(
                 accumulator = accumulator :+ chosen,
-                candidates = deduplicate(chosen, candidates),
-                neededCount = neededCount - 1
+                candidates = deduplicate(chosen, candidates, ignoredKeywords),
+                neededCount = neededCount - 1,
+                ignoredKeywords,
+                candidatesPoolSize
               )
           }
         }
       }
 
-      private def deduplicate(chosen: IndexedProposal, candidates: Seq[IndexedProposal]): Seq[IndexedProposal] = {
+      private def deduplicate(
+        chosen: IndexedProposal,
+        candidates: Seq[IndexedProposal],
+        ignoredKeywords: Set[ProposalKeywordKey]
+      ): Seq[IndexedProposal] = {
+        val forbiddenKeywords = chosen.keywords.filterNot(k => ignoredKeywords.contains(k.key))
         candidates.filter { proposal =>
-          proposal.keywords.intersect(chosen.keywords).isEmpty && chosen.userId != proposal.userId
+          proposal.keywords.intersect(forbiddenKeywords).isEmpty && chosen.userId != proposal.userId
         }
       }
     }

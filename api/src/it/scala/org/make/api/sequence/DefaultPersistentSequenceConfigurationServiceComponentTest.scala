@@ -24,6 +24,7 @@ import org.make.core.question.QuestionId
 import org.make.core.sequence.{
   ExplorationSequenceConfiguration,
   ExplorationSequenceConfigurationId,
+  ExplorationSortAlgorithm,
   SelectionAlgorithmName,
   SequenceConfiguration,
   SequenceId,
@@ -145,7 +146,18 @@ class DefaultPersistentSequenceConfigurationServiceComponentTest
         SequenceConfiguration(
           sequenceId = SequenceId(id),
           questionId = QuestionId(id),
-          mainSequence = ExplorationSequenceConfiguration.default(ExplorationSequenceConfigurationId(id)),
+          mainSequence = ExplorationSequenceConfiguration
+            .default(ExplorationSequenceConfigurationId(id))
+            .copy(
+              sequenceSize = 10,
+              maxTestedProposalCount = 9999,
+              newRatio = 0.1,
+              controversyRatio = 0.2,
+              topSorter = ExplorationSortAlgorithm.Random,
+              controversySorter = ExplorationSortAlgorithm.Equalizer,
+              keywordsThreshold = 0.1,
+              candidatesPoolSize = 2
+            ),
           controversial = controversial,
           popular = popular,
           keyword = keyword,

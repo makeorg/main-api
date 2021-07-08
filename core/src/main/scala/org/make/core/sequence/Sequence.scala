@@ -108,7 +108,9 @@ final case class ExplorationSequenceConfiguration(
   newRatio: Ratio,
   controversyRatio: Ratio,
   topSorter: ExplorationSortAlgorithm,
-  controversySorter: ExplorationSortAlgorithm
+  controversySorter: ExplorationSortAlgorithm,
+  keywordsThreshold: Ratio,
+  candidatesPoolSize: Int
 ) extends BasicSequenceConfiguration
 
 object ExplorationSequenceConfiguration {
@@ -120,7 +122,9 @@ object ExplorationSequenceConfiguration {
       newRatio = 0.3,
       controversyRatio = 0.1,
       topSorter = ExplorationSortAlgorithm.Bandit,
-      controversySorter = ExplorationSortAlgorithm.Bandit
+      controversySorter = ExplorationSortAlgorithm.Bandit,
+      keywordsThreshold = 0.2,
+      candidatesPoolSize = 10
     )
 }
 

@@ -23,7 +23,11 @@ import eu.timepit.refined.auto._
 import org.make.api.MakeUnitTest
 import org.make.api.proposal._
 import org.make.api.sequence.SelectionAlgorithm.ExplorationSelectionAlgorithm._
-import org.make.api.sequence.SelectionAlgorithm.{RandomSelectionAlgorithm, RoundRobinSelectionAlgorithm}
+import org.make.api.sequence.SelectionAlgorithm.{
+  ExplorationSelectionAlgorithm,
+  RandomSelectionAlgorithm,
+  RoundRobinSelectionAlgorithm
+}
 import org.make.api.technical.MakeRandom
 import org.make.core.DateHelper
 import org.make.core.idea.IdeaId
@@ -284,7 +288,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with BeforeAndAfterEach {
 
   Feature("exploration: equalizer") {
     Scenario("no proposal to choose") {
-      TestedProposalsChooser.choose(Seq.empty, 42) should be(Seq.empty)
+      TestedProposalsChooser.choose(Seq.empty, 42, Set.empty, 5) should be(Seq.empty)
     }
 
     Scenario("no conflict between proposals") {
@@ -292,7 +296,9 @@ class SelectionAlgorithmTest extends MakeUnitTest with BeforeAndAfterEach {
       val proposals = ids.map { i =>
         indexedProposal(id = ProposalId(i.toString), userId = UserId(i.toString))
       }
-      TestedProposalsChooser.choose(proposals, 10).map(_.id.value.toInt) should be(Seq(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+      TestedProposalsChooser.choose(proposals, 10, Set.empty, 5).map(_.id.value.toInt) should be(
+        Seq(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+      )
     }
 
     Scenario("deduplication by author") {
@@ -300,7 +306,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with BeforeAndAfterEach {
       val proposals = ids.map { i =>
         indexedProposal(id = ProposalId(i.toString), userId = UserId((i % 5).toString))
       }
-      TestedProposalsChooser.choose(proposals, 10).map(_.id.value.toInt) should be(Seq(1, 2, 3, 4, 5))
+      TestedProposalsChooser.choose(proposals, 10, Set.empty, 5).map(_.id.value.toInt) should be(Seq(1, 2, 3, 4, 5))
     }
 
     Scenario("deduplication by keyword") {
@@ -315,7 +321,24 @@ class SelectionAlgorithmTest extends MakeUnitTest with BeforeAndAfterEach {
         )
         indexedProposal(id = ProposalId(i.toString), userId = UserId(i.toString), keywords = keyWords)
       }
-      TestedProposalsChooser.choose(proposals, 10).map(_.id.value.toInt) should be(Seq(1, 2, 3, 4, 5))
+      TestedProposalsChooser.choose(proposals, 10, Set.empty, 5).map(_.id.value.toInt) should be(Seq(1, 2, 3, 4, 5))
+    }
+
+    Scenario("deduplication by keyword with ignored keywords") {
+      val ids = 1 to 100
+      val ignored = ProposalKeywordKey("ignored")
+
+      val proposals = ids.map { i =>
+        val first = (i  % 5).toString
+        val second = (i % 7).toString
+        val keyWords = Seq(
+          IndexedProposalKeyword(ignored, ignored.value),
+          IndexedProposalKeyword(ProposalKeywordKey(first), first),
+          IndexedProposalKeyword(ProposalKeywordKey(second), second)
+        )
+        indexedProposal(id = ProposalId(i.toString), userId = UserId(i.toString), keywords = keyWords)
+      }
+      TestedProposalsChooser.choose(proposals, 10, Set(ignored), 5).map(_.id.value.toInt) should be(Seq(1, 2, 3, 4, 5))
     }
 
     Scenario("equalizing proposals") {
@@ -332,8 +355,44 @@ class SelectionAlgorithmTest extends MakeUnitTest with BeforeAndAfterEach {
         indexedProposal(id = ProposalId("9"), userId = UserId("3")).copy(votesSequenceCount = 9)
       )
 
-      TestedProposalsChooser.choose(proposals, 10).map(_.id.value.toInt) should be(Seq(6, 9, 8))
+      TestedProposalsChooser.choose(proposals, 10, Set.empty, 10).map(_.id.value.toInt) should be(Seq(6, 9, 8))
     }
+  }
+
+  Feature("resolve keywords to ignore") {
+    Scenario("empty list") {
+      ExplorationSelectionAlgorithm.resolveIgnoredKeywords(Seq.empty, 0.5) should be(Set.empty)
+    }
+
+    Scenario("all excluded") {
+      val proposals = Seq(
+        indexedProposal(
+          ProposalId(""),
+          keywords = Seq(IndexedProposalKeyword(ProposalKeywordKey("ignored"), "ignored"))
+        )
+      )
+      ExplorationSelectionAlgorithm.resolveIgnoredKeywords(proposals, 0.5) should be(Set(ProposalKeywordKey("ignored")))
+    }
+
+    Scenario("some excluded") {
+      val proposals = Seq(
+        indexedProposal(
+          ProposalId("1"),
+          keywords = Seq(IndexedProposalKeyword(ProposalKeywordKey("ignored"), "ignored"))
+        ),
+        indexedProposal(
+          ProposalId("2"),
+          keywords = Seq(IndexedProposalKeyword(ProposalKeywordKey("ignored"), "ignored"))
+        ),
+        indexedProposal(
+          ProposalId("2"),
+          keywords = Seq(IndexedProposalKeyword(ProposalKeywordKey("whatever"), "whatever"))
+        ),
+        indexedProposal(ProposalId("3"), keywords = Seq(IndexedProposalKeyword(ProposalKeywordKey("other"), "other")))
+      )
+      ExplorationSelectionAlgorithm.resolveIgnoredKeywords(proposals, 0.5) should be(Set(ProposalKeywordKey("ignored")))
+    }
+
   }
 
   Feature("exploration: choosing new proposals") {

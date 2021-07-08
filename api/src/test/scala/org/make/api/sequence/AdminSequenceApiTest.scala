@@ -57,7 +57,9 @@ class AdminSequenceApiTest
                                                   |    "newRatio": 0.5,
                                                   |    "controversyRatio": 0.1,
                                                   |    "topSorter": "bandit",
-                                                  |    "controversySorter": "bandit"
+                                                  |    "controversySorter": "bandit",
+                                                  |    "keywordsThreshold": 0.2,
+                                                  |    "candidatesPoolSize": 10
                                                   |  },
                                                   |  "controversial": {
                                                   |    "specificSequenceConfigurationId": "controversial-id",
