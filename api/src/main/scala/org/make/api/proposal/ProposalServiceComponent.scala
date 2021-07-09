@@ -38,6 +38,7 @@ import org.make.api.semantic.{GetPredictedTagsResponse, PredictedTagsEvent, Sema
 import org.make.api.sessionhistory._
 import org.make.api.tag.TagServiceComponent
 import org.make.api.tagtype.TagTypeServiceComponent
+import org.make.api.technical.Futures.RichFutures
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeRandom, ReadJournalComponent}
 import org.make.api.user.UserServiceComponent
@@ -79,6 +80,8 @@ trait ProposalServiceComponent {
 trait ProposalService {
 
   def getProposalById(proposalId: ProposalId, requestContext: RequestContext): Future[Option[IndexedProposal]]
+
+  def getProposalsById(proposalIds: Seq[ProposalId], requestContext: RequestContext): Future[Seq[IndexedProposal]]
 
   def getModerationProposalById(proposalId: ProposalId): Future[Option[ModerationProposalResponse]]
 
@@ -202,7 +205,19 @@ trait ProposalService {
     proposalKey: Option[String]
   ): Future[Option[Qualification]]
 
-  def lockProposal(proposalId: ProposalId, moderatorId: UserId, requestContext: RequestContext): Future[Option[UserId]]
+  def lockProposal(
+    proposalId: ProposalId,
+    moderatorId: UserId,
+    moderatorDisplayName: Option[String],
+    requestContext: RequestContext
+  ): Future[Unit]
+
+  def lockProposals(
+    proposalIds: Seq[ProposalId],
+    moderatorId: UserId,
+    moderatorDisplayName: Option[String],
+    requestContext: RequestContext
+  ): Future[Unit]
 
   def patchProposal(
     proposalId: ProposalId,
@@ -415,6 +430,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     ): Future[Option[IndexedProposal]] = {
       proposalCoordinatorService.viewProposal(proposalId, requestContext)
       elasticsearchProposalAPI.findProposalById(proposalId)
+    }
+
+    override def getProposalsById(
+      proposalIds: Seq[ProposalId],
+      requestContext: RequestContext
+    ): Future[Seq[IndexedProposal]] = {
+      Source(proposalIds).mapAsync(5)(id => getProposalById(id, requestContext)).runWith(Sink.seq).map(_.flatten)
     }
 
     override def getModerationProposalById(proposalId: ProposalId): Future[Option[ModerationProposalResponse]] = {
@@ -1036,18 +1058,37 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def lockProposal(
       proposalId: ProposalId,
       moderatorId: UserId,
+      moderatorDisplayName: Option[String],
       requestContext: RequestContext
-    ): Future[Option[UserId]] = {
-      userService.getUser(moderatorId).flatMap {
-        case None => Future.successful(None)
-        case Some(moderator) =>
-          proposalCoordinatorService.lock(
-            proposalId = proposalId,
-            moderatorId = moderatorId,
-            moderatorName = moderator.firstName,
-            requestContext = requestContext
-          )
-      }
+    ): Future[Unit] = {
+      proposalCoordinatorService
+        .lock(
+          proposalId = proposalId,
+          moderatorId = moderatorId,
+          moderatorName = moderatorDisplayName,
+          requestContext = requestContext
+        )
+        .toUnit
+    }
+
+    override def lockProposals(
+      proposalIds: Seq[ProposalId],
+      moderatorId: UserId,
+      moderatorDisplayName: Option[String],
+      requestContext: RequestContext
+    ): Future[Unit] = {
+      Source(proposalIds)
+        .mapAsync(5)(
+          id =>
+            proposalCoordinatorService.lock(
+              proposalId = id,
+              moderatorId = moderatorId,
+              moderatorName = moderatorDisplayName,
+              requestContext = requestContext
+            )
+        )
+        .runWith(Sink.seq)
+        .toUnit
     }
 
     // Very permissive (no event generated etc), use carefully and only for one shot migrations.

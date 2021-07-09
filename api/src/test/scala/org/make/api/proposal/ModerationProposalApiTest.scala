@@ -113,7 +113,8 @@ class ModerationProposalApiTest
     lastName = Some("Right")
   )
 
-  when(userService.getUser(any[UserId])).thenReturn(Future.successful(Some(john)))
+  when(userService.getUser(eqTo(john.userId))).thenReturn(Future.successful(Some(john)))
+  when(userService.getUser(eqTo(tyrion.userId))).thenReturn(Future.successful(Some(tyrion)))
 
   val validateProposalEntity: String = ValidateProposalRequest(
     newContent = None,
@@ -210,14 +211,14 @@ class ModerationProposalApiTest
   ).thenReturn(Future.successful(Some(proposalResponse(ProposalId("987654")))))
   when(
     proposalService
-      .lockProposal(eqTo(ProposalId("123456")), any[UserId], any[RequestContext])
+      .lockProposal(eqTo(ProposalId("123456")), eqTo(john.userId), eqTo(john.displayName), any[RequestContext])
   ).thenReturn(
     Future.failed(ValidationFailedError(Seq(ValidationError("moderatorName", "already_locked", Some("mauderator")))))
   )
   when(
     proposalService
-      .lockProposal(eqTo(ProposalId("123456")), eqTo(tyrion.userId), any[RequestContext])
-  ).thenReturn(Future.successful(Some(tyrion.userId)))
+      .lockProposal(eqTo(ProposalId("123456")), eqTo(tyrion.userId), eqTo(tyrion.displayName), any[RequestContext])
+  ).thenReturn(Future.unit)
 
   val proposalSim123: Proposal = proposal(
     id = ProposalId("sim-123"),
@@ -664,8 +665,87 @@ class ModerationProposalApiTest
       }
     }
 
-    Scenario("user cannot lock an unlocked proposal") {
+    Scenario("user cannot lock a locked proposal") {
       Post("/moderation/proposals/123456/lock")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenJohnCitizen))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+  }
+
+  Feature("lock multiple proposals") {
+    val ids = Seq(ProposalId("p-1"), ProposalId("p-2"), ProposalId("p-3"))
+    val fake = ProposalId("fake")
+    val unavailableProposalId = ProposalId("other-unavailable-question")
+    def entity(ids: Seq[ProposalId]) = LockProposalsRequest(ids.toSet).asJson.toString
+    val indexedProposals = ids.map(id => indexedProposal(id, questionId = QuestionId("question-fire-and-ice")))
+
+    def query(ids: Seq[ProposalId]) =
+      SearchQuery(filters = Some(SearchFilters(proposal = Some(ProposalSearchFilter(ids)))))
+    when(
+      proposalService
+        .search(userId = any[Option[UserId]], query = eqTo(query(ids)), requestContext = any[RequestContext])
+    ).thenReturn(Future.successful(ProposalsSearchResult(ids.size, indexedProposals)))
+    when(
+      proposalService
+        .search(userId = any[Option[UserId]], query = eqTo(query(ids :+ fake)), requestContext = any[RequestContext])
+    ).thenReturn(Future.successful(ProposalsSearchResult(ids.size, indexedProposals)))
+    when(
+      proposalService.search(
+        userId = any[Option[UserId]],
+        query = eqTo(query(ids :+ unavailableProposalId)),
+        requestContext = any[RequestContext]
+      )
+    ).thenReturn(
+      Future.successful(
+        ProposalsSearchResult(
+          ids.size,
+          indexedProposals :+ indexedProposal(
+            unavailableProposalId,
+            questionId = QuestionId("other-unavailable-question-id")
+          )
+        )
+      )
+    )
+    when(proposalService.getProposalsById(eqTo(ids :+ unavailableProposalId), any[RequestContext]))
+      .thenReturn(
+        Future.successful(
+          ids.map(id => indexedProposal(id, questionId = QuestionId("question-fire-and-ice"))) :+ indexedProposal(
+            unavailableProposalId,
+            questionId = QuestionId("other-unavailable-question-id")
+          )
+        )
+      )
+    when(proposalService.lockProposals(eqTo(ids), eqTo(tyrion.userId), eqTo(tyrion.displayName), any[RequestContext]))
+      .thenReturn(Future.successful(Some(tyrion.userId)))
+
+    Scenario("moderator can lock unlocked proposals if the question is available to them") {
+      Post("/moderation/proposals/lock")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, entity(ids)))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+      }
+    }
+
+    Scenario("moderator cannot lock unlocked proposals if the question is not available to them") {
+      Post("/moderation/proposals/lock")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, entity(ids :+ unavailableProposalId)))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("moderator cannot lock non existent proposals") {
+      Post("/moderation/proposals/lock")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, entity(ids :+ fake)))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
+    Scenario("user cannot lock an unlocked proposal") {
+      Post("/moderation/proposals/lock")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, entity(ids)))
         .withHeaders(Authorization(OAuth2BearerToken(tokenJohnCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }

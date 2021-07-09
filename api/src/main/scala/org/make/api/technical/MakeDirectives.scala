@@ -706,11 +706,8 @@ trait MakeAuthenticationDirectives extends MakeAuthentication {
     requireRole(user, RoleModerator, RoleAdmin, RoleSuperAdmin)
   }
 
-  def requireRightsOnQuestion(user: UserRights, maybeQuestionId: Option[QuestionId]): Directive0 = {
-    authorize(
-      user.roles.contains(RoleAdmin) || user.availableQuestions
-        .exists(questionId => maybeQuestionId.contains(questionId))
-    )
+  def requireRightsOnQuestion(user: UserRights, questionIds: IterableOnce[QuestionId]): Directive0 = {
+    authorize(user.roles.contains(RoleAdmin) || questionIds.iterator.forall(user.availableQuestions.contains))
   }
 
   def requireAdminRole(user: UserRights): Directive0 = {

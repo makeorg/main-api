@@ -506,3 +506,11 @@ final case class BulkDeleteTagProposal(
 object BulkDeleteTagProposal {
   implicit val codec: Codec[BulkDeleteTagProposal] = deriveCodec[BulkDeleteTagProposal]
 }
+
+final case class LockProposalsRequest(
+  @(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Set[ProposalId]
+)
+
+object LockProposalsRequest {
+  implicit val codec: Codec[LockProposalsRequest] = deriveCodec[LockProposalsRequest]
+}
