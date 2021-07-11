@@ -217,7 +217,7 @@ class ModerationProposalApiTest
   )
   when(
     proposalService
-      .lockProposal(eqTo(ProposalId("123456")), eqTo(tyrion.userId), eqTo(tyrion.displayName), any[RequestContext])
+      .lockProposal(eqTo(ProposalId("123456")), eqTo(tyrion.userId), eqTo(tyrion.fullName), any[RequestContext])
   ).thenReturn(Future.unit)
 
   val proposalSim123: Proposal = proposal(
@@ -681,12 +681,14 @@ class ModerationProposalApiTest
     val indexedProposals = ids.map(id => indexedProposal(id, questionId = QuestionId("question-fire-and-ice")))
 
     def query(ids: Seq[ProposalId]) =
-      SearchQuery(filters = Some(
-        SearchFilters(
-          proposal = Some(ProposalSearchFilter(ids)),
-          status = Some(StatusSearchFilter(ProposalStatus.values))
-        )
-      )
+      SearchQuery(
+        filters = Some(
+          SearchFilters(
+            proposal = Some(ProposalSearchFilter(ids)),
+            status = Some(StatusSearchFilter(ProposalStatus.values))
+          )
+        ),
+        limit = Some(ids.size + 1)
       )
     when(
       proposalService
@@ -722,7 +724,7 @@ class ModerationProposalApiTest
           )
         )
       )
-    when(proposalService.lockProposals(eqTo(ids), eqTo(tyrion.userId), eqTo(tyrion.displayName), any[RequestContext]))
+    when(proposalService.lockProposals(eqTo(ids), eqTo(tyrion.userId), eqTo(tyrion.fullName), any[RequestContext]))
       .thenReturn(Future.successful(Some(tyrion.userId)))
 
     Scenario("moderator can lock unlocked proposals if the question is available to them") {
@@ -863,7 +865,32 @@ class ModerationProposalApiTest
 
   }
 
-  Feature("next proposal to moderate") {
+  Feature("next author/proposal to moderate") {
+
+    case class TestCase[T](
+      entity: String,
+      endpoint: String,
+      method: (
+        QuestionId,
+        UserId,
+        Option[String],
+        RequestContext,
+        Boolean,
+        Option[Int],
+        Option[Double]
+      )                                     => Future[Option[T]],
+      transform: ModerationProposalResponse => T
+    )
+
+    val cases = Seq(
+      TestCase("proposal", "next", proposalService.searchAndLockProposalToModerate, identity),
+      TestCase(
+        "author",
+        "next-author-to-moderate",
+        proposalService.searchAndLockAuthorToModerate,
+        proposal => ModerationAuthorResponse(proposal.author, Seq(proposal), 1)
+      )
+    )
 
     val validPayload =
       """
@@ -906,126 +933,140 @@ class ModerationProposalApiTest
         )
       )
 
-    Scenario("unauthenticated call") {
-      Given("an unauthenticated user")
-      When("the user requests the next proposal to moderate")
-      Then("The return code should be 401")
+    for (TestCase(entity, endpoint, _, _) <- cases) {
+      Scenario(s"unauthenticated call to next $entity") {
+        Given("an unauthenticated user")
+        When(s"the user requests the next $entity to moderate")
+        Then("The return code should be 401")
 
-      Post("/moderation/proposals/next")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, validPayload)) ~> routes ~> check {
-        status should be(StatusCodes.Unauthorized)
-      }
-
-    }
-
-    Scenario("calling with a user right") {
-      Given("an authenticated user with the user role")
-      When("the user requests the next proposal to moderate")
-      Then("The return code should be 403")
-
-      Post("/moderation/proposals/next")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, validPayload))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAryaCitizen))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
+        Post(s"/moderation/proposals/$endpoint")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, validPayload)) ~> routes ~> check {
+          status should be(StatusCodes.Unauthorized)
+        }
       }
     }
 
-    Scenario("calling without right on question") {
-      Given("an authenticated user with the moderator role, without rights")
-      When("the user requests the next proposal to moderate")
-      Then("The return code should be 403")
+    for (TestCase(entity, endpoint, _, _) <- cases) {
+      Scenario(s"calling next $entity with a user right") {
+        Given("an authenticated user with the user role")
+        When(s"the user requests the next $entity to moderate")
+        Then("The return code should be 403")
 
-      Post("/moderation/proposals/next")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, validPayload))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenNoRightModerator))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
+        Post(s"/moderation/proposals/$endpoint")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, validPayload))
+          .withHeaders(Authorization(OAuth2BearerToken(tokenAryaCitizen))) ~> routes ~> check {
+          status should be(StatusCodes.Forbidden)
+        }
       }
     }
 
-    Scenario("no proposal to moderate") {
-      Given("an authenticated user with the moderator role")
-      When("the user requests the next proposal to moderate")
-      And("there is no proposal matching criterias")
-      Then("The return code should be 404")
+    for (TestCase(entity, endpoint, _, _) <- cases) {
+      Scenario(s"calling next $entity without right on question") {
+        Given("an authenticated user with the moderator role, without rights")
+        When(s"the user requests the next $entity to moderate")
+        Then("The return code should be 403")
 
-      when(
-        proposalService.searchAndLockProposalToModerate(
-          eqTo(QuestionId("question-vff")),
-          eqTo(tyrion.userId),
-          any[RequestContext],
-          any[Boolean],
-          any[Option[Int]],
-          any[Option[Double]]
-        )
-      ).thenReturn(Future.successful(None))
-
-      Post("/moderation/proposals/next")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, validPayload))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+        Post(s"/moderation/proposals/$endpoint")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, validPayload))
+          .withHeaders(Authorization(OAuth2BearerToken(tokenNoRightModerator))) ~> routes ~> check {
+          status should be(StatusCodes.Forbidden)
+        }
       }
     }
 
-    Scenario("normal case") {
-      Given("an authenticated user with the moderator role")
-      When("the user requests the next proposal to moderate")
-      And("there is a proposal matching criterias")
-      Then("The return code should be 200")
+    for (TestCase(entity, endpoint, method, _) <- cases) {
+      Scenario(s"no proposal to moderate for next $entity") {
+        Given("an authenticated user with the moderator role")
+        When(s"the user requests the next $entity to moderate")
+        And("there is no proposal matching criterias")
+        Then("The return code should be 404")
 
-      val payload =
-        """
+        when(
+          method(
+            eqTo(QuestionId("question-vff")),
+            eqTo(tyrion.userId),
+            eqTo(tyrion.fullName),
+            any[RequestContext],
+            any[Boolean],
+            any[Option[Int]],
+            any[Option[Double]]
+          )
+        ).thenReturn(Future.successful(None))
+
+        Post(s"/moderation/proposals/$endpoint")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, validPayload))
+          .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
+          status should be(StatusCodes.NotFound)
+        }
+      }
+    }
+
+    for (TestCase(entity, endpoint, method, transform) <- cases) {
+      Scenario(s"normal next $entity case") {
+        Given("an authenticated user with the moderator role")
+        When(s"the user requests the next $entity to moderate")
+        And("there is a proposal matching criterias")
+        Then("The return code should be 200")
+
+        val payload =
+          """
           |{
           |  "questionId": "question-mieux-vivre-ensemble",
           |  "toEnrich": false
           |}
         """.stripMargin
 
-      when(
-        proposalService.searchAndLockProposalToModerate(
-          eqTo(QuestionId("question-mieux-vivre-ensemble")),
-          eqTo(tyrion.userId),
-          any[RequestContext],
-          any[Boolean],
-          any[Option[Int]],
-          any[Option[Double]]
-        )
-      ).thenReturn(Future.successful(Some(proposalResponse(ProposalId("123456789")))))
+        when(
+          method(
+            eqTo(QuestionId("question-mieux-vivre-ensemble")),
+            eqTo(tyrion.userId),
+            eqTo(tyrion.fullName),
+            any[RequestContext],
+            any[Boolean],
+            any[Option[Int]],
+            any[Option[Double]]
+          )
+        ).thenReturn(Future.successful(Some(transform(proposalResponse(ProposalId("123"))))))
 
-      Post("/moderation/proposals/next")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, payload))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
+        Post(s"/moderation/proposals/$endpoint")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, payload))
+          .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
+          status should be(StatusCodes.OK)
+        }
       }
     }
 
-    Scenario("invalid payload") {
-      Given("an authenticated user with the moderator role")
-      When("the user requests the next proposal to moderate")
-      And("there is a proposal matching criterias")
-      Then("The return code should be 200")
+    for (TestCase(entity, endpoint, method, transform) <- cases) {
+      Scenario(s"invalid payload for next $entity") {
+        Given("an authenticated user with the moderator role")
+        When(s"the user requests the next $entity to moderate")
+        And("there is a proposal matching criterias")
+        Then("The return code should be 200")
 
-      val payload =
-        """
+        val payload =
+          """
           |{
           |  "toEnrich": false
           |}
         """.stripMargin
 
-      when(
-        proposalService.searchAndLockProposalToModerate(
-          eqTo(QuestionId("question-mieux-vivre-ensemble")),
-          eqTo(tyrion.userId),
-          any[RequestContext],
-          any[Boolean],
-          any[Option[Int]],
-          any[Option[Double]]
-        )
-      ).thenReturn(Future.successful(Some(proposalResponse(ProposalId("123456789")))))
+        when(
+          method(
+            eqTo(QuestionId("question-mieux-vivre-ensemble")),
+            eqTo(tyrion.userId),
+            eqTo(tyrion.fullName),
+            any[RequestContext],
+            any[Boolean],
+            any[Option[Int]],
+            any[Option[Double]]
+          )
+        ).thenReturn(Future.successful(Some(transform(proposalResponse(ProposalId("123456789"))))))
 
-      Post("/moderation/proposals/next")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, payload))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
+        Post(s"/moderation/proposals/$endpoint")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, payload))
+          .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+        }
       }
     }
   }

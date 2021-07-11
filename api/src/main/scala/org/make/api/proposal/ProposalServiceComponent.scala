@@ -22,7 +22,7 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 import akka.Done
 import akka.stream.scaladsl.{Sink, Source}
-import cats.data.OptionT
+import cats.data.{NonEmptyList, OptionT}
 import cats.implicits._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import eu.timepit.refined.auto._
@@ -52,7 +52,7 @@ import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFie
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.question.TopProposalsMode.IdeaMode
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
-import org.make.core.tag.{Tag, TagId}
+import org.make.core.tag.{Tag, TagId, TagType}
 import org.make.core.user._
 import org.make.core.{
   BusinessConfig,
@@ -72,6 +72,8 @@ import org.make.core.partner.Partner
 import org.make.core.reference.Country
 import org.make.core.session.SessionId
 import org.make.core.technical.Pagination.Start
+
+import scala.collection.mutable
 
 trait ProposalServiceComponent {
   def proposalService: ProposalService
@@ -208,14 +210,14 @@ trait ProposalService {
   def lockProposal(
     proposalId: ProposalId,
     moderatorId: UserId,
-    moderatorDisplayName: Option[String],
+    moderatorFullName: Option[String],
     requestContext: RequestContext
   ): Future[Unit]
 
   def lockProposals(
     proposalIds: Seq[ProposalId],
     moderatorId: UserId,
-    moderatorDisplayName: Option[String],
+    moderatorFullName: Option[String],
     requestContext: RequestContext
   ): Future[Unit]
 
@@ -228,9 +230,20 @@ trait ProposalService {
 
   def changeProposalsIdea(proposalIds: Seq[ProposalId], moderatorId: UserId, ideaId: IdeaId): Future[Seq[Proposal]]
 
+  def searchAndLockAuthorToModerate(
+    questionId: QuestionId,
+    moderator: UserId,
+    moderatorFullName: Option[String],
+    requestContext: RequestContext,
+    toEnrich: Boolean,
+    minVotesCount: Option[Int],
+    minScore: Option[Double]
+  ): Future[Option[ModerationAuthorResponse]]
+
   def searchAndLockProposalToModerate(
     questionId: QuestionId,
     moderator: UserId,
+    moderatorFullName: Option[String],
     requestContext: RequestContext,
     toEnrich: Boolean,
     minVotesCount: Option[Int],
@@ -1058,14 +1071,14 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def lockProposal(
       proposalId: ProposalId,
       moderatorId: UserId,
-      moderatorDisplayName: Option[String],
+      moderatorFullName: Option[String],
       requestContext: RequestContext
     ): Future[Unit] = {
       proposalCoordinatorService
         .lock(
           proposalId = proposalId,
           moderatorId = moderatorId,
-          moderatorName = moderatorDisplayName,
+          moderatorName = moderatorFullName,
           requestContext = requestContext
         )
         .toUnit
@@ -1074,7 +1087,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def lockProposals(
       proposalIds: Seq[ProposalId],
       moderatorId: UserId,
-      moderatorDisplayName: Option[String],
+      moderatorFullName: Option[String],
       requestContext: RequestContext
     ): Future[Unit] = {
       Source(proposalIds)
@@ -1083,7 +1096,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             proposalCoordinatorService.lock(
               proposalId = id,
               moderatorId = moderatorId,
-              moderatorName = moderatorDisplayName,
+              moderatorName = moderatorFullName,
               requestContext = requestContext
             )
         )
@@ -1143,72 +1156,168 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
+    override def searchAndLockAuthorToModerate(
+      questionId: QuestionId,
+      moderatorId: UserId,
+      moderatorFullName: Option[String],
+      requestContext: RequestContext,
+      toEnrich: Boolean,
+      minVotesCount: Option[Int],
+      minScore: Option[Double]
+    ): Future[Option[ModerationAuthorResponse]] = {
+      val searchFilters = getSearchFilters(questionId, toEnrich, minVotesCount, minScore)
+      search(
+        maybeUserId = Some(moderatorId),
+        requestContext = requestContext,
+        query = SearchQuery(
+          filters = Some(searchFilters),
+          sort = Some(Sort(Some(ProposalElasticsearchFieldName.createdAt.field), Some(SortOrder.ASC))),
+          limit = Some(1000),
+          language = None,
+          sortAlgorithm = Some(B2BFirstAlgorithm)
+        )
+      ).flatMap { searchResults =>
+        // Group proposals to moderate by author, in a LinkedHashMap to transfer proposal search sort order to authors
+        @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
+        val candidates =
+          searchResults.results.foldLeft(mutable.LinkedHashMap.empty[UserId, NonEmptyList[IndexedProposal]]) {
+            case (map, proposal) =>
+              val list = map.get(proposal.userId).fold(NonEmptyList.of(proposal))(_ :+ proposal)
+              map.put(proposal.userId, list)
+              map
+          }
+
+        // For current author candidate, try to lock and turn every proposal into a moderation response
+        def futureMaybeSuccessfulLocks(
+          indexedProposals: NonEmptyList[IndexedProposal],
+          tags: Seq[Tag],
+          tagTypes: Seq[TagType]
+        ): Future[NonEmptyList[Option[ModerationProposalResponse]]] = {
+          indexedProposals.traverse { proposal =>
+            getModerationProposalById(proposal.id).flatMap {
+              case None => Future.successful(None)
+              case Some(proposal) =>
+                val isValid: Boolean = if (toEnrich) {
+                  val proposalTags = tags.filter(tag => proposal.tags.contains(tag.tagId))
+                  Proposal.needsEnrichment(proposal.status, tagTypes, proposalTags.map(_.tagTypeId))
+                } else {
+                  proposal.status == Pending
+                }
+
+                if (!isValid) {
+                  // Current proposal was moderated in the meantime, do nothing
+                  Future.successful(None)
+                } else {
+                  proposalCoordinatorService
+                    .lock(proposal.proposalId, moderatorId, moderatorFullName, requestContext)
+                    .map { _ =>
+                      searchFilters.status.foreach(
+                        filter =>
+                          if (!filter.status.contains(proposal.status)) {
+                            logger.error(
+                              s"Proposal id=${proposal.proposalId.value} with status=${proposal.status} incorrectly candidate for moderation, questionId=${questionId.value} moderator=${moderatorId.value} toEnrich=$toEnrich searchFilters=$searchFilters requestContext=$requestContext"
+                            )
+                          }
+                      )
+                      Some(proposal)
+                    }
+                    .recoverWith { case _ => Future.successful(None) }
+                }
+            }
+          }
+        }
+
+        def getAndLockFirstAuthor(tags: Seq[Tag], tagTypes: Seq[TagType]) =
+          Source(candidates.view.values.toSeq)
+            .foldAsync[Option[NonEmptyList[ModerationProposalResponse]]](None) {
+              case (None, indexedProposals) =>
+                // For current author entry, build a future list of options of locked proposals, each element being
+                // a moderation response defined if corresponding proposal was still valid and could be locked.
+                // Then turn it into a future option of a list of locks if every one succeeded.
+                futureMaybeSuccessfulLocks(indexedProposals, tags, tagTypes).map(_.sequence)
+              case (Some(list), _) =>
+                Future.successful(Some(list))
+            }
+            // Find the first author for which all proposals could be locked and were turned into a list of moderation responses
+            .collect { case Some(list) => list }
+            .runWith(Sink.headOption)
+            .map(_.map { list =>
+              ModerationAuthorResponse(list.head.author, list.toList, searchResults.total.toInt)
+            })
+
+        for {
+          tags           <- tagService.findByQuestionId(questionId)
+          tagTypes       <- tagTypeService.findAll(requiredForEnrichmentFilter = Some(true))
+          authorResponse <- getAndLockFirstAuthor(tags, tagTypes)
+        } yield authorResponse
+
+      }
+    }
+
     override def searchAndLockProposalToModerate(
       questionId: QuestionId,
       moderator: UserId,
+      moderatorFullName: Option[String],
       requestContext: RequestContext,
       toEnrich: Boolean,
       minVotesCount: Option[Int],
       minScore: Option[Double]
     ): Future[Option[ModerationProposalResponse]] = {
-
-      userService.getUser(moderator).flatMap { user =>
-        val defaultNumberOfProposals = 50
-        val searchFilters = getSearchFilters(questionId, toEnrich, minVotesCount, minScore)
-        search(
-          maybeUserId = Some(moderator),
-          requestContext = requestContext,
-          query = SearchQuery(
-            filters = Some(searchFilters),
-            sort = Some(Sort(Some(ProposalElasticsearchFieldName.createdAt.field), Some(SortOrder.ASC))),
-            limit = Some(defaultNumberOfProposals),
-            language = None,
-            sortAlgorithm = Some(B2BFirstAlgorithm)
-          )
-        ).flatMap { results =>
-          @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
-          def recursiveLock(availableProposals: List[ProposalId]): Future[Option[ModerationProposalResponse]] = {
-            availableProposals match {
-              case Nil => Future.successful(None)
-              case currentProposalId :: otherProposalIds =>
-                getModerationProposalById(currentProposalId).flatMap {
-                  // If, for some reason, the proposal is not found in event sourcing, ignore it
-                  case None => recursiveLock(otherProposalIds)
-                  case Some(proposal) =>
-                    val isValid: Future[Boolean] = if (toEnrich) {
-                      for {
-                        tags     <- tagService.findByTagIds(proposal.tags)
-                        tagTypes <- tagTypeService.findAll(requiredForEnrichmentFilter = Some(true))
-                      } yield {
-                        Proposal.needsEnrichment(proposal.status, tagTypes, tags.map(_.tagTypeId))
-                      }
-                    } else {
-                      Future.successful(proposal.status == Pending)
+      val defaultNumberOfProposals = 50
+      val searchFilters = getSearchFilters(questionId, toEnrich, minVotesCount, minScore)
+      search(
+        maybeUserId = Some(moderator),
+        requestContext = requestContext,
+        query = SearchQuery(
+          filters = Some(searchFilters),
+          sort = Some(Sort(Some(ProposalElasticsearchFieldName.createdAt.field), Some(SortOrder.ASC))),
+          limit = Some(defaultNumberOfProposals),
+          language = None,
+          sortAlgorithm = Some(B2BFirstAlgorithm)
+        )
+      ).flatMap { results =>
+        @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+        def recursiveLock(availableProposals: List[ProposalId]): Future[Option[ModerationProposalResponse]] = {
+          availableProposals match {
+            case Nil => Future.successful(None)
+            case currentProposalId :: otherProposalIds =>
+              getModerationProposalById(currentProposalId).flatMap {
+                // If, for some reason, the proposal is not found in event sourcing, ignore it
+                case None => recursiveLock(otherProposalIds)
+                case Some(proposal) =>
+                  val isValid: Future[Boolean] = if (toEnrich) {
+                    for {
+                      tags     <- tagService.findByTagIds(proposal.tags)
+                      tagTypes <- tagTypeService.findAll(requiredForEnrichmentFilter = Some(true))
+                    } yield {
+                      Proposal.needsEnrichment(proposal.status, tagTypes, tags.map(_.tagTypeId))
                     }
+                  } else {
+                    Future.successful(proposal.status == Pending)
+                  }
 
-                    isValid.flatMap {
-                      case false => recursiveLock(otherProposalIds)
-                      case true =>
-                        proposalCoordinatorService
-                          .lock(proposal.proposalId, moderator, user.flatMap(_.fullName), requestContext)
-                          .map { _ =>
-                            searchFilters.status.foreach(
-                              filter =>
-                                if (!filter.status.contains(proposal.status)) {
-                                  logger.error(
-                                    s"Proposal id=${proposal.proposalId.value} with status=${proposal.status} incorrectly candidate for moderation, questionId=${questionId.value} moderator=${moderator.value} toEnrich=$toEnrich searchFilters=$searchFilters requestContext=$requestContext"
-                                  )
-                                }
-                            )
-                            Some(proposal)
-                          }
-                          .recoverWith { case _ => recursiveLock(otherProposalIds) }
-                    }
-                }
-            }
+                  isValid.flatMap {
+                    case false => recursiveLock(otherProposalIds)
+                    case true =>
+                      proposalCoordinatorService
+                        .lock(proposal.proposalId, moderator, moderatorFullName, requestContext)
+                        .map { _ =>
+                          searchFilters.status.foreach(
+                            filter =>
+                              if (!filter.status.contains(proposal.status)) {
+                                logger.error(
+                                  s"Proposal id=${proposal.proposalId.value} with status=${proposal.status} incorrectly candidate for moderation, questionId=${questionId.value} moderator=${moderator.value} toEnrich=$toEnrich searchFilters=$searchFilters requestContext=$requestContext"
+                                )
+                              }
+                          )
+                          Some(proposal)
+                        }
+                        .recoverWith { case _ => recursiveLock(otherProposalIds) }
+                  }
+              }
           }
-          recursiveLock(results.results.map(_.id).toList)
         }
+        recursiveLock(results.results.map(_.id).toList)
       }
     }
 

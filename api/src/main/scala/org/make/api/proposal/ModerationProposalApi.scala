@@ -347,6 +347,32 @@ trait ModerationProposalApi extends Directives {
   def changeProposalsIdea: Route
 
   @ApiOperation(
+    value = "next-author-to-moderate",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "moderator", description = "BO Moderator"))
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationAuthorResponse]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "body",
+        paramType = "body",
+        dataType = "org.make.api.proposal.NextProposalToModerateRequest"
+      )
+    )
+  )
+  @Path(value = "/next-author-to-moderate")
+  def nextAuthorToModerate: Route
+
+  @ApiOperation(
     value = "next-proposal-to-moderate",
     httpMethod = "POST",
     code = HttpCodes.OK,
@@ -403,6 +429,7 @@ trait ModerationProposalApi extends Directives {
       getDuplicates ~
       changeProposalsIdea ~
       getModerationProposal ~
+      nextAuthorToModerate ~
       nextProposalToModerate ~
       getTagsForProposal ~
       getPredictedTagsForProposal
@@ -765,7 +792,7 @@ trait DefaultModerationProposalApiComponent
                         .lockProposal(
                           proposalId = proposalId,
                           moderatorId = moderator.userId,
-                          moderatorDisplayName = moderator.displayName,
+                          moderatorFullName = moderator.fullName,
                           requestContext = requestContext
                         )
                     ) { _ =>
@@ -787,12 +814,14 @@ trait DefaultModerationProposalApiComponent
             requireModerationRole(auth.user) {
               decodeRequest {
                 entity(as[LockProposalsRequest]) { request =>
-                  val query = SearchQuery(filters = Some(
-                    SearchFilters(
-                      proposal = Some(ProposalSearchFilter(request.proposalIds.toSeq)),
-                      status = Some(StatusSearchFilter(ProposalStatus.values))
-                    )
-                  )
+                  val query = SearchQuery(
+                    filters = Some(
+                      SearchFilters(
+                        proposal = Some(ProposalSearchFilter(request.proposalIds.toSeq)),
+                        status = Some(StatusSearchFilter(ProposalStatus.values))
+                      )
+                    ),
+                    limit = Some(request.proposalIds.size + 1)
                   )
                   provideAsync(
                     proposalService
@@ -815,7 +844,7 @@ trait DefaultModerationProposalApiComponent
                             .lockProposals(
                               proposalIds = proposalIds,
                               moderatorId = moderator.userId,
-                              moderatorDisplayName = moderator.displayName,
+                              moderatorFullName = moderator.fullName,
                               requestContext = requestContext
                             )
                         ) { _ =>
@@ -901,6 +930,44 @@ trait DefaultModerationProposalApiComponent
       }
     }
 
+    override def nextAuthorToModerate: Route = post {
+      path("moderation" / "proposals" / "next-author-to-moderate") {
+        makeOperation("NextAuthorToModerate") { context =>
+          makeOAuth2 { auth =>
+            requireModerationRole(auth.user) {
+              decodeRequest {
+                entity(as[NextProposalToModerateRequest]) { request =>
+                  provideAsyncOrNotFound {
+                    request.questionId.map { questionId =>
+                      questionService.getQuestion(questionId)
+                    }.getOrElse(Future.successful(None))
+                  } { question =>
+                    requireRightsOnQuestion(auth.user, Some(question.questionId)) {
+                      provideAsyncOrNotFound(userService.getUser(auth.user.userId)) { moderator =>
+                        provideAsyncOrNotFound(
+                          proposalService.searchAndLockAuthorToModerate(
+                            questionId = question.questionId,
+                            moderator = auth.user.userId,
+                            moderatorFullName = moderator.fullName,
+                            requestContext = context,
+                            toEnrich = request.toEnrich,
+                            minVotesCount = request.minVotesCount,
+                            minScore = request.minScore
+                          )
+                        ) { response =>
+                          complete(response)
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     override def nextProposalToModerate: Route = post {
       path("moderation" / "proposals" / "next") {
         makeOperation("NextProposalToModerate") { context =>
@@ -914,17 +981,20 @@ trait DefaultModerationProposalApiComponent
                     }.getOrElse(Future.successful(None))
                   } { question =>
                     requireRightsOnQuestion(user.user, Some(question.questionId)) {
-                      provideAsyncOrNotFound(
-                        proposalService.searchAndLockProposalToModerate(
-                          question.questionId,
-                          user.user.userId,
-                          context,
-                          request.toEnrich,
-                          request.minVotesCount,
-                          request.minScore
-                        )
-                      ) { proposal =>
-                        complete(proposal)
+                      provideAsyncOrNotFound(userService.getUser(user.user.userId)) { moderator =>
+                        provideAsyncOrNotFound(
+                          proposalService.searchAndLockProposalToModerate(
+                            question.questionId,
+                            moderator.userId,
+                            moderator.fullName,
+                            context,
+                            request.toEnrich,
+                            request.minVotesCount,
+                            request.minScore
+                          )
+                        ) { proposal =>
+                          complete(proposal)
+                        }
                       }
                     }
                   }

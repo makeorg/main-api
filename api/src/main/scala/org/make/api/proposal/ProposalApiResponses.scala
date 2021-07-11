@@ -90,6 +90,16 @@ object ModerationProposalAuthorResponse {
   implicit val decoder: Decoder[ModerationProposalAuthorResponse] = deriveDecoder[ModerationProposalAuthorResponse]
 }
 
+final case class ModerationAuthorResponse(
+  author: ModerationProposalAuthorResponse,
+  proposals: Seq[ModerationProposalResponse],
+  total: Int
+)
+
+object ModerationAuthorResponse {
+  implicit val codec: Codec[ModerationAuthorResponse] = deriveCodec
+}
+
 final case class ModerationProposalResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b")
   id: ProposalId,
