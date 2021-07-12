@@ -25,6 +25,7 @@ import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.proposal.{ProposalSearchEngine, ProposalSearchEngineComponent}
 import org.make.api.question._
 import org.make.api.sequence.{PersistentSequenceConfigurationComponent, PersistentSequenceConfigurationService}
+import org.make.api.tag.{TagFilter, TagService, TagServiceComponent}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.core.{DateHelper, Order}
@@ -54,7 +55,8 @@ class OperationOfQuestionServiceTest
     with OperationOfQuestionSearchEngineComponent
     with ProposalSearchEngineComponent
     with QuestionServiceComponent
-    with OperationServiceComponent {
+    with OperationServiceComponent
+    with TagServiceComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentOperationService: PersistentOperationService = mock[PersistentOperationService]
@@ -69,6 +71,7 @@ class OperationOfQuestionServiceTest
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val questionService: QuestionService = mock[QuestionService]
   override val operationService: OperationService = mock[OperationService]
+  override val tagService: TagService = mock[TagService]
   override val writeExecutionContext: ExecutionContext = mock[ExecutionContext]
   override val readExecutionContext: ExecutionContext = mock[ExecutionContext]
 
@@ -481,12 +484,14 @@ class OperationOfQuestionServiceTest
           toEnrich = None
         )
       ).thenReturn(Future.successful(Map(qId -> 420L)))
+      when(tagService.count(tagFilter = TagFilter(questionIds = Some(Seq(qId))))).thenReturn(Future.successful(42))
       whenReady(operationOfQuestionService.getQuestionsInfos(None, ModerationMode.Moderation), Timeout(3.seconds)) {
         res =>
           res.size shouldBe 1
           res.head.questionId shouldBe qId
           res.head.proposalToModerateCount shouldBe 42
           res.head.totalProposalCount shouldBe 420
+          res.head.hasTags shouldBe true
       }
     }
   }

@@ -924,7 +924,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             ModerationOperationOfQuestionInfosResponse(
               indexedOperationOfQuestion(QuestionId("q-id-infos"), OperationId("o-id-infos")),
               42,
-              420
+              420,
+              true
             )
           )
         )
