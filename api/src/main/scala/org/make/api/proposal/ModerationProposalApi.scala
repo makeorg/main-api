@@ -47,7 +47,8 @@ import org.make.core.proposal.{
   ProposalSearchFilter,
   ProposalStatus,
   SearchFilters,
-  SearchQuery
+  SearchQuery,
+  StatusSearchFilter
 }
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -786,8 +787,12 @@ trait DefaultModerationProposalApiComponent
             requireModerationRole(auth.user) {
               decodeRequest {
                 entity(as[LockProposalsRequest]) { request =>
-                  val query = SearchQuery(filters =
-                    Some(SearchFilters(proposal = Some(ProposalSearchFilter(request.proposalIds.toSeq))))
+                  val query = SearchQuery(filters = Some(
+                    SearchFilters(
+                      proposal = Some(ProposalSearchFilter(request.proposalIds.toSeq)),
+                      status = Some(StatusSearchFilter(ProposalStatus.values))
+                    )
+                  )
                   )
                   provideAsync(
                     proposalService

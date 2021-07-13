@@ -681,7 +681,13 @@ class ModerationProposalApiTest
     val indexedProposals = ids.map(id => indexedProposal(id, questionId = QuestionId("question-fire-and-ice")))
 
     def query(ids: Seq[ProposalId]) =
-      SearchQuery(filters = Some(SearchFilters(proposal = Some(ProposalSearchFilter(ids)))))
+      SearchQuery(filters = Some(
+        SearchFilters(
+          proposal = Some(ProposalSearchFilter(ids)),
+          status = Some(StatusSearchFilter(ProposalStatus.values))
+        )
+      )
+      )
     when(
       proposalService
         .search(userId = any[Option[UserId]], query = eqTo(query(ids)), requestContext = any[RequestContext])
