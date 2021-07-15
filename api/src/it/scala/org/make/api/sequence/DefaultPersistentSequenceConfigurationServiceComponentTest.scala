@@ -24,6 +24,7 @@ import org.make.core.question.QuestionId
 import org.make.core.sequence.{
   ExplorationSequenceConfiguration,
   ExplorationSequenceConfigurationId,
+  ExplorationSortAlgorithm,
   SelectionAlgorithmName,
   SequenceConfiguration,
   SequenceId,
@@ -46,9 +47,7 @@ class DefaultPersistentSequenceConfigurationServiceComponentTest
       sequenceSize = 1,
       newProposalsRatio = 0.1,
       maxTestedProposalCount = 10,
-      selectionAlgorithmName = SelectionAlgorithmName.Random,
-      intraIdeaEnabled = false,
-      interIdeaCompetitionEnabled = false
+      selectionAlgorithmName = SelectionAlgorithmName.Random
     )
 
     val popular = SpecificSequenceConfiguration(
@@ -56,9 +55,7 @@ class DefaultPersistentSequenceConfigurationServiceComponentTest
       sequenceSize = 2,
       newProposalsRatio = 0.2,
       maxTestedProposalCount = 20,
-      selectionAlgorithmName = SelectionAlgorithmName.RoundRobin,
-      intraIdeaEnabled = false,
-      interIdeaCompetitionEnabled = false
+      selectionAlgorithmName = SelectionAlgorithmName.RoundRobin
     )
 
     val keyword = SpecificSequenceConfiguration(
@@ -66,9 +63,7 @@ class DefaultPersistentSequenceConfigurationServiceComponentTest
       sequenceSize = 4,
       newProposalsRatio = 0.4,
       maxTestedProposalCount = 40,
-      selectionAlgorithmName = SelectionAlgorithmName.RoundRobin,
-      intraIdeaEnabled = false,
-      interIdeaCompetitionEnabled = false
+      selectionAlgorithmName = SelectionAlgorithmName.RoundRobin
     )
 
     SequenceConfiguration(
@@ -129,9 +124,7 @@ class DefaultPersistentSequenceConfigurationServiceComponentTest
           sequenceSize = 5,
           newProposalsRatio = 0.5,
           maxTestedProposalCount = 50,
-          selectionAlgorithmName = SelectionAlgorithmName.Random,
-          intraIdeaEnabled = false,
-          interIdeaCompetitionEnabled = false
+          selectionAlgorithmName = SelectionAlgorithmName.Random
         )
 
         val popular = SpecificSequenceConfiguration(
@@ -139,9 +132,7 @@ class DefaultPersistentSequenceConfigurationServiceComponentTest
           sequenceSize = 6,
           newProposalsRatio = 0.6,
           maxTestedProposalCount = 60,
-          selectionAlgorithmName = SelectionAlgorithmName.RoundRobin,
-          intraIdeaEnabled = false,
-          interIdeaCompetitionEnabled = false
+          selectionAlgorithmName = SelectionAlgorithmName.RoundRobin
         )
 
         val keyword = SpecificSequenceConfiguration(
@@ -149,15 +140,24 @@ class DefaultPersistentSequenceConfigurationServiceComponentTest
           sequenceSize = 7,
           newProposalsRatio = 0.7,
           maxTestedProposalCount = 70,
-          selectionAlgorithmName = SelectionAlgorithmName.RoundRobin,
-          intraIdeaEnabled = false,
-          interIdeaCompetitionEnabled = false
+          selectionAlgorithmName = SelectionAlgorithmName.RoundRobin
         )
 
         SequenceConfiguration(
           sequenceId = SequenceId(id),
           questionId = QuestionId(id),
-          mainSequence = ExplorationSequenceConfiguration.default(ExplorationSequenceConfigurationId(id)),
+          mainSequence = ExplorationSequenceConfiguration
+            .default(ExplorationSequenceConfigurationId(id))
+            .copy(
+              sequenceSize = 10,
+              maxTestedProposalCount = 9999,
+              newRatio = 0.1,
+              controversyRatio = 0.2,
+              topSorter = ExplorationSortAlgorithm.Random,
+              controversySorter = ExplorationSortAlgorithm.Equalizer,
+              keywordsThreshold = 0.1,
+              candidatesPoolSize = 2
+            ),
           controversial = controversial,
           popular = popular,
           keyword = keyword,

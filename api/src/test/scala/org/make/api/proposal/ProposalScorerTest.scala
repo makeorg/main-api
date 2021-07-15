@@ -37,10 +37,12 @@ import org.make.core.proposal.QualificationKey.{
 }
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.{IndexedProposal, IndexedQualification, IndexedVote, SequencePool}
+import org.make.core.proposal.indexed.Zone.{Limbo, Rejection}
+import org.make.core.proposal.indexed.{IndexedProposal, IndexedQualification, IndexedVote, SequencePool, Zone}
 import org.make.core.question.QuestionId
 import org.make.core.sequence.{SequenceConfiguration, SequenceId}
 
+import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.immutable.Seq
 
 class ProposalScorerTest extends MakeUnitTest {
@@ -432,6 +434,36 @@ class ProposalScorerTest extends MakeUnitTest {
     }
   }
 
+  Feature("Zone sampling") {
+    val votesCounter = VotesCounter.SequenceVotesCounter
+
+    def compute(nbVoteAgree: Int, nbVoteDisagree: Int, nbVoteNeutral: Int): Unit = {
+      val ignoredZones: Set[Zone] = Set(Limbo, Rejection)
+      val votes = createVotes(nbVoteAgree = nbVoteAgree, nbVoteDisagree = nbVoteDisagree, nbVoteNeutral = nbVoteNeutral)
+      val changingProposals = new AtomicInteger()
+      val ignoredProposal = new AtomicInteger()
+
+      (1 to 100_000).foreach { _ =>
+        val scorer = new ProposalScorer(votes, votesCounter, 0.5)
+        if (scorer.zone != scorer.sampledZone) {
+          changingProposals.incrementAndGet()
+        }
+        if (ignoredZones.contains(scorer.sampledZone)) {
+          ignoredProposal.incrementAndGet()
+        }
+      }
+      logger.info(
+        s"the zones were different ${changingProposals.get()} times and proposal was ignored ${ignoredProposal.get()} times"
+      )
+    }
+
+    Seq((4, 1, 6), (0, 9, 2), (2, 4, 5), (2, 3, 6)).foreach {
+      case (agree, disagree, neutral) =>
+        Scenario(s"$agree agree, $disagree disagree $neutral neutral") {
+          compute(nbVoteAgree = agree, nbVoteDisagree = disagree, nbVoteNeutral = neutral)
+        }
+    }
+  }
 }
 
 object ProposalScorerTest {

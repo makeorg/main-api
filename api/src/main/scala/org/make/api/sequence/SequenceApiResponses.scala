@@ -60,7 +60,11 @@ final case class ExplorationSequenceConfigurationResponse(
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "bandit,random,round-robin", example = "bandit")
   topSorter: ExplorationSortAlgorithm,
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "bandit,random,round-robin", example = "bandit")
-  controversySorter: ExplorationSortAlgorithm
+  controversySorter: ExplorationSortAlgorithm,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.2")
+  keywordsThreshold: Ratio,
+  @(ApiModelProperty @field)(dataType = "int", example = "2")
+  candidatesPoolSize: Int
 )
 
 object ExplorationSequenceConfigurationResponse {
@@ -68,13 +72,15 @@ object ExplorationSequenceConfigurationResponse {
 
   def fromExplorationConfiguration(conf: ExplorationSequenceConfiguration): ExplorationSequenceConfigurationResponse =
     ExplorationSequenceConfigurationResponse(
-      conf.explorationSequenceConfigurationId,
-      conf.sequenceSize,
-      conf.maxTestedProposalCount,
-      conf.newRatio,
-      conf.controversyRatio,
-      conf.topSorter,
-      conf.controversySorter
+      explorationSequenceConfigurationId = conf.explorationSequenceConfigurationId,
+      sequenceSize = conf.sequenceSize,
+      maxTestedProposalCount = conf.maxTestedProposalCount,
+      newRatio = conf.newRatio,
+      controversyRatio = conf.controversyRatio,
+      topSorter = conf.topSorter,
+      controversySorter = conf.controversySorter,
+      keywordsThreshold = conf.keywordsThreshold,
+      candidatesPoolSize = conf.candidatesPoolSize
     )
 }
 
@@ -134,21 +140,7 @@ final case class SpecificSequenceConfigurationResponse(
   @(ApiModelProperty @field)(dataType = "int", example = "1000")
   maxTestedProposalCount: PosInt,
   @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
-  selectionAlgorithmName: SelectionAlgorithmName,
-  @(ApiModelProperty @field)(dataType = "boolean", example = "false")
-  intraIdeaEnabled: Boolean,
-  @(ApiModelProperty @field)(dataType = "int", example = "1")
-  intraIdeaMinCount: Int,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  intraIdeaProposalsRatio: Double,
-  @(ApiModelProperty @field)(dataType = "boolean", example = "true")
-  interIdeaCompetitionEnabled: Boolean,
-  @(ApiModelProperty @field)(dataType = "int", example = "50")
-  interIdeaCompetitionTargetCount: Int,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  interIdeaCompetitionControversialRatio: Double,
-  @(ApiModelProperty @field)(dataType = "int", example = "0")
-  interIdeaCompetitionControversialCount: Int
+  selectionAlgorithmName: SelectionAlgorithmName
 )
 
 object SpecificSequenceConfigurationResponse {
@@ -162,14 +154,7 @@ object SpecificSequenceConfigurationResponse {
       sequenceSize = configuration.sequenceSize,
       newProposalsRatio = configuration.newProposalsRatio,
       maxTestedProposalCount = configuration.maxTestedProposalCount,
-      selectionAlgorithmName = configuration.selectionAlgorithmName,
-      intraIdeaEnabled = configuration.intraIdeaEnabled,
-      intraIdeaMinCount = configuration.intraIdeaMinCount,
-      intraIdeaProposalsRatio = configuration.intraIdeaProposalsRatio,
-      interIdeaCompetitionEnabled = configuration.interIdeaCompetitionEnabled,
-      interIdeaCompetitionTargetCount = configuration.interIdeaCompetitionTargetCount,
-      interIdeaCompetitionControversialRatio = configuration.interIdeaCompetitionControversialRatio,
-      interIdeaCompetitionControversialCount = configuration.interIdeaCompetitionControversialCount
+      selectionAlgorithmName = configuration.selectionAlgorithmName
     )
   }
 }

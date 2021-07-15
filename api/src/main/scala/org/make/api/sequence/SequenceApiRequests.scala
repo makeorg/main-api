@@ -81,16 +81,22 @@ final case class ExplorationSequenceConfigurationRequest(
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "bandit,random,round-robin", example = "bandit")
   topSorter: ExplorationSortAlgorithm,
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "bandit,random,round-robin", example = "bandit")
-  controversySorter: ExplorationSortAlgorithm
+  controversySorter: ExplorationSortAlgorithm,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.2")
+  keywordsThreshold: Ratio,
+  @(ApiModelProperty @field)(dataType = "int", example = "2")
+  candidatesPoolSize: Int
 ) {
   def toExplorationConfiguration: ExplorationSequenceConfiguration = ExplorationSequenceConfiguration(
-    explorationSequenceConfigurationId,
-    sequenceSize,
-    maxTestedProposalCount,
-    newRatio,
-    controversyRatio,
-    topSorter,
-    controversySorter
+    explorationSequenceConfigurationId = explorationSequenceConfigurationId,
+    sequenceSize = sequenceSize,
+    maxTestedProposalCount = maxTestedProposalCount,
+    newRatio = newRatio,
+    controversyRatio = controversyRatio,
+    topSorter = topSorter,
+    controversySorter = controversySorter,
+    keywordsThreshold = keywordsThreshold,
+    candidatesPoolSize = candidatesPoolSize
   )
 }
 
@@ -108,21 +114,7 @@ final case class SpecificSequenceConfigurationRequest(
   @(ApiModelProperty @field)(dataType = "int", example = "1000")
   maxTestedProposalCount: PosInt,
   @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
-  selectionAlgorithmName: SelectionAlgorithmName,
-  @(ApiModelProperty @field)(dataType = "boolean", example = "false")
-  intraIdeaEnabled: Boolean,
-  @(ApiModelProperty @field)(dataType = "int", example = "1")
-  intraIdeaMinCount: Int,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  intraIdeaProposalsRatio: Double,
-  @(ApiModelProperty @field)(dataType = "boolean", example = "true")
-  interIdeaCompetitionEnabled: Boolean,
-  @(ApiModelProperty @field)(dataType = "int", example = "50")
-  interIdeaCompetitionTargetCount: Int,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  interIdeaCompetitionControversialRatio: Double,
-  @(ApiModelProperty @field)(dataType = "int", example = "0")
-  interIdeaCompetitionControversialCount: Int
+  selectionAlgorithmName: SelectionAlgorithmName
 ) {
   def toSpecificSequenceConfiguration: SpecificSequenceConfiguration = {
     SpecificSequenceConfiguration(
@@ -130,14 +122,7 @@ final case class SpecificSequenceConfigurationRequest(
       sequenceSize = sequenceSize,
       newProposalsRatio = newProposalsRatio,
       maxTestedProposalCount = maxTestedProposalCount,
-      selectionAlgorithmName = selectionAlgorithmName,
-      intraIdeaEnabled = intraIdeaEnabled,
-      intraIdeaMinCount = intraIdeaMinCount,
-      intraIdeaProposalsRatio = intraIdeaProposalsRatio,
-      interIdeaCompetitionEnabled = interIdeaCompetitionEnabled,
-      interIdeaCompetitionTargetCount = interIdeaCompetitionTargetCount,
-      interIdeaCompetitionControversialRatio = interIdeaCompetitionControversialRatio,
-      interIdeaCompetitionControversialCount = interIdeaCompetitionControversialCount
+      selectionAlgorithmName = selectionAlgorithmName
     )
   }
 }

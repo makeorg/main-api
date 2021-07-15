@@ -23,8 +23,17 @@ import grizzled.slf4j.Logging
 import org.apache.commons.math3.distribution.BetaDistribution
 import org.apache.commons.math3.random.{MersenneTwister, RandomGenerator}
 import org.make.api.proposal.ProposalScorer.{findSmoothing, Score, VotesCounter}
-import org.make.api.technical.MakeRandom
-import org.make.core.proposal.QualificationKey.{Doable, Impossible, LikeIt, NoWay, PlatitudeAgree, PlatitudeDisagree}
+import org.make.core.proposal.QualificationKey.{
+  DoNotCare,
+  DoNotUnderstand,
+  Doable,
+  Impossible,
+  LikeIt,
+  NoOpinion,
+  NoWay,
+  PlatitudeAgree,
+  PlatitudeDisagree
+}
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{SequencePool, Zone}
@@ -36,11 +45,11 @@ final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, nonSeque
     nonSequenceVotesWeight * generalScore + (1 - nonSequenceVotesWeight) * specificScore
   }
 
-  def countVotes(counter: VotesCounter): Int = {
+  private def countVotes(counter: VotesCounter): Int = {
     votes.map(counter).sum
   }
 
-  def count(key: Key, countingFunction: VotesCounter = counter): Int = {
+  private def count(key: Key, countingFunction: VotesCounter): Int = {
     val maybeVoteOrQualification = key match {
       case voteKey: VoteKey =>
         votes.find(_.key == voteKey)
@@ -50,7 +59,7 @@ final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, nonSeque
     maybeVoteOrQualification.map(countingFunction).getOrElse(0)
   }
 
-  def individualScore(key: Key, countingFunction: VotesCounter = counter): Double = {
+  private def individualScore(key: Key, countingFunction: VotesCounter = counter): Double = {
     (count(key, countingFunction) + findSmoothing(key)) / (1 + countVotes(countingFunction))
   }
 
@@ -58,7 +67,7 @@ final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, nonSeque
     tradeOff(individualScore(key, _.countVerified), individualScore(key))
   }
 
-  def confidence(key: Key): Double = {
+  private def confidence(key: Key): Double = {
     val specificVotesCount = countVotes(counter)
     val specificVotes = individualScore(key)
 
@@ -78,6 +87,10 @@ final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, nonSeque
   lazy val impossible: Score = keyScore(Impossible)
   lazy val noWay: Score = keyScore(NoWay)
   lazy val platitudeDisagree: Score = keyScore(PlatitudeDisagree)
+
+  lazy val noOpinion: Score = keyScore(NoOpinion)
+  lazy val doNotCare: Score = keyScore(DoNotCare)
+  lazy val doNotUnderstand: Score = keyScore(DoNotUnderstand)
 
   lazy val platitude: Score = platitudeAgree + platitudeDisagree
   lazy val topScore: Score = agree + likeIt + doable - noWay - impossible - platitude
@@ -104,7 +117,7 @@ final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, nonSeque
       return 'limbo'
   return 'controversy'
    */
-  def zone(agree: Double, disagree: Double, neutral: Double): Zone = {
+  private def zone(agree: Double, disagree: Double, neutral: Double): Zone = {
     if (agree >= 0.6 || neutral < 0.4 && disagree < 0.15) {
       Zone.Consensus
     } else if (disagree >= 0.6 || (neutral < 0.4 && agree < 0.15)) {
@@ -116,38 +129,29 @@ final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, nonSeque
     }
   }
 
-  def pool(sequenceConfiguration: SequenceConfiguration, status: ProposalStatus): SequencePool = {
+  def pool(configuration: SequenceConfiguration, status: ProposalStatus): SequencePool = {
     val votesCount: Int = countVotes(counter)
     val engagementRate: Double = engagement.lowerBound
     val scoreRate: Double = topScore.lowerBound
     val controversyRate: Double = controversy.lowerBound
 
     def isTestedFromScoreAndControversy: Boolean =
-      (sequenceConfiguration.testedProposalsScoreThreshold, sequenceConfiguration.testedProposalsControversyThreshold) match {
+      (configuration.testedProposalsScoreThreshold, configuration.testedProposalsControversyThreshold) match {
         case (Some(scoreBase), Some(controversyBase)) => scoreRate >= scoreBase || controversyRate >= controversyBase
         case (Some(scoreBase), _)                     => scoreRate >= scoreBase
         case (_, Some(controversyBase))               => controversyRate >= controversyBase
         case _                                        => true
       }
 
-    if (status == ProposalStatus.Accepted && votesCount < sequenceConfiguration.newProposalsVoteThreshold) {
+    if (status == ProposalStatus.Accepted && votesCount < configuration.newProposalsVoteThreshold) {
       SequencePool.New
     } else if (status == ProposalStatus.Accepted &&
-               sequenceConfiguration.testedProposalsMaxVotesThreshold.fold(true)(votesCount < _) &&
-               sequenceConfiguration.testedProposalsEngagementThreshold.fold(true)(engagementRate > _) &&
+               configuration.testedProposalsMaxVotesThreshold.forall(votesCount < _) &&
+               configuration.testedProposalsEngagementThreshold.forall(engagementRate > _) &&
                isTestedFromScoreAndControversy) {
       SequencePool.Tested
     } else {
       SequencePool.Excluded
-    }
-  }
-
-  def chooseCounter(nonSequenceVotesWeight: Double): VotesCounter = {
-    val r = MakeRandom.nextDouble()
-    if (r < nonSequenceVotesWeight) {
-      VotesCounter.VerifiedVotesVotesCounter
-    } else {
-      this.counter
     }
   }
 }

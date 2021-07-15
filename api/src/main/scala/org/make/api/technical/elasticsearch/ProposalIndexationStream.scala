@@ -44,6 +44,7 @@ import org.make.core.sequence.SequenceConfiguration
 import org.make.api.tag.TagServiceComponent
 import org.make.api.tagtype.TagTypeServiceComponent
 import org.make.api.technical.Futures
+import org.make.api.technical.elasticsearch.ProposalIndexationStream.buildScore
 import org.make.api.user.UserServiceComponent
 import org.make.core.SlugHelper
 import org.make.core.operation.{OperationOfQuestion, SimpleOperation}
@@ -58,7 +59,6 @@ import org.make.core.proposal.indexed.{
   IndexedTag,
   IndexedVote,
   SequencePool,
-  Zone,
   IndexedContext => ProposalContext
 }
 import org.make.core.question.{Question, QuestionId}
@@ -278,34 +278,8 @@ trait ProposalIndexationStream
       votesSequenceCount = proposal.votes.map(_.countSequence).sum,
       votesSegmentCount = proposal.votes.map(_.countSegment).sum,
       toEnrich = needsEnrichment,
-      scores = IndexedScores(
-        engagement = sequenceScore.engagement.lowerBound,
-        agreement = sequenceScore.adhesion.lowerBound,
-        adhesion = sequenceScore.adhesion.lowerBound,
-        realistic = sequenceScore.realistic.lowerBound,
-        platitude = sequenceScore.platitude.lowerBound,
-        topScore = sequenceScore.topScore.score,
-        topScoreAjustedWithVotes = sequenceScore.topScore.lowerBound,
-        controversy = sequenceScore.controversy.lowerBound,
-        rejection = sequenceScore.rejection.lowerBound,
-        scoreUpperBound = sequenceScore.topScore.upperBound,
-        scoreLowerBound = sequenceScore.topScore.lowerBound,
-        zone = sequenceScore.zone
-      ),
-      segmentScores = IndexedScores(
-        engagement = segmentScore.map(_.engagement.lowerBound).getOrElse(0),
-        agreement = segmentScore.map(_.adhesion.lowerBound).getOrElse(0),
-        adhesion = segmentScore.map(_.adhesion.lowerBound).getOrElse(0),
-        realistic = segmentScore.map(_.realistic.lowerBound).getOrElse(0),
-        platitude = segmentScore.map(_.platitude.lowerBound).getOrElse(0),
-        topScore = segmentScore.map(_.topScore.score).getOrElse(0),
-        topScoreAjustedWithVotes = segmentScore.map(_.topScore.lowerBound).getOrElse(0),
-        controversy = segmentScore.map(_.controversy.lowerBound).getOrElse(0),
-        rejection = segmentScore.map(_.rejection.lowerBound).getOrElse(0),
-        scoreUpperBound = segmentScore.map(_.topScore.upperBound).getOrElse(0),
-        scoreLowerBound = segmentScore.map(_.topScore.lowerBound).getOrElse(0),
-        zone = segmentScore.map(_.zone).getOrElse(Zone.Limbo)
-      ),
+      scores = buildScore(sequenceScore),
+      segmentScores = segmentScore.map(buildScore).getOrElse(IndexedScores.empty),
       context = Some(ProposalContext(proposal.creationContext, isBeforeContextSourceFeature)),
       trending = None,
       labels = proposal.labels.map(_.value),
@@ -375,6 +349,25 @@ trait ProposalIndexationStream
       }
   }
 
+}
+
+object ProposalIndexationStream {
+  def buildScore(scorer: ProposalScorer): IndexedScores = {
+    IndexedScores(
+      engagement = scorer.engagement.lowerBound,
+      agreement = scorer.adhesion.lowerBound,
+      adhesion = scorer.adhesion.lowerBound,
+      realistic = scorer.realistic.lowerBound,
+      platitude = scorer.platitude.lowerBound,
+      topScore = scorer.topScore.score,
+      topScoreAjustedWithVotes = scorer.topScore.lowerBound,
+      controversy = scorer.controversy.lowerBound,
+      rejection = scorer.rejection.lowerBound,
+      scoreUpperBound = scorer.topScore.upperBound,
+      scoreLowerBound = scorer.topScore.lowerBound,
+      zone = scorer.zone
+    )
+  }
 }
 
 sealed trait ProposalFlow {

@@ -108,7 +108,9 @@ final case class ExplorationSequenceConfiguration(
   newRatio: Ratio,
   controversyRatio: Ratio,
   topSorter: ExplorationSortAlgorithm,
-  controversySorter: ExplorationSortAlgorithm
+  controversySorter: ExplorationSortAlgorithm,
+  keywordsThreshold: Ratio,
+  candidatesPoolSize: Int
 ) extends BasicSequenceConfiguration
 
 object ExplorationSequenceConfiguration {
@@ -117,10 +119,12 @@ object ExplorationSequenceConfiguration {
       id,
       sequenceSize = 12,
       maxTestedProposalCount = 1000,
-      newRatio = 0.5,
+      newRatio = 0.3,
       controversyRatio = 0.1,
       topSorter = ExplorationSortAlgorithm.Bandit,
-      controversySorter = ExplorationSortAlgorithm.Bandit
+      controversySorter = ExplorationSortAlgorithm.Bandit,
+      keywordsThreshold = 0.2,
+      candidatesPoolSize = 10
     )
 }
 
@@ -139,7 +143,7 @@ object ExplorationSortAlgorithm
 
   case object Bandit extends ExplorationSortAlgorithm("bandit")
   case object Random extends ExplorationSortAlgorithm("random")
-  case object RoundRobin extends ExplorationSortAlgorithm("round-robin")
+  case object Equalizer extends ExplorationSortAlgorithm("equalizer")
 
   override def values: IndexedSeq[ExplorationSortAlgorithm] = findValues
 
@@ -151,13 +155,7 @@ final case class SpecificSequenceConfiguration(
   newProposalsRatio: Double = 0.3,
   maxTestedProposalCount: PosInt = 1000,
   selectionAlgorithmName: SelectionAlgorithmName = SelectionAlgorithmName.Bandit,
-  intraIdeaEnabled: Boolean = true,
-  intraIdeaMinCount: Int = 1,
-  intraIdeaProposalsRatio: Double = 0.0,
-  interIdeaCompetitionEnabled: Boolean = true,
-  interIdeaCompetitionTargetCount: Int = 20,
-  interIdeaCompetitionControversialRatio: Double = 0.0,
-  interIdeaCompetitionControversialCount: Int = 2
+  intraIdeaEnabled: Boolean = true
 ) extends BasicSequenceConfiguration
 
 object SpecificSequenceConfiguration {
@@ -167,11 +165,7 @@ object SpecificSequenceConfiguration {
       specificSequenceConfigurationId = id,
       newProposalsRatio = 0,
       selectionAlgorithmName = SelectionAlgorithmName.Random,
-      intraIdeaEnabled = false,
-      intraIdeaMinCount = 0,
-      interIdeaCompetitionEnabled = false,
-      interIdeaCompetitionTargetCount = 0,
-      interIdeaCompetitionControversialCount = 0
+      intraIdeaEnabled = false
     )
 }
 
