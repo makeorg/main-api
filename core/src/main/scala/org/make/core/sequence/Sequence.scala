@@ -154,8 +154,7 @@ final case class SpecificSequenceConfiguration(
   sequenceSize: PosInt = 12,
   newProposalsRatio: Double = 0.3,
   maxTestedProposalCount: PosInt = 1000,
-  selectionAlgorithmName: SelectionAlgorithmName = SelectionAlgorithmName.Bandit,
-  intraIdeaEnabled: Boolean = true
+  selectionAlgorithmName: SelectionAlgorithmName = SelectionAlgorithmName.Bandit
 ) extends BasicSequenceConfiguration
 
 object SpecificSequenceConfiguration {
@@ -164,8 +163,7 @@ object SpecificSequenceConfiguration {
     SpecificSequenceConfiguration(
       specificSequenceConfigurationId = id,
       newProposalsRatio = 0,
-      selectionAlgorithmName = SelectionAlgorithmName.Random,
-      intraIdeaEnabled = false
+      selectionAlgorithmName = SelectionAlgorithmName.Random
     )
 }
 
