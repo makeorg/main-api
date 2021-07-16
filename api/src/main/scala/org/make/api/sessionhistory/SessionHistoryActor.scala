@@ -275,7 +275,8 @@ class SessionHistoryActor(
       )).map(response => originalSender ! response)
     case RequestSessionVoteValues(_, proposalIds) =>
       val originalSender = sender()
-      (userHistoryCoordinator ?? (RequestVoteValues(userId, proposalIds, _))).map(response => originalSender ! response)
+      (userHistoryCoordinator ?? (RequestVoteValues(userId, proposalIds, _)))
+        .map(response => originalSender ! SessionVotesValues(response.value))
     case command: SessionHistoryAction =>
       log.warning("closed session {} with userId {} received command {}", persistenceId, userId.value, command.toString)
     case Snapshot                           => saveSnapshot()
