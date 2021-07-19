@@ -973,14 +973,16 @@ final case class ModerationOperationOfQuestionInfosResponse(
   @(ApiModelProperty @field)(dataType = "dateTime") startDate: ZonedDateTime,
   @(ApiModelProperty @field)(dataType = "dateTime") endDate: ZonedDateTime,
   totalProposalCount: Int,
-  proposalToModerateCount: Int
+  proposalToModerateCount: Int,
+  hasTags: Boolean
 )
 
 object ModerationOperationOfQuestionInfosResponse {
   def apply(
     question: IndexedOperationOfQuestion,
     proposalToModerateCount: Int,
-    totalProposalCount: Int
+    totalProposalCount: Int,
+    hasTags: Boolean
   ): ModerationOperationOfQuestionInfosResponse = ModerationOperationOfQuestionInfosResponse(
     questionId = question.questionId,
     slug = question.slug,
@@ -990,7 +992,8 @@ object ModerationOperationOfQuestionInfosResponse {
     startDate = question.startDate,
     endDate = question.endDate,
     totalProposalCount = totalProposalCount,
-    proposalToModerateCount = proposalToModerateCount
+    proposalToModerateCount = proposalToModerateCount,
+    hasTags = hasTags
   )
 
   implicit val codec: Codec[ModerationOperationOfQuestionInfosResponse] = deriveCodec

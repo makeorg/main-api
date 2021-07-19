@@ -28,6 +28,7 @@ import org.make.api.operation.ModerationMode.Enrichment
 import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.question.{PersistentQuestionServiceComponent, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sequence.PersistentSequenceConfigurationComponent
+import org.make.api.tag.{TagFilter, TagServiceComponent}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation._
@@ -131,7 +132,8 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
     with ProposalSearchEngineComponent
     with IdGeneratorComponent
     with QuestionServiceComponent
-    with OperationServiceComponent =>
+    with OperationServiceComponent
+    with TagServiceComponent =>
 
   override lazy val operationOfQuestionService: OperationOfQuestionService = new DefaultOperationOfQuestionService
 
@@ -362,15 +364,24 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
             maybeUserId = None,
             toEnrich = None
           )
+          val futureHasTags = Future
+            .traverse(questions.results) { q =>
+              tagService.count(tagFilter = TagFilter(questionIds = Some(Seq(q.questionId)))).map(_ > 0).map { hasTags =>
+                q.questionId -> hasTags
+              }
+            }
+            .map(_.toMap)
           for {
             moderateCount <- futureProposalToModerateByQuestion
             totalCount    <- futureProposalCountByQuestion
+            hasTags       <- futureHasTags
           } yield {
             questions.results.map { q =>
               ModerationOperationOfQuestionInfosResponse(
                 q,
                 moderateCount.getOrElse(q.questionId, 0L).toInt,
-                totalCount.getOrElse(q.questionId, 0L).toInt
+                totalCount.getOrElse(q.questionId, 0L).toInt,
+                hasTags.getOrElse(q.questionId, false)
               )
             }.sortBy(_.proposalToModerateCount * -1)
           }
