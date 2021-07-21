@@ -118,7 +118,9 @@ object SequenceBehaviour extends Logging {
 
     override def fallbackProposals(currentSequenceSize: Int, search: SearchFunction): Future[Seq[IndexedProposal]] = {
       if (currentSequenceSize < specificConfiguration.sequenceSize) {
-        logger.warn(s"Sequence fallback for session ${sessionId.value} and question ${questionId.value}")
+        logger.warn(
+          s"Sequence fallback missing ${specificConfiguration.sequenceSize - currentSequenceSize} proposals for session ${sessionId.value} and question ${questionId.value}"
+        )
         def sortAlgorithm: SortAlgorithm =
           maybeSegment.fold[SortAlgorithm](CreationDateAlgorithm(SortOrder.Desc))(SegmentFirstAlgorithm.apply)
 

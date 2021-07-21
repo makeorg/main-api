@@ -194,6 +194,239 @@ class ProposalServiceTest
       .unlockSessionForQualification(any[SessionId], any[ProposalId], any[QualificationKey])
   ).thenReturn(Future.unit)
 
+  Feature("next author to moderate") {
+
+    def searchQuery(question: String): SearchQuery = SearchQuery(
+      filters = Some(
+        SearchFilters(
+          question = Some(QuestionSearchFilter(Seq(QuestionId(question)))),
+          status = Some(StatusSearchFilter(Seq(ProposalStatus.Pending)))
+        )
+      ),
+      sort = Some(Sort(Some(ProposalElasticsearchFieldName.createdAt.field), Some(SortOrder.Asc))),
+      limit = Some(1000),
+      sortAlgorithm = Some(B2BFirstAlgorithm)
+    )
+
+    when(tagService.findByQuestionId(any)).thenReturn(Future.successful(Nil))
+
+    Scenario("no proposal matching criteria") {
+
+      val question = "next author to moderate - no proposal matching criteria"
+
+      when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+        .thenReturn(Future.successful(ProposalsSearchResult(total = 0, results = Seq.empty)))
+
+      whenReady(
+        proposalService.searchAndLockAuthorToModerate(
+          QuestionId(question),
+          moderatorId,
+          moderator.fullName,
+          RequestContext.empty,
+          toEnrich = false,
+          minVotesCount = None,
+          minScore = None
+        ),
+        Timeout(3.seconds)
+      ) { maybeResult =>
+        maybeResult should be(None)
+      }
+    }
+
+    Scenario("no proposal can be locked") {
+      val question = "next author to moderate - no proposal can be locked"
+
+      val proposal1 =
+        proposal(id = ProposalId(s"$question-unlockable-1"), author = UserId(s"$question-user-1"), status = Pending)
+      val proposal2 =
+        proposal(id = ProposalId(s"$question-unlockable-2"), author = UserId(s"$question-user-1"), status = Pending)
+      val proposal3 =
+        proposal(id = ProposalId(s"$question-unlockable-3"), author = UserId(s"$question-user-2"), status = Pending)
+      val proposal4 =
+        proposal(id = ProposalId(s"$question-unlockable-4"), author = UserId(s"$question-user-2"), status = Pending)
+
+      when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+        .thenReturn(
+          Future
+            .successful(
+              ProposalsSearchResult(
+                total = 4,
+                results = Seq(
+                  indexedProposal(proposal1.proposalId, userId = proposal1.author),
+                  indexedProposal(proposal2.proposalId, userId = proposal2.author),
+                  indexedProposal(proposal3.proposalId, userId = proposal3.author),
+                  indexedProposal(proposal4.proposalId, userId = proposal4.author)
+                )
+              )
+            )
+        )
+
+      Seq(proposal1, proposal2, proposal3, proposal4).foreach { proposal =>
+        when(
+          proposalCoordinatorService
+            .lock(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
+        ).thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
+
+        when(proposalCoordinatorService.getProposal(proposal.proposalId))
+          .thenReturn(Future.successful(Some(proposal)))
+
+        when(userService.getUser(proposal.author))
+          .thenReturn(Future.successful(Some(user(proposal.author))))
+      }
+
+      when(userService.getUser(moderatorId))
+        .thenReturn(Future.successful(Some(moderator)))
+
+      whenReady(
+        proposalService.searchAndLockAuthorToModerate(
+          questionId = QuestionId(question),
+          moderatorId,
+          moderator.fullName,
+          RequestContext.empty,
+          toEnrich = false,
+          minVotesCount = None,
+          minScore = None
+        ),
+        Timeout(3.seconds)
+      ) { maybeProposal =>
+        maybeProposal should be(None)
+      }
+
+    }
+
+    Scenario("one proposal can not be locked") {
+      val question = "next author to moderate - one proposal can not be locked"
+
+      val proposal1 =
+        proposal(id = ProposalId(s"$question-lockable-1"), author = UserId(s"$question-user-1"), status = Pending)
+      val proposal2 =
+        proposal(id = ProposalId(s"$question-unlockable-2"), author = UserId(s"$question-user-1"), status = Pending)
+      val proposal3 =
+        proposal(id = ProposalId(s"$question-lockable-3"), author = UserId(s"$question-user-2"), status = Pending)
+      val proposal4 =
+        proposal(id = ProposalId(s"$question-lockable-4"), author = UserId(s"$question-user-2"), status = Pending)
+
+      when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+        .thenReturn(
+          Future
+            .successful(
+              ProposalsSearchResult(
+                total = 4,
+                results = Seq(
+                  indexedProposal(proposal1.proposalId, userId = proposal1.author),
+                  indexedProposal(proposal2.proposalId, userId = proposal2.author),
+                  indexedProposal(proposal3.proposalId, userId = proposal3.author),
+                  indexedProposal(proposal4.proposalId, userId = proposal4.author)
+                )
+              )
+            )
+        )
+
+      Seq(proposal1, proposal3, proposal4).foreach { proposal =>
+        when(
+          proposalCoordinatorService
+            .lock(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
+        ).thenReturn(Future.successful(Some(moderator.userId)))
+      }
+      when(
+        proposalCoordinatorService
+          .lock(proposal2.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
+      ).thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
+
+      Seq(proposal1, proposal2, proposal3, proposal4).foreach { proposal =>
+        when(proposalCoordinatorService.getProposal(proposal.proposalId))
+          .thenReturn(Future.successful(Some(proposal)))
+
+        when(userService.getUser(proposal.author))
+          .thenReturn(Future.successful(Some(user(proposal.author))))
+      }
+
+      when(userService.getUser(moderatorId))
+        .thenReturn(Future.successful(Some(moderator)))
+
+      whenReady(
+        proposalService.searchAndLockAuthorToModerate(
+          questionId = QuestionId(question),
+          moderatorId,
+          moderator.fullName,
+          RequestContext.empty,
+          toEnrich = false,
+          minVotesCount = None,
+          minScore = None
+        ),
+        Timeout(3.seconds)
+      ) { maybeResult =>
+        val result = maybeResult.get
+        result.proposals.map(_.id) should be(Seq(proposal3.proposalId, proposal4.proposalId))
+        result.total should be(4)
+      }
+
+    }
+
+    Scenario("first proposal is already moderated") {
+      val question = "next author to moderate - first proposal is already moderated"
+
+      val moderated =
+        proposal(id = ProposalId(s"$question-moderated"), author = UserId(s"$question-user-1"), status = Accepted)
+
+      val lockable =
+        proposal(id = ProposalId(s"$question-lockable"), author = UserId(s"$question-user-1"), status = Pending)
+
+      val ok =
+        proposal(id = ProposalId(s"$question-result"), author = UserId(s"$question-user-2"), status = Pending)
+
+      when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+        .thenReturn(
+          Future
+            .successful(
+              ProposalsSearchResult(
+                total = 3,
+                results = Seq(
+                  indexedProposal(moderated.proposalId, userId = moderated.author),
+                  indexedProposal(lockable.proposalId, userId = lockable.author),
+                  indexedProposal(ok.proposalId, userId = ok.author)
+                )
+              )
+            )
+        )
+
+      Seq(moderated, lockable, ok).foreach { proposal =>
+        when(proposalCoordinatorService.getProposal(eqTo(proposal.proposalId)))
+          .thenReturn(Future.successful(Some(proposal)))
+
+        when(userService.getUser(proposal.author))
+          .thenReturn(Future.successful(Some(user(proposal.author))))
+
+        when(
+          proposalCoordinatorService
+            .lock(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
+        ).thenReturn(Future.successful(Some(moderatorId)))
+      }
+
+      when(userService.getUser(moderatorId))
+        .thenReturn(Future.successful(Some(moderator)))
+
+      whenReady(
+        proposalService.searchAndLockAuthorToModerate(
+          QuestionId(question),
+          moderatorId,
+          moderator.fullName,
+          RequestContext.empty,
+          toEnrich = false,
+          minVotesCount = None,
+          minScore = None
+        ),
+        Timeout(3.seconds)
+      ) { maybeResult =>
+        val result = maybeResult.get
+        result.total should be(3)
+        result.proposals.map(_.proposalId) should be(Seq(ok.proposalId))
+      }
+
+    }
+
+  }
+
   Feature("next proposal to moderate") {
 
     def searchQuery(question: String): SearchQuery = SearchQuery(
@@ -219,6 +452,7 @@ class ProposalServiceTest
         proposalService.searchAndLockProposalToModerate(
           QuestionId(question),
           moderatorId,
+          moderator.fullName,
           RequestContext.empty,
           toEnrich = false,
           minVotesCount = None,
@@ -294,6 +528,7 @@ class ProposalServiceTest
         proposalService.searchAndLockProposalToModerate(
           questionId = QuestionId(question),
           moderatorId,
+          moderator.fullName,
           RequestContext.empty,
           toEnrich = false,
           minVotesCount = None,
@@ -358,6 +593,7 @@ class ProposalServiceTest
         proposalService.searchAndLockProposalToModerate(
           QuestionId(question),
           moderatorId,
+          moderator.fullName,
           RequestContext.empty,
           toEnrich = false,
           minVotesCount = None,
@@ -418,6 +654,7 @@ class ProposalServiceTest
         proposalService.searchAndLockProposalToModerate(
           QuestionId(question),
           moderatorId,
+          moderator.fullName,
           RequestContext.empty,
           toEnrich = false,
           minVotesCount = None,
@@ -460,6 +697,7 @@ class ProposalServiceTest
         proposalService.searchAndLockProposalToModerate(
           QuestionId(question),
           moderatorId,
+          moderator.fullName,
           RequestContext.empty,
           toEnrich = false,
           minVotesCount = None,
@@ -520,6 +758,7 @@ class ProposalServiceTest
         proposalService.searchAndLockProposalToModerate(
           QuestionId(question),
           moderatorId,
+          moderator.fullName,
           RequestContext.empty,
           toEnrich = true,
           minVotesCount = None,
@@ -592,6 +831,7 @@ class ProposalServiceTest
         proposalService.searchAndLockProposalToModerate(
           questionId = QuestionId(question),
           moderatorId,
+          moderator.fullName,
           RequestContext.empty,
           toEnrich = true,
           minVotesCount = None,
@@ -659,6 +899,7 @@ class ProposalServiceTest
         proposalService.searchAndLockProposalToModerate(
           QuestionId(question),
           moderatorId,
+          moderator.fullName,
           RequestContext.empty,
           toEnrich = true,
           minVotesCount = None,
@@ -727,6 +968,7 @@ class ProposalServiceTest
         proposalService.searchAndLockProposalToModerate(
           QuestionId(question),
           moderatorId,
+          moderator.fullName,
           RequestContext.empty,
           toEnrich = true,
           minVotesCount = None,
@@ -768,6 +1010,7 @@ class ProposalServiceTest
         proposalService.searchAndLockProposalToModerate(
           QuestionId(question),
           moderatorId,
+          moderator.fullName,
           RequestContext.empty,
           toEnrich = true,
           minVotesCount = None,
