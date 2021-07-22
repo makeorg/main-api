@@ -270,7 +270,9 @@ final case class DemographicsTrackingRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
   @(ApiModelProperty @field)(dataType = "map[string]")
-  parameters: Map[String, String]
+  parameters: Map[String, String],
+  @(ApiModelProperty @field)(dataType = "boolean", example = "false")
+  autoSubmit: Boolean
 )
 
 object DemographicsTrackingRequest {
