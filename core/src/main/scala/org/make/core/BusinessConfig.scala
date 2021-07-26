@@ -161,9 +161,19 @@ object BusinessConfig {
       supportedLanguages = Seq(Language("en"))
     ),
     CountryConfiguration(
+      countryCode = Country("IS"),
+      defaultLanguage = Language("en"),
+      supportedLanguages = Seq(Language("en"))
+    ),
+    CountryConfiguration(
       countryCode = Country("JP"),
       defaultLanguage = Language("en"),
       supportedLanguages = Seq(Language("en"))
+    ),
+    CountryConfiguration(
+      countryCode = Country("LI"),
+      defaultLanguage = Language("de"),
+      supportedLanguages = Seq(Language("de"))
     ),
     CountryConfiguration(
       countryCode = Country("LT"),
