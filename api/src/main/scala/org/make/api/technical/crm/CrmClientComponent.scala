@@ -369,13 +369,25 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
     }
 
     private def doHttpCall(request: HttpRequest)(implicit executionContext: ExecutionContext): Future[HttpResponse] = {
-      val promise = Promise[HttpResponse]()
-      queue.offer((request, promise)).flatMap {
-        case QueueOfferResult.Enqueued    => promise.future
-        case QueueOfferResult.Dropped     => Future.failed(CrmClientException.QueueException.QueueOverflowed)
-        case QueueOfferResult.Failure(ex) => Future.failed(ex)
-        case QueueOfferResult.QueueClosed => Future.failed(CrmClientException.QueueException.QueueClosed)
+      @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+      def loop(request: HttpRequest, retries: Int): Future[HttpResponse] = {
+        val promise = Promise[HttpResponse]()
+        queue.offer((request, promise)).flatMap {
+          case QueueOfferResult.Enqueued =>
+            promise.future.flatMap {
+              case HttpResponse(StatusCodes.InternalServerError, _, entity, _) if retries > 0 =>
+                Unmarshal(entity).to[String].flatMap { response =>
+                  logger.warn(s"Error '$response' from Mailjet, $retries retries left")
+                  loop(request, retries - 1)
+                }
+              case other => Future.successful(other)
+            }
+          case QueueOfferResult.Dropped     => Future.failed(CrmClientException.QueueException.QueueOverflowed)
+          case QueueOfferResult.Failure(ex) => Future.failed(ex)
+          case QueueOfferResult.QueueClosed => Future.failed(CrmClientException.QueueException.QueueClosed)
+        }
       }
+      loop(request, 5)
     }
   }
 }
@@ -566,7 +578,7 @@ object CrmClientException {
         extends RequestException("getUsersMailFromList", code, response)
 
     final case class DeleteUserException(code: StatusCode, response: String)
-        extends RequestException("manageContactList", code, response)
+        extends RequestException("deleteContactById", code, response)
 
   }
 
