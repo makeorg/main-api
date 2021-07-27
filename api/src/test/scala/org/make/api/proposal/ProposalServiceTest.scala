@@ -3076,12 +3076,14 @@ class ProposalServiceTest
       elasticsearchProposalAPI
         .searchProposals(
           eqTo(
-            SearchQuery(filters = Some(
-              SearchFilters(
-                proposal = Some(ProposalSearchFilter(acceptProposalIds)),
-                status = Some(StatusSearchFilter(ProposalStatus.values))
-              )
-            )
+            SearchQuery(
+              filters = Some(
+                SearchFilters(
+                  proposal = Some(ProposalSearchFilter(acceptProposalIds)),
+                  status = Some(StatusSearchFilter(ProposalStatus.values))
+                )
+              ),
+              limit = Some(acceptProposalIds.size + 1)
             )
           )
         )
