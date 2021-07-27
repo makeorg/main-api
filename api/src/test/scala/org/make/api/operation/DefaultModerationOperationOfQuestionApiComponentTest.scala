@@ -534,7 +534,6 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             | "sequenceCardsConfiguration": {
             |   "introCard": { "enabled": true },
             |   "pushProposalCard": { "enabled": true },
-            |   "signUpCard": { "enabled": true },
             |   "finalCard": {
             |     "enabled": true,
             |     "sharingEnabled": true
@@ -598,7 +597,6 @@ class DefaultModerationOperationOfQuestionApiComponentTest
            | "sequenceCardsConfiguration": {
            |   "introCard": { "enabled": true },
            |   "pushProposalCard": { "enabled": true },
-           |   "signUpCard": { "enabled": true },
            |   "finalCard": {
            |     "enabled": true,
            |     "sharingEnabled": true
@@ -653,7 +651,6 @@ class DefaultModerationOperationOfQuestionApiComponentTest
                                                        | "sequenceCardsConfiguration": {
                                                        |   "introCard": { "enabled": true },
                                                        |   "pushProposalCard": { "enabled": true },
-                                                       |   "signUpCard": { "enabled": true },
                                                        |   "finalCard": {
                                                        |     "enabled": true,
                                                        |     "sharingEnabled": true
@@ -710,7 +707,6 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             | "sequenceCardsConfiguration": {
             |   "introCard": { "enabled": true },
             |   "pushProposalCard": { "enabled": true },
-            |   "signUpCard": { "enabled": true },
             |   "finalCard": {
             |     "enabled": true,
             |     "sharingEnabled": true

@@ -90,16 +90,6 @@ object PushProposalCardResponse extends CirceFormatters {
   implicit val decoder: Decoder[PushProposalCardResponse] = deriveDecoder[PushProposalCardResponse]
 }
 
-final case class SignUpCardResponse(
-  @(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
-  title: Option[String],
-  nextCtaText: Option[String]
-)
-object SignUpCardResponse extends CirceFormatters {
-  implicit val encoder: Encoder[SignUpCardResponse] = deriveEncoder[SignUpCardResponse]
-  implicit val decoder: Decoder[SignUpCardResponse] = deriveDecoder[SignUpCardResponse]
-}
-
 final case class FinalCardResponse(
   @(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
   @(ApiModelProperty @field)(dataType = "boolean", example = "true") withSharing: Boolean,
@@ -118,7 +108,6 @@ object FinalCardResponse extends CirceFormatters {
 final case class SequenceCardsConfigurationResponse(
   introCard: IntroCardResponse,
   pushProposalCard: PushProposalCardResponse,
-  signUpCard: SignUpCardResponse,
   finalCard: FinalCardResponse
 )
 
@@ -135,11 +124,6 @@ object SequenceCardsConfigurationResponse extends CirceFormatters {
         description = sequenceCardConfiguration.introCard.description
       ),
       pushProposalCard = PushProposalCardResponse(enabled = sequenceCardConfiguration.pushProposalCard.enabled),
-      signUpCard = SignUpCardResponse(
-        enabled = sequenceCardConfiguration.signUpCard.enabled,
-        title = sequenceCardConfiguration.signUpCard.title,
-        nextCtaText = sequenceCardConfiguration.signUpCard.nextCtaText
-      ),
       finalCard = FinalCardResponse(
         enabled = sequenceCardConfiguration.finalCard.enabled,
         withSharing = sequenceCardConfiguration.finalCard.sharingEnabled,
