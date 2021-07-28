@@ -328,7 +328,8 @@ final case class ExhaustiveSearchRequest(
         country = country.map(CountrySearchFilter.apply),
         createdAt = createdBefore.map(createdBeforeDate => CreatedAtSearchFilter(Some(createdBeforeDate), None)),
         userTypes = userTypes.map(UserTypesSearchFilter.apply),
-        user = userId.map(userId => UserSearchFilter(Seq(userId)))
+        user = userId.map(userId => UserSearchFilter(Seq(userId))),
+        keywords = keywords.map(KeywordsSearchFilter)
       )
 
     SearchQuery(
