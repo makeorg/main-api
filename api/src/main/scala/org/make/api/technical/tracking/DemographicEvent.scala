@@ -35,7 +35,8 @@ final case class DemographicEvent(
   source: String,
   country: Country,
   applicationName: Option[ApplicationName],
-  parameters: Map[String, String]
+  parameters: Map[String, String],
+  autoSubmit: Boolean = false
 )
 
 object DemographicEvent {
@@ -50,7 +51,8 @@ object DemographicEvent {
       source = request.source,
       country = request.country,
       applicationName = applicationName,
-      parameters = request.parameters
+      parameters = request.parameters,
+      autoSubmit = request.autoSubmit
     )
 }
 

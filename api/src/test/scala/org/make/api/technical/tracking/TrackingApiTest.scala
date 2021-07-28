@@ -137,22 +137,24 @@ class TrackingApiTest
     Scenario("valid demographics") {
       DemographicsTrackingRequest.validValues.foreach {
         case (name, values) =>
-          values.foreach { value =>
-            val request =
-              s"""
+          values.zipWithIndex.foreach {
+            case (value, idx) =>
+              val request =
+                s"""
                 |{
                 |  "demographic": "$name",
                 |  "value": "$value",
                 |  "questionId": "${questionId.value}",
                 |  "source": "core",
                 |  "country": "FR",
-                |  "parameters": {}
+                |  "parameters": {},
+                |  "autoSubmit": ${idx % 2 == 0}
                 |}
                 |""".stripMargin
-            val entity = HttpEntity(ContentTypes.`application/json`, request)
-            Post("/tracking/demographics", entity) ~> routes ~> check {
-              status should be(StatusCodes.NoContent)
-            }
+              val entity = HttpEntity(ContentTypes.`application/json`, request)
+              Post("/tracking/demographics", entity) ~> routes ~> check {
+                status should be(StatusCodes.NoContent)
+              }
           }
       }
     }
@@ -168,7 +170,8 @@ class TrackingApiTest
                |  "questionId": "${questionId.value}",
                |  "source": "core",
                |  "country": "FR",
-               |  "parameters": {}
+               |  "parameters": {},
+               |  "autoSubmit": false
                |}
                |""".stripMargin
           val entity = HttpEntity(ContentTypes.`application/json`, request)
