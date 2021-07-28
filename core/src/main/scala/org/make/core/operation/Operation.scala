@@ -81,16 +81,6 @@ object PushProposalCard extends CirceFormatters {
   implicit val decoder: Decoder[PushProposalCard] = deriveDecoder[PushProposalCard]
 }
 
-final case class SignUpCard(
-  @(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
-  title: Option[String],
-  nextCtaText: Option[String]
-)
-object SignUpCard extends CirceFormatters {
-  implicit val encoder: Encoder[SignUpCard] = deriveEncoder[SignUpCard]
-  implicit val decoder: Decoder[SignUpCard] = deriveDecoder[SignUpCard]
-}
-
 final case class FinalCard(
   @(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
   @(ApiModelProperty @field)(dataType = "boolean", example = "true") sharingEnabled: Boolean,
@@ -109,7 +99,6 @@ object FinalCard extends CirceFormatters {
 final case class SequenceCardsConfiguration(
   introCard: IntroCard,
   pushProposalCard: PushProposalCard,
-  signUpCard: SignUpCard,
   finalCard: FinalCard
 )
 
@@ -120,7 +109,6 @@ object SequenceCardsConfiguration extends CirceFormatters {
   val default: SequenceCardsConfiguration = SequenceCardsConfiguration(
     introCard = IntroCard(enabled = true, title = None, description = None),
     pushProposalCard = PushProposalCard(enabled = true),
-    signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
     finalCard = FinalCard(
       enabled = true,
       sharingEnabled = true,

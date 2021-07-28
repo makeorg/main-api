@@ -28,7 +28,7 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 import org.jsoup.Jsoup
-import org.jsoup.safety.{Cleaner, Whitelist}
+import org.jsoup.safety.{Cleaner, Safelist}
 import org.make.core.Validator.ValidatedValue
 import org.make.core.elasticsearch.ElasticsearchFieldName
 
@@ -149,7 +149,7 @@ object Validation extends Logging {
 
   def validateUserInput(fieldName: String, fieldValue: => String, message: Option[String]): Requirement = {
     val condition: () => Boolean = () => {
-      new Cleaner(Whitelist.none()).isValid(Jsoup.parse(fieldValue))
+      new Cleaner(Safelist.none()).isValid(Jsoup.parse(fieldValue))
     }
     validateField(fieldName, "invalid_content", condition(), message.getOrElse(s"$fieldName is not a valid user input"))
   }
@@ -160,7 +160,7 @@ object Validation extends Logging {
     message: Option[String]
   ): Requirement = {
     val condition: () => Boolean = () => {
-      fieldValue.forall(value => new Cleaner(Whitelist.none()).isValid(Jsoup.parse(value)))
+      fieldValue.forall(value => new Cleaner(Safelist.none()).isValid(Jsoup.parse(value)))
     }
     validateField(fieldName, "invalid_content", condition(), message.getOrElse(s"$fieldName is not a valid user input"))
   }

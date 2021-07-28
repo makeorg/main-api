@@ -391,7 +391,6 @@ trait TestUtilsIT {
   val defaultSequenceCardsConfiguration: SequenceCardsConfiguration = SequenceCardsConfiguration(
     introCard = IntroCard(enabled = true, title = None, description = None),
     pushProposalCard = PushProposalCard(enabled = true),
-    signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
     finalCard = FinalCard(
       enabled = true,
       sharingEnabled = false,

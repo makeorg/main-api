@@ -22,19 +22,19 @@ import sbt._
 object Dependencies {
 
   private val akkaVersion = "2.6.15"
-  private val akkaHttpVersion = "10.2.4"
+  private val akkaHttpVersion = "10.2.5"
   private val alpakkaVersion = "1.1.2"
-  private val nettyVersion = "4.1.65.Final"
+  private val nettyVersion = "4.1.66.Final"
   private val kafkaVersion = "1.1.0"
   private val elastic4sVersion = "6.7.8"
   private val enumeratumVersion = "1.7.0"
   private val jerseyVersion = "2.32"
-  private val kamonVersion = "2.2.1"
+  private val kamonVersion = "2.2.3"
   private val log4jVersion = "2.14.1"
   private val circeVersion = "0.14.1"
   val kanelaVersion: String = "1.0.11"
   val swaggerUiVersion: String = "3.20.9"
-  private val refinedVersion: String = "0.9.26"
+  private val refinedVersion: String = "0.9.27"
   private val scalikeVersion = "3.5.0"
   private val staminaVersion: String = "0.1.5+1-74109b8e"
   private val calibanVersion = "0.9.1"
@@ -44,7 +44,7 @@ object Dependencies {
   val grizzledSlf4j: ModuleID = "org.clapper"             %% "grizzled-slf4j"  % "1.3.4"
   val logger: ModuleID = "org.apache.logging.log4j"       % "log4j"            % log4jVersion
   val loggerBridge: ModuleID = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4jVersion
-  val commonsLoggingBridge: ModuleID = "org.slf4j"        % "jcl-over-slf4j"   % "1.7.31"
+  val commonsLoggingBridge: ModuleID = "org.slf4j"        % "jcl-over-slf4j"   % "1.7.32"
   val log4jJul: ModuleID = "org.apache.logging.log4j"     % "log4j-jul"        % log4jVersion
 
   val nettyEpoll: ModuleID = ("io.netty" % "netty-transport-native-epoll" % nettyVersion).classifier("linux-x86_64")
@@ -59,7 +59,7 @@ object Dependencies {
   val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion
   val akkaStream: ModuleID = "com.typesafe.akka"          %% "akka-stream-typed"           % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"                   % akkaHttpVersion
-  val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"             % "1.36.0"
+  val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"             % "1.37.0"
   val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "1.2.0")
     .exclude("javax.ws.rs", "jsr311-api")
   val akkaPersistence: ModuleID = "com.typesafe.akka"      %% "akka-persistence-typed" % akkaVersion
@@ -99,14 +99,14 @@ object Dependencies {
 
   val scalike: ModuleID = "org.scalikejdbc"       %% "scalikejdbc"                      % scalikeVersion
   val scalikeMacros: ModuleID = "org.scalikejdbc" %% "scalikejdbc-syntax-support-macro" % scalikeVersion
-  val postgresql: ModuleID = "org.postgresql"     % "postgresql"                        % "42.2.22"
+  val postgresql: ModuleID = "org.postgresql"     % "postgresql"                        % "42.2.23"
   val flywaydb: ModuleID = "org.flywaydb"         % "flyway-core"                       % "7.7.3"
 
   val slugify: ModuleID = "com.github.slugify" % "slugify" % "2.5"
 
   val swiftClient: ModuleID = "org.make" %% "openstack-swift-client" % "1.0.17"
 
-  val jsoup: ModuleID = "org.jsoup" % "jsoup" % "1.13.1"
+  val jsoup: ModuleID = "org.jsoup" % "jsoup" % "1.14.1"
 
   // Kafka + AVRO
   val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
@@ -139,9 +139,9 @@ object Dependencies {
   val refinedCirce: ModuleID = "io.circe"        %% "circe-refined"      % circeVersion
   val refinedScalaCheck: ModuleID = "eu.timepit" %% "refined-scalacheck" % refinedVersion
 
-  val enumeratum: ModuleID = "com.beachape"           %% "enumeratum"            % "1.6.1"
-  val enumeratumCirce: ModuleID = "com.beachape"      %% "enumeratum-circe"      % "1.6.1"
-  val enumeratumScalacheck: ModuleID = "com.beachape" %% "enumeratum-scalacheck" % "1.6.1"
+  val enumeratum: ModuleID = "com.beachape"           %% "enumeratum"            % enumeratumVersion
+  val enumeratumCirce: ModuleID = "com.beachape"      %% "enumeratum-circe"      % enumeratumVersion
+  val enumeratumScalacheck: ModuleID = "com.beachape" %% "enumeratum-scalacheck" % enumeratumVersion
 
   // Test related dependencies
   val akkaTest: ModuleID = "com.typesafe.akka"            %% "akka-actor-testkit-typed" % akkaVersion     % "it,test"
