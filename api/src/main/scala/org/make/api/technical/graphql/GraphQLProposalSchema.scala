@@ -134,10 +134,7 @@ object GraphQLProposalQuery {
     userTypes: Option[Seq[UserType]],
     ideaIds: Option[Seq[IdeaId]]
   ) {
-    def toSearchQuery(
-      requestContext: RequestContext,
-      sortAlgorithmConfiguration: SortAlgorithmConfiguration
-    ): SearchQuery = {
+    def toSearchQuery(requestContext: RequestContext): SearchQuery = {
       val context: Option[ContextFilterRequest] = ContextFilterRequest.parse(operationId, source, location, question)
 
       val filters: Option[SearchFilters] =
@@ -162,8 +159,7 @@ object GraphQLProposalQuery {
         limit = limit,
         skip = skip,
         language = requestContext.language,
-        sortAlgorithm = sortAlgorithm
-          .map(_.build(seed.getOrElse(MakeRandom.nextInt()), sortAlgorithmConfiguration))
+        sortAlgorithm = sortAlgorithm.map(_.build(seed.getOrElse(MakeRandom.nextInt())))
       )
     }
   }

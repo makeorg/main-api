@@ -1022,7 +1022,7 @@
               "type": "double",
               "index": true
             },
-            "controversy": {
+            "controversyLowerBound": {
               "type": "double",
               "index": true
             },
@@ -1079,7 +1079,7 @@
               "type": "double",
               "index": true
             },
-            "controversy": {
+            "controversyLowerBound": {
               "type": "double",
               "index": true
             },

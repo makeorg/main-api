@@ -19,7 +19,6 @@
 
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
@@ -33,14 +32,15 @@ import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
-import org.make.core.proposal.{ProposalId, ProposalStatus, SortAlgorithmConfiguration}
+import org.make.core.proposal.indexed.IndexedContext
+import org.make.core.proposal.{ProposalId, ProposalStatus}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
-import org.make.core.proposal.indexed.IndexedContext
 
+import java.time.ZonedDateTime
 import scala.concurrent.Future
 
 class ProposalApiTest
@@ -50,8 +50,7 @@ class ProposalApiTest
     with ProposalServiceComponent
     with UserServiceComponent
     with OperationServiceComponent
-    with QuestionServiceComponent
-    with SortAlgorithmConfigurationComponent {
+    with QuestionServiceComponent {
 
   override val proposalService: ProposalService = mock[ProposalService]
 
@@ -60,7 +59,6 @@ class ProposalApiTest
   override val questionService: QuestionService = mock[QuestionService]
   override val operationService: OperationService = mock[OperationService]
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
-  override val sortAlgorithmConfiguration: SortAlgorithmConfiguration = mock[SortAlgorithmConfiguration]
 
   when(questionService.findQuestion(any[Option[OperationId]], any[Country], any[Language])).thenAnswer {
     (operationId: Option[OperationId], country: Country, language: Language) =>
@@ -102,7 +100,7 @@ class ProposalApiTest
     lastName = Some("Snoww")
   )
 
-  val daenerys = TestUtils.user(
+  val daenerys: User = TestUtils.user(
     id = UserId("the-mother-of-dragons"),
     email = "d.narys@tergarian.com",
     firstName = Some("Daenerys"),
@@ -110,7 +108,7 @@ class ProposalApiTest
     roles = Seq(RoleAdmin)
   )
 
-  val tyrion = TestUtils.user(
+  val tyrion: User = TestUtils.user(
     id = UserId("the-dwarf"),
     email = "tyrion@pays-his-debts.com",
     firstName = Some("Tyrion"),

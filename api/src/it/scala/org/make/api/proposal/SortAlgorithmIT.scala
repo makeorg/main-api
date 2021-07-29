@@ -113,39 +113,45 @@ class SortAlgorithmIT
           Seq(IndexedTag(TagId("tag-1"), "tag1", display = true), IndexedTag(TagId("tag-2"), "tag2", display = true))
       ),
     indexedProposal(ProposalId("controversy-1"))
-      .copy(scores = IndexedScores.empty.copy(controversy = 0.15), votesCount = 3),
+      .copy(scores = IndexedScores.empty.copy(controversyLowerBound = 0.15), sequencePool = SequencePool.Tested),
     indexedProposal(ProposalId("controversy-2"))
-      .copy(scores = IndexedScores.empty.copy(controversy = 0.95), votesCount = 3),
+      .copy(scores = IndexedScores.empty.copy(controversyLowerBound = 0.95), sequencePool = SequencePool.Tested),
     indexedProposal(ProposalId("controversy-3"))
       .copy(
-        scores = IndexedScores.empty.copy(controversy = 0.21),
+        scores = IndexedScores.empty.copy(controversyLowerBound = 0.21),
         operationId = Some(OperationId("ope-controversy")),
-        votesCount = 3
+        sequencePool = SequencePool.Tested
       ),
     indexedProposal(ProposalId("controversy-4"))
-      .copy(scores = IndexedScores.empty.copy(controversy = 0.14), votesCount = 15),
+      .copy(scores = IndexedScores.empty.copy(controversyLowerBound = 0.14), sequencePool = SequencePool.Tested),
+    indexedProposal(ProposalId("controversy-new"))
+      .copy(scores = IndexedScores.empty.copy(controversyLowerBound = 0.95), sequencePool = SequencePool.New),
     indexedProposal(ProposalId("realistic-1"))
-      .copy(scores = IndexedScores.empty.copy(realistic = 0.15), votesCount = 3),
+      .copy(scores = IndexedScores.empty.copy(realistic = 0.15), sequencePool = SequencePool.Tested),
     indexedProposal(ProposalId("realistic-2"))
-      .copy(scores = IndexedScores.empty.copy(realistic = 0.95), votesCount = 3),
+      .copy(scores = IndexedScores.empty.copy(realistic = 0.95), sequencePool = SequencePool.Tested),
     indexedProposal(ProposalId("realistic-3"))
       .copy(
         scores = IndexedScores.empty.copy(realistic = 0.21),
         operationId = Some(OperationId("ope-realistic")),
-        votesCount = 3
+        sequencePool = SequencePool.Tested
       ),
     indexedProposal(ProposalId("realistic-4"))
-      .copy(scores = IndexedScores.empty.copy(realistic = 0.25), votesCount = 15),
+      .copy(scores = IndexedScores.empty.copy(realistic = 0.25), sequencePool = SequencePool.Tested),
+    indexedProposal(ProposalId("realistic-new"))
+      .copy(scores = IndexedScores.empty.copy(realistic = 0.95), sequencePool = SequencePool.New),
     indexedProposal(ProposalId("popular-1"))
-      .copy(votesCount = 254, scores = IndexedScores.empty.copy(scoreLowerBound = 1.4)),
+      .copy(sequencePool = SequencePool.Tested, scores = IndexedScores.empty.copy(scoreLowerBound = 1.4)),
     indexedProposal(ProposalId("popular-2"))
-      .copy(votesCount = 204, scores = IndexedScores.empty.copy(scoreLowerBound = 0.1)),
+      .copy(sequencePool = SequencePool.Tested, scores = IndexedScores.empty.copy(scoreLowerBound = 0.1)),
     indexedProposal(ProposalId("popular-3"))
       .copy(
-        votesCount = 540,
+        sequencePool = SequencePool.Tested,
         scores = IndexedScores.empty.copy(scoreLowerBound = 4.2),
         operationId = Some(OperationId("ope-popular"))
       ),
+    indexedProposal(ProposalId("popular-new"))
+      .copy(sequencePool = SequencePool.New, scores = IndexedScores.empty.copy(scoreLowerBound = 1.4)),
     newEmptyOrganisationProposal("b2b-1"),
     newEmptyOrganisationProposal("b2b-2"),
     newEmptyPersonalityProposal("b2b-3")
@@ -207,7 +213,7 @@ class SortAlgorithmIT
 
   Feature("controversy algorithm") {
     Scenario("controversy algorithm") {
-      val query = SearchQuery(sortAlgorithm = Some(ControversyAlgorithm(0.1, 2)), limit = Some(2))
+      val query = SearchQuery(sortAlgorithm = Some(ControversyAlgorithm), limit = Some(2))
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.results.size should be(2)
         result.results.headOption.map(_.id.value) should be(Some("controversy-2"))
@@ -215,9 +221,8 @@ class SortAlgorithmIT
     }
 
     Scenario("controversy algorithm custom threshold") {
-      val query = SearchQuery(sortAlgorithm = Some(ControversyAlgorithm(0.5, 2)), limit = Some(2))
+      val query = SearchQuery(sortAlgorithm = Some(ControversyAlgorithm), limit = Some(2))
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
-        result.results.size should be(1)
         result.results.headOption.map(_.id.value) should be(Some("controversy-2"))
       }
     }
@@ -225,7 +230,7 @@ class SortAlgorithmIT
     Scenario("controversy algorithm with other filters") {
       val query = SearchQuery(
         filters = Some(SearchFilters(operation = Some(OperationSearchFilter(Seq(OperationId("ope-controversy")))))),
-        sortAlgorithm = Some(ControversyAlgorithm(0.1, 2)),
+        sortAlgorithm = Some(ControversyAlgorithm),
         limit = Some(2)
       )
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
@@ -233,57 +238,11 @@ class SortAlgorithmIT
         result.results.headOption.map(_.id.value) should be(Some("controversy-3"))
       }
     }
-
-    Scenario("controversy algorithm - votes count") {
-      val query = SearchQuery(sortAlgorithm = Some(ControversyAlgorithm(0.1, 10)), limit = Some(2))
-      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
-        result.results.size should be(1)
-        result.results.headOption.map(_.id.value) should be(Some("controversy-4"))
-      }
-    }
-  }
-
-  Feature("realistic algorithm") {
-    Scenario("realistic algorithm") {
-      val query = SearchQuery(sortAlgorithm = Some(RealisticAlgorithm(0.2, 2)), limit = Some(2))
-      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
-        result.results.size should be(2)
-        result.results.headOption.map(_.id.value) should be(Some("realistic-2"))
-      }
-    }
-
-    Scenario("realistic algorithm custom threshold") {
-      val query = SearchQuery(sortAlgorithm = Some(RealisticAlgorithm(0.5, 2)), limit = Some(2))
-      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
-        result.results.size should be(1)
-        result.results.headOption.map(_.id.value) should be(Some("realistic-2"))
-      }
-    }
-
-    Scenario("realistic algorithm with other filters") {
-      val query = SearchQuery(
-        filters = Some(SearchFilters(operation = Some(OperationSearchFilter(Seq(OperationId("ope-realistic")))))),
-        sortAlgorithm = Some(RealisticAlgorithm(0.2, 2)),
-        limit = Some(2)
-      )
-      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
-        result.results.size should be(1)
-        result.results.headOption.map(_.id.value) should be(Some("realistic-3"))
-      }
-    }
-
-    Scenario("realistic algorithm - votes count") {
-      val query = SearchQuery(sortAlgorithm = Some(RealisticAlgorithm(0.2, 10)), limit = Some(2))
-      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
-        result.results.size should be(1)
-        result.results.headOption.map(_.id.value) should be(Some("realistic-4"))
-      }
-    }
   }
 
   Feature("popular algorithm") {
     Scenario("popular algorithm") {
-      val query = SearchQuery(sortAlgorithm = Some(PopularAlgorithm(200)), limit = Some(2))
+      val query = SearchQuery(sortAlgorithm = Some(PopularAlgorithm), limit = Some(2))
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.results.size should be(2)
         result.results.headOption.map(_.id.value) should be(Some("popular-3"))
@@ -294,23 +253,12 @@ class SortAlgorithmIT
     Scenario("popular algorithm with other filters") {
       val query = SearchQuery(
         filters = Some(SearchFilters(operation = Some(OperationSearchFilter(Seq(OperationId("ope-popular")))))),
-        sortAlgorithm = Some(PopularAlgorithm(200)),
+        sortAlgorithm = Some(PopularAlgorithm),
         limit = Some(2)
       )
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.results.size should be(1)
         result.results.headOption.map(_.id.value) should be(Some("popular-3"))
-      }
-    }
-  }
-
-  Feature("tagged first algorithm") {
-    Scenario("sort by tagged proposals votes") {
-      val query = SearchQuery(sortAlgorithm = Some(TaggedFirstLegacyAlgorithm(42)))
-
-      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
-        result.total should be > 4L
-        result.results.take(4).map(_.id.value) should be(Seq("actor-4", "actor-2", "actor-3", "actor-1"))
       }
     }
   }

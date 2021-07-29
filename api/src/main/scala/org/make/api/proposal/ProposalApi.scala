@@ -77,7 +77,6 @@ trait ProposalApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "proposalIds", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "themesIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
@@ -99,7 +98,7 @@ trait ProposalApi extends Directives {
         name = "sortAlgorithm",
         paramType = "query",
         dataType = "string",
-        allowableValues = "random,taggedFirst,taggedFirstLegacy,actorVote,controversy,popular,realistic,B2BFirst"
+        allowableValues = "random,taggedFirst,actorVote,controversy,popular,B2BFirst"
       ),
       new ApiImplicitParam(
         name = "operationKinds",
@@ -108,7 +107,6 @@ trait ProposalApi extends Directives {
         allowableValues = "GREAT_CAUSE,PRIVATE_CONSULTATION,BUSINESS_CONSULTATION",
         allowMultiple = true
       ),
-      new ApiImplicitParam(name = "isOrganisation", paramType = "query", dataType = "boolean"),
       new ApiImplicitParam(
         name = "userType",
         paramType = "query",
@@ -231,8 +229,7 @@ trait DefaultProposalApiComponent
     with ProposalServiceComponent
     with UserServiceComponent
     with OperationServiceComponent
-    with QuestionServiceComponent
-    with SortAlgorithmConfigurationComponent =>
+    with QuestionServiceComponent =>
 
   override lazy val proposalApi: DefaultProposalApi = new DefaultProposalApi
 
@@ -289,7 +286,6 @@ trait DefaultProposalApiComponent
                 "language".as[Language].?,
                 "country".as[Country].?,
                 "operationKinds".csv[OperationKind],
-                "isOrganisation".as[Boolean].?,
                 "userType".as[Seq[UserType]].?,
                 "ideaIds".as[Seq[IdeaId]].?,
                 "keywords".as[Seq[ProposalKeywordKey]].?,
@@ -308,7 +304,6 @@ trait DefaultProposalApiComponent
                   language: Option[Language],
                   country: Option[Country],
                   operationKinds: Option[Seq[OperationKind]],
-                  isOrganisation: Option[Boolean],
                   userType: Option[Seq[UserType]],
                   ideaIds: Option[Seq[IdeaId]],
                   keywords: Option[Seq[ProposalKeywordKey]],
@@ -384,13 +379,7 @@ trait DefaultProposalApiComponent
                               Some(OperationKind.publicKinds)
                             }
                           },
-                          userTypes = userType.orElse(isOrganisation.flatMap { isOrganisation =>
-                            if (isOrganisation) {
-                              Some(Seq(UserType.UserTypeOrganisation))
-                            } else {
-                              None
-                            }
-                          }),
+                          userTypes = userType,
                           ideaIds = ideaIds,
                           keywords = keywords,
                           excludedProposalIds = excludedProposalIds
@@ -399,7 +388,7 @@ trait DefaultProposalApiComponent
                           proposalService
                             .searchForUser(
                               userId = userAuth.map(_.user.userId),
-                              query = searchRequest.toSearchQuery(requestContext, sortAlgorithmConfiguration),
+                              query = searchRequest.toSearchQuery(requestContext),
                               requestContext = requestContext
                             )
                         ) { proposals =>

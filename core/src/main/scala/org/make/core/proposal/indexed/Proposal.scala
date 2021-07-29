@@ -114,7 +114,7 @@ object ProposalElasticsearchFieldName extends StringEnum[ProposalElasticsearchFi
   case object contextOperation extends Simple("context.operation")
   case object contextQuestion extends Simple("context.question")
   case object contextSource extends Simple("context.source")
-  case object controversy extends Simple("scores.controversy")
+  case object controversyLowerBound extends Simple("scores.controversyLowerBound")
   case object country extends Alias("country", contextCountry, sortable = true)
   case object createdAt extends Simple("createdAt", sortable = true)
   case object ideaId extends Simple("ideaId")
@@ -376,7 +376,7 @@ final case class IndexedScores(
   platitude: Double,
   topScore: Double,
   topScoreAjustedWithVotes: Double,
-  controversy: Double,
+  controversyLowerBound: Double,
   rejection: Double,
   scoreUpperBound: Double,
   scoreLowerBound: Double,
