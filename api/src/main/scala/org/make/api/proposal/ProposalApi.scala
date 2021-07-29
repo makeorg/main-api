@@ -28,7 +28,7 @@ import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.question.QuestionServiceComponent
-import org.make.api.sessionhistory.RequestSessionVoteValues
+import org.make.api.sessionhistory.{RequestSessionVoteValues, RequestSessionVotedProposals}
 import org.make.api.technical.security.SecurityHelper
 import org.make.api.technical.MakeAuthenticationDirectives
 import org.make.api.technical.CsvReceptacle._
@@ -116,7 +116,8 @@ trait ProposalApi extends Directives {
         allowableValues = "USER,ORGANISATION,PERSONALITY"
       ),
       new ApiImplicitParam(name = "ideaIds", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "keywords", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "keywords", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "isNotVoted", paramType = "query", dataType = "boolean")
     )
   )
   def search: Route
@@ -282,22 +283,17 @@ trait DefaultProposalApiComponent
                 "operationId".as[OperationId].?,
                 "content".?,
                 "slug".?,
-                "seed".as[Int].?,
                 "source".?,
                 "location".?,
                 "question".?,
                 "language".as[Language].?,
                 "country".as[Country].?,
-                "sort".as[ProposalElasticsearchFieldName].?,
-                "order".as[Order].?,
-                "limit".as[Int].?,
-                "skip".as[Int].?,
-                "sortAlgorithm".?,
                 "operationKinds".csv[OperationKind],
                 "isOrganisation".as[Boolean].?,
                 "userType".as[Seq[UserType]].?,
                 "ideaIds".as[Seq[IdeaId]].?,
-                "keywords".as[Seq[ProposalKeywordKey]].?
+                "keywords".as[Seq[ProposalKeywordKey]].?,
+                "isNotVoted".as[Boolean].?
               ) {
                 (
                   proposalIds: Option[Seq[ProposalId]],
@@ -306,85 +302,110 @@ trait DefaultProposalApiComponent
                   operationId: Option[OperationId],
                   content: Option[String],
                   slug: Option[String],
-                  seed: Option[Int],
                   source: Option[String],
                   location: Option[String],
                   question: Option[String],
                   language: Option[Language],
                   country: Option[Country],
-                  sort: Option[ProposalElasticsearchFieldName],
-                  order: Option[Order],
-                  limit: Option[Int],
-                  skip: Option[Int],
-                  sortAlgorithm: Option[String],
                   operationKinds: Option[Seq[OperationKind]],
                   isOrganisation: Option[Boolean],
                   userType: Option[Seq[UserType]],
                   ideaIds: Option[Seq[IdeaId]],
-                  keywords: Option[Seq[ProposalKeywordKey]]
+                  keywords: Option[Seq[ProposalKeywordKey]],
+                  isNotVoted: Option[Boolean]
                 ) =>
-                  Validation.validate(Seq(country.map { countryValue =>
-                    Validation.validChoices(
-                      fieldName = "country",
-                      message = Some(
-                        s"Invalid country. Expected one of ${BusinessConfig.supportedCountries.map(_.countryCode)}"
-                      ),
-                      Seq(countryValue),
-                      BusinessConfig.supportedCountries.map(_.countryCode)
-                    )
-                  }, sort.map(Validation.validateSort("sort")), sortAlgorithm.map { sortAlgo =>
-                    Validation.validChoices(
-                      fieldName = "sortAlgorithm",
-                      message = Some(s"Invalid algorithm. Expected one of: ${AlgorithmSelector.keys}"),
-                      Seq(sortAlgo),
-                      AlgorithmSelector.keys
-                    )
-                  }).flatten: _*)
+                  parameters(
+                    "sort".as[ProposalElasticsearchFieldName].?,
+                    "order".as[Order].?,
+                    "limit".as[Int].?,
+                    "skip".as[Int].?,
+                    "sortAlgorithm".?,
+                    "seed".as[Int].?
+                  ) {
+                    (
+                      sort: Option[ProposalElasticsearchFieldName],
+                      order: Option[Order],
+                      limit: Option[Int],
+                      skip: Option[Int],
+                      sortAlgorithm: Option[String],
+                      seed: Option[Int]
+                    ) =>
+                      Validation.validate(Seq(country.map { countryValue =>
+                        Validation.validChoices(
+                          fieldName = "country",
+                          message = Some(
+                            s"Invalid country. Expected one of ${BusinessConfig.supportedCountries.map(_.countryCode)}"
+                          ),
+                          Seq(countryValue),
+                          BusinessConfig.supportedCountries.map(_.countryCode)
+                        )
+                      }, sort.map(Validation.validateSort("sort")), sortAlgorithm.map { sortAlgo =>
+                        Validation.validChoices(
+                          fieldName = "sortAlgorithm",
+                          message = Some(s"Invalid algorithm. Expected one of: ${AlgorithmSelector.keys}"),
+                          Seq(sortAlgo),
+                          AlgorithmSelector.keys
+                        )
+                      }).flatten: _*)
 
-                  val contextFilterRequest: Option[ContextFilterRequest] =
-                    ContextFilterRequest.parse(operationId, source, location, question)
-                  val searchRequest: SearchRequest = SearchRequest(
-                    proposalIds = proposalIds,
-                    questionIds = questionIds,
-                    tagsIds = tagsIds,
-                    operationId = operationId,
-                    content = content,
-                    slug = slug,
-                    seed = seed,
-                    context = contextFilterRequest,
-                    language = language,
-                    country = country,
-                    sort = sort.map(_.field),
-                    order = order,
-                    limit = limit,
-                    skip = skip,
-                    sortAlgorithm = sortAlgorithm,
-                    operationKinds = operationKinds.orElse {
-                      if (questionIds.exists(_.nonEmpty)) {
-                        None
-                      } else {
-                        Some(OperationKind.publicKinds)
+                      val futureExcludedProposalIds = isNotVoted match {
+                        case Some(true) =>
+                          sessionHistoryCoordinatorService
+                            .retrieveVotedProposals(RequestSessionVotedProposals(requestContext.sessionId))
+                            .map {
+                              case Seq() => None
+                              case voted => Some(voted)
+                            }
+                        case _ => Future.successful(None)
                       }
-                    },
-                    userTypes = userType.orElse(isOrganisation.flatMap { isOrganisation =>
-                      if (isOrganisation) {
-                        Some(Seq(UserType.UserTypeOrganisation))
-                      } else {
-                        None
+                      provideAsync(futureExcludedProposalIds) { excludedProposalIds =>
+                        val contextFilterRequest: Option[ContextFilterRequest] =
+                          ContextFilterRequest.parse(operationId, source, location, question)
+                        val searchRequest: SearchRequest = SearchRequest(
+                          proposalIds = proposalIds,
+                          questionIds = questionIds,
+                          tagsIds = tagsIds,
+                          operationId = operationId,
+                          content = content,
+                          slug = slug,
+                          seed = seed,
+                          context = contextFilterRequest,
+                          language = language,
+                          country = country,
+                          sort = sort.map(_.field),
+                          order = order,
+                          limit = limit,
+                          skip = skip,
+                          sortAlgorithm = sortAlgorithm,
+                          operationKinds = operationKinds.orElse {
+                            if (questionIds.exists(_.nonEmpty)) {
+                              None
+                            } else {
+                              Some(OperationKind.publicKinds)
+                            }
+                          },
+                          userTypes = userType.orElse(isOrganisation.flatMap { isOrganisation =>
+                            if (isOrganisation) {
+                              Some(Seq(UserType.UserTypeOrganisation))
+                            } else {
+                              None
+                            }
+                          }),
+                          ideaIds = ideaIds,
+                          keywords = keywords,
+                          excludedProposalIds = excludedProposalIds
+                        )
+                        provideAsync(
+                          proposalService
+                            .searchForUser(
+                              userId = userAuth.map(_.user.userId),
+                              query = searchRequest.toSearchQuery(requestContext, sortAlgorithmConfiguration),
+                              requestContext = requestContext
+                            )
+                        ) { proposals =>
+                          complete(proposals)
+                        }
                       }
-                    }),
-                    ideaIds = ideaIds,
-                    keywords = keywords
-                  )
-                  provideAsync(
-                    proposalService
-                      .searchForUser(
-                        userId = userAuth.map(_.user.userId),
-                        query = searchRequest.toSearchQuery(requestContext, sortAlgorithmConfiguration),
-                        requestContext = requestContext
-                      )
-                  ) { proposals =>
-                    complete(proposals)
                   }
               }
             }

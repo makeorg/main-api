@@ -47,7 +47,6 @@ class SequenceServiceComponentTest
     with SecurityConfigurationComponent
     with SequenceConfigurationComponent
     with SessionHistoryCoordinatorServiceComponent
-    with ProposalServiceComponent
     with ProposalCoordinatorServiceComponent
     with UserHistoryCoordinatorServiceComponent
     with SequenceServiceComponent
@@ -65,7 +64,6 @@ class SequenceServiceComponentTest
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService =
     mock[UserHistoryCoordinatorService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
-  override val proposalService: ProposalService = mock[ProposalService]
   override val userService: UserService = mock[UserService]
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]

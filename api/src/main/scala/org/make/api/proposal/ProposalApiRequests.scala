@@ -235,7 +235,8 @@ final case class SearchRequest(
   operationKinds: Option[Seq[OperationKind]] = None,
   userTypes: Option[Seq[UserType]] = None,
   ideaIds: Option[Seq[IdeaId]] = None,
-  keywords: Option[Seq[ProposalKeywordKey]] = None
+  keywords: Option[Seq[ProposalKeywordKey]] = None,
+  excludedProposalIds: Option[Seq[ProposalId]] = None
 ) {
 
   def toSearchQuery(
@@ -260,12 +261,15 @@ final case class SearchRequest(
         idea = ideaIds.map(IdeaSearchFilter.apply),
         keywords = keywords.map(KeywordsSearchFilter)
       )
+    val excludesFilter: Option[SearchFilters] =
+      SearchFilters.parse(proposals = excludedProposalIds.map(ProposalSearchFilter.apply))
 
     val randomSeed: Int = seed.getOrElse(MakeRandom.nextInt())
     val searchSortAlgorithm: Option[SortAlgorithm] = AlgorithmSelector
       .select(sortAlgorithm, randomSeed, sortAlgorithmConfiguration)
     SearchQuery(
       filters = filters,
+      excludes = excludesFilter,
       sort = Sort.parse(sort, order),
       limit = limit,
       skip = skip,
@@ -324,7 +328,8 @@ final case class ExhaustiveSearchRequest(
         country = country.map(CountrySearchFilter.apply),
         createdAt = createdBefore.map(createdBeforeDate => CreatedAtSearchFilter(Some(createdBeforeDate), None)),
         userTypes = userTypes.map(UserTypesSearchFilter.apply),
-        user = userId.map(userId => UserSearchFilter(Seq(userId)))
+        user = userId.map(userId => UserSearchFilter(Seq(userId))),
+        keywords = keywords.map(KeywordsSearchFilter)
       )
 
     SearchQuery(

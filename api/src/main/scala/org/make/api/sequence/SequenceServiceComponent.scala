@@ -26,7 +26,6 @@ import org.make.api.segment.SegmentServiceComponent
 import org.make.api.sequence.SequenceBehaviour.ConsensusParam
 import org.make.api.sessionhistory._
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
-import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal._
@@ -85,7 +84,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       requestContext: RequestContext
     ): Future[SequenceResult] = {
       val log = logStartSequenceUserHistory(questionId, maybeUserId, includedProposalsIds, requestContext)
-      val votedProposals = futureVotedProposals(maybeUserId = maybeUserId, requestContext = requestContext)
+      val votedProposals =
+        sessionHistoryCoordinatorService.retrieveVotedProposals(RequestSessionVotedProposals(requestContext.sessionId))
       val behaviour = createBehaviour(behaviourParam, questionId, requestContext)
       for {
         _                  <- log
@@ -136,10 +136,12 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       tagsIds: Option[Seq[TagId]],
       requestContext: RequestContext
     ): Future[SequenceResult] = {
+      val votedProposals =
+        sessionHistoryCoordinatorService.retrieveVotedProposals(RequestSessionVotedProposals(requestContext.sessionId))
       for {
         _                  <- logStartSequenceUserHistory(questionId, maybeUserId, includedProposalIds, requestContext)
         behaviour          <- resolveBehaviour(questionId, requestContext, zone, keyword, tagsIds)
-        proposalsToExclude <- futureVotedProposals(maybeUserId = maybeUserId, requestContext = requestContext)
+        proposalsToExclude <- votedProposals
         sequenceProposals  <- chooseSequenceProposals(includedProposalIds, behaviour, proposalsToExclude)
         sequenceVotes      <- votesForProposals(maybeUserId, requestContext, sequenceProposals.map(_.id))
       } yield SequenceResult(proposals = sequenceProposals
@@ -195,17 +197,6 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       elasticsearchOperationOfQuestionAPI
         .findOperationOfQuestionById(questionId)
         .map(_.flatMap(_.top20ConsensusThreshold))
-
-    private def futureVotedProposals(
-      maybeUserId: Option[UserId],
-      requestContext: RequestContext
-    ): Future[Seq[ProposalId]] =
-      maybeUserId.map { userId =>
-        userHistoryCoordinatorService.retrieveVotedProposals(RequestUserVotedProposals(userId = userId))
-      }.getOrElse {
-        sessionHistoryCoordinatorService
-          .retrieveVotedProposals(RequestSessionVotedProposals(requestContext.sessionId))
-      }
 
     private def futureIncludedProposals(includedProposalsIds: Seq[ProposalId]): Future[Seq[IndexedProposal]] =
       if (includedProposalsIds.nonEmpty) {
