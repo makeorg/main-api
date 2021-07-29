@@ -272,7 +272,7 @@ final case class DemographicsTrackingRequest(
   @(ApiModelProperty @field)(dataType = "map[string]")
   parameters: Map[String, String],
   @(ApiModelProperty @field)(dataType = "boolean", example = "false")
-  autoSubmit: Boolean
+  autoSubmit: Option[Boolean]
 )
 
 object DemographicsTrackingRequest {

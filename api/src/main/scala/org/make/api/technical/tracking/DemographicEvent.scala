@@ -52,7 +52,7 @@ object DemographicEvent {
       country = request.country,
       applicationName = applicationName,
       parameters = request.parameters,
-      autoSubmit = request.autoSubmit
+      autoSubmit = request.autoSubmit.contains(true)
     )
 }
 
