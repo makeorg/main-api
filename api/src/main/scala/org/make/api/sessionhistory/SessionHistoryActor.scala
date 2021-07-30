@@ -259,7 +259,7 @@ class SessionHistoryActor(
           skip = 0,
           _
         )
-      )).map(response => originalSender ! response)
+      )).map(response => originalSender ! SessionVotedProposals(response.value))
     case RequestSessionVotedProposalsPaginate(_, proposalsIds, limit, skip) =>
       val originalSender = sender()
       (userHistoryCoordinator ?? (
@@ -272,7 +272,7 @@ class SessionHistoryActor(
           skip = skip,
           _
         )
-      )).map(response => originalSender ! response)
+      )).map(response => originalSender ! SessionVotedProposals(response.value))
     case RequestSessionVoteValues(_, proposalIds) =>
       val originalSender = sender()
       (userHistoryCoordinator ?? (RequestVoteValues(userId, proposalIds, _)))
