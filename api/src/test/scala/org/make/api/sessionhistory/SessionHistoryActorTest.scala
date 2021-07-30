@@ -21,7 +21,7 @@ package org.make.api.sessionhistory
 
 import java.time.temporal.ChronoUnit
 import akka.actor.ActorRef
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import org.make.api.ShardingActorTest
 import org.make.api.sessionhistory.SessionHistoryActor.{
@@ -29,17 +29,22 @@ import org.make.api.sessionhistory.SessionHistoryActor.{
   LogAcknowledged,
   SessionEventsInjected,
   SessionHistory,
+  SessionVotedProposals,
   SessionVotesValues
 }
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.api.userhistory.{
   InjectSessionEvents,
+  RequestUserVotedProposalsPaginate,
+  RequestVoteValues,
   StartSequenceParameters,
   UserHistoryCommand,
   UserHistoryResponse,
   UserHistoryTransactionalEnvelope
 }
+import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.proposal.VoteKey.Agree
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.sequence.SequenceId
 import org.make.core.session.SessionId
@@ -50,9 +55,9 @@ import scala.concurrent.duration.DurationInt
 
 class SessionHistoryActorTest extends ShardingActorTest with DefaultIdGeneratorComponent {
 
-  val testKit = ActorTestKit(this.system.toTyped)
+  val testKit: ActorTestKit = ActorTestKit(this.system.toTyped)
 
-  val userCoordinatorProbe = testKit.createTestProbe[UserHistoryCommand]()
+  val userCoordinatorProbe: TestProbe[UserHistoryCommand] = testKit.createTestProbe[UserHistoryCommand]()
 
   val coordinator: ActorRef =
     system.actorOf(
@@ -538,6 +543,96 @@ class SessionHistoryActorTest extends ShardingActorTest with DefaultIdGeneratorC
       )
       response(proposalId3).voteKey shouldBe VoteKey.Neutral
       response(proposalId3).qualificationKeys shouldBe Map.empty
+    }
+  }
+
+  Feature("RequestSessionVoteValues on closed session") {
+    Scenario("no vote on user") {
+      val identifier = "RequestSessionVoteValues on closed session - no vote on user"
+      coordinator ! UserConnected(SessionId(identifier), UserId(identifier), RequestContext.empty)
+      userCoordinatorProbe.expectMessageType[InjectSessionEvents].replyTo ! UserHistoryResponse(SessionEventsInjected)
+      expectMsgType[SessionTransformed]
+
+      coordinator ! RequestSessionVoteValues(SessionId(identifier), Seq(ProposalId("proposal1")))
+      val request = userCoordinatorProbe.expectMessageType[RequestVoteValues]
+      request.replyTo ! UserHistoryResponse(Map.empty)
+
+      expectMsg(SessionVotesValues(Map.empty))
+    }
+
+    Scenario("votes on user") {
+      val identifier = "RequestSessionVoteValues on closed session - votes on user"
+      coordinator ! UserConnected(SessionId(identifier), UserId(identifier), RequestContext.empty)
+      userCoordinatorProbe.expectMessageType[InjectSessionEvents].replyTo ! UserHistoryResponse(SessionEventsInjected)
+      expectMsgType[SessionTransformed]
+
+      val proposalId = ProposalId("proposal1")
+      coordinator ! RequestSessionVoteValues(SessionId(identifier), Seq(proposalId))
+      val request = userCoordinatorProbe.expectMessageType[RequestVoteValues]
+      val votedProposals = Map(proposalId -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted))
+      request.replyTo ! UserHistoryResponse(votedProposals)
+
+      expectMsg(SessionVotesValues(votedProposals))
+    }
+  }
+
+  Feature("RequestSessionVotedProposals on closed session") {
+    Scenario("no vote on user") {
+      val identifier = "RequestSessionVotedProposals on closed session - no vote on user"
+      coordinator ! UserConnected(SessionId(identifier), UserId(identifier), RequestContext.empty)
+      userCoordinatorProbe.expectMessageType[InjectSessionEvents].replyTo ! UserHistoryResponse(SessionEventsInjected)
+      expectMsgType[SessionTransformed]
+
+      coordinator ! RequestSessionVotedProposals(SessionId(identifier), None)
+      val request = userCoordinatorProbe.expectMessageType[RequestUserVotedProposalsPaginate]
+      request.replyTo ! UserHistoryResponse(Seq.empty)
+
+      expectMsg(SessionVotedProposals(Seq.empty))
+    }
+
+    Scenario("votes on user") {
+      val identifier = "RequestSessionVotedProposals on closed session - votes on user"
+      coordinator ! UserConnected(SessionId(identifier), UserId(identifier), RequestContext.empty)
+      userCoordinatorProbe.expectMessageType[InjectSessionEvents].replyTo ! UserHistoryResponse(SessionEventsInjected)
+      expectMsgType[SessionTransformed]
+
+      val proposalId = ProposalId("proposal1")
+      coordinator ! RequestSessionVotedProposals(SessionId(identifier), None)
+      val request = userCoordinatorProbe.expectMessageType[RequestUserVotedProposalsPaginate]
+      val votedProposals = Seq(proposalId)
+      request.replyTo ! UserHistoryResponse(votedProposals)
+
+      expectMsg(SessionVotedProposals(votedProposals))
+    }
+  }
+
+  Feature("RequestSessionVotedProposalsPaginate on closed session") {
+    Scenario("no vote on user") {
+      val identifier = "RequestSessionVotedProposalsPaginate on closed session - no vote on user"
+      coordinator ! UserConnected(SessionId(identifier), UserId(identifier), RequestContext.empty)
+      userCoordinatorProbe.expectMessageType[InjectSessionEvents].replyTo ! UserHistoryResponse(SessionEventsInjected)
+      expectMsgType[SessionTransformed]
+
+      coordinator ! RequestSessionVotedProposalsPaginate(SessionId(identifier), None, 999, 999)
+      val request = userCoordinatorProbe.expectMessageType[RequestUserVotedProposalsPaginate]
+      request.replyTo ! UserHistoryResponse(Seq.empty)
+
+      expectMsg(SessionVotedProposals(Seq.empty))
+    }
+
+    Scenario("votes on user") {
+      val identifier = "RequestSessionVotedProposalsPaginate on closed session - votes on user"
+      coordinator ! UserConnected(SessionId(identifier), UserId(identifier), RequestContext.empty)
+      userCoordinatorProbe.expectMessageType[InjectSessionEvents].replyTo ! UserHistoryResponse(SessionEventsInjected)
+      expectMsgType[SessionTransformed]
+
+      val proposalId = ProposalId("proposal1")
+      coordinator ! RequestSessionVotedProposalsPaginate(SessionId(identifier), None, 999, 999)
+      val request = userCoordinatorProbe.expectMessageType[RequestUserVotedProposalsPaginate]
+      val votedProposals = Seq(proposalId)
+      request.replyTo ! UserHistoryResponse(votedProposals)
+
+      expectMsg(SessionVotedProposals(votedProposals))
     }
   }
 
