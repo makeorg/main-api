@@ -42,7 +42,7 @@ import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions._
 import org.make.core.history.HistoryActions.VoteTrust._
-import org.make.core.idea.{IdeaId, IdeaMapping, IdeaMappingId}
+import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.profile.Profile
 import org.make.core.proposal.ProposalStatus.{Accepted, Pending}
@@ -89,7 +89,6 @@ class ProposalServiceTest
     with SecurityConfigurationComponent
     with ActorSystemComponent
     with EventBusServiceComponent
-    with IdeaMappingServiceComponent
     with IdeaServiceComponent
     with PartnerServiceComponent
     with ProposalCoordinatorServiceComponent
@@ -122,7 +121,6 @@ class ProposalServiceTest
   override val ideaService: IdeaService = mock[IdeaService]
   override val questionService: QuestionService = mock[QuestionService]
   override val tagService: TagService = mock[TagService]
-  override val ideaMappingService: IdeaMappingService = mock[IdeaMappingService]
   override val tagTypeService: TagTypeService = mock[TagTypeService]
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
   override val segmentService: SegmentService = mock[SegmentService]
@@ -1164,11 +1162,6 @@ class ProposalServiceTest
       when(proposalCoordinatorService.getProposal(ProposalId("my-proposal")))
         .thenReturn(Future.successful(Some(simpleProposal(ProposalId("my-proposal")))))
 
-      when(ideaMappingService.getOrCreateMapping(question.questionId, None, None))
-        .thenReturn(
-          Future.successful(IdeaMapping(IdeaMappingId("mapping"), question.questionId, None, None, IdeaId("my-idea")))
-        )
-
       when(tagService.findByTagIds(Seq(TagId("my-tag"))))
         .thenReturn(Future.successful(Seq.empty))
 
@@ -1182,7 +1175,7 @@ class ProposalServiceTest
           question = question,
           labels = Seq.empty,
           tags = Seq(TagId("my-tag")),
-          idea = Some(IdeaId("my-idea"))
+          idea = None
         )
       ).thenReturn(Future.successful(None))
 
@@ -1345,11 +1338,6 @@ class ProposalServiceTest
 
     val validatedProposal = simpleProposal(proposalId)
 
-    when(ideaMappingService.getOrCreateMapping(question.questionId, None, None))
-      .thenReturn(
-        Future.successful(IdeaMapping(IdeaMappingId("mapping"), question.questionId, None, None, IdeaId("my-idea")))
-      )
-
     when(proposalCoordinatorService.getProposal(proposalId))
       .thenReturn(Future.successful(Some(validatedProposal)))
 
@@ -1413,99 +1401,6 @@ class ProposalServiceTest
   }
 
   Feature("update proposal") {
-    Scenario("update proposal with both tags") {
-
-      when(proposalCoordinatorService.getProposal(ProposalId("update-proposal")))
-        .thenReturn(Future.successful(Some(simpleProposal(ProposalId("update-proposal")))))
-
-      when(userService.getUser(UserId("user-update-proposal")))
-        .thenReturn(Future.successful(Some(user(UserId("user-update-proposal")))))
-
-      val tagIds = Seq(TagId("stake-1"), TagId("stake-2"), TagId("solution-1"), TagId("solution-2"), TagId("other"))
-
-      when(tagService.findByTagIds(tagIds))
-        .thenReturn(
-          Future.successful(
-            Seq(
-              Tag(TagId("stake-1"), "stake 1", TagDisplay.Inherit, TagTypeId("stake"), 50.0f, None, None),
-              Tag(TagId("stake-2"), "stake 2", TagDisplay.Inherit, TagTypeId("stake"), 80.0f, None, None),
-              Tag(TagId("solution-1"), "solution 1", TagDisplay.Inherit, TagTypeId("solution-type"), 50.0f, None, None),
-              Tag(
-                TagId("solution-2"),
-                "solution type 2",
-                TagDisplay.Inherit,
-                TagTypeId("solution-type"),
-                20.0f,
-                None,
-                None
-              ),
-              Tag(TagId("other"), "other", TagDisplay.Inherit, TagTypeId("other"), 50.0f, None, None)
-            )
-          )
-        )
-
-      when(
-        ideaMappingService
-          .getOrCreateMapping(QuestionId("update-proposal"), Some(TagId("stake-2")), Some(TagId("solution-1")))
-      ).thenReturn(
-        Future.successful(
-          IdeaMapping(
-            IdeaMappingId("result"),
-            QuestionId("update-proposal"),
-            Some(TagId("stake-2")),
-            Some(TagId("solution-1")),
-            IdeaId("update-idea")
-          )
-        )
-      )
-
-      val question = Question(
-        QuestionId("update-proposal"),
-        "update-proposal",
-        NonEmptyList.of(Country("FR")),
-        Language("fr"),
-        "how to update a proposal?",
-        shortTitle = None,
-        None
-      )
-
-      when(
-        proposalCoordinatorService.update(
-          moderatorId,
-          ProposalId("update-proposal"),
-          RequestContext.empty,
-          ZonedDateTime.parse("2019-01-16T16:48:00Z"),
-          None,
-          Seq.empty,
-          tagIds,
-          Some(IdeaId("update-idea")),
-          question
-        )
-      ).thenReturn(
-        Future.successful(
-          Some(simpleProposal(ProposalId("update-proposal")).copy(tags = tagIds, idea = Some(IdeaId("update-idea"))))
-        )
-      )
-
-      val update = proposalService.update(
-        ProposalId("update-proposal"),
-        moderatorId,
-        RequestContext.empty,
-        ZonedDateTime.parse("2019-01-16T16:48:00Z"),
-        newContent = None,
-        question = question,
-        tags = tagIds,
-        idea = None,
-        predictedTags = None,
-        predictedTagsModelName = None
-      )
-
-      whenReady(update, Timeout(5.seconds)) { maybeProposal =>
-        maybeProposal.flatMap(_.idea) should contain(IdeaId("update-idea"))
-      }
-
-    }
-
     Scenario("update proposal when the moderator provides an idea, use it") {
 
       when(proposalCoordinatorService.getProposal(ProposalId("update-proposal-3")))
@@ -1561,97 +1456,6 @@ class ProposalServiceTest
 
       whenReady(update, Timeout(5.seconds)) { maybeProposal =>
         maybeProposal.flatMap(_.idea) should contain(IdeaId("moderator-idea"))
-      }
-
-    }
-
-    Scenario("update proposal with no stake tags") {
-
-      when(proposalCoordinatorService.getProposal(ProposalId("update-proposal-4")))
-        .thenReturn(Future.successful(Some(simpleProposal(ProposalId("update-proposal-4")))))
-
-      when(userService.getUser(UserId("user-update-proposal-4")))
-        .thenReturn(Future.successful(Some(user(UserId("user-update-proposal-4")))))
-
-      val tagIds = Seq(TagId("solution-1"), TagId("solution-2"), TagId("other"))
-
-      when(tagService.findByTagIds(tagIds))
-        .thenReturn(
-          Future.successful(
-            Seq(
-              Tag(TagId("solution-1"), "solution 1", TagDisplay.Inherit, TagTypeId("solution-type"), 50.0f, None, None),
-              Tag(
-                TagId("solution-2"),
-                "solution type 2",
-                TagDisplay.Inherit,
-                TagTypeId("solution-type"),
-                20.0f,
-                None,
-                None
-              ),
-              Tag(TagId("other"), "other", TagDisplay.Inherit, TagTypeId("other"), 50.0f, None, None)
-            )
-          )
-        )
-
-      when(
-        ideaMappingService
-          .getOrCreateMapping(QuestionId("update-proposal"), None, Some(TagId("solution-1")))
-      ).thenReturn(
-        Future.successful(
-          IdeaMapping(
-            IdeaMappingId("result-2"),
-            QuestionId("update-proposal"),
-            None,
-            Some(TagId("solution-1")),
-            IdeaId("update-idea-2")
-          )
-        )
-      )
-
-      val question = Question(
-        QuestionId("update-proposal"),
-        "update-proposal",
-        NonEmptyList.of(Country("FR")),
-        Language("fr"),
-        "how to update a proposal?",
-        shortTitle = None,
-        None
-      )
-
-      when(
-        proposalCoordinatorService.update(
-          moderatorId,
-          ProposalId("update-proposal-4"),
-          RequestContext.empty,
-          ZonedDateTime.parse("2019-01-16T16:48:00Z"),
-          None,
-          Seq.empty,
-          tagIds,
-          Some(IdeaId("update-idea-2")),
-          question
-        )
-      ).thenReturn(
-        Future.successful(
-          Some(simpleProposal(ProposalId("update-proposal")).copy(tags = tagIds, idea = Some(IdeaId("update-idea-2"))))
-        )
-      )
-
-      val update = proposalService.update(
-        ProposalId("update-proposal-4"),
-        moderatorId,
-        RequestContext.empty,
-        ZonedDateTime.parse("2019-01-16T16:48:00Z"),
-        newContent = None,
-        question = question,
-        tags = tagIds,
-        idea = None,
-        predictedTags = None,
-        predictedTagsModelName = None
-      )
-
-      whenReady(update, Timeout(5.seconds)) { maybeProposal =>
-        maybeProposal.flatMap(_.idea) should contain(IdeaId("update-idea-2"))
       }
 
     }
@@ -3103,9 +2907,6 @@ class ProposalServiceTest
       )
     )
     when(questionService.getQuestions(eqTo(Seq(q1Id)))).thenReturn(Future.successful(Seq(q1)))
-
-    when(ideaMappingService.getOrCreateMapping(q1Id, None, None))
-      .thenReturn(Future.successful(IdeaMapping(IdeaMappingId("mapping"), q1Id, None, None, IdeaId("my-idea"))))
 
     def acceptCheck(customMessage: String): BulkActionResponse => Assertion = {
       case BulkActionResponse(successes, failures) =>
