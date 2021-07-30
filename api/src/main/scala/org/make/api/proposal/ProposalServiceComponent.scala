@@ -30,7 +30,7 @@ import grizzled.slf4j.Logging
 import kamon.Kamon
 import kamon.tag.TagSet
 import org.make.api.ActorSystemComponent
-import org.make.api.idea.{IdeaMappingServiceComponent, IdeaServiceComponent}
+import org.make.api.idea.IdeaServiceComponent
 import org.make.api.partner.PartnerServiceComponent
 import org.make.api.question.{AuthorRequest, QuestionServiceComponent}
 import org.make.api.segment.SegmentServiceComponent
@@ -324,7 +324,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
   this: ProposalServiceComponent
     with ActorSystemComponent
     with EventBusServiceComponent
-    with IdeaMappingServiceComponent
     with IdeaServiceComponent
     with IdGeneratorComponent
     with PartnerServiceComponent
@@ -573,57 +572,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       )
     }
 
-    private def findStakeSolutionTuple(tags: Seq[TagId]): Future[(Option[TagId], Option[TagId])] = {
-      tagTypeService
-        .findAll()
-        .flatMap { tagTypes =>
-          val stake = tagTypes.find(_.label.toLowerCase == "stake")
-          val solutionType = tagTypes.find(_.label.toLowerCase == "solution type")
-
-          val tuple = for {
-            stakeTagType        <- stake
-            solutionTypeTagType <- solutionType
-          } yield (stakeTagType.tagTypeId, solutionTypeTagType.tagTypeId)
-
-          tuple match {
-            case Some(t) => Future.successful(t)
-            case None    => Future.failed(new IllegalStateException("Unable to find stake or solutionType tag types"))
-          }
-        }
-        .flatMap {
-          case (stake, solution) =>
-            tagService.findByTagIds(tags).map { proposalTags =>
-              val sortedTags = proposalTags.sortBy(_.weight * -1)
-              val stakeTag = sortedTags.find(_.tagTypeId == stake).map(_.tagId)
-              val solutionTag = sortedTags.find(_.tagTypeId == solution).map(_.tagId)
-              (stakeTag, solutionTag)
-            }
-        }
-
-    }
-
-    private def findIdea(
-      proposalId: ProposalId,
-      tags: Seq[TagId],
-      idea: Option[IdeaId],
-      questionId: QuestionId
-    ): Future[Option[IdeaId]] = {
-
-      proposalCoordinatorService.getProposal(proposalId).flatMap {
-        case None => Future.successful(None)
-        case Some(_) =>
-          (idea, tags) match {
-            case (ideaId @ Some(_), _) => Future.successful(ideaId)
-            case (_, Seq())            => Future.successful(None)
-            case _ =>
-              findStakeSolutionTuple(tags).flatMap {
-                case (stake, solution) =>
-                  ideaMappingService.getOrCreateMapping(questionId, stake, solution).map(_.ideaId.some)
-              }
-          }
-      }
-    }
-
     override def update(
       proposalId: ProposalId,
       moderator: UserId,
@@ -637,26 +585,24 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       predictedTagsModelName: Option[String]
     ): Future[Option[ModerationProposalResponse]] = {
 
-      findIdea(proposalId, tags, idea, question.questionId).flatMap { ideaId =>
-        (predictedTags, predictedTagsModelName) match {
-          case (Some(pTags), Some(modelName)) =>
-            eventBusService.publish(PredictedTagsEvent(proposalId, pTags, tags, modelName))
-          case _ =>
-        }
-        toModerationProposalResponse(
-          proposalCoordinatorService.update(
-            moderator = moderator,
-            proposalId = proposalId,
-            requestContext = requestContext,
-            updatedAt = updatedAt,
-            newContent = newContent,
-            question = question,
-            labels = Seq.empty,
-            tags = tags,
-            idea = ideaId
-          )
-        )
+      (predictedTags, predictedTagsModelName) match {
+        case (Some(pTags), Some(modelName)) =>
+          eventBusService.publish(PredictedTagsEvent(proposalId, pTags, tags, modelName))
+        case _ =>
       }
+      toModerationProposalResponse(
+        proposalCoordinatorService.update(
+          moderator = moderator,
+          proposalId = proposalId,
+          requestContext = requestContext,
+          updatedAt = updatedAt,
+          newContent = newContent,
+          question = question,
+          labels = Seq.empty,
+          tags = tags,
+          idea = idea
+        )
+      )
     }
 
     private def getEvents(proposal: Proposal): Future[Seq[ProposalActionResponse]] = {
@@ -748,26 +694,24 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       predictedTagsModelName: Option[String]
     ): Future[Option[ModerationProposalResponse]] = {
 
-      findIdea(proposalId, tags, idea, question.questionId).flatMap { ideaId =>
-        (predictedTags, predictedTagsModelName) match {
-          case (Some(pTags), Some(modelName)) =>
-            eventBusService.publish(PredictedTagsEvent(proposalId, pTags, tags, modelName))
-          case _ =>
-        }
-        toModerationProposalResponse(
-          proposalCoordinatorService.accept(
-            proposalId = proposalId,
-            moderator = moderator,
-            requestContext = requestContext,
-            sendNotificationEmail = sendNotificationEmail,
-            newContent = newContent,
-            question = question,
-            labels = Seq.empty,
-            tags = tags,
-            idea = ideaId
-          )
-        )
+      (predictedTags, predictedTagsModelName) match {
+        case (Some(pTags), Some(modelName)) =>
+          eventBusService.publish(PredictedTagsEvent(proposalId, pTags, tags, modelName))
+        case _ =>
       }
+      toModerationProposalResponse(
+        proposalCoordinatorService.accept(
+          proposalId = proposalId,
+          moderator = moderator,
+          requestContext = requestContext,
+          sendNotificationEmail = sendNotificationEmail,
+          newContent = newContent,
+          question = question,
+          labels = Seq.empty,
+          tags = tags,
+          idea = idea
+        )
+      )
     }
 
     override def refuseProposal(

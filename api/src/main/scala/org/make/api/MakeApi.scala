@@ -141,7 +141,6 @@ trait MakeApi
     with DefaultAdminCrmLanguageTemplatesApiComponent
     with DefaultAdminCrmQuestionTemplatesApiComponent
     with DefaultAdminFeatureApiComponent
-    with DefaultAdminIdeaMappingApiComponent
     with DefaultAdminModeratorApiComponent
     with DefaultAdminOperationOfQuestionApiComponent
     with DefaultAdminPartnerApiComponent
@@ -181,7 +180,6 @@ trait MakeApi
     with DefaultHealthCheckApiComponent
     with DefaultHealthCheckServiceComponent
     with DefaultIdGeneratorComponent
-    with DefaultIdeaMappingServiceComponent
     with DefaultIdeaSearchEngineComponent
     with DefaultIdeaServiceComponent
     with DefaultIndexationComponent
@@ -219,7 +217,6 @@ trait MakeApi
     with DefaultPersistentCrmSynchroUserServiceComponent
     with DefaultPersistentCrmUserServiceComponent
     with DefaultPersistentFeatureServiceComponent
-    with DefaultPersistentIdeaMappingServiceComponent
     with DefaultPersistentIdeaServiceComponent
     with DefaultPersistentKeywordServiceComponent
     with DefaultPersistentOperationOfQuestionServiceComponent
@@ -373,7 +370,6 @@ trait MakeApi
       classOf[AdminCrmLanguageTemplatesApi],
       classOf[AdminCrmQuestionTemplatesApi],
       classOf[AdminFeatureApi],
-      classOf[AdminIdeaMappingApi],
       classOf[AdminModeratorApi],
       classOf[AdminOperationOfQuestionApi],
       classOf[AdminPartnerApi],
@@ -443,7 +439,6 @@ trait MakeApi
       adminCrmLanguageTemplatesApi.routes ~
       adminCrmQuestionTemplatesApi.routes ~
       adminFeatureApi.routes ~
-      adminIdeaMappingApi.routes ~
       adminModeratorApi.routes ~
       adminOperationOfQuestionApi.routes ~
       adminPartnerApi.routes ~

@@ -22,7 +22,6 @@ package org.make.core.technical
 import org.make.core.EventId
 
 import java.util.UUID
-import org.make.core.idea.IdeaMappingId
 import org.make.core.auth.ClientId
 import org.make.core.crmTemplate.CrmQuestionTemplateId
 import org.make.core.feature.{ActiveFeatureId, FeatureId}
@@ -44,7 +43,6 @@ trait IdGenerator {
   def nextFeatureId(): FeatureId = FeatureId(nextId())
   def nextActiveFeatureId(): ActiveFeatureId = ActiveFeatureId(nextId())
   def nextIdeaId(): IdeaId = IdeaId(nextId())
-  def nextIdeaMappingId(): IdeaMappingId = IdeaMappingId(nextId())
   def nextJobId(): JobId = JobId(nextId())
   def nextOperationId(): OperationId = OperationId(nextId())
   def nextPartnerId(): PartnerId = PartnerId(nextId())

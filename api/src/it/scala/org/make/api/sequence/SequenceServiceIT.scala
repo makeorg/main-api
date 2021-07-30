@@ -40,8 +40,6 @@ import org.make.api.feature.{
   DefaultPersistentFeatureServiceComponent
 }
 import org.make.api.idea.{
-  DefaultIdeaMappingServiceComponent,
-  DefaultPersistentIdeaMappingServiceComponent,
   DefaultPersistentIdeaServiceComponent,
   IdeaSearchEngine,
   IdeaService,
@@ -169,7 +167,6 @@ class SequenceServiceIT
     with DefaultEventBusServiceComponent
     with DefaultFeatureServiceComponent
     with DefaultFixturesServiceComponent
-    with DefaultIdeaMappingServiceComponent
     with DefaultIdGeneratorComponent
     with DefaultIndexationComponent
     with DefaultJobCoordinatorServiceComponent
@@ -181,7 +178,6 @@ class SequenceServiceIT
     with DefaultPartnerServiceComponent
     with DefaultPersistentActiveFeatureServiceComponent
     with DefaultPersistentFeatureServiceComponent
-    with DefaultPersistentIdeaMappingServiceComponent
     with DefaultPersistentIdeaServiceComponent
     with DefaultPersistentOperationOfQuestionServiceComponent
     with DefaultPersistentOperationServiceComponent
