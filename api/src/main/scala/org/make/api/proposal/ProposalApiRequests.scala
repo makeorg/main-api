@@ -239,10 +239,7 @@ final case class SearchRequest(
   excludedProposalIds: Option[Seq[ProposalId]] = None
 ) {
 
-  def toSearchQuery(
-    requestContext: RequestContext,
-    sortAlgorithmConfiguration: SortAlgorithmConfiguration
-  ): SearchQuery = {
+  def toSearchQuery(requestContext: RequestContext): SearchQuery = {
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
         proposals = proposalIds.map(ProposalSearchFilter.apply),
@@ -265,8 +262,7 @@ final case class SearchRequest(
       SearchFilters.parse(proposals = excludedProposalIds.map(ProposalSearchFilter.apply))
 
     val randomSeed: Int = seed.getOrElse(MakeRandom.nextInt())
-    val searchSortAlgorithm: Option[SortAlgorithm] = AlgorithmSelector
-      .select(sortAlgorithm, randomSeed, sortAlgorithmConfiguration)
+    val searchSortAlgorithm: Option[SortAlgorithm] = AlgorithmSelector.select(sortAlgorithm, randomSeed)
     SearchQuery(
       filters = filters,
       excludes = excludesFilter,

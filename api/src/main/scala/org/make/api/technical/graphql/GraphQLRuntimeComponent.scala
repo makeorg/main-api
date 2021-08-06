@@ -23,7 +23,7 @@ import caliban.schema.GenericSchema
 import caliban.wrappers.Wrappers.{printErrors, printSlowQueries}
 import caliban.{GraphQL, RootResolver}
 import grizzled.slf4j.Logging
-import org.make.api.proposal.{ProposalServiceComponent, SortAlgorithmConfigurationComponent}
+import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.technical.graphql.GraphQLProposalQuery.{GraphQLProposalQueries, ProposalSearchParams}
 import org.make.api.technical.graphql.GraphQLRuntimeComponent.{EnvType, RuntimeType}
 import org.make.api.technical.graphql.GraphQLUtils._
@@ -53,7 +53,7 @@ trait DefaultGraphQLRuntimeComponent
     with GraphQLOrganisationServiceComponent
     with GraphQLQuestionServiceComponent
     with GraphQLTagServiceComponent {
-  self: ProposalServiceComponent with SortAlgorithmConfigurationComponent =>
+  self: ProposalServiceComponent =>
 
   override def graphQLRuntime: GraphQLRuntime = new DefaultGraphQLRuntime
 
@@ -78,11 +78,7 @@ trait DefaultGraphQLRuntimeComponent
       Task.fromFuture(
         implicit ec =>
           proposalService
-            .searchForUser(
-              requestContext.userId,
-              params.toSearchQuery(requestContext, sortAlgorithmConfiguration),
-              requestContext
-            )
+            .searchForUser(requestContext.userId, params.toSearchQuery(requestContext), requestContext)
             .map {
               _.results.map { proposal =>
                 GraphQLProposal.fromProposalResponse(proposal)(

@@ -260,7 +260,6 @@ trait MakeApi
     with DefaultSessionHistoryCoordinatorServiceComponent
     with DefaultSocialProvidersConfigurationComponent
     with DefaultSocialServiceComponent
-    with DefaultSortAlgorithmConfigurationComponent
     with DefaultSpawnActorServiceComponent
     with DefaultStorageConfigurationComponent
     with DefaultStorageServiceComponent

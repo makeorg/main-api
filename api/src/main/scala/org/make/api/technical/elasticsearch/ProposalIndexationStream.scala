@@ -361,7 +361,7 @@ object ProposalIndexationStream {
       platitude = scorer.platitude.lowerBound,
       topScore = scorer.topScore.score,
       topScoreAjustedWithVotes = scorer.topScore.lowerBound,
-      controversy = scorer.controversy.lowerBound,
+      controversyLowerBound = scorer.controversy.lowerBound,
       rejection = scorer.rejection.lowerBound,
       scoreUpperBound = scorer.topScore.upperBound,
       scoreLowerBound = scorer.topScore.lowerBound,
