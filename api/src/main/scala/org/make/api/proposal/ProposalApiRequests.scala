@@ -19,12 +19,8 @@
 
 package org.make.api.proposal
 
-import eu.timepit.refined.auto._
-
-import java.time.ZonedDateTime
 import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
 import io.circe.{Codec, Decoder, Encoder}
-import io.circe.refined._
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.technical.MakeRandom
 import org.make.core.Validation._
@@ -37,16 +33,9 @@ import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
-import org.make.core.{
-  ApplicationName,
-  BusinessConfig,
-  CirceFormatters,
-  FrontConfiguration,
-  Order,
-  RequestContext,
-  Validation
-}
+import org.make.core._
 
+import java.time.ZonedDateTime
 import scala.annotation.meta.field
 
 @ApiModel
@@ -76,10 +65,6 @@ object ProposeProposalRequest {
 
 final case class UpdateProposalRequest(
   newContent: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "2a774774-33ca-41a3-a0fa-65931397fbfc")
-  idea: Option[IdeaId],
-  @(ApiModelProperty @field)(dataType = "list[string]")
-  labels: Seq[LabelId],
   @(ApiModelProperty @field)(dataType = "list[string]")
   tags: Seq[TagId],
   @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
@@ -100,11 +85,7 @@ final case class ValidateProposalRequest(
   newContent: Option[String],
   sendNotificationEmail: Boolean,
   @(ApiModelProperty @field)(dataType = "list[string]")
-  labels: Seq[LabelId],
-  @(ApiModelProperty @field)(dataType = "list[string]")
   tags: Seq[TagId],
-  @(ApiModelProperty @field)(dataType = "string", example = "2a774774-33ca-41a3-a0fa-65931397fbfc")
-  idea: Option[IdeaId],
   @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
   questionId: Option[QuestionId],
   @(ApiModelProperty @field)(dataType = "list[string]")

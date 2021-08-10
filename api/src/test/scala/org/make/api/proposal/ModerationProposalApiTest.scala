@@ -119,9 +119,7 @@ class ModerationProposalApiTest
   val validateProposalEntity: String = ValidateProposalRequest(
     newContent = None,
     sendNotificationEmail = true,
-    labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq(TagId("dragon"), TagId("sword")),
-    idea = Some(IdeaId("becoming-king")),
     questionId = Some(QuestionId("question-fire-and-ice")),
     predictedTags = None,
     predictedTagsModelName = None
@@ -130,9 +128,7 @@ class ModerationProposalApiTest
   val validateProposalEntityWithoutTagNorIdea: String = ValidateProposalRequest(
     newContent = None,
     sendNotificationEmail = true,
-    labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq.empty,
-    idea = None,
     questionId = Some(QuestionId("question-fire-and-ice")),
     predictedTags = None,
     predictedTagsModelName = None
@@ -165,7 +161,6 @@ class ModerationProposalApiTest
         any[Question],
         any[Option[String]],
         any[Boolean],
-        any[Option[IdeaId]],
         any[Seq[TagId]],
         any[Option[Seq[TagId]]],
         any[Option[String]]
@@ -180,7 +175,6 @@ class ModerationProposalApiTest
         any[Question],
         any[Option[String]],
         any[Boolean],
-        any[Option[IdeaId]],
         any[Seq[TagId]],
         any[Option[Seq[TagId]]],
         any[Option[String]]
@@ -195,7 +189,6 @@ class ModerationProposalApiTest
         any[Question],
         any[Option[String]],
         any[Boolean],
-        any[Option[IdeaId]],
         any[Seq[TagId]],
         any[Option[Seq[TagId]]],
         any[Option[String]]

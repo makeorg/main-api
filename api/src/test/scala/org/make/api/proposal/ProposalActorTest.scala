@@ -53,7 +53,7 @@ class ProposalActorTest
     with ScalaCheckDrivenPropertyChecks
     with DefaultIdGeneratorComponent {
 
-  val questionOnNothingFr = Question(
+  val questionOnNothingFr: Question = Question(
     questionId = QuestionId("my-question"),
     slug = "my-question",
     countries = NonEmptyList.of(Country("FR")),
@@ -63,7 +63,7 @@ class ProposalActorTest
     operationId = None
   )
 
-  val questionOnTheme = Question(
+  val questionOnTheme: Question = Question(
     questionId = QuestionId("my-question"),
     slug = "my-question",
     countries = NonEmptyList.of(Country("FR")),
@@ -73,7 +73,7 @@ class ProposalActorTest
     operationId = None
   )
 
-  val questionOnNothingIT = Question(
+  val questionOnNothingIT: Question = Question(
     questionId = QuestionId("my-italian-question"),
     slug = "my-question",
     countries = NonEmptyList.of(Country("IT")),
@@ -301,10 +301,8 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(),
         tags = Seq(TagId("some tag id")),
         question = questionOnTheme,
-        idea = Some(IdeaId("my-id")),
         replyTo = probe.ref
       )
 
@@ -338,10 +336,8 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = Some("This content must be changed"),
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         question = questionOnTheme,
-        idea = Some(IdeaId("my-idea")),
         replyTo = probe.ref
       )
 
@@ -357,8 +353,6 @@ class ProposalActorTest
       response.createdAt.isDefined should be(true)
       response.updatedAt.isDefined should be(true)
       response.tags should be(Seq(TagId("some tag id")))
-      response.labels should be(Seq(LabelId("action")))
-      response.idea should be(Some(IdeaId("my-idea")))
 
     }
 
@@ -388,9 +382,7 @@ class ProposalActorTest
         sendNotificationEmail = true,
         newContent = None,
         question = questionOnNothingFr,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = Some(IdeaId("some-idea")),
         replyTo = probe.ref
       )
 
@@ -406,8 +398,6 @@ class ProposalActorTest
       response.createdAt.isDefined should be(true)
       response.updatedAt.isDefined should be(true)
       response.tags should be(Seq(TagId("some tag id")))
-      response.labels should be(Seq(LabelId("action")))
-      response.idea should be(Some(IdeaId("some-idea")))
     }
 
     Scenario("accept an existing proposal without a theme") {
@@ -437,9 +427,7 @@ class ProposalActorTest
         sendNotificationEmail = true,
         newContent = None,
         question = questionOnNothingFr,
-        labels = Seq.empty,
         tags = Seq(TagId("some tag id")),
-        idea = Some(IdeaId("some-idea")),
         replyTo = probe.ref
       )
 
@@ -456,7 +444,6 @@ class ProposalActorTest
       response.updatedAt.isDefined should be(true)
       response.tags should be(Seq(TagId("some tag id")))
       response.labels should be(Seq.empty)
-      response.idea should be(Some(IdeaId("some-idea")))
     }
 
     Scenario("validating a validated proposal shouldn't do anything") {
@@ -483,9 +470,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = Some(IdeaId("some-idea")),
         question = questionOnNothingFr,
         replyTo = probe.ref
       )
@@ -499,9 +484,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = Some("something different"),
-        labels = Seq(LabelId("action2")),
         tags = Seq(TagId("some tag id 2")),
-        idea = Some(IdeaId("some-idea")),
         question = questionOnNothingFr,
         replyTo = probe.ref
       )
@@ -509,55 +492,6 @@ class ProposalActorTest
       Then("I should receive an error")
       val error = probe.expectMessageType[InvalidStateError]
       error.message should be("Proposal to-be-moderated-2 is already validated")
-    }
-
-    Scenario("validate a proposal and set the idea") {
-      val probe = testKit.createTestProbe[ProposalActorProtocol]()
-
-      Given("a validated proposal")
-      val proposalId = ProposalId("to-be-moderated-with-idea-1")
-      val idea = IdeaId("idea-1")
-      val originalContent = "This is a proposal that will be validated with idea"
-      coordinator ! ProposeCommand(
-        proposalId,
-        requestContext = RequestContext.empty,
-        user = user,
-        createdAt = DateHelper.now(),
-        content = originalContent,
-        question = questionOnNothingFr,
-        initialProposal = false,
-        replyTo = probe.ref
-      )
-
-      probe.expectMessage(Envelope(proposalId))
-
-      When("I validate the proposal")
-      coordinator ! AcceptProposalCommand(
-        proposalId = proposalId,
-        moderator = UserId("some user"),
-        requestContext = RequestContext.empty,
-        sendNotificationEmail = true,
-        newContent = None,
-        labels = Seq(LabelId("action")),
-        tags = Seq(TagId("some tag id")),
-        idea = Some(idea),
-        question = questionOnTheme,
-        replyTo = probe.ref
-      )
-      val validatedProposal: Proposal = probe.expectMessageType[Envelope[Proposal]].value
-
-      Then("I should have an idea present")
-      validatedProposal.proposalId should be(proposalId)
-      validatedProposal.idea should be(Some(idea))
-      validatedProposal.questionId should be(Some(questionOnTheme.questionId))
-
-      When("I search for the proposal")
-      coordinator ! GetProposal(proposalId, RequestContext.empty, probe.ref)
-      val searchedProposal: Proposal = probe.expectMessageType[Envelope[Proposal]].value
-
-      Then("I should have idea present")
-      searchedProposal.proposalId should be(proposalId)
-      searchedProposal.idea should be(Some(idea))
     }
   }
 
@@ -864,9 +798,7 @@ class ProposalActorTest
         updatedAt = mainUpdatedAt.get,
         moderator = UserId("some user"),
         newContent = None,
-        labels = Seq.empty,
         tags = Seq.empty,
-        idea = Some(IdeaId("some-idea")),
         question = questionOnNothingFr,
         replyTo = probe.ref
       )
@@ -899,9 +831,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq.empty,
         tags = Seq(TagId("some tag id")),
-        idea = Some(IdeaId("some-idea")),
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -915,9 +845,7 @@ class ProposalActorTest
         updatedAt = mainUpdatedAt.get,
         moderator = UserId("some user"),
         newContent = Some("This content must be changed"),
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = Some(IdeaId("idea-id")),
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -933,8 +861,6 @@ class ProposalActorTest
       response.createdAt.isDefined should be(true)
       response.updatedAt.isDefined should be(true)
       response.tags should be(Seq(TagId("some tag id")))
-      response.labels should be(Seq(LabelId("action")))
-      response.idea should be(Some(IdeaId("idea-id")))
     }
 
     Scenario("Update a validated Proposal with no tags") {
@@ -961,9 +887,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq.empty,
         tags = Seq(),
-        idea = Some(IdeaId("some-idea")),
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -977,9 +901,7 @@ class ProposalActorTest
         updatedAt = mainUpdatedAt.get,
         moderator = UserId("some user"),
         newContent = Some("This content must be changed"),
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = Some(IdeaId("idea-id")),
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -995,8 +917,6 @@ class ProposalActorTest
       response.createdAt.isDefined should be(true)
       response.updatedAt.isDefined should be(true)
       response.tags should be(Seq(TagId("some tag id")))
-      response.labels should be(Seq(LabelId("action")))
-      response.idea should be(Some(IdeaId("idea-id")))
     }
 
     Scenario("Update a validated Proposal with no idea") {
@@ -1023,9 +943,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq.empty,
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -1039,9 +957,7 @@ class ProposalActorTest
         updatedAt = mainUpdatedAt.get,
         moderator = UserId("some user"),
         newContent = Some("This content must be changed"),
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = Some(IdeaId("idea-id")),
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -1057,8 +973,6 @@ class ProposalActorTest
       response.createdAt.isDefined should be(true)
       response.updatedAt.isDefined should be(true)
       response.tags should be(Seq(TagId("some tag id")))
-      response.labels should be(Seq(LabelId("action")))
-      response.idea should be(Some(IdeaId("idea-id")))
     }
 
     Scenario("Update a non validated Proposal") {
@@ -1085,9 +999,7 @@ class ProposalActorTest
         updatedAt = mainUpdatedAt.get,
         moderator = UserId("some user"),
         newContent = None,
-        labels = Seq.empty,
         tags = Seq.empty,
-        idea = Some(IdeaId("some-idea")),
         question = questionOnNothingFr,
         replyTo = probe.ref
       )
@@ -1593,9 +1505,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq.empty,
         tags = Seq(TagId("some tag id")),
-        idea = Some(IdeaId("some-idea")),
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -2230,9 +2140,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -2296,9 +2204,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -2361,9 +2267,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -2426,9 +2330,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -2507,9 +2409,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -2589,9 +2489,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -2671,9 +2569,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -2755,9 +2651,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -2824,9 +2718,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -2893,9 +2785,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -2964,9 +2854,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -3033,9 +2921,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -3102,9 +2988,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -3173,9 +3057,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -3261,9 +3143,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -3349,9 +3229,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -3444,9 +3322,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -3534,9 +3410,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -3622,9 +3496,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -3710,9 +3582,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -3805,9 +3675,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -3925,9 +3793,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )
@@ -4029,9 +3895,7 @@ class ProposalActorTest
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = None,
         question = questionOnTheme,
         replyTo = probe.ref
       )

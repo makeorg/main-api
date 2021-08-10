@@ -28,10 +28,8 @@ import org.make.api.ActorSystemTypedComponent
 import org.make.api.technical.TimeSettings
 import org.make.api.technical.BetterLoggingActors._
 import org.make.core.history.HistoryActions.{VoteAndQualifications, VoteTrust}
-import org.make.core.idea.IdeaId
 import org.make.core.proposal._
 import org.make.core.question.Question
-import org.make.core.reference.LabelId
 import org.make.core.tag.TagId
 import org.make.core.user.{User, UserId}
 import org.make.core.{RequestContext, ValidationError, ValidationFailedError}
@@ -76,9 +74,7 @@ trait ProposalCoordinatorService {
     requestContext: RequestContext,
     updatedAt: ZonedDateTime,
     newContent: Option[String],
-    labels: Seq[LabelId],
     tags: Seq[TagId],
-    idea: Option[IdeaId],
     question: Question
   ): Future[Option[Proposal]]
   def updateVotes(
@@ -95,9 +91,7 @@ trait ProposalCoordinatorService {
     sendNotificationEmail: Boolean,
     newContent: Option[String],
     question: Question,
-    labels: Seq[LabelId],
-    tags: Seq[TagId],
-    idea: Option[IdeaId]
+    tags: Seq[TagId]
   ): Future[Option[Proposal]]
   def refuse(
     moderator: UserId,
@@ -210,9 +204,7 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
       requestContext: RequestContext,
       updatedAt: ZonedDateTime,
       newContent: Option[String],
-      labels: Seq[LabelId],
       tags: Seq[TagId],
-      idea: Option[IdeaId],
       question: Question
     ): Future[Option[Proposal]] = {
       (proposalCoordinator ?? (UpdateProposalCommand(
@@ -221,9 +213,7 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
         requestContext,
         updatedAt,
         newContent,
-        labels,
         tags,
-        idea,
         question,
         _
       ))).flatMap(shapeResponse)
@@ -247,9 +237,7 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
       sendNotificationEmail: Boolean,
       newContent: Option[String],
       question: Question,
-      labels: Seq[LabelId],
-      tags: Seq[TagId],
-      idea: Option[IdeaId]
+      tags: Seq[TagId]
     ): Future[Option[Proposal]] = {
       (proposalCoordinator ?? (AcceptProposalCommand(
         moderator,
@@ -258,9 +246,7 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
         sendNotificationEmail,
         newContent,
         question,
-        labels,
         tags,
-        idea,
         _
       ))).flatMap(shapeResponse)
     }

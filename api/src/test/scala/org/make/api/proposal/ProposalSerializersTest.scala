@@ -54,14 +54,14 @@ import java.time.ZonedDateTime
 
 class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
 
-  val conf = SecurityConfiguration(ProposalSerializersTest.system)
-  val persisters = Persisters(ProposalSerializers(conf).serializers.toList)
-  val userId = UserId("my-user-id")
+  val conf: SecurityConfiguration = SecurityConfiguration(ProposalSerializersTest.system)
+  val persisters: Persisters = Persisters(ProposalSerializers(conf).serializers.toList)
+  val userId: UserId = UserId("my-user-id")
   val requestContext: RequestContext = RequestContext.empty
   val requestContextFromGermany: RequestContext =
     requestContext.copy(country = Some(Country("DE")), language = Some(Language("de")))
   val eventDate: ZonedDateTime = ZonedDateTime.parse("2018-03-01T16:09:30.441Z")
-  val proposalId = ProposalId("proposal-id")
+  val proposalId: ProposalId = ProposalId("proposal-id")
 
   "proposal persister" should {
 

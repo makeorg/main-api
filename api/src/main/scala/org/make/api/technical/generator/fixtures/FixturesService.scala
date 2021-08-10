@@ -193,7 +193,6 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Logg
                   question = question,
                   newContent = None,
                   sendNotificationEmail = false,
-                  idea = proposal.idea,
                   tags = proposal.tags,
                   predictedTags = None,
                   predictedTagsModelName = None

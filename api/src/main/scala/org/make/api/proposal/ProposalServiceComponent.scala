@@ -19,13 +19,11 @@
 
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
 import akka.Done
 import akka.stream.scaladsl.{Sink, Source}
 import cats.data.{NonEmptyList, OptionT}
 import cats.implicits._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
-import eu.timepit.refined.auto._
 import grizzled.slf4j.Logging
 import kamon.Kamon
 import kamon.tag.TagSet
@@ -39,41 +37,33 @@ import org.make.api.sessionhistory._
 import org.make.api.tag.TagServiceComponent
 import org.make.api.tagtype.TagTypeServiceComponent
 import org.make.api.technical.Futures.RichFutures
+import org.make.api.technical.crm.QuestionResolver
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeRandom, ReadJournalComponent}
 import org.make.api.user.UserServiceComponent
+import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
 import org.make.api.userhistory._
 import org.make.core.common.indexed.Sort
-import org.make.core.history.HistoryActions.{VoteAndQualifications, VoteTrust}
 import org.make.core.history.HistoryActions.VoteTrust._
+import org.make.core.history.HistoryActions.{VoteAndQualifications, VoteTrust}
 import org.make.core.idea.IdeaId
+import org.make.core.partner.Partner
 import org.make.core.proposal.ProposalStatus.Pending
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldName, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.question.TopProposalsMode.IdeaMode
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
-import org.make.core.tag.{Tag, TagId, TagType}
-import org.make.core.user._
-import org.make.core.{
-  BusinessConfig,
-  CirceFormatters,
-  CountryConfiguration,
-  DateHelper,
-  RequestContext,
-  ValidationError,
-  ValidationFailedError
-}
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import org.make.api.technical.crm.QuestionResolver
-import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
-import org.make.core.partner.Partner
 import org.make.core.reference.Country
 import org.make.core.session.SessionId
+import org.make.core.tag.{Tag, TagId, TagType}
 import org.make.core.technical.Pagination.Start
+import org.make.core.user._
+import org.make.core._
 
+import java.time.ZonedDateTime
 import scala.collection.mutable
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 trait ProposalServiceComponent {
   def proposalService: ProposalService
@@ -134,7 +124,6 @@ trait ProposalService {
     newContent: Option[String],
     question: Question,
     tags: Seq[TagId],
-    idea: Option[IdeaId],
     predictedTags: Option[Seq[TagId]],
     predictedTagsModelName: Option[String]
   ): Future[Option[ModerationProposalResponse]]
@@ -154,7 +143,6 @@ trait ProposalService {
     question: Question,
     newContent: Option[String],
     sendNotificationEmail: Boolean,
-    idea: Option[IdeaId],
     tags: Seq[TagId],
     predictedTags: Option[Seq[TagId]],
     predictedTagsModelName: Option[String]
@@ -378,7 +366,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           question = question,
           newContent = None,
           sendNotificationEmail = false,
-          idea = None,
           tags = tags,
           predictedTags = None,
           predictedTagsModelName = None
@@ -580,7 +567,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       newContent: Option[String],
       question: Question,
       tags: Seq[TagId],
-      idea: Option[IdeaId],
       predictedTags: Option[Seq[TagId]],
       predictedTagsModelName: Option[String]
     ): Future[Option[ModerationProposalResponse]] = {
@@ -598,9 +584,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           updatedAt = updatedAt,
           newContent = newContent,
           question = question,
-          labels = Seq.empty,
-          tags = tags,
-          idea = idea
+          tags = tags
         )
       )
     }
@@ -688,7 +672,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       question: Question,
       newContent: Option[String],
       sendNotificationEmail: Boolean,
-      idea: Option[IdeaId],
       tags: Seq[TagId],
       predictedTags: Option[Seq[TagId]],
       predictedTagsModelName: Option[String]
@@ -707,9 +690,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           sendNotificationEmail = sendNotificationEmail,
           newContent = newContent,
           question = question,
-          labels = Seq.empty,
-          tags = tags,
-          idea = idea
+          tags = tags
         )
       )
     }
@@ -1561,9 +1542,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           sendNotificationEmail = true,
           newContent = None,
           question = question,
-          labels = Seq.empty,
-          tags = proposal.tags.map(_.tagId),
-          idea = None
+          tags = proposal.tags.map(_.tagId)
         )
 
     private def refuseAction(
@@ -1599,9 +1578,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           requestContext = requestContext,
           updatedAt = DateHelper.now(),
           newContent = None,
-          labels = Seq.empty,
           tags = transformTags(proposal.tags.map(_.tagId)),
-          idea = None,
           question = question
         )
 
