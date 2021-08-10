@@ -563,9 +563,14 @@ object ProposalActor extends Logging {
       ): ReplyEffect[ProposalEvent, State] = {
         state.proposal match {
           case None => Effect.reply(command.replyTo)(ProposalNotFound)
-          case Some(proposal) if proposal.status != ProposalStatus.Accepted =>
+          case Some(proposal)
+              if !Seq(ProposalStatus.Accepted, ProposalStatus.Archived, ProposalStatus.Refused).contains(
+                proposal.status
+              ) =>
             Effect.reply(command.replyTo)(
-              InvalidStateError(s"Proposal ${command.proposalId.value} is not accepted and cannot be updated")
+              InvalidStateError(
+                s"Proposal ${command.proposalId.value} is not accepted/archived/refused and cannot be updated"
+              )
             )
           case Some(proposal) =>
             val event = ProposalVotesUpdated(
@@ -1168,6 +1173,10 @@ object ProposalActor extends Logging {
         .withSnapshotPluginId(SnapshotPluginId)
         .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 10, keepNSnapshots = 50))
         .snapshotAdapter(snapshotAdapter)
+        .snapshotWhen {
+          case (_, _: ProposalPatched, _) => true
+          case _                          => false
+        }
     }
   }
 

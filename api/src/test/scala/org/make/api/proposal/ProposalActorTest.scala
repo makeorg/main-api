@@ -1671,11 +1671,10 @@ class ProposalActorTest
       response.votes.filter(vote => vote.key == VoteKey.Disagree).head.countVerified should be(24)
       response.votes.filter(vote => vote.key == VoteKey.Neutral).head.countVerified should be(36)
     }
-  }
 
-  Feature("update verified votes on refused proposal") {
-    val proposalId = ProposalId("update-on-refused")
     Scenario("Update the verified votes of refused Proposal") {
+      val proposalId = ProposalId("update-on-refused")
+
       val probe = testKit.createTestProbe[ProposalActorProtocol]()
 
       Given("a newly proposed Proposal")
@@ -1692,7 +1691,7 @@ class ProposalActorTest
 
       probe.expectMessage(Envelope(proposalId))
 
-      When("I accept the proposal")
+      When("I refuse the proposal")
       coordinator ! RefuseProposalCommand(
         proposalId = proposalId,
         moderator = UserId("some user"),
@@ -1744,10 +1743,86 @@ class ProposalActorTest
         replyTo = probe.ref
       )
 
-      Then("I should receive an error")
+      Then("I should receive the updated proposal")
 
-      probe.expectMessage(InvalidStateError(s"Proposal ${proposalId.value} is not accepted and cannot be updated"))
+      val response: Proposal = probe.expectMessageType[Envelope[Proposal]].value
+
+      response.proposalId should be(ProposalId("update-on-refused"))
+      val voteAgree = response.votes.find(vote => vote.key == VoteKey.Agree)
+      voteAgree.map(_.countVerified) should contain(12)
+
+      val likeIt = voteAgree.flatMap(_.qualifications.find(_.key == LikeIt))
+      likeIt.map(_.countVerified) should contain(1)
+
+      response.votes.filter(vote => vote.key == VoteKey.Disagree).head.countVerified should be(24)
+      response.votes.filter(vote => vote.key == VoteKey.Neutral).head.countVerified should be(36)
     }
+
+    Scenario("Update the verified votes of a pending Proposal") {
+      val proposalId = ProposalId("update-on-pending")
+
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
+
+      Given("a newly proposed Proposal")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        question = questionOnNothingFr,
+        initialProposal = false,
+        replyTo = probe.ref
+      )
+
+      probe.expectMessage(Envelope(proposalId))
+
+      When("I update the verified votes for the Proposal")
+      val votesVerified = Seq(
+        UpdateVoteRequest(
+          key = VoteKey.Agree,
+          countVerified = Some(12),
+          qualifications = Seq(
+            UpdateQualificationRequest(QualificationKey.LikeIt, countVerified = Some(1)),
+            UpdateQualificationRequest(QualificationKey.Doable, countVerified = Some(2)),
+            UpdateQualificationRequest(QualificationKey.PlatitudeAgree, countVerified = Some(3))
+          )
+        ),
+        UpdateVoteRequest(
+          key = VoteKey.Disagree,
+          countVerified = Some(24),
+          qualifications = Seq(
+            UpdateQualificationRequest(QualificationKey.NoWay, countVerified = Some(4)),
+            UpdateQualificationRequest(QualificationKey.Impossible, countVerified = Some(5)),
+            UpdateQualificationRequest(QualificationKey.PlatitudeDisagree, countVerified = Some(6))
+          )
+        ),
+        UpdateVoteRequest(
+          key = VoteKey.Neutral,
+          countVerified = Some(36),
+          qualifications = Seq(
+            UpdateQualificationRequest(QualificationKey.NoOpinion, countVerified = Some(7)),
+            UpdateQualificationRequest(QualificationKey.DoNotUnderstand, countVerified = Some(8)),
+            UpdateQualificationRequest(QualificationKey.DoNotCare, countVerified = Some(9))
+          )
+        )
+      )
+
+      coordinator ! UpdateProposalVotesCommand(
+        moderator = UserId("some user"),
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        updatedAt = mainUpdatedAt.get,
+        votes = votesVerified,
+        replyTo = probe.ref
+      )
+
+      Then("I should receive an error")
+      probe.expectMessage(
+        InvalidStateError(s"Proposal ${proposalId.value} is not accepted/archived/refused and cannot be updated")
+      )
+    }
+
   }
 
   Feature("vote on proposal") {

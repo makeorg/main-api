@@ -21,25 +21,30 @@ package org.make.api.technical
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
-import akka.persistence.cassandra.reconciler.{Reconciliation, ReconciliationSettings}
-import com.typesafe.config.ConfigValueFactory
 import grizzled.slf4j.Logging
-import io.swagger.annotations.{Authorization, _}
-import org.make.api.ActorSystemComponent
-import org.make.api.extensions.MailJetConfigurationComponent
-import org.make.api.operation.{OperationServiceComponent, PersistentOperationOfQuestionServiceComponent}
-import org.make.api.proposal.ProposalCoordinatorComponent
-import org.make.api.question.QuestionServiceComponent
+import io.swagger.annotations._
+import org.make.api.proposal.{
+  PatchProposalRequest,
+  ProposalCoordinatorServiceComponent,
+  UpdateQualificationRequest,
+  UpdateVoteRequest
+}
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
-import org.make.api.technical.job.JobCoordinatorComponent
-import org.make.api.technical.storage.StorageConfigurationComponent
-import org.make.api.user.UserServiceComponent
 import org.make.core._
-import org.make.core.tag.{Tag => _}
+import org.make.core.proposal.{
+  BaseVoteOrQualification,
+  Key,
+  ProposalId,
+  ProposalStatus,
+  Qualification,
+  QualificationKey,
+  Vote,
+  VoteKey
+}
 
 import javax.ws.rs.Path
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Success}
+import scala.concurrent.Future
 
 @Api(value = "Migrations")
 @Path(value = "/migrations")
@@ -48,7 +53,7 @@ trait MigrationApi extends Directives {
   def emptyRoute: Route
 
   @ApiOperation(
-    value = "migrate-persistence-ids",
+    value = "snapshot-all-proposals",
     httpMethod = "POST",
     code = HttpCodes.NoContent,
     authorizations = Array(
@@ -58,11 +63,12 @@ trait MigrationApi extends Directives {
       )
     )
   )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "dry", paramType = "path", dataType = "boolean")))
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
-  @Path(value = "/migrate-persistence-ids")
-  def migratePersistenceIds: Route
+  @Path(value = "/snapshot-all-proposals")
+  def snapshotAllProposals: Route
 
-  def routes: Route = migratePersistenceIds
+  def routes: Route = snapshotAllProposals
 }
 
 trait MigrationApiComponent {
@@ -71,17 +77,9 @@ trait MigrationApiComponent {
 
 trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthenticationDirectives with Logging {
   this: MakeDirectivesDependencies
-    with ActorSystemComponent
-    with MailJetConfigurationComponent
-    with UserServiceComponent
+    with DateHelperComponent
     with ReadJournalComponent
-    with JobCoordinatorComponent
-    with OperationServiceComponent
-    with ProposalCoordinatorComponent
-    with QuestionServiceComponent
-    with EventBusServiceComponent
-    with StorageConfigurationComponent
-    with PersistentOperationOfQuestionServiceComponent =>
+    with ProposalCoordinatorServiceComponent =>
 
   override lazy val migrationApi: MigrationApi = new DefaultMigrationApi
 
@@ -93,24 +91,111 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
         }
       }
 
-    override def migratePersistenceIds: Route = post {
-      path("migrations" / "migrate-persistence-ids") {
-        makeOperation("MigratePersistenceIds") { requestContext =>
+    override def snapshotAllProposals: Route = post {
+      path("migrations" / "snapshot-all-proposals") {
+        makeOperation("SnapshotAllProposals") { requestContext =>
           makeOAuth2 { userAuth =>
             requireAdminRole(userAuth.user) {
-              val rec = new Reconciliation(
-                actorSystem,
-                new ReconciliationSettings(
-                  actorSystem.settings.config
-                    .getConfig("akka.persistence.cassandra.reconciler")
-                    .withValue("plugin-location", ConfigValueFactory.fromAnyRef(s"make-api.event-sourcing.sessions"))
+              parameters("dry".as[Boolean].?) { dry =>
+                type Field[Element, Request] = (String, Element => Int, Request => Request)
+
+                val voteFields: Seq[Field[Vote, UpdateVoteRequest]] = Seq(
+                  ("count", _.count, _.copy(count = Some(0))),
+                  ("countVerified", _.countVerified, _.copy(countVerified = Some(0))),
+                  ("countSegment", _.countSegment, _.copy(countSegment = Some(0))),
+                  ("countSequence", _.countSequence, _.copy(countSequence = Some(0)))
                 )
-              )
-              rec.rebuildAllPersistenceIds().onComplete {
-                case Success(_)         => logger.info(s"sessions ids table populated")
-                case Failure(exception) => logger.error(s"error while populating sessions ids table", exception)
+                val qualificationFields: Seq[Field[Qualification, UpdateQualificationRequest]] = Seq(
+                  ("count", _.count, _.copy(count = Some(0))),
+                  ("countVerified", _.countVerified, _.copy(countVerified = Some(0))),
+                  ("countSegment", _.countSegment, _.copy(countSegment = Some(0))),
+                  ("countSequence", _.countSequence, _.copy(countSequence = Some(0)))
+                )
+
+                def getUpdates[E, R](id: ProposalId, key: Key, e: E, fields: Seq[Field[E, R]]): Seq[R => R] = {
+                  fields.flatMap {
+                    case (name, get, set) =>
+                      val count = get(e)
+                      if (count < 0) {
+                        logger.warn(s"Proposal $id has negative $key $name: $count")
+                        Some(set)
+                      } else {
+                        None
+                      }
+                  }
+                }
+
+                def buildRequests[K <: Key, Element <: BaseVoteOrQualification[K], Request, SubParam](
+                  id: ProposalId,
+                  buildSubParams: Element => Seq[SubParam],
+                  elements: Seq[Element],
+                  fields: Seq[Field[Element, Request]],
+                  requestBuilder: (K, Seq[SubParam]) => Request
+                ): Seq[Request] = {
+                  elements.flatMap { e =>
+                    val updates = getUpdates(id, e.key, e, fields)
+                    val subParams = buildSubParams(e)
+                    if (updates.isEmpty && subParams.isEmpty) {
+                      None
+                    } else {
+                      Some(updates.foldLeft(requestBuilder(e.key, subParams)) { (request, set) =>
+                        set(request)
+                      })
+                    }
+                  }
+                }
+
+                proposalJournal.currentPersistenceIds().map(ProposalId.apply).mapAsync(4) { id =>
+                  proposalCoordinatorService.getProposal(id).map {
+                    case Some(proposal)
+                        if Seq(ProposalStatus.Accepted, ProposalStatus.Archived, ProposalStatus.Refused)
+                          .contains(proposal.status) =>
+                      val updateVoteRequests =
+                        buildRequests[VoteKey, Vote, UpdateVoteRequest, UpdateQualificationRequest](
+                          id = proposal.proposalId,
+                          buildSubParams = vote =>
+                            buildRequests[QualificationKey, Qualification, UpdateQualificationRequest, Nothing](
+                              id = proposal.proposalId,
+                              buildSubParams = _ => Nil,
+                              elements = vote.qualifications,
+                              fields = qualificationFields,
+                              requestBuilder = { case (key, _) => UpdateQualificationRequest(key) }
+                            ),
+                          elements = proposal.votes,
+                          fields = voteFields,
+                          requestBuilder = {
+                            case (key, qualifs) => UpdateVoteRequest(key, None, None, None, None, qualifs)
+                          }
+                        )
+                      val update =
+                        if (updateVoteRequests.isEmpty) Future.successful(Some(proposal))
+                        else {
+                          logger.info(s"Update proposal $id votes with $updateVoteRequests")
+                          if (dry.contains(false))
+                            proposalCoordinatorService
+                              .updateVotes(
+                                userAuth.user.userId,
+                                id,
+                                requestContext,
+                                dateHelper.now(),
+                                updateVoteRequests
+                              )
+                          else Future.successful(Some(proposal))
+                        }
+                      update.flatMap {
+                        case Some(_) if (dry.contains(false)) =>
+                          proposalCoordinatorService
+                            .patch(id, userAuth.user.userId, PatchProposalRequest(), requestContext)
+                        case other =>
+                          if (other.isEmpty) logger.error(s"Updating votes of proposal $id failed")
+                          Future.successful(None)
+                      }
+                    case Some(_) => ()
+                    case None    => logger.error(s"No proposal found with id $id")
+                  }
+                }
+                complete(StatusCodes.NoContent)
               }
-              complete(StatusCodes.NoContent)
             }
           }
         }
