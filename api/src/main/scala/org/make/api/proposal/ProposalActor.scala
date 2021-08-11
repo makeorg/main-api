@@ -542,12 +542,12 @@ object ProposalActor extends Logging {
                 edition = command.newContent.map { newContent =>
                   ProposalEdition(proposal.content, newContent)
                 },
-                labels = command.labels,
                 tags = command.tags,
                 similarProposals = Seq.empty,
-                idea = command.idea,
                 operation = command.question.operationId.orElse(proposal.operation),
                 question = Some(command.question.questionId),
+                idea = proposal.idea,
+                labels = proposal.labels,
                 eventId = Some(idGenerator.nextEventId())
               )
             Effect
@@ -613,10 +613,10 @@ object ProposalActor extends Logging {
               },
               sendValidationEmail = command.sendNotificationEmail,
               theme = None,
-              labels = command.labels,
+              labels = proposal.labels,
               tags = command.tags,
               similarProposals = Seq.empty,
-              idea = command.idea,
+              idea = proposal.idea,
               operation = command.question.operationId.orElse(proposal.operation),
               question = Some(command.question.questionId),
               eventId = Some(idGenerator.nextEventId())

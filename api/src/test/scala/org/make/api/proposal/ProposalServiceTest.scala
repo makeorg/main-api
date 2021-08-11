@@ -1173,9 +1173,7 @@ class ProposalServiceTest
           sendNotificationEmail = false,
           newContent = None,
           question = question,
-          labels = Seq.empty,
-          tags = Seq(TagId("my-tag")),
-          idea = None
+          tags = Seq(TagId("my-tag"))
         )
       ).thenReturn(Future.successful(None))
 
@@ -1349,9 +1347,7 @@ class ProposalServiceTest
         sendNotificationEmail = false,
         newContent = None,
         question = question,
-        labels = Seq.empty,
-        tags = Seq.empty,
-        idea = None
+        tags = Seq.empty
       )
     ).thenReturn(Future.successful(Some(validatedProposal)))
 
@@ -1364,7 +1360,6 @@ class ProposalServiceTest
           question = question,
           newContent = None,
           sendNotificationEmail = false,
-          idea = None,
           tags = Seq.empty,
           predictedTags = None,
           predictedTagsModelName = None
@@ -1385,7 +1380,6 @@ class ProposalServiceTest
           question = question,
           newContent = None,
           sendNotificationEmail = false,
-          idea = None,
           tags = Seq.empty,
           predictedTags = Some(Seq(TagId("predicted-tag-id"))),
           predictedTagsModelName = Some("auto")
@@ -1428,9 +1422,7 @@ class ProposalServiceTest
           RequestContext.empty,
           ZonedDateTime.parse("2019-01-16T16:48:00Z"),
           None,
-          Seq.empty,
           tagIds,
-          Some(IdeaId("moderator-idea")),
           question
         )
       ).thenReturn(
@@ -1449,7 +1441,6 @@ class ProposalServiceTest
         newContent = None,
         question = question,
         tags = tagIds,
-        idea = Some(IdeaId("moderator-idea")),
         predictedTags = None,
         predictedTagsModelName = None
       )
@@ -1476,7 +1467,7 @@ class ProposalServiceTest
 
     val updatedProposal = simpleProposal(proposalId)
 
-    when(proposalCoordinatorService.update(any, any, any, any, any, any, any, any, any))
+    when(proposalCoordinatorService.update(any, any, any, any, any, any, any))
       .thenReturn(Future.successful(Some(updatedProposal)))
 
     when(
@@ -1487,9 +1478,7 @@ class ProposalServiceTest
         updatedAt = now,
         newContent = None,
         question = question,
-        labels = Seq.empty,
-        tags = Seq.empty,
-        idea = None
+        tags = Seq.empty
       )
     ).thenReturn(Future.successful(Some(updatedProposal)))
 
@@ -1502,7 +1491,6 @@ class ProposalServiceTest
           updatedAt = now,
           newContent = None,
           question = question,
-          idea = None,
           tags = Seq.empty,
           predictedTags = None,
           predictedTagsModelName = None
@@ -1523,7 +1511,6 @@ class ProposalServiceTest
           updatedAt = DateHelper.now(),
           newContent = None,
           question = question,
-          idea = None,
           tags = Seq.empty,
           predictedTags = Some(Seq(TagId("predicted-tag-id"))),
           predictedTagsModelName = Some("auto")
@@ -2929,9 +2916,7 @@ class ProposalServiceTest
           sendNotificationEmail = true,
           newContent = None,
           question = q1,
-          labels = Seq.empty,
-          tags = tags,
-          idea = None
+          tags = tags
         )
       ).thenReturn(Future.successful(Some(proposal(p1Id))))
 
@@ -2943,9 +2928,7 @@ class ProposalServiceTest
           sendNotificationEmail = true,
           newContent = None,
           question = q1,
-          labels = Seq.empty,
-          tags = Seq.empty,
-          idea = None
+          tags = Seq.empty
         )
       ).thenReturn(Future.successful(Some(proposal(p1bisId))))
 
@@ -2957,9 +2940,7 @@ class ProposalServiceTest
           sendNotificationEmail = true,
           newContent = None,
           question = q1,
-          labels = Seq.empty,
-          tags = tags,
-          idea = None
+          tags = tags
         )
       ).thenReturn(
         Future.failed(
@@ -2977,9 +2958,7 @@ class ProposalServiceTest
           sendNotificationEmail = true,
           newContent = None,
           question = q1,
-          labels = Seq.empty,
-          tags = tags,
-          idea = None
+          tags = tags
         )
       ).thenReturn(Future.failed(new Exception("whatever exception")))
 
@@ -2991,9 +2970,7 @@ class ProposalServiceTest
           sendNotificationEmail = true,
           newContent = None,
           question = q1,
-          labels = Seq.empty,
-          tags = tags,
-          idea = None
+          tags = tags
         )
       ).thenReturn(Future.successful(None))
 
@@ -3009,9 +2986,7 @@ class ProposalServiceTest
               sendNotificationEmail = eqTo(true),
               newContent = eqTo(None),
               question = eqTo(q1),
-              labels = eqTo(Seq.empty),
-              tags = any[Seq[TagId]],
-              idea = eqTo(None)
+              tags = any[Seq[TagId]]
             )
           }
           verifyNoMoreInteractions(proposalCoordinatorService)
@@ -3025,9 +3000,7 @@ class ProposalServiceTest
         requestContext = eqTo(RequestContext.empty),
         updatedAt = any[ZonedDateTime],
         newContent = eqTo(None),
-        labels = eqTo(Seq.empty),
         tags = eqTo(newTags),
-        idea = eqTo(None),
         question = eqTo(q1)
       )
     ).thenReturn(Future.successful(Some(proposal(p1bisId))))
@@ -3039,9 +3012,7 @@ class ProposalServiceTest
         requestContext = eqTo(RequestContext.empty),
         updatedAt = any[ZonedDateTime],
         newContent = eqTo(None),
-        labels = eqTo(Seq.empty),
         tags = eqTo(Seq.empty),
-        idea = eqTo(None),
         question = eqTo(q1)
       )
     ).thenReturn(Future.successful(Some(proposal(p1bisId))))
@@ -3054,9 +3025,7 @@ class ProposalServiceTest
           requestContext = eqTo(RequestContext.empty),
           updatedAt = any[ZonedDateTime],
           newContent = eqTo(None),
-          labels = eqTo(Seq.empty),
           tags = eqTo(actionTags),
-          idea = eqTo(None),
           question = eqTo(q1)
         )
       ).thenReturn(Future.successful(Some(proposal(p1Id))))
@@ -3068,9 +3037,7 @@ class ProposalServiceTest
           requestContext = eqTo(RequestContext.empty),
           updatedAt = any[ZonedDateTime],
           newContent = eqTo(None),
-          labels = eqTo(Seq.empty),
           tags = eqTo(actionTags),
-          idea = eqTo(None),
           question = eqTo(q1)
         )
       ).thenReturn(
@@ -3089,9 +3056,7 @@ class ProposalServiceTest
           requestContext = eqTo(RequestContext.empty),
           updatedAt = any[ZonedDateTime],
           newContent = eqTo(None),
-          labels = eqTo(Seq.empty),
           tags = eqTo(actionTags),
-          idea = eqTo(None),
           question = eqTo(q1)
         )
       ).thenReturn(Future.failed(new Exception("whatever exception")))
@@ -3103,9 +3068,7 @@ class ProposalServiceTest
           requestContext = eqTo(RequestContext.empty),
           updatedAt = any[ZonedDateTime],
           newContent = eqTo(None),
-          labels = eqTo(Seq.empty),
           tags = eqTo(actionTags),
-          idea = eqTo(None),
           question = eqTo(q1)
         )
       ).thenReturn(Future.successful(None))
@@ -3126,9 +3089,7 @@ class ProposalServiceTest
             requestContext = eqTo(RequestContext.empty),
             updatedAt = any[ZonedDateTime],
             newContent = eqTo(None),
-            labels = eqTo(Seq.empty),
             tags = eqTo(verifyTags),
-            idea = eqTo(None),
             question = eqTo(q1)
           )
         }
@@ -3151,9 +3112,7 @@ class ProposalServiceTest
             requestContext = eqTo(RequestContext.empty),
             updatedAt = any[ZonedDateTime],
             newContent = eqTo(None),
-            labels = eqTo(Seq.empty),
             tags = eqTo(verifyTags),
-            idea = eqTo(None),
             question = eqTo(q1)
           )
         }

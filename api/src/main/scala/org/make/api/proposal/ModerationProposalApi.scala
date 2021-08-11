@@ -635,7 +635,6 @@ trait DefaultModerationProposalApiComponent
                           question = question,
                           newContent = request.newContent,
                           tags = request.tags,
-                          idea = request.idea,
                           predictedTags = request.predictedTags,
                           predictedTagsModelName = request.predictedTagsModelName
                         )
@@ -705,7 +704,6 @@ trait DefaultModerationProposalApiComponent
                           question = question,
                           newContent = request.newContent,
                           sendNotificationEmail = request.sendNotificationEmail,
-                          idea = request.idea,
                           tags = request.tags,
                           predictedTags = request.predictedTags,
                           predictedTagsModelName = request.predictedTagsModelName

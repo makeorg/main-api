@@ -27,10 +27,8 @@ import org.make.api.proposal.ProposalActorResponse.Error._
 import org.make.api.technical.{ActorCommand, ActorProtocol}
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.{VoteAndQualifications, VoteTrust}
-import org.make.core.idea.IdeaId
 import org.make.core.proposal._
 import org.make.core.question.Question
-import org.make.core.reference.LabelId
 import org.make.core.tag.TagId
 import org.make.core.user.{User, UserId}
 
@@ -59,9 +57,7 @@ final case class UpdateProposalCommand(
   requestContext: RequestContext,
   updatedAt: ZonedDateTime,
   newContent: Option[String],
-  labels: Seq[LabelId],
   tags: Seq[TagId],
-  idea: Option[IdeaId],
   question: Question,
   replyTo: ActorRef[ProposalActorResponse[ModificationError, Proposal]]
 ) extends ProposalCommand
@@ -97,9 +93,7 @@ final case class AcceptProposalCommand(
   sendNotificationEmail: Boolean,
   newContent: Option[String],
   question: Question,
-  labels: Seq[LabelId],
   tags: Seq[TagId],
-  idea: Option[IdeaId],
   replyTo: ActorRef[ProposalActorResponse[ModificationError, Proposal]]
 ) extends ProposalCommand
 
