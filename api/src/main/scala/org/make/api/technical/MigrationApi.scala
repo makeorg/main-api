@@ -23,6 +23,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
+import org.make.api.ActorSystemComponent
 import org.make.api.proposal.{
   PatchProposalRequest,
   ProposalCoordinatorServiceComponent,
@@ -77,6 +78,7 @@ trait MigrationApiComponent {
 
 trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthenticationDirectives with Logging {
   this: MakeDirectivesDependencies
+    with ActorSystemComponent
     with DateHelperComponent
     with ReadJournalComponent
     with ProposalCoordinatorServiceComponent =>
@@ -145,55 +147,59 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                   }
                 }
 
-                proposalJournal.currentPersistenceIds().map(ProposalId.apply).mapAsync(4) { id =>
-                  proposalCoordinatorService.getProposal(id).map {
-                    case Some(proposal)
-                        if Seq(ProposalStatus.Accepted, ProposalStatus.Archived, ProposalStatus.Refused)
-                          .contains(proposal.status) =>
-                      val updateVoteRequests =
-                        buildRequests[VoteKey, Vote, UpdateVoteRequest, UpdateQualificationRequest](
-                          id = proposal.proposalId,
-                          buildSubParams = vote =>
-                            buildRequests[QualificationKey, Qualification, UpdateQualificationRequest, Nothing](
-                              id = proposal.proposalId,
-                              buildSubParams = _ => Nil,
-                              elements = vote.qualifications,
-                              fields = qualificationFields,
-                              requestBuilder = { case (key, _) => UpdateQualificationRequest(key) }
-                            ),
-                          elements = proposal.votes,
-                          fields = voteFields,
-                          requestBuilder = {
-                            case (key, qualifs) => UpdateVoteRequest(key, None, None, None, None, qualifs)
+                proposalJournal
+                  .currentPersistenceIds()
+                  .map(ProposalId.apply)
+                  .mapAsync(4) { id =>
+                    proposalCoordinatorService.getProposal(id).map {
+                      case Some(proposal)
+                          if Seq(ProposalStatus.Accepted, ProposalStatus.Archived, ProposalStatus.Refused)
+                            .contains(proposal.status) =>
+                        val updateVoteRequests =
+                          buildRequests[VoteKey, Vote, UpdateVoteRequest, UpdateQualificationRequest](
+                            id = proposal.proposalId,
+                            buildSubParams = vote =>
+                              buildRequests[QualificationKey, Qualification, UpdateQualificationRequest, Nothing](
+                                id = proposal.proposalId,
+                                buildSubParams = _ => Nil,
+                                elements = vote.qualifications,
+                                fields = qualificationFields,
+                                requestBuilder = { case (key, _) => UpdateQualificationRequest(key) }
+                              ),
+                            elements = proposal.votes,
+                            fields = voteFields,
+                            requestBuilder = {
+                              case (key, qualifs) => UpdateVoteRequest(key, None, None, None, None, qualifs)
+                            }
+                          )
+                        val update =
+                          if (updateVoteRequests.isEmpty) Future.successful(Some(proposal))
+                          else {
+                            logger.info(s"Update proposal $id votes with $updateVoteRequests")
+                            if (dry.contains(false))
+                              proposalCoordinatorService
+                                .updateVotes(
+                                  userAuth.user.userId,
+                                  id,
+                                  requestContext,
+                                  dateHelper.now(),
+                                  updateVoteRequests
+                                )
+                            else Future.successful(Some(proposal))
                           }
-                        )
-                      val update =
-                        if (updateVoteRequests.isEmpty) Future.successful(Some(proposal))
-                        else {
-                          logger.info(s"Update proposal $id votes with $updateVoteRequests")
-                          if (dry.contains(false))
+                        update.flatMap {
+                          case Some(_) if (dry.contains(false)) =>
                             proposalCoordinatorService
-                              .updateVotes(
-                                userAuth.user.userId,
-                                id,
-                                requestContext,
-                                dateHelper.now(),
-                                updateVoteRequests
-                              )
-                          else Future.successful(Some(proposal))
+                              .patch(id, userAuth.user.userId, PatchProposalRequest(), requestContext)
+                          case other =>
+                            if (other.isEmpty) logger.error(s"Updating votes of proposal $id failed")
+                            Future.successful(None)
                         }
-                      update.flatMap {
-                        case Some(_) if (dry.contains(false)) =>
-                          proposalCoordinatorService
-                            .patch(id, userAuth.user.userId, PatchProposalRequest(), requestContext)
-                        case other =>
-                          if (other.isEmpty) logger.error(s"Updating votes of proposal $id failed")
-                          Future.successful(None)
-                      }
-                    case Some(_) => ()
-                    case None    => logger.error(s"No proposal found with id $id")
+                      case Some(_) => ()
+                      case None    => logger.error(s"No proposal found with id $id")
+                    }
                   }
-                }
+                  .run()
                 complete(StatusCodes.NoContent)
               }
             }
