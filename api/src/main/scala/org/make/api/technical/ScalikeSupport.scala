@@ -32,6 +32,7 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.{ExplorationSequenceConfigurationId, ExplorationSortAlgorithm, SequenceId}
 import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.user.{UserId, UserType}
+import org.make.core.widget.SourceId
 import scalikejdbc.{Binders, ParameterBinderFactory, TypeBinder}
 
 object ScalikeSupport {
@@ -61,6 +62,7 @@ object ScalikeSupport {
   implicit val operationIdBinders: Binders[OperationId] = stringValueBinders(OperationId.apply)
   implicit val questionIdBinders: Binders[QuestionId] = stringValueBinders(QuestionId.apply)
   implicit val sequenceIdBinders: Binders[SequenceId] = stringValueBinders(SequenceId.apply)
+  implicit val sourceIdBinders: Binders[SourceId] = stringValueBinders(SourceId.apply)
   implicit val tagIdBinders: Binders[TagId] = stringValueBinders(TagId.apply)
   implicit val tagTypeIdBinders: Binders[TagTypeId] = stringValueBinders(TagTypeId.apply)
   implicit val templateIdBinders: Binders[TemplateId] = stringValueBinders(TemplateId.apply)

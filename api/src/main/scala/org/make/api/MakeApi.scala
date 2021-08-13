@@ -122,7 +122,14 @@ import org.make.api.userhistory.{
   UserHistoryCoordinatorComponent
 }
 import org.make.api.views._
-import org.make.api.widget.{DefaultWidgetApiComponent, WidgetApi}
+import org.make.api.widget.{
+  AdminSourceApi,
+  DefaultAdminSourceApiComponent,
+  DefaultPersistentSourceServiceComponent,
+  DefaultSourceServiceComponent,
+  DefaultWidgetApiComponent,
+  WidgetApi
+}
 import org.make.core.{AvroSerializers, DefaultDateHelperComponent, ValidationError, ValidationFailedError}
 import scalaoauth2.provider.{OAuthGrantType, _}
 
@@ -148,6 +155,7 @@ trait MakeApi
     with DefaultAdminPersonalityRoleApiComponent
     with DefaultAdminProposalApiComponent
     with DefaultAdminQuestionPersonalityApiComponent
+    with DefaultAdminSourceApiComponent
     with DefaultAdminTopIdeaApiComponent
     with DefaultAdminUserApiComponent
     with DefaultAuthenticationApiComponent
@@ -227,6 +235,7 @@ trait MakeApi
     with DefaultPersistentQuestionPersonalityServiceComponent
     with DefaultPersistentQuestionServiceComponent
     with DefaultPersistentSequenceConfigurationServiceComponent
+    with DefaultPersistentSourceServiceComponent
     with DefaultPersistentTagServiceComponent
     with DefaultPersistentTagTypeServiceComponent
     with DefaultPersistentTokenServiceComponent
@@ -260,6 +269,7 @@ trait MakeApi
     with DefaultSessionHistoryCoordinatorServiceComponent
     with DefaultSocialProvidersConfigurationComponent
     with DefaultSocialServiceComponent
+    with DefaultSourceServiceComponent
     with DefaultSpawnActorServiceComponent
     with DefaultStorageConfigurationComponent
     with DefaultStorageServiceComponent
@@ -376,6 +386,7 @@ trait MakeApi
       classOf[AdminPersonalityRoleApi],
       classOf[AdminQuestionPersonalityApi],
       classOf[AdminProposalApi],
+      classOf[AdminSourceApi],
       classOf[AdminTopIdeaApi],
       classOf[AdminUserApi],
       classOf[AuthenticationApi],
@@ -445,6 +456,7 @@ trait MakeApi
       adminPersonalityRoleApi.routes ~
       adminProposalApi.routes ~
       adminQuestionPersonalityApi.routes ~
+      adminSourceApi.routes ~
       adminTopIdeaApi.routes ~
       adminUserApi.routes ~
       authenticationApi.routes ~

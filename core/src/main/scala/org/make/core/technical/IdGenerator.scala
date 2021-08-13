@@ -36,6 +36,7 @@ import org.make.core.sequence.{ExplorationSequenceConfigurationId, SequenceId, S
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.user.UserId
+import org.make.core.widget.SourceId
 
 trait IdGenerator {
   def nextClientId(): ClientId = ClientId(nextId())
@@ -63,6 +64,7 @@ trait IdGenerator {
   def nextSpecificSequenceConfigurationId(): SpecificSequenceConfigurationId = SpecificSequenceConfigurationId(nextId())
   def nextExplorationSequenceConfigurationId(): ExplorationSequenceConfigurationId =
     ExplorationSequenceConfigurationId(nextId())
+  def nextSourceId(): SourceId = SourceId(nextId())
 
   def nextId(): String
 }

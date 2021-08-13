@@ -7,7 +7,7 @@
 #
 LINE_READ=0
 TYPES="(feat|fix|docs|style|refactor|test|chore)"
-SCOPES="(user|operation|proposal|sequence|vote|idea|transverse|tag|question|crm|front)"
+SCOPES="(user|operation|proposal|sequence|vote|idea|transverse|tag|question|crm|front|widget)"
 COMMIT_HEADER_REGEXP="$TYPES\($SCOPES\): (.*)"
 COMMIT_BLANK_LINE_REGEXP="^$"
 COMMIT_BODY_REGEXP="^.{0,80}$|^#.*"
