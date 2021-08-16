@@ -1,0 +1,13 @@
+BEGIN;
+
+CREATE TABLE source (
+  id STRING NOT NULL PRIMARY KEY,
+  name STRING NOT NULL,
+  source STRING NOT NULL UNIQUE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  user_id STRING NOT NULL,
+  CONSTRAINT fk_source_user_id FOREIGN KEY (user_id) REFERENCES make_user(uuid)
+);
+
+COMMIT;
