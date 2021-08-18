@@ -19,11 +19,10 @@
 
 package org.make.api
 
-import akka.actor.typed.{ActorRef, SpawnProtocol}
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.{typed, Actor, ActorLogging, Props}
-import org.make.api.MakeGuardian.{Ping, Pong}
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import akka.actor.typed.{ActorRef, Behavior, Props, SpawnProtocol}
 import org.make.api.idea.{IdeaConsumerBehavior, IdeaProducerBehavior}
 import org.make.api.proposal.ProposalSupervisor
 import org.make.api.semantic.{SemanticPredictionsProducerBehavior, SemanticProducerBehavior}
@@ -38,158 +37,121 @@ import org.make.api.technical.tracking.{
   DemographicsProducerBehavior,
   TrackingProducerBehavior
 }
-import org.make.api.technical.{ActorSystemHelper, DeadLettersListenerActor, MakeDowningActor}
+import org.make.api.technical.{ActorProtocol, ActorSystemHelper, DeadLettersListenerActor, MakeDowningActor}
 import org.make.api.user.UserSupervisor
 import org.make.api.userhistory.{UserHistoryCommand, UserHistoryCoordinator}
 import org.make.core.job.Job
 
-class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
-  override def preStart(): Unit = {
+object MakeGuardian {
+  val name: String = "make-api"
 
+  sealed trait GuardianProtocol extends ActorProtocol
+
+  sealed trait GuardianCommand extends GuardianProtocol
+  final case class Initialize(replyTo: ActorRef[Initialized.type]) extends GuardianCommand
+
+  sealed trait GuardianResponse extends GuardianProtocol
+  case object Initialized extends GuardianResponse
+
+  val SpawnActorKey: ServiceKey[SpawnProtocol.Command] = ServiceKey("spawn-actor")
+
+  def createBehavior(dependencies: MakeApi): Behavior[GuardianCommand] = {
+    Behaviors.setup { implicit context =>
+      Behaviors.receiveMessagePartial {
+        case Initialize(sender) =>
+          createTechnicalActors(dependencies)
+          createFunctionalActors(dependencies)
+          createProducersAndConsumers(dependencies)
+          sender ! Initialized
+          initialized()
+      }
+    }
+  }
+
+  private def initialized(): Behavior[GuardianCommand] = {
+    Behaviors.receiveMessagePartial {
+      case Initialize(sender) =>
+        sender ! Initialized
+        Behaviors.same
+    }
+  }
+
+  private def createTechnicalActors(dependencies: MakeApi)(implicit context: ActorContext[_]): Unit = {
     context.watch(context.spawn(MakeDowningActor(), MakeDowningActor.name))
-
     context.watch(context.spawn(DeadLettersListenerActor(), DeadLettersListenerActor.name))
-
-    val userHistoryCoordinator: ActorRef[UserHistoryCommand] = UserHistoryCoordinator(system = context.system.toTyped)
-    context.watch(userHistoryCoordinator)
-    context.system.toTyped.receptionist ! Receptionist.Register(UserHistoryCoordinator.Key, userHistoryCoordinator)
-
-    context.watch(
-      context.actorOf(
-        SessionHistoryCoordinator.props(userHistoryCoordinator, makeApi.idGenerator),
-        SessionHistoryCoordinator.name
-      )
-    )
+    context.watch(context.actorOf(HealthCheckSupervisor.props, HealthCheckSupervisor.name))
+    val spawnActorRef = context.spawn(SpawnProtocol(), MakeGuardian.SpawnActorKey.id)
+    context.watch(spawnActorRef)
+    context.system.receptionist ! Receptionist.Register(MakeGuardian.SpawnActorKey, spawnActorRef)
 
     val sequenceCacheActor: ActorRef[SequenceConfigurationActorProtocol] = context.spawn(
       ActorSystemHelper.superviseWithBackoff(
-        SequenceConfigurationActor(makeApi.persistentSequenceConfigurationService)
+        SequenceConfigurationActor(dependencies.persistentSequenceConfigurationService)
       ),
       SequenceConfigurationActor.name
     )
     context.watch(sequenceCacheActor)
-    context.system.toTyped.receptionist ! Receptionist.Register(
+    context.system.receptionist ! Receptionist.Register(
       SequenceConfigurationActor.SequenceCacheActorKey,
       sequenceCacheActor
     )
+  }
+
+  private def createFunctionalActors(dependencies: MakeApi)(implicit context: ActorContext[_]): Unit = {
+    val userHistoryCoordinator: ActorRef[UserHistoryCommand] = UserHistoryCoordinator(system = context.system)
+    context.watch(userHistoryCoordinator)
+    context.system.receptionist ! Receptionist.Register(UserHistoryCoordinator.Key, userHistoryCoordinator)
 
     context.watch(
-      context.spawn[Nothing](ProposalSupervisor(makeApi, makeApi.makeSettings.lockDuration), ProposalSupervisor.name)
-    )
-
-    context.watch(context.spawn[Nothing](UserSupervisor(makeApi), UserSupervisor.name))
-
-    context.watch(
-      context.spawn(
-        MailJetEventProducerBehavior(),
-        MailJetEventProducerBehavior.name,
-        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
-      )
-    )
-    context.watch(
-      context.spawn(
-        MailJetProducerBehavior(),
-        MailJetProducerBehavior.name,
-        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+      context.actorOf(
+        SessionHistoryCoordinator.props(userHistoryCoordinator, dependencies.idGenerator),
+        SessionHistoryCoordinator.name
       )
     )
 
     context.watch(
-      context.spawn(
-        SemanticProducerBehavior(),
-        SemanticProducerBehavior.name,
-        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
-      )
-    )
-    context.watch(
-      context.spawn(
-        SemanticPredictionsProducerBehavior(),
-        SemanticPredictionsProducerBehavior.name,
-        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+      context.spawn[Nothing](
+        ProposalSupervisor(dependencies, dependencies.makeSettings.lockDuration),
+        ProposalSupervisor.name
       )
     )
 
-    context.watch(
-      context.spawn(
-        ActorSystemHelper.superviseWithBackoff(MailJetConsumerBehavior(makeApi.crmService)),
-        MailJetConsumerBehavior.name,
-        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
-      )
-    )
+    context.watch(context.spawn[Nothing](UserSupervisor(dependencies), UserSupervisor.name))
 
-    context.watch(
-      context.spawn(
-        ActorSystemHelper.superviseWithBackoff(MailJetEventConsumerBehavior(makeApi.userService)),
-        MailJetEventConsumerBehavior.name,
-        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
-      )
-    )
-
-    context.watch(
-      context.spawn(
-        ActorSystemHelper.superviseWithBackoff(TrackingProducerBehavior()),
-        TrackingProducerBehavior.name,
-        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
-      )
-    )
-
-    context.watch(
-      context.spawn(
-        ActorSystemHelper.superviseWithBackoff(DemographicsProducerBehavior()),
-        DemographicsProducerBehavior.name,
-        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
-      )
-    )
-
-    context.watch(
-      context.spawn(
-        ActorSystemHelper.superviseWithBackoff(ConcertationProducerBehavior()),
-        ConcertationProducerBehavior.name,
-        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
-      )
-    )
-
-    context.watch(
-      context.spawn(
-        ActorSystemHelper.superviseWithBackoff(IdeaProducerBehavior()),
-        IdeaProducerBehavior.name,
-        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
-      )
-    )
-
-    context.watch(
-      context.spawn(
-        ActorSystemHelper.superviseWithBackoff(IdeaConsumerBehavior(makeApi.ideaService, makeApi.elasticsearchIdeaAPI)),
-        IdeaConsumerBehavior.name,
-        akka.actor.typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
-      )
-    )
-
-    context.watch(context.actorOf(HealthCheckSupervisor.props, HealthCheckSupervisor.name))
-
-    val jobCoordinatorRef = JobCoordinator(makeApi.actorSystemTyped, Job.defaultHeartRate)
+    val jobCoordinatorRef = JobCoordinator(context.system, Job.defaultHeartRate)
     context.watch(jobCoordinatorRef)
-    context.system.toTyped.receptionist ! Receptionist.Register(JobCoordinator.Key, jobCoordinatorRef)
-
-    val spawnActorRef = context.spawn(SpawnProtocol(), MakeGuardian.SpawnActorKey.id)
-    context.watch(spawnActorRef)
-    context.system.toTyped.receptionist ! Receptionist.Register(MakeGuardian.SpawnActorKey, spawnActorRef)
-
-    ()
+    context.system.receptionist ! Receptionist.Register(JobCoordinator.Key, jobCoordinatorRef)
   }
 
-  override def receive: Receive = {
-    case Ping => sender() ! Pong
-    case x    => log.info(s"received $x")
+  private def createProducersAndConsumers(dependencies: MakeApi)(implicit context: ActorContext[_]): Unit = {
+    spawnKafkaActorWithBackoff(ConcertationProducerBehavior(), ConcertationProducerBehavior.name)
+    spawnKafkaActorWithBackoff(DemographicsProducerBehavior(), DemographicsProducerBehavior.name)
+    spawnKafkaActorWithBackoff(IdeaProducerBehavior(), IdeaProducerBehavior.name)
+    spawnKafkaActorWithBackoff(
+      IdeaConsumerBehavior(dependencies.ideaService, dependencies.elasticsearchIdeaAPI),
+      IdeaConsumerBehavior.name
+    )
+    spawnKafkaActorWithBackoff(MailJetProducerBehavior(), MailJetProducerBehavior.name)
+    spawnKafkaActorWithBackoff(MailJetConsumerBehavior(dependencies.crmService), MailJetConsumerBehavior.name)
+    spawnKafkaActorWithBackoff(MailJetEventProducerBehavior(), MailJetEventProducerBehavior.name)
+    spawnKafkaActorWithBackoff(
+      MailJetEventConsumerBehavior(dependencies.userService),
+      MailJetEventConsumerBehavior.name
+    )
+    spawnKafkaActorWithBackoff(SemanticProducerBehavior(), SemanticProducerBehavior.name)
+    spawnKafkaActorWithBackoff(SemanticPredictionsProducerBehavior(), SemanticPredictionsProducerBehavior.name)
+    spawnKafkaActorWithBackoff(TrackingProducerBehavior(), TrackingProducerBehavior.name)
   }
-}
 
-object MakeGuardian {
-  val name: String = "make-api"
-  def props(makeApi: MakeApi): Props = Props(new MakeGuardian(makeApi))
-
-  case object Ping
-  case object Pong
-
-  val SpawnActorKey: ServiceKey[SpawnProtocol.Command] = ServiceKey("spawn-actor")
+  private def spawnKafkaActorWithBackoff(behavior: Behavior[_], name: String)(
+    implicit context: ActorContext[_]
+  ): Unit = {
+    context.watch(
+      context.spawn(
+        ActorSystemHelper.superviseWithBackoff(behavior),
+        name,
+        Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+      )
+    )
+  }
 }
