@@ -40,8 +40,10 @@ class AdminSourceApiTest extends MakeApiTestBase with DefaultAdminSourceApiCompo
 
   Feature("list sources") {
 
-    when(sourceService.list(any, any, any, any, eqTo(Some("le canard"))))
+    when(sourceService.list(any, any, any, any, eqTo(Some("le canard")), eqTo(None)))
       .thenReturn(Future.successful(Seq(source(SourceId("id"), "Le Canard Enchaîné", "le_canard"))))
+
+    when(sourceService.count(eqTo(Some("le canard")), eqTo(None))).thenReturn(Future.successful(1))
 
     Scenario("unauthorize unauthenticated") {
       Get("/admin/sources") ~> routes ~> check {
