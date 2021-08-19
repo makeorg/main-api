@@ -32,7 +32,7 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.{ExplorationSequenceConfigurationId, ExplorationSortAlgorithm, SequenceId}
 import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.user.{UserId, UserType}
-import org.make.core.widget.SourceId
+import org.make.core.widget.{SourceId, Widget, WidgetId}
 import scalikejdbc.{Binders, ParameterBinderFactory, TypeBinder}
 
 object ScalikeSupport {
@@ -40,6 +40,7 @@ object ScalikeSupport {
   def enumBinders[A <: EnumEntry](implicit enum: Enum[A]): Binders[A] = Binders.string.xmap(enum.withName, _.entryName)
 
   implicit val crmTemplateKindBinders: Binders[CrmTemplateKind] = enumBinders
+  implicit val widgetVersionBinders: Binders[Widget.Version] = enumBinders
 
   implicit def stringEnumBinders[A <: StringEnumEntry](implicit enum: StringEnum[A]): Binders[A] =
     Binders.string.xmap(enum.withValue, _.value)
@@ -67,6 +68,7 @@ object ScalikeSupport {
   implicit val tagTypeIdBinders: Binders[TagTypeId] = stringValueBinders(TagTypeId.apply)
   implicit val templateIdBinders: Binders[TemplateId] = stringValueBinders(TemplateId.apply)
   implicit val userIdBinders: Binders[UserId] = stringValueBinders(UserId.apply)
+  implicit val widgetIdBinders: Binders[WidgetId] = stringValueBinders(WidgetId.apply)
   implicit val ExplorationSequenceConfigurationIdBinders: Binders[ExplorationSequenceConfigurationId] =
     stringValueBinders(ExplorationSequenceConfigurationId.apply)
 

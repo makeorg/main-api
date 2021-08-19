@@ -36,6 +36,7 @@ import org.make.core.user.UserId
 
 import scala.concurrent.{ExecutionContext, Future}
 import org.make.core.technical.Pagination._
+import org.make.core.widget.SourceId
 
 @SuppressWarnings(Array("org.wartremover.warts.Throw"))
 trait ParameterExtractors {
@@ -110,6 +111,11 @@ trait ParameterExtractors {
   implicit val questionIdFromStringUnmarshaller: Unmarshaller[String, QuestionId] =
     Unmarshaller.strict[String, QuestionId] { string =>
       QuestionId(string)
+    }
+
+  implicit val sourceIdFromStringUnmarshaller: Unmarshaller[String, SourceId] =
+    Unmarshaller.strict[String, SourceId] { string =>
+      SourceId(string)
     }
 
   implicit val ideaIdFromStringUnmarshaller: Unmarshaller[String, IdeaId] =

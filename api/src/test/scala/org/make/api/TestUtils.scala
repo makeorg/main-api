@@ -64,7 +64,8 @@ import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagType, TagTypeId}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
-import org.make.core.{RequestContext, SlugHelper}
+import org.make.core.widget.{Source, SourceId}
+import org.make.core.{DateHelper, RequestContext, SlugHelper}
 
 import java.net.URL
 import java.time.ZonedDateTime
@@ -664,6 +665,15 @@ trait TestUtils {
     topKeyword: Boolean = false
   ): Keyword =
     Keyword(questionId = questionId, key = key, label = label, score = score, count = count, topKeyword = topKeyword)
+
+  def source(
+    id: SourceId,
+    userId: UserId,
+    name: String = "name",
+    source: String = "source",
+    createdAt: ZonedDateTime = DateHelper.now(),
+    updatedAt: ZonedDateTime = DateHelper.now()
+  ): Source = Source(id, name, source, createdAt, updatedAt, userId)
 
 }
 
