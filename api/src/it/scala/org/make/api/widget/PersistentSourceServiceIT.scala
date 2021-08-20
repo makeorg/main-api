@@ -101,15 +101,27 @@ class PersistentSourceServiceIT
 
     }
 
-    Scenario("list without name filter") {
-      whenReady(persistentSourceService.list(None, None, None, None, None)) {
+    Scenario("list without filters") {
+      whenReady(persistentSourceService.list(None, None, None, None, None, None)) {
         _.size shouldBe 2
       }
     }
 
-    Scenario("list with name filter") {
-      whenReady(persistentSourceService.list(None, None, None, None, Some("nam"))) {
+    Scenario("list with filters") {
+      whenReady(persistentSourceService.list(None, None, None, None, Some("nam"), Some("our"))) {
         _ shouldBe Seq(source)
+      }
+    }
+
+    Scenario("count without filters") {
+      whenReady(persistentSourceService.count(None, None)) {
+        _ shouldBe 2
+      }
+    }
+
+    Scenario("count with filters") {
+      whenReady(persistentSourceService.count(Some("nam"), Some("our"))) {
+        _ shouldBe 1
       }
     }
 

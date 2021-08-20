@@ -37,10 +37,12 @@ trait SourceService {
     end: Option[End],
     sort: Option[String],
     order: Option[Order],
-    name: Option[String]
+    name: Option[String],
+    source: Option[String]
   ): Future[Seq[Source]]
   def create(name: String, source: String, userId: UserId): Future[Source]
   def update(id: SourceId, name: String, source: String, userId: UserId): Future[Option[Source]]
+  def count(name: Option[String], source: Option[String]): Future[Int]
 }
 
 trait SourceServiceComponent {
@@ -61,8 +63,9 @@ trait DefaultSourceServiceComponent extends SourceServiceComponent {
       end: Option[End],
       sort: Option[String],
       order: Option[Order],
-      name: Option[String]
-    ): Future[Seq[Source]] = persistentSourceService.list(start, end, sort, order, name)
+      name: Option[String],
+      source: Option[String]
+    ): Future[Seq[Source]] = persistentSourceService.list(start, end, sort, order, name, source)
 
     override def create(name: String, source: String, userId: UserId): Future[Source] =
       persistentSourceService.persist(
@@ -85,6 +88,9 @@ trait DefaultSourceServiceComponent extends SourceServiceComponent {
         )
       )
     }
+
+    override def count(name: Option[String], source: Option[String]): Future[Int] =
+      persistentSourceService.count(name, source)
 
   }
 }

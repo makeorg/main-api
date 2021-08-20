@@ -40,10 +40,12 @@ trait PersistentSourceService {
     end: Option[End],
     sort: Option[String],
     order: Option[Order],
-    name: Option[String]
+    name: Option[String],
+    source: Option[String]
   ): Future[Seq[Source]]
   def persist(source: Source): Future[Source]
   def modify(source: Source): Future[Source]
+  def count(name: Option[String], source: Option[String]): Future[Int]
 }
 
 trait PersistentSourceServiceComponent {
@@ -61,6 +63,7 @@ trait DefaultPersistentSourceServiceComponent extends PersistentSourceServiceCom
     private implicit val companion: PersistentCompanion[Source, Source] = new PersistentCompanion[Source, Source] {
       override def alias: SyntaxProvider[Source] = s
       override def defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.name)
+      override val columnNames: Seq[String] = Seq("source", "name")
     }
 
     override def get(id: SourceId): Future[Option[Source]] = {
@@ -88,7 +91,8 @@ trait DefaultPersistentSourceServiceComponent extends PersistentSourceServiceCom
       end: Option[End],
       sort: Option[String],
       order: Option[Order],
-      name: Option[String]
+      name: Option[String],
+      source: Option[String]
     ): Future[Seq[Source]] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
@@ -98,7 +102,14 @@ trait DefaultPersistentSourceServiceComponent extends PersistentSourceServiceCom
             end,
             sort,
             order,
-            select.from(sources.as(s)).where(name.map(n => sqls.like(sqls"lower(${s.name})", s"%${n.toLowerCase}%")))
+            select
+              .from(sources.as(s))
+              .where(
+                sqls.toAndConditionOpt(
+                  name.map(n             => sqls.like(sqls"lower(${s.name})", s"%${n.toLowerCase}%")),
+                  source.map(sourceValue => sqls.like(sqls"lower(${s.source})", s"%${sourceValue.toLowerCase}%"))
+                )
+              )
           )
         }.map(sources.apply(s.resultName))
           .list()
@@ -120,6 +131,22 @@ trait DefaultPersistentSourceServiceComponent extends PersistentSourceServiceCom
           update(sources).set(autoNamedValues(source, sources.column, "id", "createdAt")).where.eq(s.id, source.id)
         }.update().apply()
       }).map(_ => source)
+    }
+
+    override def count(name: Option[String], source: Option[String]): Future[Int] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB("READ").retryableTx { implicit session =>
+        withSQL {
+          select(sqls.count)
+            .from(sources.as(s))
+            .where(
+              sqls.toAndConditionOpt(
+                name.map(n             => sqls.like(sqls"lower(${s.name})", s"%${n.toLowerCase}%")),
+                source.map(sourceValue => sqls.like(sqls"lower(${s.source})", s"%${sourceValue.toLowerCase}%"))
+              )
+            )
+        }.map(_.int(1)).single().apply().getOrElse(0)
+      })
     }
   }
 }

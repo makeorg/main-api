@@ -34,7 +34,7 @@ import io.swagger.annotations.{
   Authorization,
   AuthorizationScope
 }
-import org.make.api.technical.MakeAuthenticationDirectives
+import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.core.{HttpCodes, Order, ParameterExtractors, ValidationError}
 import org.make.core.auth.UserRights
@@ -66,7 +66,8 @@ trait AdminSourceApi extends Directives {
       new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "name", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "name", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "source", paramType = "query", dataType = "string")
     )
   )
   @ApiResponses(
@@ -92,6 +93,7 @@ trait AdminSourceApi extends Directives {
   )
   @Path(value = "/{id}")
   def getById: Route
+
   @ApiOperation(
     value = "create-source",
     httpMethod = "POST",
@@ -157,13 +159,24 @@ trait DefaultAdminSourceApiComponent
 
     override def list: Route = get {
       path("admin" / "sources") {
-        parameters("_start".as[Start].?, "_end".as[End].?, "_sort".?, "_order".as[Order].?, "name".?) {
-          (start: Option[Start], end: Option[End], sort: Option[String], order: Option[Order], name: Option[String]) =>
+        parameters("_start".as[Start].?, "_end".as[End].?, "_sort".?, "_order".as[Order].?, "name".?, "source".?) {
+          (
+            start: Option[Start],
+            end: Option[End],
+            sort: Option[String],
+            order: Option[Order],
+            name: Option[String],
+            source: Option[String]
+          ) =>
             makeOperation("AdminSourcesList") { _ =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                 requireAdminRole(userAuth.user) {
-                  provideAsync(sourceService.list(start, end, sort, order, name)) { sources =>
-                    complete(sources.map(AdminSourceResponse.apply))
+                  provideAsync(sourceService.list(start, end, sort, order, name, source)) { sources =>
+                    provideAsync(sourceService.count(name, source)) { count =>
+                      complete(
+                        (StatusCodes.OK, List(`X-Total-Count`(count.toString)), sources.map(AdminSourceResponse.apply))
+                      )
+                    }
                   }
                 }
               }

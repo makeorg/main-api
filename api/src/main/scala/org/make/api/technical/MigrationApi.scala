@@ -64,7 +64,7 @@ trait MigrationApi extends Directives {
       )
     )
   )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "dry", paramType = "path", dataType = "boolean")))
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "dry", paramType = "query", dataType = "boolean")))
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @Path(value = "/snapshot-all-proposals")
   def snapshotAllProposals: Route
