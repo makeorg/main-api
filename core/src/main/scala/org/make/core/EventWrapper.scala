@@ -42,10 +42,10 @@ trait WithEventId {
 final case class EventId(value: String) extends StringValue
 
 object EventId {
-  implicit val proposalIdFormatter: JsonFormat[EventId] = SprayJsonFormatters.forStringValue(EventId.apply)
+  implicit val eventIdFormatter: JsonFormat[EventId] = SprayJsonFormatters.forStringValue(EventId.apply)
 
-  implicit lazy val proposalIdEncoder: Encoder[EventId] =
+  implicit lazy val eventIdEncoder: Encoder[EventId] =
     (a: EventId) => Json.fromString(a.value)
-  implicit lazy val proposalIdDecoder: Decoder[EventId] =
+  implicit lazy val eventIdDecoder: Decoder[EventId] =
     Decoder.decodeString.map(EventId(_))
 }

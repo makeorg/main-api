@@ -24,7 +24,7 @@ import akka.http.scaladsl.server.{Route, RouteConcatenation}
 import cats.data.NonEmptyList
 import cats.data.Validated.{Invalid, Valid}
 import grizzled.slf4j.Logging
-import io.circe.Decoder
+import io.circe.{Decoder, Encoder, Json}
 import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
 import org.make.api.question.QuestionServiceComponent
@@ -33,8 +33,9 @@ import org.make.api.technical.monitoring.MonitoringServiceComponent
 import org.make.api.technical.{EndpointType, EventBusServiceComponent, MakeAuthenticationDirectives, MakeDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.question.QuestionId
-import org.make.core.reference.Country
-import org.make.core.{HttpCodes, RequestContext, ValidationError, Validator}
+import org.make.core.reference.{Country, Language}
+import org.make.core.session.SessionId
+import org.make.core.{HttpCodes, RequestContext, StringValue, ValidationError, Validator}
 import org.slf4j.event.Level
 import scalaoauth2.provider.AuthInfo
 
@@ -102,7 +103,22 @@ trait TrackingApi extends RouteConcatenation {
   @Path(value = "/demographics")
   def trackDemographics: Route
 
-  final def routes: Route = backofficeLogs ~ frontTracking ~ trackFrontPerformances ~ trackDemographics
+  @ApiOperation(value = "track-concertation", httpMethod = "POST", code = HttpCodes.NoContent)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "body",
+        paramType = "body",
+        dataType = "org.make.api.technical.tracking.ConcertationTrackingRequest"
+      )
+    )
+  )
+  @Path(value = "/concertation")
+  def trackConcertation: Route
+
+  final def routes: Route =
+    backofficeLogs ~ frontTracking ~ trackFrontPerformances ~ trackDemographics ~ trackConcertation
 }
 
 trait TrackingApiComponent {
@@ -142,7 +158,6 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
               }
             }
           }
-
         }
       }
     }
@@ -198,6 +213,24 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
                     complete(StatusCodes.NoContent)
                   }
                 }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    def trackConcertation: Route = {
+      post {
+        path("tracking" / "concertation") {
+          decodeRequest {
+            entity(as[ConcertationTrackingRequest]) { request =>
+              makeOperationForConcertation("ConcertationTracking", request.context.location) {
+                requestContext: RequestContext =>
+                  eventBusService.publish(
+                    ConcertationEvent.fromConcertationRequest(request, requestContext.applicationName)
+                  )
+                  complete(StatusCodes.NoContent)
               }
             }
           }
@@ -330,4 +363,47 @@ object DemographicsTrackingRequest {
         )
     }
   }
+}
+
+final case class ConcertationTrackingRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "homepage-display")
+  eventName: String,
+  context: ConcertationContext,
+  @(ApiModelProperty @field)(dataType = "map[string]")
+  parameters: Map[String, String]
+)
+
+object ConcertationTrackingRequest {
+  implicit val decoder: Decoder[ConcertationTrackingRequest] = deriveDecoder[ConcertationTrackingRequest]
+}
+
+final case class ConcertationContext(
+  @(ApiModelProperty @field)(dataType = "string", example = "4ee15013-b5a6-415c-8270-da8438766644")
+  sessionId: SessionId,
+  concertationSlug: Option[String],
+  projectSlug: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "4ee15013-b5a6-415c-8270-da8438766644")
+  sectionId: Option[SectionId],
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Language,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Country,
+  location: String,
+  @(ApiModelProperty @field)(dataType = "map[string]")
+  getParameters: Map[String, String]
+)
+
+object ConcertationContext {
+  implicit val decoder: Decoder[ConcertationContext] = deriveDecoder[ConcertationContext]
+}
+
+final case class SectionId(value: String) extends StringValue
+
+object SectionId {
+
+  implicit lazy val sectionIdEncoder: Encoder[SectionId] =
+    (a: SectionId) => Json.fromString(a.value)
+  implicit lazy val sectionIdDecoder: Decoder[SectionId] =
+    Decoder.decodeString.map(SectionId(_))
+
 }
