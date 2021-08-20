@@ -26,8 +26,9 @@ import org.make.api.feature.DefaultPersistentFeatureServiceComponent.PersistentF
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.Futures._
+import org.make.api.technical.ScalikeSupport._
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
-import org.make.core.feature.{Feature, FeatureId}
+import org.make.core.feature.{Feature, FeatureId, FeatureSlug}
 import org.make.core.Order
 import scalikejdbc._
 
@@ -40,7 +41,7 @@ trait PersistentFeatureServiceComponent {
 
 trait PersistentFeatureService {
   def get(featureId: FeatureId): Future[Option[Feature]]
-  def findBySlug(slug: String): Future[Seq[Feature]]
+  def findBySlug(slug: FeatureSlug): Future[Seq[Feature]]
   def persist(feature: Feature): Future[Feature]
   def update(feature: Feature): Future[Option[Feature]]
   def remove(featureId: FeatureId): Future[Unit]
@@ -80,7 +81,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
       futurePersistentFeature.map(_.map(_.toFeature))
     }
 
-    def findBySlug(slug: String): Future[Seq[Feature]] = {
+    def findBySlug(slug: FeatureSlug): Future[Seq[Feature]] = {
       implicit val context: EC = readExecutionContext
       val futurePersistentFeatures: Future[List[PersistentFeature]] = Future(NamedDB("READ").retryableTx {
         implicit session =>
@@ -204,7 +205,7 @@ object DefaultPersistentFeatureServiceComponent {
 
   final case class PersistentFeature(id: String, slug: String, name: String) {
     def toFeature: Feature =
-      Feature(featureId = FeatureId(id), slug = slug, name = name)
+      Feature(featureId = FeatureId(id), slug = FeatureSlug(slug), name = name)
   }
 
   implicit object PersistentFeature

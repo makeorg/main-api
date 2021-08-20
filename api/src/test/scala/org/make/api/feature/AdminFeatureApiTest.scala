@@ -25,7 +25,7 @@ import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.core.Order
-import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId, Feature => Feat}
+import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId, FeatureSlug, Feature => Feat}
 import org.make.core.question.QuestionId
 import org.make.core.technical.Pagination
 import org.make.core.technical.Pagination.Start
@@ -49,7 +49,7 @@ class AdminFeatureApiTest
     .thenReturn(Future.successful(None))
 
   Feature("create a feature") {
-    val validFeature = Feat(FeatureId("valid-feature"), "valid Feature", "valid-feature")
+    val validFeature = Feat(FeatureId("valid-feature"), "valid Feature", FeatureSlug("valid-feature"))
 
     when(featureService.createFeature(eqTo(validFeature.slug), eqTo(validFeature.name)))
       .thenReturn(Future.successful(validFeature))
@@ -85,11 +85,11 @@ class AdminFeatureApiTest
 
     Scenario("allow authenticated moderator") {
 
-      when(featureService.findBySlug(eqTo("valid-feature")))
+      when(featureService.findBySlug(eqTo(FeatureSlug("valid-feature"))))
         .thenReturn(Future.successful(Seq.empty))
 
-      when(featureService.createFeature(eqTo("valid-feature"), eqTo("Valid Feature")))
-        .thenReturn(Future.successful(Feat(FeatureId("featured-id"), "Valid Feature", "valid-feature")))
+      when(featureService.createFeature(eqTo(FeatureSlug("valid-feature")), eqTo("Valid Feature")))
+        .thenReturn(Future.successful(Feat(FeatureId("featured-id"), "Valid Feature", FeatureSlug("valid-feature"))))
 
       for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
         Post("/admin/features")
@@ -104,7 +104,7 @@ class AdminFeatureApiTest
   }
 
   Feature("read a feature") {
-    val helloFeature = Feat(FeatureId("hello-feature"), "Hello Feature", "hello-feature")
+    val helloFeature = Feat(FeatureId("hello-feature"), "Hello Feature", FeatureSlug("hello-feature"))
     val helloActiveFeatures = Seq(
       ActiveFeature(ActiveFeatureId("hello-active-feature"), helloFeature.featureId, Some(QuestionId("hello-q-1"))),
       ActiveFeature(ActiveFeatureId("hello-active-feature-2"), helloFeature.featureId, Some(QuestionId("hello-q-2"))),
@@ -175,13 +175,13 @@ class AdminFeatureApiTest
   }
 
   Feature("read features") {
-    val f1 = Feat(FeatureId("feature-1"), "Feature one", "f-1")
-    val f2 = Feat(FeatureId("feature-2"), "Feature one", "f-2")
+    val f1 = Feat(FeatureId("feature-1"), "Feature one", FeatureSlug("f-1"))
+    val f2 = Feat(FeatureId("feature-2"), "Feature one", FeatureSlug("f-2"))
     val q1 = question(QuestionId("read-q-id"))
     val a1 = ActiveFeature(ActiveFeatureId("active-feature-1"), f1.featureId, None)
     val a2 = ActiveFeature(ActiveFeatureId("active-feature-2"), f1.featureId, Some(q1.questionId))
 
-    when(featureService.count(eqTo(Some(f1.slug))))
+    when(featureService.count(eqTo(Some(f1.slug.value))))
       .thenReturn(Future.successful(1))
     when(
       featureService.find(
@@ -189,7 +189,7 @@ class AdminFeatureApiTest
         end = eqTo(None),
         sort = eqTo(None),
         order = eqTo(None),
-        slug = eqTo(Some(f1.slug))
+        slug = eqTo(Some(f1.slug.value))
       )
     ).thenReturn(Future.successful(Seq(f1)))
 
@@ -267,9 +267,9 @@ class AdminFeatureApiTest
   }
 
   Feature("update a feature") {
-    val updateFeature = Feat(FeatureId("update-feature"), "update feature", "update-feature")
-    val newUpdateFeature = Feat(FeatureId("update-feature"), "new name", "new-slug")
-    val sameSlugFeature = Feat(FeatureId("same-slug"), "same slug", "same-slug")
+    val updateFeature = Feat(FeatureId("update-feature"), "update feature", FeatureSlug("update-feature"))
+    val newUpdateFeature = Feat(FeatureId("update-feature"), "new name", FeatureSlug("new-slug"))
+    val sameSlugFeature = Feat(FeatureId("same-slug"), "same slug", FeatureSlug("same-slug"))
 
     when(featureService.findBySlug(eqTo(newUpdateFeature.slug)))
       .thenReturn(Future.successful(Seq.empty))
@@ -277,12 +277,13 @@ class AdminFeatureApiTest
       .thenReturn(Future.successful(Seq(updateFeature)))
     when(featureService.findBySlug(eqTo(sameSlugFeature.slug)))
       .thenReturn(Future.successful(Seq(sameSlugFeature)))
-    when(featureService.updateFeature(eqTo(FeatureId("fake-feature")), any[String], any[String]))
+    when(featureService.updateFeature(eqTo(FeatureId("fake-feature")), any[FeatureSlug], any[String]))
       .thenReturn(Future.successful(None))
-    when(featureService.updateFeature(eqTo(updateFeature.featureId), eqTo("new-slug"), eqTo("new name")))
+    when(featureService.updateFeature(eqTo(updateFeature.featureId), eqTo(FeatureSlug("new-slug")), eqTo("new name")))
       .thenReturn(Future.successful(Some(newUpdateFeature)))
-    when(featureService.updateFeature(eqTo(sameSlugFeature.featureId), eqTo("same-slug"), eqTo("new name")))
-      .thenReturn(Future.successful(Some(sameSlugFeature)))
+    when(
+      featureService.updateFeature(eqTo(sameSlugFeature.featureId), eqTo(FeatureSlug("same-slug")), eqTo("new name"))
+    ).thenReturn(Future.successful(Some(sameSlugFeature)))
     when(
       activeFeatureService.find(
         any[Pagination.Start],
@@ -398,7 +399,7 @@ class AdminFeatureApiTest
   }
 
   Feature("delete a feature") {
-    val deleteFeature = Feat(FeatureId("delete-feature"), "Delete Feature", "delete-feature")
+    val deleteFeature = Feat(FeatureId("delete-feature"), "Delete Feature", FeatureSlug("delete-feature"))
 
     when(featureService.getFeature(eqTo(deleteFeature.featureId)))
       .thenReturn(Future.successful(Some(deleteFeature)))

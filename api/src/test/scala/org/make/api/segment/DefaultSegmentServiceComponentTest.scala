@@ -27,7 +27,8 @@ import org.make.api.feature.{
   FeatureServiceComponent
 }
 import org.make.core.RequestContext
-import org.make.core.feature.{ActiveFeature, ActiveFeatureId, Feature => Feat, FeatureId}
+import org.make.core.feature.FeatureSlug.ConsultationDepartmentCompulsory
+import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId, Feature => Feat}
 import org.make.core.question.QuestionId
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -74,7 +75,7 @@ class DefaultSegmentServiceComponentTest
       when(featureService.findByFeatureIds(Seq(featureId)))
         .thenReturn(
           Future
-            .successful(Seq(Feat(featureId = featureId, name = "blabla", slug = "consultation-department-compulsory")))
+            .successful(Seq(Feat(featureId = featureId, name = "blabla", slug = ConsultationDepartmentCompulsory)))
         )
 
       whenReady(
@@ -95,7 +96,7 @@ class DefaultSegmentServiceComponentTest
       when(featureService.findByFeatureIds(Seq(featureId)))
         .thenReturn(
           Future
-            .successful(Seq(Feat(featureId = featureId, name = "blabla", slug = "consultation-department-compulsory")))
+            .successful(Seq(Feat(featureId = featureId, name = "blabla", slug = ConsultationDepartmentCompulsory)))
         )
 
       whenReady(
@@ -119,7 +120,7 @@ class DefaultSegmentServiceComponentTest
       when(featureService.findByFeatureIds(Seq(featureId)))
         .thenReturn(
           Future
-            .successful(Seq(Feat(featureId = featureId, name = "blabla", slug = "consultation-department-compulsory")))
+            .successful(Seq(Feat(featureId = featureId, name = "blabla", slug = ConsultationDepartmentCompulsory)))
         )
 
       whenReady(
@@ -145,7 +146,7 @@ class DefaultSegmentServiceComponentTest
       when(featureService.findByFeatureIds(Seq(featureId)))
         .thenReturn(
           Future
-            .successful(Seq(Feat(featureId = featureId, name = "blabla", slug = "consultation-department-compulsory")))
+            .successful(Seq(Feat(featureId = featureId, name = "blabla", slug = ConsultationDepartmentCompulsory)))
         )
 
       whenReady(

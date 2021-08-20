@@ -44,15 +44,17 @@ class PersistentActiveFeatureServiceIT
       _ <- persistentQuestionService.persist(question(QuestionId("question-2"), slug = "question-2"))
     } yield {}
     val futurePersistFeatures = for {
-      _ <- persistentFeatureService.persist(Feat(featureId = FeatureId("feature"), name = "Feature", slug = "feature"))
       _ <- persistentFeatureService.persist(
-        Feat(featureId = FeatureId("feature2"), name = "Feature2", slug = "feature2")
+        Feat(featureId = FeatureId("feature"), name = "Feature", slug = FeatureSlug("feature"))
       )
       _ <- persistentFeatureService.persist(
-        Feat(featureId = FeatureId("feature-search"), name = "Feature search", slug = "feature-search")
+        Feat(featureId = FeatureId("feature2"), name = "Feature2", slug = FeatureSlug("feature2"))
       )
       _ <- persistentFeatureService.persist(
-        Feat(featureId = FeatureId("feature-search2"), name = "Feature search 2", slug = "feature-search2")
+        Feat(featureId = FeatureId("feature-search"), name = "Feature search", slug = FeatureSlug("feature-search"))
+      )
+      _ <- persistentFeatureService.persist(
+        Feat(featureId = FeatureId("feature-search2"), name = "Feature search 2", slug = FeatureSlug("feature-search2"))
       )
     } yield {}
 

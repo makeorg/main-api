@@ -21,6 +21,9 @@ package org.make.api.segment
 
 import org.make.api.feature.{ActiveFeatureServiceComponent, FeatureServiceComponent}
 import org.make.core.RequestContext
+import org.make.core.feature.FeatureSlug
+import org.make.core.feature.FeatureSlug.{ConsultationDepartmentCompulsory, SequenceCustomDataSegment}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -57,10 +60,9 @@ trait DefaultSegmentServiceComponent extends SegmentServiceComponent {
       Future.successful(requestContext.customData.get("segment").map(_.trim).filter(_.nonEmpty))
     }
 
-    val segmentResolvers: Map[String, SegmentResolver] = Map(
-      "consultation-department-compulsory" -> segmentResolverFromDepartment,
-      "segment_from_department" -> segmentResolverFromDepartment,
-      "sequence-custom-data-segment" -> segmentResolverFromCustomData
+    val segmentResolvers: Map[FeatureSlug, SegmentResolver] = Map(
+      ConsultationDepartmentCompulsory -> segmentResolverFromDepartment,
+      SequenceCustomDataSegment -> segmentResolverFromCustomData
     )
 
     override def resolveSegment(requestContext: RequestContext): Future[Option[String]] = {

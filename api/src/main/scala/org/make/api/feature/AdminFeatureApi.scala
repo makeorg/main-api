@@ -30,7 +30,7 @@ import javax.ws.rs.Path
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
-import org.make.core.feature.{Feature, FeatureId}
+import org.make.core.feature.{Feature, FeatureId, FeatureSlug}
 import org.make.core.question.Question
 import org.make.core.{HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
@@ -327,13 +327,17 @@ trait DefaultAdminFeatureApiComponent
   }
 }
 
-final case class CreateFeatureRequest(name: String, slug: String)
+final case class CreateFeatureRequest(name: String, slug: FeatureSlug) {
+  Validation.validate(Validation.requireNonEmpty("slug", slug.value, Some("Slug must not be empty")))
+}
 
 object CreateFeatureRequest {
   implicit val decoder: Decoder[CreateFeatureRequest] = deriveDecoder[CreateFeatureRequest]
 }
 
-final case class UpdateFeatureRequest(name: String, slug: String)
+final case class UpdateFeatureRequest(name: String, slug: FeatureSlug) {
+  Validation.validate(Validation.requireNonEmpty("slug", slug.value, Some("Slug must not be empty")))
+}
 
 object UpdateFeatureRequest {
   implicit val decoder: Decoder[UpdateFeatureRequest] = deriveDecoder[UpdateFeatureRequest]
@@ -342,7 +346,8 @@ object UpdateFeatureRequest {
 final case class FeatureResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "1c895cb8-f4fe-45ff-a1c2-24db14324a0f") id: FeatureId,
   name: String,
-  slug: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "sequence-custom-data-segment")
+  slug: FeatureSlug,
   questions: Seq[ModerationQuestionResponse]
 )
 

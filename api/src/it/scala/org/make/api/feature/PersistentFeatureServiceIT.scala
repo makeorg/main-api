@@ -33,16 +33,16 @@ class PersistentFeatureServiceIT
     with DefaultPersistentFeatureServiceComponent
     with DefaultIdGeneratorComponent {
 
-  def newFeature(slug: String): Feat =
+  def newFeature(slug: FeatureSlug): Feat =
     Feat(featureId = idGenerator.nextFeatureId(), slug = slug, name = "feature name")
 
-  val postalCode: Feat = newFeature("postal-code")
-  val noVotes: Feat = newFeature("no-votes")
-  val fieldHelp: Feat = newFeature("field-1-help")
-  val stream: Feat = newFeature("stream-1")
-  val rust: Feat = newFeature("rust")
-  val feature: Feat = newFeature("feature")
-  val deleted: Feat = newFeature("deleted")
+  val postalCode: Feat = newFeature(FeatureSlug("postal-code"))
+  val noVotes: Feat = newFeature(FeatureSlug("no-votes"))
+  val fieldHelp: Feat = newFeature(FeatureSlug("field-1-help"))
+  val stream: Feat = newFeature(FeatureSlug("stream-1"))
+  val rust: Feat = newFeature(FeatureSlug("rust"))
+  val feature: Feat = newFeature(FeatureSlug("feature"))
+  val deleted: Feat = newFeature(FeatureSlug("deleted"))
 
   Feature("One feature can be persisted and retrieved") {
     Scenario("Get feature by featureId") {
@@ -52,7 +52,7 @@ class PersistentFeatureServiceIT
       } yield featureStark
 
       whenReady(futureFeature, Timeout(3.seconds)) { result =>
-        result.map(_.slug) shouldBe Some("postal-code")
+        result.map(_.slug) shouldBe Some(FeatureSlug("postal-code"))
       }
     }
 
@@ -93,7 +93,7 @@ class PersistentFeatureServiceIT
       )
 
       whenReady(findSlug, Timeout(3.seconds)) { features =>
-        features.map(_.slug).toSet shouldBe Set("field-1-help", "stream-1")
+        features.map(_.slug).toSet shouldBe Set(FeatureSlug("field-1-help"), FeatureSlug("stream-1"))
       }
 
       whenReady(persistentFeatureService.count(Some("-1")), Timeout(3.seconds)) { total =>
@@ -104,13 +104,13 @@ class PersistentFeatureServiceIT
     Scenario("Get features by featureIds") {
       val futurePersistedFeatureList: Future[Unit] = for {
         _ <- persistentFeatureService.persist(
-          Feat(featureId = FeatureId("feature-1"), slug = "feature-1", name = "feature name")
+          Feat(featureId = FeatureId("feature-1"), slug = FeatureSlug("feature-1"), name = "feature name")
         )
         _ <- persistentFeatureService.persist(
-          Feat(featureId = FeatureId("feature-2"), slug = "feature-2", name = "feature name")
+          Feat(featureId = FeatureId("feature-2"), slug = FeatureSlug("feature-2"), name = "feature name")
         )
         _ <- persistentFeatureService.persist(
-          Feat(featureId = FeatureId("feature-3"), slug = "feature-3", name = "feature name")
+          Feat(featureId = FeatureId("feature-3"), slug = FeatureSlug("feature-3"), name = "feature name")
         )
       } yield {}
 
@@ -131,17 +131,17 @@ class PersistentFeatureServiceIT
     Scenario("Update feature") {
       val futureFeature: Future[Option[Feat]] = for {
         _            <- persistentFeatureService.persist(feature)
-        featureStark <- persistentFeatureService.update(feature.copy(slug = "new tully"))
+        featureStark <- persistentFeatureService.update(feature.copy(slug = FeatureSlug("new tully")))
       } yield featureStark
 
       whenReady(futureFeature, Timeout(3.seconds)) { result =>
         result.map(_.featureId.value) shouldBe Some(feature.featureId.value)
-        result.map(_.slug) shouldBe Some("new tully")
+        result.map(_.slug) shouldBe Some(FeatureSlug("new tully"))
       }
     }
 
     Scenario("Update feature that does not exists") {
-      val futureFeatureId: Future[Option[Feat]] = persistentFeatureService.update(newFeature("fake"))
+      val futureFeatureId: Future[Option[Feat]] = persistentFeatureService.update(newFeature(FeatureSlug("fake")))
 
       whenReady(futureFeatureId, Timeout(3.seconds)) { result =>
         result shouldBe None
