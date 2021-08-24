@@ -652,17 +652,20 @@ trait DefaultModerationOperationOfQuestionApiComponent
         makeOperation("InfosOperationsOfQuestions") { _ =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
-              parameters("moderationMode".as[ModerationMode]) { moderationMode =>
-                val questionIds: Option[Seq[QuestionId]] = {
-                  if (auth.user.roles.contains(RoleAdmin)) {
-                    None
-                  } else {
-                    Some(auth.user.availableQuestions)
+              parameters("moderationMode".as[ModerationMode], "minVotesCount".as[Int].?, "minScore".as[Double].?) {
+                (moderationMode: ModerationMode, minVotesCount: Option[Int], minScore: Option[Double]) =>
+                  val questionIds: Option[Seq[QuestionId]] = {
+                    if (auth.user.roles.contains(RoleAdmin)) {
+                      None
+                    } else {
+                      Some(auth.user.availableQuestions)
+                    }
                   }
-                }
-                provideAsync(operationOfQuestionService.getQuestionsInfos(questionIds, moderationMode)) { infos =>
-                  complete((StatusCodes.OK, List(`X-Total-Count`(infos.size.toString)), infos))
-                }
+                  provideAsync(
+                    operationOfQuestionService.getQuestionsInfos(questionIds, moderationMode, minVotesCount, minScore)
+                  ) { infos =>
+                    complete((StatusCodes.OK, List(`X-Total-Count`(infos.size.toString)), infos))
+                  }
               }
             }
           }

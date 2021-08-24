@@ -898,7 +898,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       when(
         operationOfQuestionService.getQuestionsInfos(
           questionIds = eqTo(Some(defaultModeratorUser.availableQuestions)),
-          moderationMode = eqTo(ModerationMode.Moderation)
+          moderationMode = eqTo(ModerationMode.Moderation),
+          minVotesCount = eqTo(None),
+          minScore = eqTo(None)
         )
       ).thenReturn(Future.successful(Seq.empty))
       Get("/moderation/operations-of-questions/infos?moderationMode=Moderation")
@@ -913,7 +915,12 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     Scenario("works for admins") {
       when(
         operationOfQuestionService
-          .getQuestionsInfos(questionIds = eqTo(None), moderationMode = eqTo(ModerationMode.Enrichment))
+          .getQuestionsInfos(
+            questionIds = eqTo(None),
+            moderationMode = eqTo(ModerationMode.Enrichment),
+            minVotesCount = eqTo(None),
+            minScore = eqTo(None)
+          )
       ).thenReturn(
         Future.successful(
           Seq(
