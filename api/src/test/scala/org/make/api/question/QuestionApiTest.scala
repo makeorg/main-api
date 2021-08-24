@@ -39,26 +39,25 @@ import org.make.api.personality.{PersonalityRoleService, PersonalityRoleServiceC
 import org.make.api.proposal._
 import org.make.api.sequence.{SequenceResult, SequenceService}
 import org.make.api.tag.{TagService, TagServiceComponent}
-import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId, Feature => Feat}
+import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId, FeatureSlug, Feature => Feat}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.keyword.Keyword
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.operation.{OperationId, _}
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.personality.{PersonalityRole, PersonalityRoleId}
-import org.make.core.proposal.{ProposalId, SearchQuery}
+import org.make.core.proposal.indexed.{ProposalsSearchResult, SequencePool, Zone}
+import org.make.core.proposal.{PopularAlgorithm, ProposalId, QuestionSearchFilter, SearchFilters, SearchQuery}
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
+import org.make.core.technical.Pagination.{End, Start}
 import org.make.core.user._
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
 import org.make.core.{DateHelper, Order, RequestContext, ValidationError}
-import org.make.core.proposal.indexed.{SequencePool, Zone}
 
 import java.time.ZonedDateTime
-import org.make.core.technical.Pagination.{End, Start}
-
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
@@ -220,12 +219,23 @@ class QuestionApiTest
       weight = 20f
     )
     val partner2: Partner = partner.copy(partnerId = PartnerId("partner2"), name = "partner2")
+
     val activeFeature1 = ActiveFeature(
       activeFeatureId = ActiveFeatureId("af1"),
       featureId = FeatureId("f1"),
       maybeQuestionId = Some(baseQuestion.questionId)
     )
-    val feature1 = Feat(featureId = FeatureId("f1"), name = "feature 1", slug = "f1")
+
+    val activeFeature2 = ActiveFeature(
+      activeFeatureId = ActiveFeatureId("af2"),
+      featureId = FeatureId("f2"),
+      maybeQuestionId = Some(baseQuestion.questionId)
+    )
+
+    val feature1 = Feat(featureId = FeatureId("f1"), name = "feature 1", slug = FeatureSlug("f1"))
+
+    val feature2 =
+      Feat(featureId = FeatureId("f2"), name = "Activate widget intro card", slug = FeatureSlug.DisplayIntroCardWidget)
 
     when(questionService.getQuestionByQuestionIdValueOrSlug(baseQuestion.slug))
       .thenReturn(Future.successful(Some(baseQuestion)))
@@ -245,10 +255,12 @@ class QuestionApiTest
         partnerKind = None
       )
     ).thenReturn(Future.successful(Seq(partner, partner2)))
-    when(activeFeatureService.find(maybeQuestionId = Some(Seq(baseQuestion.questionId))))
-      .thenReturn(Future.successful(Seq(activeFeature1)))
+
     when(featureService.findByFeatureIds(featureIds = Seq(FeatureId("f1"))))
       .thenReturn(Future.successful(Seq(feature1)))
+
+    when(featureService.findByFeatureIds(featureIds = Seq(FeatureId("f2"))))
+      .thenReturn(Future.successful(Seq(feature2)))
 
     when(operationOfQuestionService.findByOperationId(baseOperationOfQuestion.operationId))
       .thenReturn(Future.successful(Seq(baseOperationOfQuestion)))
@@ -259,6 +271,10 @@ class QuestionApiTest
       Given("a registered question")
       When("I get question details by id")
       Then("I get a question with details")
+
+      when(activeFeatureService.find(maybeQuestionId = Some(Seq(baseQuestion.questionId))))
+        .thenReturn(Future.successful(Seq(activeFeature1)))
+
       Get("/questions/questionid/details") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val questionDetailsResponse: QuestionDetailsResponse = entityAs[QuestionDetailsResponse]
@@ -274,20 +290,48 @@ class QuestionApiTest
         questionDetailsResponse.operation.questions.flatMap(_.resultsLink) should contain(
           ResultsLinkResponse(ResultsLinkRequest.ResultsLinkKind.Internal, ResultsLink.Internal.TopIdeas.value)
         )
-        questionDetailsResponse.activeFeatures should be(Seq("f1"))
+        questionDetailsResponse.activeFeatures should be(Seq(FeatureSlug("f1")))
+        questionDetailsResponse.activeFeatureData.topProposal should be(empty)
         questionDetailsResponse.controversyCount shouldBe 24
         questionDetailsResponse.topProposalCount shouldBe 48
 
       }
     }
+
     Scenario("get by slug") {
       Given("a registered question")
       When("I get question details by slug")
       Then("I get a question with details")
+
+      when(activeFeatureService.find(maybeQuestionId = Some(Seq(baseQuestion.questionId))))
+        .thenReturn(Future.successful(Seq(activeFeature1)))
+
       Get("/questions/question-slug/details") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val questionDetailsResponse: QuestionDetailsResponse = entityAs[QuestionDetailsResponse]
         questionDetailsResponse.questionId should be(baseQuestion.questionId)
+      }
+    }
+
+    Scenario("with widget intro card activated") {
+      when(activeFeatureService.find(maybeQuestionId = Some(Seq(baseQuestion.questionId))))
+        .thenReturn(Future.successful(Seq(activeFeature2)))
+
+      val searchRequest = SearchQuery(
+        limit = Some(1),
+        sortAlgorithm = Some(PopularAlgorithm),
+        filters = Some(SearchFilters(question = Some(QuestionSearchFilter(Seq(baseQuestion.questionId)))))
+      )
+
+      val proposalId = ProposalId("top-proposal")
+      when(proposalService.search(None, searchRequest, RequestContext.empty))
+        .thenReturn(Future.successful(ProposalsSearchResult(1, Seq(indexedProposal(proposalId)))))
+
+      Get("/questions/question-slug/details") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val questionDetailsResponse: QuestionDetailsResponse = entityAs[QuestionDetailsResponse]
+        questionDetailsResponse.questionId should be(baseQuestion.questionId)
+        questionDetailsResponse.activeFeatureData.topProposal.map(_.id) should contain(proposalId)
       }
     }
   }

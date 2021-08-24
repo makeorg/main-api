@@ -37,6 +37,7 @@ import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.PartnerServiceComponent
 import org.make.api.personality.PersonalityRoleServiceComponent
 import org.make.api.proposal.{
+  ProposalResponse,
   ProposalSearchEngineComponent,
   ProposalServiceComponent,
   ProposalsResultResponse,
@@ -49,6 +50,8 @@ import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.{EndpointType, MakeAuthenticationDirectives}
 import org.make.core.Validation.validateField
 import org.make.core.auth.UserRights
+import org.make.core.feature.FeatureSlug
+import org.make.core.feature.FeatureSlug.DisplayIntroCardWidget
 import org.make.core.idea.TopIdeaId
 import org.make.core.keyword.Keyword
 import org.make.core.operation._
@@ -57,6 +60,7 @@ import org.make.core.partner.PartnerKind
 import org.make.core.personality.PersonalityRoleId
 import org.make.core.proposal.{
   MinScoreLowerBoundSearchFilter,
+  PopularAlgorithm,
   ProposalId,
   ProposalKeywordKey,
   QuestionSearchFilter,
@@ -70,7 +74,7 @@ import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
 import org.make.core.technical.Pagination._
 import org.make.core.user.{CountrySearchFilter => _, DescriptionSearchFilter => _, LanguageSearchFilter => _, _}
-import org.make.core.{HttpCodes, Order, ParameterExtractors, Validation}
+import org.make.core.{HttpCodes, Order, ParameterExtractors, RequestContext, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import javax.ws.rs.Path
@@ -365,37 +369,40 @@ trait DefaultQuestionApiComponent
                     ) { partners =>
                       provideAsync(findQuestionsOfOperation(operationOfQuestion.operationId)) { questions =>
                         provideAsync(findActiveFeatureSlugsByQuestionId(question.questionId)) { activeFeatureSlugs =>
-                          def zoneCount(zone: Zone) = elasticsearchProposalAPI.countProposals(
-                            SearchQuery(filters = Some(
-                              SearchFilters(
-                                minScoreLowerBound = Option
-                                  .when(zone == Zone.Consensus)(
-                                    indexedOOQ.top20ConsensusThreshold.map(MinScoreLowerBoundSearchFilter)
-                                  )
-                                  .flatten,
-                                question = Some(QuestionSearchFilter(Seq(question.questionId))),
-                                sequencePool = Some(SequencePoolSearchFilter(SequencePool.Tested)),
-                                zone = Some(ZoneSearchFilter(zone))
-                              )
-                            )
-                            )
-                          )
-                          val futureConsensusCount = zoneCount(Zone.Consensus)
-                          val futureControversyCount = zoneCount(Zone.Controversy)
-                          provideAsync(futureConsensusCount) { consensusCount =>
-                            provideAsync(futureControversyCount) { controversyCount =>
-                              complete(
-                                QuestionDetailsResponse(
-                                  question,
-                                  operation,
-                                  operationOfQuestion,
-                                  partners,
-                                  questions,
-                                  activeFeatureSlugs,
-                                  controversyCount,
-                                  consensusCount
+                          provideAsync(findActiveFeatureData(question, activeFeatureSlugs)) { activeFeaturesData =>
+                            def zoneCount(zone: Zone) = elasticsearchProposalAPI.countProposals(
+                              SearchQuery(filters = Some(
+                                SearchFilters(
+                                  minScoreLowerBound = Option
+                                    .when(zone == Zone.Consensus)(
+                                      indexedOOQ.top20ConsensusThreshold.map(MinScoreLowerBoundSearchFilter)
+                                    )
+                                    .flatten,
+                                  question = Some(QuestionSearchFilter(Seq(question.questionId))),
+                                  sequencePool = Some(SequencePoolSearchFilter(SequencePool.Tested)),
+                                  zone = Some(ZoneSearchFilter(zone))
                                 )
                               )
+                              )
+                            )
+                            val futureConsensusCount = zoneCount(Zone.Consensus)
+                            val futureControversyCount = zoneCount(Zone.Controversy)
+                            provideAsync(futureConsensusCount) { consensusCount =>
+                              provideAsync(futureControversyCount) { controversyCount =>
+                                complete(
+                                  QuestionDetailsResponse(
+                                    question,
+                                    operation,
+                                    operationOfQuestion,
+                                    partners,
+                                    questions,
+                                    activeFeatureSlugs,
+                                    controversyCount,
+                                    consensusCount,
+                                    activeFeaturesData
+                                  )
+                                )
+                              }
                             }
                           }
                         }
@@ -445,10 +452,44 @@ trait DefaultQuestionApiComponent
       }
     }
 
-    private def findActiveFeatureSlugsByQuestionId(questionId: QuestionId): Future[Seq[String]] = {
+    private def findActiveFeatureSlugsByQuestionId(questionId: QuestionId): Future[Seq[FeatureSlug]] = {
       activeFeatureService.find(maybeQuestionId = Some(Seq(questionId))).flatMap { activeFeatures =>
         featureService.findByFeatureIds(activeFeatures.map(_.featureId)).map(_.map(_.slug))
       }
+    }
+
+    private def findActiveFeatureData(question: Question, features: Seq[FeatureSlug]): Future[ActiveFeatureData] = {
+      val futureTopProposal: Future[Option[ProposalResponse]] = if (features.contains(DisplayIntroCardWidget)) {
+        proposalService
+          .search(
+            userId = None,
+            query = SearchQuery(
+              limit = Some(1),
+              sortAlgorithm = Some(PopularAlgorithm),
+              filters = Some(SearchFilters(question = Some(QuestionSearchFilter(Seq(question.questionId)))))
+            ),
+            requestContext = RequestContext.empty
+          )
+          .map(_.results)
+          .map {
+            case Seq() => None
+            case proposal +: _ =>
+              Some(
+                ProposalResponse(
+                  indexedProposal = proposal,
+                  myProposal = false,
+                  voteAndQualifications = None,
+                  proposalKey = "not-votable"
+                )
+              )
+          }
+      } else {
+        Future.successful(None)
+      }
+
+      for {
+        topProposal <- futureTopProposal
+      } yield (ActiveFeatureData(topProposal))
     }
 
     override def startSequenceByQuestionId: Route = get {

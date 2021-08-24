@@ -19,11 +19,25 @@
 
 package org.make.core.feature
 
+import enumeratum.values.{StringEnum, StringEnumEntry}
 import io.circe.{Decoder, Encoder, Json}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import org.make.core.StringValue
+import org.make.core.technical.enumeratum.FallbackingCirceEnum.FallbackingStringCirceEnum
 
-final case class Feature(featureId: FeatureId, name: String, slug: String)
+final case class Feature(featureId: FeatureId, name: String, slug: FeatureSlug)
+
+sealed abstract class FeatureSlug(val value: String) extends StringEnumEntry with Product with Serializable
+
+object FeatureSlug extends StringEnum[FeatureSlug] with FallbackingStringCirceEnum[FeatureSlug] {
+  case object SequenceCustomDataSegment extends FeatureSlug("sequence-custom-data-segment")
+  case object ConsultationDepartmentCompulsory extends FeatureSlug("consultation-department-compulsory")
+  case object DisplayIntroCardWidget extends FeatureSlug("display-intro-card-widget")
+  override def default(value: String): FeatureSlug = OtherFeatureSlug(value)
+  override def values: IndexedSeq[FeatureSlug] = findValues
+}
+
+final case class OtherFeatureSlug(override val value: String) extends FeatureSlug(value)
 
 object Feature {
   implicit val encoder: Encoder[Feature] = deriveEncoder[Feature]

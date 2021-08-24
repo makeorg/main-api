@@ -21,7 +21,7 @@ package org.make.api.feature
 
 import org.make.api.MakeUnitTest
 import org.make.api.technical.DefaultIdGeneratorComponent
-import org.make.core.feature.{Feature => Feat, FeatureId}
+import org.make.core.feature.{FeatureId, FeatureSlug, Feature => Feat}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -49,12 +49,12 @@ class FeatureServiceTest
         .thenReturn(Future.successful(None))
 
       val feature =
-        Feat(featureId = FeatureId("new-feature"), slug = "new-feature", name = "new feature name")
+        Feat(featureId = FeatureId("new-feature"), slug = FeatureSlug("new-feature"), name = "new feature name")
 
       when(persistentFeatureService.persist(any[Feat]))
         .thenReturn(Future.successful(feature))
 
-      val futureNewFeature: Future[Feat] = featureService.createFeature("new-feature", "new feature name")
+      val futureNewFeature: Future[Feat] = featureService.createFeature(FeatureSlug("new-feature"), "new feature name")
 
       whenReady(futureNewFeature, Timeout(3.seconds)) { _ =>
         verify(persistentFeatureService).persist(any[Feat])
@@ -66,17 +66,17 @@ class FeatureServiceTest
 
     Scenario("find features by slug") {
       val feature1 =
-        Feat(featureId = FeatureId("find-feature-1"), slug = "feature-1", name = "Feature 1")
+        Feat(featureId = FeatureId("find-feature-1"), slug = FeatureSlug("feature-1"), name = "Feature 1")
       val feature2 =
-        Feat(featureId = FeatureId("find-feature-2"), slug = "feature-2", name = "Feature 2")
+        Feat(featureId = FeatureId("find-feature-2"), slug = FeatureSlug("feature-2"), name = "Feature 2")
       reset(persistentFeatureService)
       when(persistentFeatureService.findAll())
         .thenReturn(Future.successful(Seq(feature1, feature2)))
-      when(persistentFeatureService.findBySlug(eqTo("feature-1")))
+      when(persistentFeatureService.findBySlug(eqTo(FeatureSlug("feature-1"))))
         .thenReturn(Future.successful(Seq(feature1)))
 
       val futureFeatures: Future[Seq[Feat]] =
-        featureService.findBySlug("feature-1")
+        featureService.findBySlug(FeatureSlug("feature-1"))
 
       whenReady(futureFeatures, Timeout(3.seconds)) { features =>
         features.size shouldBe 1
@@ -88,15 +88,19 @@ class FeatureServiceTest
 
   Feature("update a feature") {
     Scenario("update a feature") {
-      val oldFeature = Feat(FeatureId("1234567890"), "old-feature", "old Feature name")
-      val newFeature = Feat(FeatureId("1234567890"), "new-feature", "new Feature name")
+      val oldFeature = Feat(FeatureId("1234567890"), "old Feature name", FeatureSlug("old-feature"))
+      val newFeature = Feat(FeatureId("1234567890"), "new Feature name", FeatureSlug("new-feature"))
       when(persistentFeatureService.get(FeatureId("1234567890")))
         .thenReturn(Future.successful(Some(oldFeature)))
       when(persistentFeatureService.update(any[Feat]))
         .thenReturn(Future.successful(Some(newFeature)))
 
       val futureFeature: Future[Option[Feat]] =
-        featureService.updateFeature(featureId = oldFeature.featureId, slug = "new-feature", name = "new Feature name")
+        featureService.updateFeature(
+          featureId = oldFeature.featureId,
+          slug = FeatureSlug("new-feature"),
+          name = "new Feature name"
+        )
 
       whenReady(futureFeature, Timeout(3.seconds)) { feature =>
         feature.map(_.slug) shouldEqual Some(newFeature.slug)
@@ -108,7 +112,7 @@ class FeatureServiceTest
 
       val futureFeature: Future[Option[Feat]] = featureService.updateFeature(
         featureId = FeatureId("non-existent-feature"),
-        slug = "new-non-existent-feature",
+        slug = FeatureSlug("new-non-existent-feature"),
         name = "whatever name"
       )
 

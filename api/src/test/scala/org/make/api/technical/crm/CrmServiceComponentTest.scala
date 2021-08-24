@@ -62,7 +62,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import java.io.{BufferedReader, InputStreamReader}
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
@@ -115,7 +115,6 @@ class CrmServiceComponentTest
   override val persistentCrmSynchroUserService: PersistentCrmSynchroUserService = mock[PersistentCrmSynchroUserService]
 
   when(mailJetConfiguration.userListBatchSize).thenReturn(1000)
-  when(mailJetConfiguration.csvDirectory).thenReturn("/tmp/make/crm")
   when(mailJetConfiguration.tickInterval).thenReturn(5.milliseconds)
   when(mailJetConfiguration.delayBeforeResend).thenReturn(10.milliseconds)
 
@@ -1461,11 +1460,10 @@ class CrmServiceComponentTest
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
 
       val formattedDate = DateHelper.now().format(dateFormatter)
+      val destination = Files.createTempDirectory("create-one-csv")
+      destination.toFile.deleteOnExit()
 
-      whenReady(
-        crmService.createCsv(formattedDate, CrmList.OptIn, CrmList.OptIn.targetDirectory("/tmp/make/crm")),
-        Timeout(30.seconds)
-      ) { fileList =>
+      whenReady(crmService.createCsv(formattedDate, CrmList.OptIn, destination), Timeout(30.seconds)) { fileList =>
         val file = fileList.head
         val bufferedFile = IOSource.fromFile(file.toFile)
         val fileToSeq = bufferedFile.getLines().toSeq
@@ -1509,12 +1507,11 @@ class CrmServiceComponentTest
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
 
       val formattedDate = DateHelper.now().format(dateFormatter)
+      val destination = Files.createTempDirectory("split-into-2-csv")
+      destination.toFile.deleteOnExit()
 
-      whenReady(
-        crmService.createCsv(formattedDate, CrmList.OptIn, CrmList.OptIn.targetDirectory("/tmp/make/crm")),
-        Timeout(30.seconds)
-      ) { fileList =>
-        fileList.size > 1 should be(true)
+      whenReady(crmService.createCsv(formattedDate, CrmList.OptIn, destination), Timeout(30.seconds)) { fileList =>
+        fileList.size should be > 1
       }
     }
   }

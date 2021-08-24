@@ -32,10 +32,10 @@ trait FeatureServiceComponent {
 }
 
 trait FeatureService extends ShortenedNames {
-  def getFeature(slug: FeatureId): Future[Option[Feature]]
-  def createFeature(slug: String, name: String): Future[Feature]
-  def findBySlug(partialSlug: String): Future[Seq[Feature]]
-  def updateFeature(featureId: FeatureId, slug: String, name: String): Future[Option[Feature]]
+  def getFeature(featureId: FeatureId): Future[Option[Feature]]
+  def createFeature(slug: FeatureSlug, name: String): Future[Feature]
+  def findBySlug(slug: FeatureSlug): Future[Seq[Feature]]
+  def updateFeature(featureId: FeatureId, slug: FeatureSlug, name: String): Future[Option[Feature]]
   def deleteFeature(featureId: FeatureId): Future[Unit]
   def findByFeatureIds(featureIds: Seq[FeatureId]): Future[Seq[Feature]]
   def find(
@@ -59,19 +59,15 @@ trait DefaultFeatureServiceComponent extends FeatureServiceComponent with Shorte
       persistentFeatureService.get(featureId)
     }
 
-    override def createFeature(slug: String, name: String): Future[Feature] = {
+    override def createFeature(slug: FeatureSlug, name: String): Future[Feature] = {
       persistentFeatureService.persist(Feature(featureId = idGenerator.nextFeatureId(), slug = slug, name = name))
     }
 
-    override def findBySlug(partialSlug: String): Future[Seq[Feature]] = {
-      if (partialSlug.isEmpty) {
-        persistentFeatureService.findAll()
-      } else {
-        persistentFeatureService.findBySlug(partialSlug)
-      }
+    override def findBySlug(slug: FeatureSlug): Future[Seq[Feature]] = {
+      persistentFeatureService.findBySlug(slug)
     }
 
-    override def updateFeature(featureId: FeatureId, slug: String, name: String): Future[Option[Feature]] = {
+    override def updateFeature(featureId: FeatureId, slug: FeatureSlug, name: String): Future[Option[Feature]] = {
       persistentFeatureService.get(featureId).flatMap {
         case Some(feature) =>
           persistentFeatureService.update(feature.copy(slug = slug, name = name))

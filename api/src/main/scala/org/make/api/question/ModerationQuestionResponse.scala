@@ -22,11 +22,13 @@ import cats.data.NonEmptyList
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.MaxSize
-import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
-import io.circe.{Codec, Decoder, Encoder}
+import io.circe.generic.semiauto.deriveCodec
+import io.circe.Codec
 import io.swagger.annotations.ApiModelProperty
 import org.make.api.operation.ResultsLinkResponse
 import io.circe.refined._
+import org.make.api.proposal.ProposalResponse
+import org.make.core.feature.FeatureSlug
 import org.make.core.operation._
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.partner.{Partner, PartnerKind}
@@ -61,15 +63,13 @@ object ModerationQuestionResponse {
     language = question.language
   )
 
-  implicit val encoder: Encoder[ModerationQuestionResponse] = deriveEncoder[ModerationQuestionResponse]
-  implicit val decoder: Decoder[ModerationQuestionResponse] = deriveDecoder[ModerationQuestionResponse]
+  implicit val codec: Codec[ModerationQuestionResponse] = deriveCodec
 }
 
 final case class WordingResponse(title: String, question: String, description: String, metas: Metas)
 
 object WordingResponse {
-  implicit val encoder: Encoder[WordingResponse] = deriveEncoder[WordingResponse]
-  implicit val decoder: Decoder[WordingResponse] = deriveDecoder[WordingResponse]
+  implicit val codec: Codec[WordingResponse] = deriveCodec
 }
 
 final case class IntroCardResponse(
@@ -78,16 +78,14 @@ final case class IntroCardResponse(
   description: Option[String]
 )
 object IntroCardResponse extends CirceFormatters {
-  implicit val encoder: Encoder[IntroCardResponse] = deriveEncoder[IntroCardResponse]
-  implicit val decoder: Decoder[IntroCardResponse] = deriveDecoder[IntroCardResponse]
+  implicit val codec: Codec[IntroCardResponse] = deriveCodec
 }
 
 final case class PushProposalCardResponse(
   @(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean
 )
 object PushProposalCardResponse extends CirceFormatters {
-  implicit val encoder: Encoder[PushProposalCardResponse] = deriveEncoder[PushProposalCardResponse]
-  implicit val decoder: Decoder[PushProposalCardResponse] = deriveDecoder[PushProposalCardResponse]
+  implicit val codec: Codec[PushProposalCardResponse] = deriveCodec
 }
 
 final case class FinalCardResponse(
@@ -101,8 +99,7 @@ final case class FinalCardResponse(
   linkUrl: Option[String]
 )
 object FinalCardResponse extends CirceFormatters {
-  implicit val encoder: Encoder[FinalCardResponse] = deriveEncoder[FinalCardResponse]
-  implicit val decoder: Decoder[FinalCardResponse] = deriveDecoder[FinalCardResponse]
+  implicit val codec: Codec[FinalCardResponse] = deriveCodec
 }
 
 final case class SequenceCardsConfigurationResponse(
@@ -112,9 +109,7 @@ final case class SequenceCardsConfigurationResponse(
 )
 
 object SequenceCardsConfigurationResponse extends CirceFormatters {
-  implicit val encoder: Encoder[SequenceCardsConfigurationResponse] =
-    deriveEncoder[SequenceCardsConfigurationResponse]
-  implicit val decoder: Decoder[SequenceCardsConfigurationResponse] = deriveDecoder[SequenceCardsConfigurationResponse]
+  implicit val codec: Codec[SequenceCardsConfigurationResponse] = deriveCodec
 
   def apply(sequenceCardConfiguration: SequenceCardsConfiguration): SequenceCardsConfigurationResponse = {
     SequenceCardsConfigurationResponse(
@@ -140,8 +135,7 @@ object SequenceCardsConfigurationResponse extends CirceFormatters {
 final case class OrganisationPartnerResponse(organisationId: UserId, slug: String)
 
 object OrganisationPartnerResponse {
-  implicit val encoder: Encoder[OrganisationPartnerResponse] = deriveEncoder[OrganisationPartnerResponse]
-  implicit val decoder: Decoder[OrganisationPartnerResponse] = deriveDecoder[OrganisationPartnerResponse]
+  implicit val codec: Codec[OrganisationPartnerResponse] = deriveCodec
 }
 
 final case class QuestionPartnerResponse(
@@ -169,8 +163,7 @@ object QuestionPartnerResponse extends CirceFormatters {
     weight = partner.weight
   )
 
-  implicit val encoder: Encoder[QuestionPartnerResponse] = deriveEncoder[QuestionPartnerResponse]
-  implicit val decoder: Decoder[QuestionPartnerResponse] = deriveDecoder[QuestionPartnerResponse]
+  implicit val codec: Codec[QuestionPartnerResponse] = deriveCodec
 }
 
 final case class OperationOfQuestionHighlightsResponse(
@@ -221,12 +214,14 @@ final case class QuestionDetailsResponse(
   descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   displayResults: Boolean,
   operation: QuestionsOfOperationResponse,
-  activeFeatures: Seq[String],
+  @(ApiModelProperty @field)(dataType = "list[string]")
+  activeFeatures: Seq[FeatureSlug],
   featured: Boolean,
   highlights: OperationOfQuestionHighlightsResponse,
   timeline: OperationOfQuestionTimeline,
   controversyCount: Long,
-  topProposalCount: Long
+  topProposalCount: Long,
+  activeFeatureData: ActiveFeatureData
 )
 
 object QuestionDetailsResponse extends CirceFormatters {
@@ -236,9 +231,10 @@ object QuestionDetailsResponse extends CirceFormatters {
     operationOfQuestion: OperationOfQuestion,
     partners: Seq[Partner],
     questionsOfOperation: Seq[QuestionOfOperationResponse],
-    activeFeatures: Seq[String],
+    activeFeatures: Seq[FeatureSlug],
     controversyCount: Long,
-    topProposalCount: Long
+    topProposalCount: Long,
+    activeFeatureData: ActiveFeatureData
   ): QuestionDetailsResponse = QuestionDetailsResponse(
     questionId = question.questionId,
     operationId = operation.operationId,
@@ -278,11 +274,11 @@ object QuestionDetailsResponse extends CirceFormatters {
     ),
     timeline = operationOfQuestion.timeline,
     controversyCount = controversyCount,
-    topProposalCount = topProposalCount
+    topProposalCount = topProposalCount,
+    activeFeatureData = activeFeatureData
   )
 
-  implicit val encoder: Encoder[QuestionDetailsResponse] = deriveEncoder[QuestionDetailsResponse]
-  implicit val decoder: Decoder[QuestionDetailsResponse] = deriveDecoder[QuestionDetailsResponse]
+  implicit val codec: Codec[QuestionDetailsResponse] = deriveCodec[QuestionDetailsResponse]
 }
 
 final case class QuestionOfOperationResponse(
@@ -347,8 +343,7 @@ object QuestionOfOperationResponse extends CirceFormatters {
       proposalsCount = indexedOperationOfQuestion.proposalsCount
     )
 
-  implicit val encoder: Encoder[QuestionOfOperationResponse] = deriveEncoder[QuestionOfOperationResponse]
-  implicit val decoder: Decoder[QuestionOfOperationResponse] = deriveDecoder[QuestionOfOperationResponse]
+  implicit val codec: Codec[QuestionOfOperationResponse] = deriveCodec[QuestionOfOperationResponse]
 }
 
 final case class QuestionThemeResponse(
@@ -368,13 +363,17 @@ object QuestionThemeResponse {
     )
   }
 
-  implicit val encoder: Encoder[QuestionThemeResponse] = deriveEncoder[QuestionThemeResponse]
-  implicit val decoder: Decoder[QuestionThemeResponse] = deriveDecoder[QuestionThemeResponse]
+  implicit val codec: Codec[QuestionThemeResponse] = deriveCodec
 }
 
 final case class QuestionsOfOperationResponse(questions: Seq[QuestionOfOperationResponse])
 
 object QuestionsOfOperationResponse {
-  implicit val encoder: Encoder[QuestionsOfOperationResponse] = deriveEncoder[QuestionsOfOperationResponse]
-  implicit val decoder: Decoder[QuestionsOfOperationResponse] = deriveDecoder[QuestionsOfOperationResponse]
+  implicit val codec: Codec[QuestionsOfOperationResponse] = deriveCodec
+}
+
+final case class ActiveFeatureData(topProposal: Option[ProposalResponse])
+
+object ActiveFeatureData {
+  implicit val codec: Codec[ActiveFeatureData] = deriveCodec
 }
