@@ -473,7 +473,9 @@ class OperationOfQuestionServiceTest
           maybeQuestionIds = Some(Seq(qId)),
           status = Some(Seq(ProposalStatus.Pending)),
           maybeUserId = None,
-          toEnrich = None
+          toEnrich = None,
+          minVotesCount = None,
+          minScore = None
         )
       ).thenReturn(Future.successful(Map(qId -> 42L)))
       when(
@@ -481,17 +483,22 @@ class OperationOfQuestionServiceTest
           maybeQuestionIds = Some(Seq(qId)),
           status = Some(ProposalStatus.values),
           maybeUserId = None,
-          toEnrich = None
+          toEnrich = None,
+          minVotesCount = None,
+          minScore = None
         )
       ).thenReturn(Future.successful(Map(qId -> 420L)))
       when(tagService.count(tagFilter = TagFilter(questionIds = Some(Seq(qId))))).thenReturn(Future.successful(42))
-      whenReady(operationOfQuestionService.getQuestionsInfos(None, ModerationMode.Moderation), Timeout(3.seconds)) {
-        res =>
-          res.size shouldBe 1
-          res.head.questionId shouldBe qId
-          res.head.proposalToModerateCount shouldBe 42
-          res.head.totalProposalCount shouldBe 420
-          res.head.hasTags shouldBe true
+      whenReady(
+        operationOfQuestionService
+          .getQuestionsInfos(None, ModerationMode.Moderation, minVotesCount = None, minScore = None),
+        Timeout(3.seconds)
+      ) { res =>
+        res.size shouldBe 1
+        res.head.questionId shouldBe qId
+        res.head.proposalToModerateCount shouldBe 42
+        res.head.totalProposalCount shouldBe 420
+        res.head.hasTags shouldBe true
       }
     }
   }

@@ -85,7 +85,9 @@ trait OrganisationIndexationStream
         maybeQuestionIds = None,
         status = Some(Seq(ProposalStatus.Accepted)),
         maybeUserId = Some(organisationId),
-        toEnrich = None
+        toEnrich = None,
+        minVotesCount = None,
+        minScore = None
       )
 
     def generateProposalsAndVotesCountsByQuestion(

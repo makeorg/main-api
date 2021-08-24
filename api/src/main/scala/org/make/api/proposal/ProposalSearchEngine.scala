@@ -78,7 +78,9 @@ trait ProposalSearchEngine {
     maybeQuestionIds: Option[Seq[QuestionId]],
     status: Option[Seq[ProposalStatus]],
     maybeUserId: Option[UserId],
-    toEnrich: Option[Boolean]
+    toEnrich: Option[Boolean],
+    minVotesCount: Option[Int],
+    minScore: Option[Double]
   ): Future[Map[QuestionId, Long]]
 
   def countVotedProposals(searchQuery: SearchQuery): Future[Int]
@@ -180,14 +182,18 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       maybeQuestionIds: Option[Seq[QuestionId]],
       status: Option[Seq[ProposalStatus]],
       maybeUserId: Option[UserId],
-      toEnrich: Option[Boolean]
+      toEnrich: Option[Boolean],
+      minVotesCount: Option[Int],
+      minScore: Option[Double]
     ): Future[Map[QuestionId, Long]] = {
       val searchQuery: SearchQuery = SearchQuery(filters = Some(
         SearchFilters(
           question = maybeQuestionIds.map(QuestionSearchFilter.apply),
           status = status.map(StatusSearchFilter.apply),
           users = maybeUserId.map(userId => UserSearchFilter(Seq(userId))),
-          toEnrich = toEnrich.map(ToEnrichSearchFilter.apply)
+          toEnrich = toEnrich.map(ToEnrichSearchFilter.apply),
+          minVotesCount = minVotesCount.map(MinVotesCountSearchFilter.apply),
+          minScore = minScore.map(MinScoreSearchFilter.apply)
         )
       )
       )

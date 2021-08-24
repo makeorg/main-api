@@ -89,7 +89,9 @@ trait OperationOfQuestionService {
   def indexById(questionId: QuestionId): Future[Option[IndexationStatus]]
   def getQuestionsInfos(
     questionIds: Option[Seq[QuestionId]],
-    moderationMode: ModerationMode
+    moderationMode: ModerationMode,
+    minVotesCount: Option[Int],
+    minScore: Option[Double]
   ): Future[Seq[ModerationOperationOfQuestionInfosResponse]]
 }
 
@@ -333,7 +335,9 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
 
     override def getQuestionsInfos(
       questionIds: Option[Seq[QuestionId]],
-      moderationMode: ModerationMode
+      moderationMode: ModerationMode,
+      minVotesCount: Option[Int],
+      minScore: Option[Double]
     ): Future[Seq[ModerationOperationOfQuestionInfosResponse]] = {
       elasticsearchOperationOfQuestionAPI
         .searchOperationOfQuestions(
@@ -356,13 +360,17 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
               if (moderationMode == Enrichment) Some(Seq(ProposalStatus.Accepted))
               else Some(Seq(ProposalStatus.Pending)),
             maybeUserId = None,
-            toEnrich = if (moderationMode == Enrichment) Some(true) else None
+            toEnrich = if (moderationMode == Enrichment) Some(true) else None,
+            minVotesCount = if (moderationMode == Enrichment) minVotesCount else None,
+            minScore = if (moderationMode == Enrichment) minScore else None
           )
           val futureProposalCountByQuestion = elasticsearchProposalAPI.countProposalsByQuestion(
             maybeQuestionIds = Some(questions.results.map(_.questionId)),
             status = Some(ProposalStatus.values),
             maybeUserId = None,
-            toEnrich = None
+            toEnrich = None,
+            minVotesCount = None,
+            minScore = None
           )
           val futureHasTags = Future
             .traverse(questions.results) { q =>
