@@ -124,10 +124,14 @@ import org.make.api.userhistory.{
 import org.make.api.views._
 import org.make.api.widget.{
   AdminSourceApi,
+  AdminWidgetApi,
   DefaultAdminSourceApiComponent,
+  DefaultAdminWidgetApiComponent,
   DefaultPersistentSourceServiceComponent,
+  DefaultPersistentWidgetServiceComponent,
   DefaultSourceServiceComponent,
   DefaultWidgetApiComponent,
+  DefaultWidgetServiceComponent,
   WidgetApi
 }
 import org.make.core.{AvroSerializers, DefaultDateHelperComponent, ValidationError, ValidationFailedError}
@@ -158,6 +162,7 @@ trait MakeApi
     with DefaultAdminSourceApiComponent
     with DefaultAdminTopIdeaApiComponent
     with DefaultAdminUserApiComponent
+    with DefaultAdminWidgetApiComponent
     with DefaultAuthenticationApiComponent
     with DefaultClientServiceComponent
     with DefaultConfigComponent
@@ -243,6 +248,7 @@ trait MakeApi
     with DefaultPersistentTopIdeaCommentServiceComponent
     with DefaultPersistentUserServiceComponent
     with DefaultPersistentUserToAnonymizeServiceComponent
+    with DefaultPersistentWidgetServiceComponent
     with DefaultPostSearchEngineComponent
     with DefaultPostServiceComponent
     with DefaultQuestionPersonalityServiceComponent
@@ -288,6 +294,7 @@ trait MakeApi
     with DefaultUserTokenGeneratorComponent
     with DefaultViewApiComponent
     with DefaultWidgetApiComponent
+    with DefaultWidgetServiceComponent
     with DefaultWebflowClientComponent
     with DefaultWebflowConfigurationComponent
     with HealthCheckComponent
@@ -389,6 +396,7 @@ trait MakeApi
       classOf[AdminSourceApi],
       classOf[AdminTopIdeaApi],
       classOf[AdminUserApi],
+      classOf[AdminWidgetApi],
       classOf[AuthenticationApi],
       classOf[ConfigurationsApi],
       classOf[CrmApi],
@@ -459,6 +467,7 @@ trait MakeApi
       adminSourceApi.routes ~
       adminTopIdeaApi.routes ~
       adminUserApi.routes ~
+      adminWidgetApi.routes ~
       authenticationApi.routes ~
       configurationsApi.routes ~
       crmApi.routes ~

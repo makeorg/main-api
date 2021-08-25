@@ -23,7 +23,6 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
-import org.make.core.DateHelper
 import org.make.core.widget.{Source, SourceId}
 
 import scala.collection.immutable.Seq
@@ -35,8 +34,8 @@ class AdminSourceApiTest extends MakeApiTestBase with DefaultAdminSourceApiCompo
 
   val routes: Route = sealRoute(adminSourceApi.routes)
 
-  private def source(id: SourceId, name: String, source: String) =
-    Source(id, name, source, DateHelper.now(), DateHelper.now(), defaultAdminUser.userId)
+  private def source(id: SourceId, name: String, slug: String): Source =
+    source(id = id, userId = defaultAdminUser.userId, name = name, source = slug)
 
   Feature("list sources") {
 
@@ -123,7 +122,7 @@ class AdminSourceApiTest extends MakeApiTestBase with DefaultAdminSourceApiCompo
   }
 
   Feature("create a source") {
-    val created = source(id = SourceId("id"), name = "name", source = "source")
+    val created = source(id = SourceId("id"), name = "name", slug = "source")
 
     when(sourceService.findBySource(any)).thenReturn(Future.successful(None))
     when(sourceService.findBySource("existing")).thenReturn(Future.successful(Some(created.copy(source = "existing"))))
@@ -178,13 +177,13 @@ class AdminSourceApiTest extends MakeApiTestBase with DefaultAdminSourceApiCompo
   }
 
   Feature("update a source") {
-    val sourceBeforeUpdate = source(id = SourceId("id"), name = "name", source = "source")
-    val updatedSource = source(id = SourceId("id"), name = "updated name", source = "updated source")
+    val sourceBeforeUpdate = source(id = SourceId("id"), name = "name", slug = "source")
+    val updatedSource = source(id = SourceId("id"), name = "updated name", slug = "updated source")
 
     when(sourceService.get(eqTo(sourceBeforeUpdate.id))).thenReturn(Future.successful(Some(sourceBeforeUpdate)))
 
     when(sourceService.findBySource("existing"))
-      .thenReturn(Future.successful(Some(source(id = SourceId("other"), name = "name", source = "existing"))))
+      .thenReturn(Future.successful(Some(source(id = SourceId("other"), name = "name", slug = "existing"))))
 
     when(sourceService.update(eqTo(sourceBeforeUpdate.id), eqTo("updated name"), eqTo("updated source"), any))
       .thenReturn(Future.successful(Some(updatedSource)))
