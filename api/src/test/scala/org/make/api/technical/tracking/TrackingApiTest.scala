@@ -243,4 +243,43 @@ class TrackingApiTest
 
     }
   }
+
+  Feature("concertation tracking") {
+    Scenario("valid concertation") {
+      val request =
+        s"""
+          |{
+          |  "eventName": "homepage-display",
+          |  "context": {
+          |    "sessionId": "session-id",
+          |    "concertationSlug": "slug",
+          |    "language": "fr",
+          |    "country": "FR",
+          |    "location": "homepage",
+          |    "getParameters": {}
+          |  },
+          |  "parameters": {}
+          |}
+          |""".stripMargin
+      val entity = HttpEntity(ContentTypes.`application/json`, request)
+      Post("/tracking/concertation", entity) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+      }
+    }
+
+    Scenario("bad request") {
+      val request =
+        s"""
+           |{
+           |  "eventName": "homepage-display",
+           |  "context": null,
+           |  "parameters": {}
+           |}
+           |""".stripMargin
+      val entity = HttpEntity(ContentTypes.`application/json`, request)
+      Post("/tracking/concertation", entity) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+  }
 }

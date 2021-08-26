@@ -42,6 +42,7 @@ import org.make.api.technical.security.{SecurityConfigurationComponent, Security
 import org.make.api.technical.storage.Content
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.tracing.Tracing
+import org.make.core.ApplicationName.Concertation
 import org.make.core.Validation.validateField
 import org.make.core.auth.{Token, UserRights}
 import org.make.core.operation.OperationId
@@ -423,6 +424,24 @@ trait MakeDirectives
       )
       logRequest(name, requestContext, origin)
       connectIfNecessary(currentSessionId, maybeUser.map(_.user.userId), requestContext)
+      requestContext
+    }
+  }
+
+  def makeOperationForConcertation(name: String, location: String): Directive1[RequestContext] = {
+    val slugifiedName: String = SlugHelper(name)
+    Tracing.entrypoint(slugifiedName)
+
+    for {
+      requestId <- requestId
+      _         <- operationName(slugifiedName)
+      origin    <- optionalNonEmptyHeaderValueByName(Origin.name)
+      _         <- addCorsHeaders(origin)
+      _         <- handleExceptions(MakeApi.exceptionHandler(slugifiedName, requestId))
+      _         <- handleRejections(MakeApi.rejectionHandler)
+    } yield {
+      val requestContext = RequestContext.empty.copy(applicationName = Some(Concertation), location = Some(location))
+      logRequest(name, requestContext, origin)
       requestContext
     }
   }
