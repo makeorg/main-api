@@ -23,12 +23,11 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
+import org.make.core.ValidationError
 import org.make.core.demographics.DemographicsCard.Layout
-import org.make.core.demographics.{DemographicsCard, DemographicsCardId}
+import org.make.core.demographics.DemographicsCardId
 import org.make.core.reference.Language
-import org.make.core.{DateHelper, ValidationError}
 
-import java.time.ZonedDateTime
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
@@ -40,29 +39,6 @@ class AdminDemographicsCardApiTest
   override val demographicsCardService: DemographicsCardService = mock[DemographicsCardService]
 
   val routes: Route = sealRoute(adminDemographicsCardApi.routes)
-
-  private def demographicsCard(
-    id: DemographicsCardId,
-    name: String = "Demo name",
-    layout: Layout = Layout.Select,
-    dataType: String = "demo",
-    language: Language = Language("fr"),
-    title: String = "Demo title",
-    parameters: String = """[{"label":"option1", "value":"value1"}]""",
-    createdAt: ZonedDateTime = DateHelper.now(),
-    updatedAt: ZonedDateTime = DateHelper.now()
-  ): DemographicsCard =
-    DemographicsCard(
-      id = id,
-      name = name,
-      layout = layout,
-      dataType = dataType,
-      language = language,
-      title = title,
-      parameters = parameters,
-      createdAt = createdAt,
-      updatedAt = updatedAt
-    )
 
   Feature("list demographicsCards") {
 
@@ -413,7 +389,6 @@ class AdminDemographicsCardApiTest
         errors.size should be(1)
         errors.head.field shouldBe "parameters"
       }
-
     }
   }
 

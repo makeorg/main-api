@@ -25,7 +25,7 @@ import eu.timepit.refined.api.{RefType, Refined, Validate}
 import eu.timepit.refined.refineV
 import org.make.core.StringValue
 import org.make.core.crmTemplate.{CrmLanguageTemplateId, CrmQuestionTemplateId, CrmTemplateKind, TemplateId}
-import org.make.core.demographics.{DemographicsCard, DemographicsCardId}
+import org.make.core.demographics.{ActiveDemographicsCardId, DemographicsCard, DemographicsCardId}
 import org.make.core.feature.{ActiveFeatureId, FeatureId}
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
@@ -52,6 +52,9 @@ object ScalikeSupport {
 
   def stringValueBinders[A <: StringValue](f: String => A): Binders[A] = Binders.string.xmap(f, _.value)
 
+  implicit val activeDemographicsCardIdBinders: Binders[ActiveDemographicsCardId] = stringValueBinders(
+    ActiveDemographicsCardId.apply
+  )
   implicit val activeFeatureIdBinders: Binders[ActiveFeatureId] = stringValueBinders(ActiveFeatureId.apply)
   implicit val crmLanguageTemplateIdBinders: Binders[CrmLanguageTemplateId] = stringValueBinders(
     CrmLanguageTemplateId.apply
