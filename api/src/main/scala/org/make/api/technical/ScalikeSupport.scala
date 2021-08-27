@@ -25,6 +25,7 @@ import eu.timepit.refined.api.{RefType, Refined, Validate}
 import eu.timepit.refined.refineV
 import org.make.core.StringValue
 import org.make.core.crmTemplate.{CrmLanguageTemplateId, CrmQuestionTemplateId, CrmTemplateKind, TemplateId}
+import org.make.core.demographics.{DemographicsCard, DemographicsCardId}
 import org.make.core.feature.{ActiveFeatureId, FeatureId}
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
@@ -40,6 +41,7 @@ object ScalikeSupport {
   def enumBinders[A <: EnumEntry](implicit enum: Enum[A]): Binders[A] = Binders.string.xmap(enum.withName, _.entryName)
 
   implicit val crmTemplateKindBinders: Binders[CrmTemplateKind] = enumBinders
+  implicit val demographicsCardLayoutBinders: Binders[DemographicsCard.Layout] = enumBinders
   implicit val widgetVersionBinders: Binders[Widget.Version] = enumBinders
 
   implicit def stringEnumBinders[A <: StringEnumEntry](implicit enum: StringEnum[A]): Binders[A] =
@@ -58,6 +60,7 @@ object ScalikeSupport {
     CrmQuestionTemplateId.apply
   )
   implicit val countryBinders: Binders[Country] = stringValueBinders(Country.apply)
+  implicit val demographicsCardIdBinders: Binders[DemographicsCardId] = stringValueBinders(DemographicsCardId.apply)
   implicit val featureIdBinders: Binders[FeatureId] = stringValueBinders(FeatureId.apply)
   implicit val languageBinders: Binders[Language] = stringValueBinders(Language.apply)
   implicit val operationIdBinders: Binders[OperationId] = stringValueBinders(OperationId.apply)

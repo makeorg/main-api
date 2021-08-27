@@ -22,9 +22,9 @@ package org.make.api.technical.tracking
 import com.sksamuel.avro4s
 import com.sksamuel.avro4s.{FieldMapper, SchemaFor}
 import org.apache.avro.Schema
-import org.make.core.{ApplicationName, AvroSerializers, EventWrapper}
 import org.make.core.question.QuestionId
 import org.make.core.reference.Country
+import org.make.core.{ApplicationName, AvroSerializers, EventWrapper}
 
 import java.time.ZonedDateTime
 
