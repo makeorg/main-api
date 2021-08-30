@@ -33,7 +33,11 @@ import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.technical.crm._
 import org.make.api.technical.healthcheck.HealthCheckSupervisor
 import org.make.api.technical.job.JobCoordinator
-import org.make.api.technical.tracking.{DemographicsProducerBehavior, TrackingProducerBehavior}
+import org.make.api.technical.tracking.{
+  ConcertationProducerBehavior,
+  DemographicsProducerBehavior,
+  TrackingProducerBehavior
+}
 import org.make.api.technical.{ActorSystemHelper, DeadLettersListenerActor, MakeDowningActor}
 import org.make.api.user.UserSupervisor
 import org.make.api.userhistory.{UserHistoryCommand, UserHistoryCoordinator}
@@ -133,6 +137,14 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
       context.spawn(
         ActorSystemHelper.superviseWithBackoff(DemographicsProducerBehavior()),
         DemographicsProducerBehavior.name,
+        typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
+      )
+    )
+
+    context.watch(
+      context.spawn(
+        ActorSystemHelper.superviseWithBackoff(ConcertationProducerBehavior()),
+        ConcertationProducerBehavior.name,
         typed.Props.empty.withDispatcherFromConfig(kafkaDispatcher)
       )
     )
