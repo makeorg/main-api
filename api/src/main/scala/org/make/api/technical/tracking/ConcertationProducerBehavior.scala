@@ -32,7 +32,7 @@ class ConcertationProducerBehavior extends KafkaProducerBehavior[ConcertationEve
       version = MakeSerializable.V1,
       id = UUID.randomUUID().toString,
       date = DateHelper.now(),
-      eventType = "ConcertationTrackingEvent",
+      eventType = event.eventName,
       event = event
     )
   }
