@@ -23,12 +23,11 @@ import akka.actor.Extension
 import com.typesafe.config.Config
 import org.make.api.ConfigComponent
 
-class MailJetTemplateConfiguration(config: Config, val mainFrontendUrl: String)
+class MailJetTemplateConfiguration(config: Config, val mainFrontendUrl: String, val backofficeUrl: String)
     extends Extension
     with ConfigurationSupport {
   val from: String = config.getString("from")
   val fromName: String = config.getString("from-name")
-  val backofficeUrl: String = config.getString("backoffice-url")
 
   override protected def configuration: Config = config
 }
@@ -42,7 +41,8 @@ trait DefaultMailJetTemplateConfigurationComponent extends MailJetTemplateConfig
   override lazy val mailJetTemplateConfiguration: MailJetTemplateConfiguration =
     new MailJetTemplateConfiguration(
       config.getConfig("make-api.mail-jet.templates"),
-      config.getString("make-api.front-url")
+      config.getString("make-api.urls.front"),
+      config.getString("make-api.urls.backoffice")
     )
 
 }

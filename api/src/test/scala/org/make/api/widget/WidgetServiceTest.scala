@@ -47,7 +47,7 @@ class WidgetServiceTest
   override val persistentWidgetService: PersistentWidgetService = mock[PersistentWidgetService]
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
 
-  when(config.getString("make-api.front-url")).thenReturn("http://localhost")
+  when(config.getString("make-api.urls.widget")).thenReturn("http://localhost")
   when(persistentWidgetService.persist(any)).thenAnswer { w: Widget =>
     Future.successful(w)
   }
