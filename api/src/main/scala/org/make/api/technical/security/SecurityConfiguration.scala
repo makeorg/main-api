@@ -28,6 +28,8 @@ import org.make.api.ActorSystemTypedComponent
 class SecurityConfiguration(config: Config) extends Extension {
   val secureHashSalt: String = config.getString("secure-hash-salt")
   val secureVoteSalt: String = config.getString("secure-vote-salt")
+  val aesInitialVector: String = config.getString("aes-initial-vector")
+  val aesSecretKey: String = config.getString("aes-secret-key")
 }
 
 object SecurityConfiguration extends ExtensionId[SecurityConfiguration] {

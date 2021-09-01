@@ -203,6 +203,8 @@ object CassandraHealthCheckActorIT {
        |  }
        |  security.secure-hash-salt = "salt-secure"
        |  security.secure-vote-salt = "vote-secure"
+       |  security.aes-initial-vector = "initial-vector"
+       |  security.aes-secret-key = "secret-key"
        |}
     """.stripMargin
 
