@@ -24,6 +24,7 @@ import org.make.core.EventId
 import java.util.UUID
 import org.make.core.auth.ClientId
 import org.make.core.crmTemplate.CrmQuestionTemplateId
+import org.make.core.demographics.DemographicsCardId
 import org.make.core.feature.{ActiveFeatureId, FeatureId}
 import org.make.core.idea.{IdeaId, TopIdeaCommentId, TopIdeaId}
 import org.make.core.job.Job.JobId
@@ -39,8 +40,10 @@ import org.make.core.user.UserId
 import org.make.core.widget.{SourceId, WidgetId}
 
 trait IdGenerator {
+
   def nextClientId(): ClientId = ClientId(nextId())
   def nextCrmQuestionTemplateId(): CrmQuestionTemplateId = CrmQuestionTemplateId(nextId())
+  def nextDemographicsCardId(): DemographicsCardId = DemographicsCardId(nextId())
   def nextFeatureId(): FeatureId = FeatureId(nextId())
   def nextActiveFeatureId(): ActiveFeatureId = ActiveFeatureId(nextId())
   def nextIdeaId(): IdeaId = IdeaId(nextId())

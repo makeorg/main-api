@@ -103,6 +103,12 @@ import org.make.api.technical.job._
 import org.make.api.technical.monitoring.DefaultMonitoringService
 import org.make.api.technical.security.{DefaultSecurityApiComponent, DefaultSecurityConfigurationComponent, SecurityApi}
 import org.make.api.technical.storage._
+import org.make.api.demographics.{
+  AdminDemographicsCardApi,
+  DefaultAdminDemographicsCardApiComponent,
+  DefaultDemographicsCardServiceComponent,
+  DefaultPersistentDemographicsCardServiceComponent
+}
 import org.make.api.technical.tracking.{DefaultTrackingApiComponent, TrackingApi}
 import org.make.api.technical.webflow.{DefaultWebflowClientComponent, DefaultWebflowConfigurationComponent}
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
@@ -151,6 +157,7 @@ trait MakeApi
     with DefaultAdminClientApiComponent
     with DefaultAdminCrmLanguageTemplatesApiComponent
     with DefaultAdminCrmQuestionTemplatesApiComponent
+    with DefaultAdminDemographicsCardApiComponent
     with DefaultAdminFeatureApiComponent
     with DefaultAdminModeratorApiComponent
     with DefaultAdminOperationOfQuestionApiComponent
@@ -172,6 +179,7 @@ trait MakeApi
     with DefaultCrmServiceComponent
     with DefaultCrmTemplatesServiceComponent
     with DefaultDateHelperComponent
+    with DefaultDemographicsCardServiceComponent
     with DefaultDownloadServiceComponent
     with DefaultElasticSearchApiComponent
     with DefaultElasticsearchClientComponent
@@ -229,6 +237,7 @@ trait MakeApi
     with DefaultPersistentCrmQuestionTemplateServiceComponent
     with DefaultPersistentCrmSynchroUserServiceComponent
     with DefaultPersistentCrmUserServiceComponent
+    with DefaultPersistentDemographicsCardServiceComponent
     with DefaultPersistentFeatureServiceComponent
     with DefaultPersistentIdeaServiceComponent
     with DefaultPersistentKeywordServiceComponent
@@ -385,6 +394,7 @@ trait MakeApi
       classOf[AdminClientApi],
       classOf[AdminCrmLanguageTemplatesApi],
       classOf[AdminCrmQuestionTemplatesApi],
+      classOf[AdminDemographicsCardApi],
       classOf[AdminFeatureApi],
       classOf[AdminModeratorApi],
       classOf[AdminOperationOfQuestionApi],
@@ -456,6 +466,7 @@ trait MakeApi
       adminClientApi.routes ~
       adminCrmLanguageTemplatesApi.routes ~
       adminCrmQuestionTemplatesApi.routes ~
+      adminDemographicsCardApi.routes ~
       adminFeatureApi.routes ~
       adminModeratorApi.routes ~
       adminOperationOfQuestionApi.routes ~
