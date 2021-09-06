@@ -29,6 +29,7 @@ import org.make.api.sequence.{SequenceBehaviourProvider, SequenceResult, Sequenc
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeApiTestBase}
 import org.make.core.RequestContext
+import org.make.core.demographics.DemographicsCardId
 import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -62,13 +63,15 @@ class WidgetApiTest
   )
   when(
     sequenceService.startNewSequence(
-      any[Option[Seq[TagId]]],
-      any[Option[UserId]],
-      any[QuestionId],
-      any[Seq[ProposalId]],
-      any[RequestContext]
+      behaviourParam = any[Option[Seq[TagId]]],
+      maybeUserId = any[Option[UserId]],
+      questionId = any[QuestionId],
+      includedProposalsIds = any[Seq[ProposalId]],
+      requestContext = any[RequestContext],
+      cardId = any[Option[DemographicsCardId]],
+      token = any[Option[String]]
     )(any[SequenceBehaviourProvider[Option[Seq[TagId]]]])
-  ).thenReturn(Future.successful(SequenceResult(proposals)))
+  ).thenReturn(Future.successful(SequenceResult(proposals, None)))
 
   Feature("start sequence by question slug") {
     val baseQuestion =

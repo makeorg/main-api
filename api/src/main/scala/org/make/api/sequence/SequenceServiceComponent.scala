@@ -35,6 +35,9 @@ import org.make.core.tag.TagId
 import org.make.core.user._
 import org.make.core.{proposal, DateHelper, RequestContext}
 import eu.timepit.refined.auto._
+import org.make.api.demographics.DemographicsCardServiceComponent
+import org.make.core.demographics.DemographicsCardId
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -48,7 +51,9 @@ trait SequenceService {
     maybeUserId: Option[UserId],
     questionId: QuestionId,
     includedProposalsIds: Seq[ProposalId],
-    requestContext: RequestContext
+    requestContext: RequestContext,
+    cardId: Option[DemographicsCardId],
+    token: Option[String]
   ): Future[SequenceResult]
 
   def startNewSequence(
@@ -58,18 +63,21 @@ trait SequenceService {
     questionId: QuestionId,
     includedProposalIds: Seq[ProposalId],
     tagsIds: Option[Seq[TagId]],
-    requestContext: RequestContext
+    requestContext: RequestContext,
+    cardId: Option[DemographicsCardId],
+    token: Option[String]
   ): Future[SequenceResult]
 }
 
 trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
-  this: UserHistoryCoordinatorServiceComponent
+  this: DemographicsCardServiceComponent
+    with OperationOfQuestionSearchEngineComponent
     with ProposalSearchEngineComponent
     with SecurityConfigurationComponent
     with SegmentServiceComponent
     with SequenceConfigurationComponent
     with SessionHistoryCoordinatorServiceComponent
-    with OperationOfQuestionSearchEngineComponent
+    with UserHistoryCoordinatorServiceComponent
     with Logging =>
 
   override lazy val sequenceService: DefaultSequenceService = new DefaultSequenceService
@@ -81,7 +89,9 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       maybeUserId: Option[UserId],
       questionId: QuestionId,
       includedProposalsIds: Seq[ProposalId],
-      requestContext: RequestContext
+      requestContext: RequestContext,
+      cardId: Option[DemographicsCardId],
+      token: Option[String]
     ): Future[SequenceResult] = {
       val log = logStartSequenceUserHistory(questionId, maybeUserId, includedProposalsIds, requestContext)
       val votedProposals =
@@ -93,17 +103,20 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
         behaviour          <- behaviour
         sequenceProposals  <- chooseSequenceProposals(includedProposalsIds, behaviour, proposalsToExclude)
         sequenceVotes      <- votesForProposals(maybeUserId, requestContext, sequenceProposals.map(_.id))
-      } yield SequenceResult(proposals = sequenceProposals
-        .map(indexed => {
-          val proposalKey =
-            SecurityHelper.generateProposalKeyHash(
-              indexed.id,
-              requestContext.sessionId,
-              requestContext.location,
-              securityConfiguration.secureVoteSalt
-            )
-          ProposalResponse(indexed, maybeUserId.contains(indexed.userId), sequenceVotes.get(indexed.id), proposalKey)
-        })
+        demographicsCard   <- demographicsCardService.getOrPickRandom(cardId, token, questionId)
+      } yield SequenceResult(
+        proposals = sequenceProposals
+          .map(indexed => {
+            val proposalKey =
+              SecurityHelper.generateProposalKeyHash(
+                indexed.id,
+                requestContext.sessionId,
+                requestContext.location,
+                securityConfiguration.secureVoteSalt
+              )
+            ProposalResponse(indexed, maybeUserId.contains(indexed.userId), sequenceVotes.get(indexed.id), proposalKey)
+          }),
+        demographics = demographicsCard
       )
     }
 
@@ -134,7 +147,9 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       questionId: QuestionId,
       includedProposalIds: Seq[ProposalId],
       tagsIds: Option[Seq[TagId]],
-      requestContext: RequestContext
+      requestContext: RequestContext,
+      cardId: Option[DemographicsCardId],
+      token: Option[String]
     ): Future[SequenceResult] = {
       val votedProposals =
         sessionHistoryCoordinatorService.retrieveVotedProposals(RequestSessionVotedProposals(requestContext.sessionId))
@@ -144,17 +159,20 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
         proposalsToExclude <- votedProposals
         sequenceProposals  <- chooseSequenceProposals(includedProposalIds, behaviour, proposalsToExclude)
         sequenceVotes      <- votesForProposals(maybeUserId, requestContext, sequenceProposals.map(_.id))
-      } yield SequenceResult(proposals = sequenceProposals
-        .map(indexed => {
-          val proposalKey =
-            SecurityHelper.generateProposalKeyHash(
-              indexed.id,
-              requestContext.sessionId,
-              requestContext.location,
-              securityConfiguration.secureVoteSalt
-            )
-          ProposalResponse(indexed, maybeUserId.contains(indexed.userId), sequenceVotes.get(indexed.id), proposalKey)
-        })
+        demographicsCard   <- demographicsCardService.getOrPickRandom(cardId, token, questionId)
+      } yield SequenceResult(
+        proposals = sequenceProposals
+          .map(indexed => {
+            val proposalKey =
+              SecurityHelper.generateProposalKeyHash(
+                indexed.id,
+                requestContext.sessionId,
+                requestContext.location,
+                securityConfiguration.secureVoteSalt
+              )
+            ProposalResponse(indexed, maybeUserId.contains(indexed.userId), sequenceVotes.get(indexed.id), proposalKey)
+          }),
+        demographics = demographicsCard
       )
     }
 

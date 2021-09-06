@@ -45,6 +45,7 @@ trait WidgetApiComponent {
 @Path(value = "/widget")
 trait WidgetApi extends Directives {
 
+  @Deprecated
   @Path(value = "/questions/{questionSlug}/start-sequence")
   @ApiOperation(value = "get-widget-sequence-by-question", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
@@ -81,6 +82,7 @@ trait DefaultWidgetApiComponent
 
     private val questionSlug: PathMatcher1[String] = Segment
 
+    @Deprecated
     override def startSequenceByQuestionSlug: Route = get {
       path("widget" / "questions" / questionSlug / "start-sequence") { questionSlug =>
         makeOperation("GetWidgetSequenceByQuestionSlug") { requestContext =>
@@ -98,7 +100,9 @@ trait DefaultWidgetApiComponent
                       maybeUserId = userAuth.map(_.user.userId),
                       questionId = question.questionId,
                       includedProposalsIds = Seq.empty,
-                      requestContext = requestContext
+                      requestContext = requestContext,
+                      cardId = None,
+                      token = None
                     )
                   ) { selectedProposals =>
                     complete(

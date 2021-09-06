@@ -24,6 +24,7 @@ import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.TestKit
 import com.typesafe.config.{Config, ConfigFactory}
+import org.make.api.demographics.{DemographicsCardResponse, DemographicsCardService, DemographicsCardServiceComponent}
 import org.make.api.{ActorSystemComponent, ActorSystemTypedComponent, DatabaseTest, DefaultConfigComponent}
 import org.make.api.docker.{DockerCassandraService, DockerElasticsearchService}
 import org.make.api.extensions.MakeSettings.DefaultAdmin
@@ -124,6 +125,7 @@ import org.make.api.userhistory.{
   UserHistoryCoordinator,
   UserHistoryCoordinatorComponent
 }
+import org.make.core.demographics.DemographicsCardId
 import org.make.core.{DefaultDateHelperComponent, RequestContext}
 import org.make.core.job.Job
 import org.make.core.job.Job.JobId
@@ -162,6 +164,7 @@ class SequenceServiceIT
     with DefaultActiveFeatureServiceComponent
     with DefaultConfigComponent
     with DefaultDateHelperComponent
+    with DemographicsCardServiceComponent
     with DefaultElasticsearchClientComponent
     with DefaultElasticsearchConfigurationComponent
     with DefaultEventBusServiceComponent
@@ -267,7 +270,17 @@ class SequenceServiceIT
   when(sequenceConfigurationService.getSequenceConfigurationByQuestionId(any)).thenAnswer { _: QuestionId =>
     Future.successful(sequenceConfiguration)
   }
-
+  override val demographicsCardService: DemographicsCardService = mock[DemographicsCardService]
+  when(demographicsCardService.getOrPickRandom(any, any, any)).thenAnswer {
+    (cardId: Option[DemographicsCardId], token: Option[String], _: QuestionId) =>
+      (cardId, token) match {
+        case (Some(_), Some(_)) =>
+          Future.successful(
+            Some(DemographicsCardResponse(demographicsCard(DemographicsCardId("card-id")), token = "s3CUr3t0k3N"))
+          )
+        case _ => Future.successful(None)
+      }
+  }
   override val userRegistrationValidator: UserRegistrationValidator = mock[UserRegistrationValidator]
   when(userRegistrationValidator.canRegister(any)).thenReturn(Future.successful(true))
 
@@ -369,18 +382,39 @@ class SequenceServiceIT
   Feature("Start a sequence with lots of params") {
     Scenario("standard behaviour") {
       whenReady(
-        sequenceService.startNewSequence(None, None, None, questionId, Nil, None, requestContext),
+        sequenceService.startNewSequence(
+          None,
+          None,
+          None,
+          questionId,
+          Nil,
+          None,
+          requestContext,
+          Some(DemographicsCardId("card-id")),
+          Some("s3CUr3t0k3N")
+        ),
         Timeout(60.seconds)
       ) { result =>
         result.proposals.size should be > 0
         result.proposals.map(p => getScorer(getProposal(p)).zone).distinct.size should be > 1
         result.proposals.foreach(_.votes.foreach(_.hasVoted shouldBe false))
+        result.demographics shouldBe defined
       }
     }
 
     Scenario(s"Controversy zone behaviour") {
       whenReady(
-        sequenceService.startNewSequence(Some(Zone.Controversy), None, None, questionId, Nil, None, requestContext),
+        sequenceService.startNewSequence(
+          Some(Zone.Controversy),
+          None,
+          None,
+          questionId,
+          Nil,
+          None,
+          requestContext,
+          Some(DemographicsCardId("card-id")),
+          None
+        ),
         Timeout(60.seconds)
       ) { result =>
         result.proposals.size should be > 0
@@ -391,12 +425,23 @@ class SequenceServiceIT
           scorer.pool(sequenceConfiguration, proposal.status) shouldBe SequencePool.Tested
           p.votes.foreach(_.hasVoted shouldBe false)
         }
+        result.demographics should not be defined
       }
     }
 
     Scenario(s"Consensus zone behaviour") {
       whenReady(
-        sequenceService.startNewSequence(Some(Zone.Consensus), None, None, questionId, Nil, None, requestContext),
+        sequenceService.startNewSequence(
+          Some(Zone.Consensus),
+          None,
+          None,
+          questionId,
+          Nil,
+          None,
+          requestContext,
+          None,
+          Some("s3CUr3t0k3N")
+        ),
         Timeout(60.seconds)
       ) { result =>
         result.proposals.size should be > 0
@@ -407,6 +452,7 @@ class SequenceServiceIT
           scorer.pool(sequenceConfiguration, proposal.status) shouldBe SequencePool.Tested
           p.votes.foreach(_.hasVoted shouldBe false)
         }
+        result.demographics should not be defined
       }
     }
 
@@ -414,14 +460,26 @@ class SequenceServiceIT
       val futureSequenceTags = for {
         proposals <- elasticsearchProposalAPI.searchProposals(SearchQuery(limit = Some(10)))
         tags = proposals.results.flatMap(_.tags.map(_.tagId)).take(2)
-        sequence <- sequenceService.startNewSequence(None, None, None, questionId, Nil, Some(tags), requestContext)
+        sequence <- sequenceService.startNewSequence(
+          None,
+          None,
+          None,
+          questionId,
+          Nil,
+          Some(tags),
+          requestContext,
+          None,
+          None
+        )
       } yield (sequence, tags)
       whenReady(futureSequenceTags, Timeout(60.seconds)) {
         case (sequence, tags) if tags.nonEmpty =>
           sequence.proposals.size should be > 0
           sequence.proposals.foreach(proposal => tags.intersect(proposal.tags.map(_.tagId)).size should be > 0)
+          sequence.demographics should not be defined
         case (sequence, _) =>
           sequence.proposals.size should be(0)
+          sequence.demographics should not be defined
       }
     }
 
@@ -429,12 +487,13 @@ class SequenceServiceIT
       val futureSequenceKey = for {
         proposals <- elasticsearchProposalAPI.searchProposals(SearchQuery(limit = Some(10)))
         key = proposals.results.flatMap(_.keywords.map(_.key)).headOption
-        sequence <- sequenceService.startNewSequence(None, key, None, questionId, Nil, None, requestContext)
+        sequence <- sequenceService.startNewSequence(None, key, None, questionId, Nil, None, requestContext, None, None)
       } yield (sequence, key)
       whenReady(futureSequenceKey, Timeout(60.seconds)) {
         case (sequence, Some(key)) =>
           sequence.proposals.size should be > 0
           sequence.proposals.foreach(_.keywords.map(_.key) should contain(key))
+          sequence.demographics should not be defined
         case (_, None) => succeed
       }
     }
@@ -442,17 +501,20 @@ class SequenceServiceIT
 
   Feature("Start a sequence with dedicated params") {
     Scenario("standard behaviour") {
-      whenReady(sequenceService.startNewSequence((), None, questionId, Nil, requestContext), Timeout(60.seconds)) {
-        result =>
-          result.proposals.size should be > 0
-          result.proposals.map(p => getScorer(getProposal(p)).zone).distinct.size should be > 1
-          result.proposals.foreach(_.votes.foreach(_.hasVoted shouldBe false))
+      whenReady(
+        sequenceService.startNewSequence((), None, questionId, Nil, requestContext, None, None),
+        Timeout(60.seconds)
+      ) { result =>
+        result.proposals.size should be > 0
+        result.proposals.map(p => getScorer(getProposal(p)).zone).distinct.size should be > 1
+        result.proposals.foreach(_.votes.foreach(_.hasVoted shouldBe false))
+        result.demographics should not be defined
       }
     }
 
     Scenario(s"Controversy zone behaviour") {
       whenReady(
-        sequenceService.startNewSequence(Zone.Controversy, None, questionId, Nil, requestContext),
+        sequenceService.startNewSequence(Zone.Controversy, None, questionId, Nil, requestContext, None, None),
         Timeout(60.seconds)
       ) { result =>
         result.proposals.size should be > 0
@@ -463,12 +525,13 @@ class SequenceServiceIT
           scorer.pool(sequenceConfiguration, proposal.status) shouldBe SequencePool.Tested
           p.votes.foreach(_.hasVoted shouldBe false)
         }
+        result.demographics should not be defined
       }
     }
 
     Scenario(s"Consensus zone behaviour") {
       whenReady(
-        sequenceService.startNewSequence(ConsensusParam(Some(0.2)), None, questionId, Nil, requestContext),
+        sequenceService.startNewSequence(ConsensusParam(Some(0.2)), None, questionId, Nil, requestContext, None, None),
         Timeout(60.seconds)
       ) { result =>
         result.proposals.size should be > 0
@@ -479,6 +542,7 @@ class SequenceServiceIT
           scorer.pool(sequenceConfiguration, proposal.status) shouldBe SequencePool.Tested
           p.votes.foreach(_.hasVoted shouldBe false)
         }
+        result.demographics should not be defined
       }
     }
 
@@ -486,14 +550,16 @@ class SequenceServiceIT
       val futureSequenceTags = for {
         proposals <- elasticsearchProposalAPI.searchProposals(SearchQuery(limit = Some(10)))
         tags = proposals.results.flatMap(_.tags.map(_.tagId)).take(2)
-        sequence <- sequenceService.startNewSequence(Option(tags), None, questionId, Nil, requestContext)
+        sequence <- sequenceService.startNewSequence(Option(tags), None, questionId, Nil, requestContext, None, None)
       } yield (sequence, tags)
       whenReady(futureSequenceTags, Timeout(60.seconds)) {
         case (sequence, tags) if tags.nonEmpty =>
           sequence.proposals.size should be > 0
           sequence.proposals.foreach(proposal => tags.intersect(proposal.tags.map(_.tagId)).size should be > 0)
+          sequence.demographics should not be defined
         case (sequence, _) =>
           sequence.proposals.size should be(0)
+          sequence.demographics should not be defined
       }
     }
 
@@ -501,13 +567,14 @@ class SequenceServiceIT
       val futureSequenceKey = for {
         proposals <- elasticsearchProposalAPI.searchProposals(SearchQuery(limit = Some(10)))
         key = proposals.results.flatMap(_.keywords.map(_.key)).headOption.getOrElse(ProposalKeywordKey("undefined"))
-        sequence <- sequenceService.startNewSequence(key, None, questionId, Nil, requestContext)
+        sequence <- sequenceService.startNewSequence(key, None, questionId, Nil, requestContext, None, None)
       } yield (sequence, key)
       whenReady(futureSequenceKey, Timeout(60.seconds)) {
         case (_, ProposalKeywordKey("undefined")) => succeed
         case (sequence, _) =>
           sequence.proposals.size should be > 0
           sequence.proposals.foreach(_.keywords.map(_.key) should contain(key))
+          sequence.demographics should not be defined
       }
     }
   }

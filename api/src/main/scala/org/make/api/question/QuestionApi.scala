@@ -99,6 +99,7 @@ trait QuestionApi extends Directives {
   @Path(value = "/{questionSlugOrQuestionId}/details")
   def questionDetails: Route
 
+  @Deprecated
   @ApiOperation(value = "start-sequence-by-question", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
@@ -492,6 +493,7 @@ trait DefaultQuestionApiComponent
       } yield (ActiveFeatureData(topProposal))
     }
 
+    @Deprecated
     override def startSequenceByQuestionId: Route = get {
       path("questions" / questionId / "start-sequence") { questionId =>
         makeOperation("StartSequenceByQuestionId") { requestContext =>
@@ -516,7 +518,9 @@ trait DefaultQuestionApiComponent
                       questionId = questionId,
                       includedProposalIds = includes.getOrElse(Seq.empty),
                       tagsIds = None,
-                      requestContext = requestContext
+                      requestContext = requestContext,
+                      cardId = None,
+                      token = None
                     )
                 ) { sequences =>
                   complete(sequences)

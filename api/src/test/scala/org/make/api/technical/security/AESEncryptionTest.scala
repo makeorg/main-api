@@ -20,6 +20,7 @@
 package org.make.api.technical.security
 
 import org.make.api.MakeUnitTest
+import scala.util.Success
 
 class AESEncryptionTest extends MakeUnitTest with DefaultAESEncryptionComponent with SecurityConfigurationComponent {
 
@@ -36,11 +37,11 @@ class AESEncryptionTest extends MakeUnitTest with DefaultAESEncryptionComponent 
 
       val tokenEncrypted = aesEncryption.encryptAndEncode(token)
       tokenEncrypted.should(fullyMatch.regex(base64Regex))
-      aesEncryption.decodeAndDecrypt(tokenEncrypted).shouldBe(token)
+      aesEncryption.decodeAndDecrypt(tokenEncrypted).shouldBe(Success(token))
 
       val token2Encrypted = aesEncryption.encryptAndEncode(token2)
       token2Encrypted.should(fullyMatch.regex(base64Regex))
-      aesEncryption.decodeAndDecrypt(token2Encrypted).shouldBe(token2)
+      aesEncryption.decodeAndDecrypt(token2Encrypted).shouldBe(Success(token2))
     }
   }
 }

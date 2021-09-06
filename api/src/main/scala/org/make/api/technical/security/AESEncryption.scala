@@ -19,6 +19,7 @@
 
 package org.make.api.technical.security
 
+import grizzled.slf4j.Logging
 import org.make.api.technical.Base64Encoding
 
 import java.nio.ByteBuffer
@@ -26,6 +27,7 @@ import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 import javax.crypto.spec.{GCMParameterSpec, SecretKeySpec}
 import javax.crypto.Cipher
+import scala.util.{Failure, Success, Try}
 
 trait AESEncryptionComponent {
   def aesEncryption: AESEncryption
@@ -35,11 +37,11 @@ trait AESEncryption {
   def encryptToken(token: Array[Byte]): Array[Byte]
   def decryptToken(buffer: Array[Byte]): Array[Byte]
   def encryptAndEncode(token: String): String
-  def decodeAndDecrypt(token: String): String
+  def decodeAndDecrypt(token: String): Try[String]
 }
 
 trait DefaultAESEncryptionComponent extends AESEncryptionComponent {
-  this: SecurityConfigurationComponent =>
+  this: SecurityConfigurationComponent with Logging =>
 
   override lazy val aesEncryption: DefaultAESEncryption = new DefaultAESEncryption
   val random = new SecureRandom()
@@ -49,9 +51,14 @@ trait DefaultAESEncryptionComponent extends AESEncryptionComponent {
     private val TagLengthBit: Int = 128
     private val IvSize = 16
 
-    lazy val secretKey: SecretKeySpec = {
-      val key = Base64Encoding.decode(securityConfiguration.aesSecretKey)
-      new SecretKeySpec(key, "AES")
+    @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+    val secretKey: SecretKeySpec = {
+      Base64Encoding.decode(securityConfiguration.aesSecretKey) match {
+        case Success(key) => new SecretKeySpec(key, "AES")
+        case Failure(exception) =>
+          logger.error("Cannot decode aes secret key. Key might contain an invalid Base64 format.")
+          throw exception
+      }
     }
 
     override def encryptToken(token: Array[Byte]): Array[Byte] = {
@@ -84,9 +91,10 @@ trait DefaultAESEncryptionComponent extends AESEncryptionComponent {
       Base64Encoding.encode(encryptedToken)
     }
 
-    override def decodeAndDecrypt(token: String): String = {
-      val tokenDecoded: Array[Byte] = Base64Encoding.decode(token)
-      new String(decryptToken(tokenDecoded), StandardCharsets.UTF_8)
+    override def decodeAndDecrypt(token: String): Try[String] = {
+      Base64Encoding
+        .decode(token)
+        .map(tokenDecoded => new String(decryptToken(tokenDecoded), StandardCharsets.UTF_8))
     }
   }
 }

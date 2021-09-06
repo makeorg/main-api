@@ -20,11 +20,11 @@
 package org.make.core
 
 import java.time.{LocalDate, ZoneId, ZonedDateTime}
-
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.Materializer
 import enumeratum.values.{StringEnum, StringEnumEntry}
 import enumeratum.{Enum, EnumEntry}
+import org.make.core.demographics.DemographicsCardId
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.personality.PersonalityRoleId
@@ -126,6 +126,11 @@ trait ParameterExtractors {
   implicit val personalityRoleIdFromStringUnmarshaller: Unmarshaller[String, PersonalityRoleId] =
     Unmarshaller.strict[String, PersonalityRoleId] { role =>
       PersonalityRoleId(role)
+    }
+
+  implicit val demographicsCardIdFromStringUnmarshaller: Unmarshaller[String, DemographicsCardId] =
+    Unmarshaller.strict[String, DemographicsCardId] { role =>
+      DemographicsCardId(role)
     }
 
   implicit def enumeratumEnumUnmarshaller[A <: EnumEntry](implicit enum: Enum[A]): Unmarshaller[String, A] =

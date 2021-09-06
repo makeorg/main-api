@@ -39,6 +39,7 @@ import org.make.api.personality.{PersonalityRoleService, PersonalityRoleServiceC
 import org.make.api.proposal._
 import org.make.api.sequence.{SequenceResult, SequenceService}
 import org.make.api.tag.{TagService, TagServiceComponent}
+import org.make.core.demographics.DemographicsCardId
 import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId, FeatureSlug, Feature => Feat}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.keyword.Keyword
@@ -189,9 +190,11 @@ class QuestionApiTest
           questionId = eqTo(questionId),
           includedProposalIds = any[Seq[ProposalId]],
           tagsIds = any[Option[Seq[TagId]]],
-          requestContext = any[RequestContext]
+          requestContext = any[RequestContext],
+          cardId = any[Option[DemographicsCardId]],
+          token = any[Option[String]]
         )
-      ).thenReturn(Future.successful(SequenceResult(Seq.empty)))
+      ).thenReturn(Future.successful(SequenceResult(Seq.empty, None)))
       Get(s"/questions/${questionId.value}/start-sequence") ~> routes ~> check {
         status should be(StatusCodes.OK)
       }

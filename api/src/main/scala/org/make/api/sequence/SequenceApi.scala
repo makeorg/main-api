@@ -30,6 +30,7 @@ import org.make.api.sequence.SequenceBehaviour.ConsensusParam
 import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.core.auth.UserRights
+import org.make.core.demographics.DemographicsCardId
 import org.make.core.proposal.indexed.Zone
 import org.make.core.proposal.{ProposalId, ProposalKeywordKey}
 import org.make.core.question.QuestionId
@@ -54,7 +55,9 @@ trait SequenceApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "include", paramType = "query", dataType = "string", allowMultiple = true)
+      new ApiImplicitParam(name = "include", paramType = "query", dataType = "string", allowMultiple = true),
+      new ApiImplicitParam(name = "demographicsCardId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "token", paramType = "query", dataType = "string")
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SequenceResult])))
@@ -65,7 +68,9 @@ trait SequenceApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "include", paramType = "query", dataType = "string", allowMultiple = true)
+      new ApiImplicitParam(name = "include", paramType = "query", dataType = "string", allowMultiple = true),
+      new ApiImplicitParam(name = "demographicsCardId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "token", paramType = "query", dataType = "string")
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SequenceResult])))
@@ -76,7 +81,9 @@ trait SequenceApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "include", paramType = "query", dataType = "string", allowMultiple = true)
+      new ApiImplicitParam(name = "include", paramType = "query", dataType = "string", allowMultiple = true),
+      new ApiImplicitParam(name = "demographicsCardId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "token", paramType = "query", dataType = "string")
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SequenceResult])))
@@ -88,7 +95,9 @@ trait SequenceApi extends Directives {
     value = Array(
       new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
       new ApiImplicitParam(name = "keywordKey", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "include", paramType = "query", dataType = "string", allowMultiple = true)
+      new ApiImplicitParam(name = "include", paramType = "query", dataType = "string", allowMultiple = true),
+      new ApiImplicitParam(name = "demographicsCardId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "token", paramType = "query", dataType = "string")
     )
   )
   @ApiResponses(
@@ -97,12 +106,13 @@ trait SequenceApi extends Directives {
   @Path(value = "/keyword/{questionId}/{keywordKey}")
   def startKeywordSequence: Route
 
+  @Deprecated
   @ApiOperation(value = "start-tags-sequence", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "questionSlug", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "include", paramType = "query", dataType = "string", allowMultiple = true),
-      new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string", allowMultiple = true)
+      new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string", allowMultiple = true),
+      new ApiImplicitParam(name = "include", paramType = "query", dataType = "string", allowMultiple = true)
     )
   )
   @ApiResponses(
@@ -136,21 +146,24 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent {
       path("sequences" / "standard" / questionId) { questionId =>
         makeOperation("StartStandardSequence") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters("include".csv[ProposalId]) { includes =>
-              provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
-                provideAsync(
-                  sequenceService
-                    .startNewSequence(
-                      behaviourParam = (),
-                      maybeUserId = userAuth.map(_.user.userId),
-                      questionId = questionId,
-                      includedProposalsIds = includes.getOrElse(Seq.empty),
-                      requestContext = requestContext
-                    )
-                ) { sequenceResult =>
-                  complete(sequenceResult)
+            parameters("include".csv[ProposalId], "demographicsCardId".as[DemographicsCardId].?, "token".?) {
+              (includes: Option[Seq[ProposalId]], cardId: Option[DemographicsCardId], token: Option[String]) =>
+                provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+                  provideAsync(
+                    sequenceService
+                      .startNewSequence(
+                        behaviourParam = (),
+                        maybeUserId = userAuth.map(_.user.userId),
+                        questionId = questionId,
+                        includedProposalsIds = includes.getOrElse(Seq.empty),
+                        requestContext = requestContext,
+                        cardId = cardId,
+                        token = token
+                      )
+                  ) { sequenceResult =>
+                    complete(sequenceResult)
+                  }
                 }
-              }
             }
           }
         }
@@ -161,27 +174,30 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent {
       path("sequences" / "consensus" / questionId) { questionId =>
         makeOperation("StartConsensusSequence") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters("include".csv[ProposalId]) { includes =>
-              val futureTop20ConsensusThreshold: Future[Option[Double]] =
-                elasticsearchOperationOfQuestionAPI
-                  .findOperationOfQuestionById(questionId)
-                  .map(_.flatMap(_.top20ConsensusThreshold))
-              provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
-                provideAsync(futureTop20ConsensusThreshold) { threshold =>
-                  provideAsync(
-                    sequenceService
-                      .startNewSequence(
-                        behaviourParam = ConsensusParam(threshold),
-                        maybeUserId = userAuth.map(_.user.userId),
-                        questionId = questionId,
-                        includedProposalsIds = includes.getOrElse(Seq.empty),
-                        requestContext = requestContext
-                      )
-                  ) { sequenceResult =>
-                    complete(sequenceResult)
+            parameters("include".csv[ProposalId], "demographicsCardId".as[DemographicsCardId].?, "token".?) {
+              (includes: Option[Seq[ProposalId]], cardId: Option[DemographicsCardId], token: Option[String]) =>
+                val futureTop20ConsensusThreshold: Future[Option[Double]] =
+                  elasticsearchOperationOfQuestionAPI
+                    .findOperationOfQuestionById(questionId)
+                    .map(_.flatMap(_.top20ConsensusThreshold))
+                provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+                  provideAsync(futureTop20ConsensusThreshold) { threshold =>
+                    provideAsync(
+                      sequenceService
+                        .startNewSequence(
+                          behaviourParam = ConsensusParam(threshold),
+                          maybeUserId = userAuth.map(_.user.userId),
+                          questionId = questionId,
+                          includedProposalsIds = includes.getOrElse(Seq.empty),
+                          requestContext = requestContext,
+                          cardId = cardId,
+                          token = token
+                        )
+                    ) { sequenceResult =>
+                      complete(sequenceResult)
+                    }
                   }
                 }
-              }
             }
           }
         }
@@ -192,21 +208,24 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent {
       path("sequences" / "controversy" / questionId) { questionId =>
         makeOperation("StartControversySequence") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters("include".csv[ProposalId]) { includes =>
-              val futureQuestion = questionService.getQuestion(questionId)
-              val futureSequence = sequenceService
-                .startNewSequence(
-                  behaviourParam = Zone.Controversy,
-                  maybeUserId = userAuth.map(_.user.userId),
-                  questionId = questionId,
-                  includedProposalsIds = includes.getOrElse(Seq.empty),
-                  requestContext = requestContext
-                )
-              provideAsyncOrNotFound(futureQuestion) { _ =>
-                provideAsync(futureSequence) { sequenceResult =>
-                  complete(sequenceResult)
+            parameters("include".csv[ProposalId], "demographicsCardId".as[DemographicsCardId].?, "token".?) {
+              (includes: Option[Seq[ProposalId]], cardId: Option[DemographicsCardId], token: Option[String]) =>
+                val futureQuestion = questionService.getQuestion(questionId)
+                val futureSequence = sequenceService
+                  .startNewSequence(
+                    behaviourParam = Zone.Controversy,
+                    maybeUserId = userAuth.map(_.user.userId),
+                    questionId = questionId,
+                    includedProposalsIds = includes.getOrElse(Seq.empty),
+                    requestContext = requestContext,
+                    cardId = cardId,
+                    token = token
+                  )
+                provideAsyncOrNotFound(futureQuestion) { _ =>
+                  provideAsync(futureSequence) { sequenceResult =>
+                    complete(sequenceResult)
+                  }
                 }
-              }
             }
           }
         }
@@ -217,43 +236,48 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent {
       path("sequences" / "keyword" / questionId / keywordKey) { (questionId, keywordKey) =>
         makeOperation("StartKeywordSequence") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters("include".csv[ProposalId]) { includes =>
-              val futureQuestion = questionService.getQuestion(questionId)
-              val futureKeyword = keywordService.get(keywordKey.value, questionId)
-              provideAsyncOrNotFound(futureQuestion) { _ =>
-                provideAsyncOrNotFound(futureKeyword) { keyword =>
-                  provideAsync(
-                    sequenceService
-                      .startNewSequence(
-                        behaviourParam = keywordKey,
-                        maybeUserId = userAuth.map(_.user.userId),
-                        questionId = questionId,
-                        includedProposalsIds = includes.getOrElse(Seq.empty),
-                        requestContext = requestContext
+            parameters("include".csv[ProposalId], "demographicsCardId".as[DemographicsCardId].?, "token".?) {
+              (includes: Option[Seq[ProposalId]], cardId: Option[DemographicsCardId], token: Option[String]) =>
+                val futureQuestion = questionService.getQuestion(questionId)
+                val futureKeyword = keywordService.get(keywordKey.value, questionId)
+                provideAsyncOrNotFound(futureQuestion) { _ =>
+                  provideAsyncOrNotFound(futureKeyword) { keyword =>
+                    provideAsync(
+                      sequenceService
+                        .startNewSequence(
+                          behaviourParam = keywordKey,
+                          maybeUserId = userAuth.map(_.user.userId),
+                          questionId = questionId,
+                          includedProposalsIds = includes.getOrElse(Seq.empty),
+                          requestContext = requestContext,
+                          cardId = cardId,
+                          token = token
+                        )
+                    ) { sequenceResult =>
+                      complete(
+                        KeywordSequenceResult(
+                          key = keyword.key,
+                          label = keyword.label,
+                          proposals = sequenceResult.proposals,
+                          demographics = sequenceResult.demographics
+                        )
                       )
-                  ) { sequenceResult =>
-                    complete(
-                      KeywordSequenceResult(
-                        key = keyword.key,
-                        label = keyword.label,
-                        proposals = sequenceResult.proposals
-                      )
-                    )
+                    }
                   }
                 }
-              }
             }
           }
         }
       }
     }
 
+    @Deprecated
     override def startTagsSequence: Route = get {
       path("sequences" / "tags" / questionSlug) { questionSlug =>
         makeOperation("StartTagsSequence") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters("include".csv[ProposalId], "tagsIds".csv[TagId]) {
-              (includes: Option[Seq[ProposalId]], tagsIds: Option[Seq[TagId]]) =>
+            parameters("tagsIds".csv[TagId], "include".csv[ProposalId]) {
+              (tagsIds: Option[Seq[TagId]], includes: Option[Seq[ProposalId]]) =>
                 provideAsyncOrNotFound(questionService.getQuestionByQuestionIdValueOrSlug(questionSlug)) { question =>
                   provideAsync(
                     sequenceService
@@ -262,7 +286,9 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent {
                         maybeUserId = userAuth.map(_.user.userId),
                         questionId = question.questionId,
                         includedProposalsIds = includes.getOrElse(Seq.empty),
-                        requestContext = requestContext
+                        requestContext = requestContext,
+                        cardId = None,
+                        token = None
                       )
                   ) { sequenceResult =>
                     complete(
