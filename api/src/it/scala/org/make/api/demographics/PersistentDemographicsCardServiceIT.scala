@@ -19,7 +19,7 @@
 
 package org.make.api.demographics
 
-import org.make.api.DatabaseTest
+import org.make.api.{DatabaseTest, TestUtilsIT}
 import org.make.core.DateHelper
 import org.make.core.demographics.DemographicsCard.Layout
 import org.make.core.demographics.{DemographicsCard, DemographicsCardId}
@@ -31,30 +31,19 @@ import scala.concurrent.duration.DurationInt
 
 class PersistentDemographicsCardServiceIT extends DatabaseTest with DefaultPersistentDemographicsCardServiceComponent {
 
-  private val demographicsCard =
-    DemographicsCard(
-      id = DemographicsCardId("id"),
-      name = "Demo name",
-      layout = Layout.ThreeColumnsRadio,
-      dataType = "data-type",
-      language = Language("fr"),
-      title = "Demo title",
-      parameters = """[{"label":"Option", "value":"value"}]""",
-      createdAt = DateHelper.now().withZoneSameInstant(ZoneId.systemDefault()),
-      updatedAt = DateHelper.now().withZoneSameInstant(ZoneId.systemDefault())
-    )
+  private val card = TestUtilsIT.demographicsCard(DemographicsCardId("id"))
 
   Feature("CRUD demographicsCard") {
 
     Scenario("persist") {
-      whenReady(persistentDemographicsCardService.persist(demographicsCard), Timeout(2.seconds)) {
-        _ should be(demographicsCard)
+      whenReady(persistentDemographicsCardService.persist(card), Timeout(2.seconds)) {
+        _ should be(card)
       }
     }
 
     Scenario("get") {
-      whenReady(persistentDemographicsCardService.get(demographicsCard.id), Timeout(2.seconds)) {
-        _ shouldBe Some(demographicsCard)
+      whenReady(persistentDemographicsCardService.get(card.id), Timeout(2.seconds)) {
+        _ shouldBe Some(card)
       }
     }
 
@@ -101,7 +90,7 @@ class PersistentDemographicsCardServiceIT extends DatabaseTest with DefaultPersi
 
     Scenario("list with filters") {
       whenReady(persistentDemographicsCardService.list(None, None, None, None, Some(Language("fr")), Some("data-type"))) {
-        _ shouldBe Seq(demographicsCard)
+        _ shouldBe Seq(card)
       }
     }
 

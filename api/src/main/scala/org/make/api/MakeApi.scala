@@ -27,21 +27,14 @@ import akka.http.scaladsl.server._
 import akka.util.Timeout
 import buildinfo.BuildInfo
 import com.typesafe.config.Config
-import grizzled.slf4j.Logging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport.DecodingFailures
 import enumeratum.NoSuchMember
+import grizzled.slf4j.Logging
 import io.circe.CursorOp.DownField
 import io.circe.syntax._
-import org.make.api.crmTemplates.{
-  AdminCrmLanguageTemplatesApi,
-  AdminCrmQuestionTemplatesApi,
-  DefaultAdminCrmLanguageTemplatesApiComponent,
-  DefaultAdminCrmQuestionTemplatesApiComponent,
-  DefaultCrmTemplatesServiceComponent,
-  DefaultPersistentCrmLanguageTemplateServiceComponent,
-  DefaultPersistentCrmQuestionTemplateServiceComponent
-}
+import org.make.api.crmTemplates._
+import org.make.api.demographics._
 import org.make.api.extensions._
 import org.make.api.feature._
 import org.make.api.idea._
@@ -103,23 +96,11 @@ import org.make.api.technical.job._
 import org.make.api.technical.monitoring.DefaultMonitoringService
 import org.make.api.technical.security.{DefaultSecurityApiComponent, DefaultSecurityConfigurationComponent, SecurityApi}
 import org.make.api.technical.storage._
-import org.make.api.demographics.{
-  AdminDemographicsCardApi,
-  DefaultAdminDemographicsCardApiComponent,
-  DefaultDemographicsCardServiceComponent,
-  DefaultPersistentDemographicsCardServiceComponent
-}
 import org.make.api.technical.tracking.{DefaultTrackingApiComponent, TrackingApi}
 import org.make.api.technical.webflow.{DefaultWebflowClientComponent, DefaultWebflowConfigurationComponent}
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
 import org.make.api.user._
-import org.make.api.user.social.{
-  DefaultFacebookApiComponent,
-  DefaultGoogleApiComponent,
-  DefaultSocialProvidersConfigurationComponent,
-  DefaultSocialServiceComponent,
-  SocialProviderException
-}
+import org.make.api.user.social._
 import org.make.api.user.validation.DefaultUserRegistrationValidatorComponent
 import org.make.api.userhistory.{
   DefaultUserHistoryCoordinatorServiceComponent,
@@ -128,20 +109,9 @@ import org.make.api.userhistory.{
   UserHistoryCoordinatorComponent
 }
 import org.make.api.views._
-import org.make.api.widget.{
-  AdminSourceApi,
-  AdminWidgetApi,
-  DefaultAdminSourceApiComponent,
-  DefaultAdminWidgetApiComponent,
-  DefaultPersistentSourceServiceComponent,
-  DefaultPersistentWidgetServiceComponent,
-  DefaultSourceServiceComponent,
-  DefaultWidgetApiComponent,
-  DefaultWidgetServiceComponent,
-  WidgetApi
-}
+import org.make.api.widget._
 import org.make.core.{AvroSerializers, DefaultDateHelperComponent, ValidationError, ValidationFailedError}
-import scalaoauth2.provider.{OAuthGrantType, _}
+import scalaoauth2.provider._
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
@@ -152,7 +122,9 @@ trait MakeApi
     with AvroSerializers
     with BuildInfoRoutes
     with ClientDirectives
+    with DefaultActiveDemographicsCardServiceComponent
     with DefaultActiveFeatureServiceComponent
+    with DefaultAdminActiveDemographicsCardApiComponent
     with DefaultAdminActiveFeatureApiComponent
     with DefaultAdminClientApiComponent
     with DefaultAdminCrmLanguageTemplatesApiComponent
@@ -230,6 +202,7 @@ trait MakeApi
     with DefaultOrganisationSearchEngineComponent
     with DefaultOrganisationServiceComponent
     with DefaultPartnerServiceComponent
+    with DefaultPersistentActiveDemographicsCardServiceComponent
     with DefaultPersistentActiveFeatureServiceComponent
     with DefaultPersistentAuthCodeServiceComponent
     with DefaultPersistentClientServiceComponent
@@ -390,6 +363,7 @@ trait MakeApi
 
   private lazy val apiClasses: Set[Class[_]] =
     Set(
+      classOf[AdminActiveDemographicsCardApi],
       classOf[AdminActiveFeatureApi],
       classOf[AdminClientApi],
       classOf[AdminCrmLanguageTemplatesApi],
@@ -462,6 +436,7 @@ trait MakeApi
       optionsAuthorized ~
       buildRoutes ~
       envDependantRoutes ~
+      adminActiveDemographicsCardApi.routes ~
       adminActiveFeatureApi.routes ~
       adminClientApi.routes ~
       adminCrmLanguageTemplatesApi.routes ~

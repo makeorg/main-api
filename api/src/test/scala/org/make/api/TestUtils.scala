@@ -37,6 +37,8 @@ import org.make.core.sequence.{
   SpecificSequenceConfigurationId
 }
 import org.make.core.auth.{Client, ClientId}
+import org.make.core.demographics.DemographicsCard.Layout
+import org.make.core.demographics.{DemographicsCard, DemographicsCardId}
 import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
 import org.make.core.keyword.Keyword
 import org.make.core.operation._
@@ -68,7 +70,7 @@ import org.make.core.widget.{Source, SourceId}
 import org.make.core.{DateHelper, RequestContext, SlugHelper}
 
 import java.net.URL
-import java.time.ZonedDateTime
+import java.time.{ZoneId, ZonedDateTime}
 
 trait TestUtils {
 
@@ -675,6 +677,28 @@ trait TestUtils {
     updatedAt: ZonedDateTime = DateHelper.now()
   ): Source = Source(id, name, source, createdAt, updatedAt, userId)
 
+  def demographicsCard(
+    id: DemographicsCardId,
+    name: String = "Demo name",
+    layout: Layout = Layout.ThreeColumnsRadio,
+    dataType: String = "data-type",
+    language: Language = Language("fr"),
+    title: String = "Demo title",
+    parameters: String = """[{"label":"Option", "value":"value"}]""",
+    createdAt: ZonedDateTime = DateHelper.now().withZoneSameInstant(ZoneId.systemDefault()),
+    updatedAt: ZonedDateTime = DateHelper.now().withZoneSameInstant(ZoneId.systemDefault())
+  ) =
+    DemographicsCard(
+      id = id,
+      name = name,
+      layout = layout,
+      dataType = dataType,
+      language = language,
+      title = title,
+      parameters = parameters,
+      createdAt = createdAt,
+      updatedAt = updatedAt
+    )
 }
 
 object TestUtils extends TestUtils
