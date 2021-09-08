@@ -160,7 +160,6 @@ object SessionHistorySerializersTest {
     """
       |make-api.security.secure-hash-salt = "salt-secure"
       |make-api.security.secure-vote-salt = "vote-secure"
-      |make-api.security.aes-initial-vector = "initial-vector"
       |make-api.security.aes-secret-key = "secret-key"
       |""".stripMargin
 

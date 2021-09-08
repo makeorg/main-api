@@ -23,6 +23,7 @@ import org.make.api.technical.Base64Encoding
 
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
+import java.security.SecureRandom
 import javax.crypto.spec.{GCMParameterSpec, SecretKeySpec}
 import javax.crypto.Cipher
 
@@ -41,33 +42,41 @@ trait DefaultAESEncryptionComponent extends AESEncryptionComponent {
   this: SecurityConfigurationComponent =>
 
   override lazy val aesEncryption: DefaultAESEncryption = new DefaultAESEncryption
+  val random = new SecureRandom()
 
   class DefaultAESEncryption extends AESEncryption {
-    private val ENCRYPT_ALGO: String = "AES/GCM/NoPadding"
-    private val TAG_LENGTH_BIT: Int = 128
-    private val iv: Array[Byte] = securityConfiguration.aesInitialVector.getBytes(StandardCharsets.UTF_8)
+    private val EncryptionAlgorithm: String = "AES/GCM/NoPadding"
+    private val TagLengthBit: Int = 128
+    private val IvSize = 16
 
-    lazy val getAESKey: SecretKeySpec = {
-      val secretKey = securityConfiguration.aesSecretKey
-      new SecretKeySpec(secretKey.getBytes, 0, secretKey.length, "AES")
+    lazy val secretKey: SecretKeySpec = {
+      val key = Base64Encoding.decode(securityConfiguration.aesSecretKey)
+      new SecretKeySpec(key, "AES")
     }
 
     override def encryptToken(token: Array[Byte]): Array[Byte] = {
-      val cipher: Cipher = Cipher.getInstance(ENCRYPT_ALGO)
-      cipher.init(Cipher.ENCRYPT_MODE, getAESKey, new GCMParameterSpec(TAG_LENGTH_BIT, iv))
+      val cipher: Cipher = Cipher.getInstance(EncryptionAlgorithm)
+      val iv = newIV()
+      cipher.init(Cipher.ENCRYPT_MODE, secretKey, new GCMParameterSpec(TagLengthBit, iv))
       val encryptedText = cipher.doFinal(token)
       ByteBuffer.allocate(iv.length + encryptedText.length).put(iv).put(encryptedText).array()
     }
 
     override def decryptToken(token: Array[Byte]): Array[Byte] = {
       val buffer = ByteBuffer.wrap(token)
-      val iv = new Array[Byte](securityConfiguration.aesInitialVector.getBytes.length)
+      val iv = Array.ofDim[Byte](IvSize)
       buffer.get(iv)
-      val encrytedText = new Array[Byte](buffer.remaining())
-      buffer.get(encrytedText)
-      val cipher: Cipher = Cipher.getInstance(ENCRYPT_ALGO)
-      cipher.init(Cipher.DECRYPT_MODE, getAESKey, new GCMParameterSpec(TAG_LENGTH_BIT, iv))
-      cipher.doFinal(encrytedText)
+      val encryptedText = Array.ofDim[Byte](buffer.remaining())
+      buffer.get(encryptedText)
+      val cipher: Cipher = Cipher.getInstance(EncryptionAlgorithm)
+      cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(TagLengthBit, iv))
+      cipher.doFinal(encryptedText)
+    }
+
+    private def newIV(): Array[Byte] = {
+      val buffer = Array.ofDim[Byte](IvSize)
+      random.nextBytes(buffer)
+      buffer
     }
 
     override def encryptAndEncode(token: String): String = {
