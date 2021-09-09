@@ -25,8 +25,7 @@ class AESEncryptionTest extends MakeUnitTest with DefaultAESEncryptionComponent 
 
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
 
-  when(securityConfiguration.aesInitialVector).thenReturn("initial-vector")
-  when(securityConfiguration.aesSecretKey).thenReturn("aes-secret-key16")
+  when(securityConfiguration.aesSecretKey).thenReturn("G9pPOCayHYlBnNAq1mCVqA==")
 
   Feature("AES") {
     Scenario("encrypt/decrypt") {
@@ -44,5 +43,4 @@ class AESEncryptionTest extends MakeUnitTest with DefaultAESEncryptionComponent 
       aesEncryption.decodeAndDecrypt(token2Encrypted).shouldBe(token2)
     }
   }
-
 }
