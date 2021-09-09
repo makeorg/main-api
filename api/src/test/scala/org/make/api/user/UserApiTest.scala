@@ -2090,4 +2090,51 @@ class UserApiTest
       }
     }
   }
+
+  Feature("Check registration") {
+    Scenario("OK") {
+      when(userService.getUserByEmail(eqTo("yopmail@make.org"))).thenReturn(Future.successful(None))
+
+      val entity = """{"email": "yopmail@make.org", "password": "my-strong-password"}"""
+      Post("/user/check-registration").withEntity(HttpEntity(ContentTypes.`application/json`, entity)) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+      }
+    }
+
+    Scenario("Bad email") {
+      val entity = """{"email": "my-email", "password": "my-strong-password"}"""
+      Post("/user/check-registration").withEntity(HttpEntity(ContentTypes.`application/json`, entity)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val error = errors.find(_.field == "email")
+        error should be(Some(ValidationError("email", "invalid_email", Some("email is not a valid email"))))
+      }
+    }
+
+    Scenario("Password too short") {
+      val entity = """{"email": "yopmail@make.org", "password": "pass"}"""
+      Post("/user/check-registration").withEntity(HttpEntity(ContentTypes.`application/json`, entity)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val error = errors.find(_.field == "password")
+        error should be(
+          Some(ValidationError("password", "invalid_password", Some("Password must be at least 8 characters")))
+        )
+      }
+    }
+
+    Scenario("email already exists") {
+      when(userService.getUserByEmail(eqTo("yopmail@make.org"))).thenReturn(Future.successful(Some(sylvain)))
+
+      val entity = """{"email": "yopmail@make.org", "password": "my-strong-password"}"""
+      Post("/user/check-registration").withEntity(HttpEntity(ContentTypes.`application/json`, entity)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val error = errors.find(_.field == "email")
+        error should be(
+          Some(ValidationError("email", "already_registered", Some("Email yopmail@make.org already exist")))
+        )
+      }
+    }
+  }
 }

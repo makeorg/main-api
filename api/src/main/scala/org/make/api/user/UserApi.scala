@@ -20,11 +20,11 @@
 package org.make.api.user
 
 import java.time.{LocalDate, ZonedDateTime}
-
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
+
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse, ProposalsResultSeededResponse}
@@ -34,6 +34,7 @@ import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.directives.ClientDirectives
 import org.make.api.technical.storage._
+import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.user.validation.UserRegistrationValidatorComponent
 import org.make.api.userhistory.{UserHistoryCoordinatorServiceComponent, _}
@@ -513,6 +514,16 @@ trait UserApi extends Directives {
   )
   def getSocialPrivacyPolicy: Route
 
+  @Path(value = "/check-registration")
+  @ApiOperation(value = "check-registration", httpMethod = "POST")
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.CheckRegistrationRequest")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
+  def checkRegistration: Route
+
   def routes: Route =
     getMe ~
       currentUser ~
@@ -536,7 +547,8 @@ trait UserApi extends Directives {
       getUserProfile ~
       modifyUserProfile ~
       getPrivacyPolicy ~
-      getSocialPrivacyPolicy
+      getSocialPrivacyPolicy ~
+      checkRegistration
 
   val userId: PathMatcher1[UserId] =
     Segment.map(id => UserId(id))
@@ -1339,6 +1351,23 @@ trait DefaultUserApiComponent
               entity(as[SocialPrivacyPolicyRequest]) { request =>
                 provideAsync(socialService.getUserByProviderAndToken(request.provider, request.token)) { maybeUser =>
                   complete(UserPrivacyPolicyResponse(maybeUser.flatMap(_.privacyPolicyApprovalDate)))
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def checkRegistration: Route = {
+      post {
+        path("user" / "check-registration") {
+          makeOperation("CheckRegistration") { _ =>
+            decodeRequest {
+              entity(as[CheckRegistrationRequest]) { request =>
+                provideAsync(userService.getUserByEmail(request.email)) {
+                  case None       => complete(StatusCodes.NoContent)
+                  case Some(user) => failWith(EmailAlreadyRegisteredException(request.email))
                 }
               }
             }

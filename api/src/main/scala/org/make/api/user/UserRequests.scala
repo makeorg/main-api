@@ -471,3 +471,26 @@ final case class SocialPrivacyPolicyRequest(
 object SocialPrivacyPolicyRequest {
   implicit val decoder: Decoder[SocialPrivacyPolicyRequest] = deriveDecoder[SocialPrivacyPolicyRequest]
 }
+
+final case class CheckRegistrationRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org")
+  email: String,
+  password: String
+) {
+  validate(
+    mandatoryField("email", email),
+    validateEmail("email", email.toLowerCase),
+    validateUserInput("email", email, None),
+    mandatoryField("password", password),
+    validateField(
+      "password",
+      "invalid_password",
+      Option(password).exists(_.length >= 8),
+      "Password must be at least 8 characters"
+    )
+  )
+}
+
+object CheckRegistrationRequest {
+  implicit val codec: Codec[CheckRegistrationRequest] = deriveCodec
+}
