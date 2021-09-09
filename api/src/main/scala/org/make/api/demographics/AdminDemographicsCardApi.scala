@@ -23,15 +23,13 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.{Codec, Json, Printer}
-import io.circe.syntax._
 import io.swagger.annotations._
-import org.make.api.demographics.AdminDemographicsCardRequest.LabelValue
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.demographics.DemographicsCard.Layout
-import org.make.core.demographics.{DemographicsCard, DemographicsCardId}
+import org.make.core.demographics.{DemographicsCard, DemographicsCardId, LabelValue}
 import org.make.core.reference.Language
 import org.make.core.technical.Pagination.{End, Start}
 import scalaoauth2.provider.AuthInfo
@@ -325,13 +323,12 @@ final case class AdminDemographicsCardRequest(
       case Left(error) =>
         Validation
           .validateField(field = "parameters", key = "invalid_value", condition = false, message = error.message)
-
     }
     def validateSize(layout: Layout, size: Int) =
       Validation.validateField(
         field = "parameters",
         key = "invalid_value",
-        condition = parameters.asArray.exists(_.size < size),
+        condition = parameters.asArray.exists(_.size <= size),
         message = s"$layout card can contain max $size parameters"
       )
     layout match {
@@ -344,11 +341,6 @@ final case class AdminDemographicsCardRequest(
 
 object AdminDemographicsCardRequest {
   implicit val codec: Codec[AdminDemographicsCardRequest] = deriveCodec
-
-  final case class LabelValue(label: String, value: String)
-  object LabelValue {
-    implicit val codec: Codec[LabelValue] = deriveCodec
-  }
 }
 
 final case class AdminDemographicsCardResponse(
@@ -380,7 +372,7 @@ object AdminDemographicsCardResponse {
       dataType = card.dataType,
       language = card.language,
       title = card.title,
-      parameters = card.parameters.asJson
+      parameters = DemographicsCard.parseParameters(card.parameters)
     )
 
   implicit val codec: Codec[AdminDemographicsCardResponse] = deriveCodec

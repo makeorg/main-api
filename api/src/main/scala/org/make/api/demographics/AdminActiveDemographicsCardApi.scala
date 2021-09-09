@@ -32,7 +32,7 @@ import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.demographics._
 import org.make.core.question.QuestionId
-import org.make.core.{HttpCodes, Order, ParameterExtractors, ValidationError}
+import org.make.core.{HttpCodes, Order, ParameterExtractors, Validation, ValidationError}
 import scalaoauth2.provider.AuthInfo
 import org.make.core.technical.Pagination._
 
@@ -105,7 +105,8 @@ trait AdminActiveDemographicsCardApi extends Directives {
       new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "cardId", paramType = "query", dataType = "string")
     )
   )
   @ApiResponses(
@@ -195,9 +196,24 @@ trait DefaultAdminActiveDemographicsCardApiComponent
                         )
                       ) { _ =>
                         provideAsync(
-                          activeDemographicsCardService.create(request.demographicsCardId, request.questionId)
-                        ) { activeDemographicsCard =>
-                          complete(StatusCodes.Created -> ActiveDemographicsCardResponse(activeDemographicsCard))
+                          activeDemographicsCardService
+                            .list(questionId = Some(request.questionId), cardId = Some(request.demographicsCardId))
+                        ) { actives =>
+                          Validation.validate(
+                            Validation
+                              .requireEmpty(
+                                "questionId",
+                                actives,
+                                Some(
+                                  s"An active card already exists for questionId ${request.questionId} and demographicsCardId ${request.demographicsCardId}"
+                                )
+                              )
+                          )
+                          provideAsync(
+                            activeDemographicsCardService.create(request.demographicsCardId, request.questionId)
+                          ) { activeDemographicsCard =>
+                            complete(StatusCodes.Created -> ActiveDemographicsCardResponse(activeDemographicsCard))
+                          }
                         }
                       }
                     }
@@ -218,21 +234,23 @@ trait DefaultAdminActiveDemographicsCardApiComponent
                 "_end".as[End].?,
                 "_sort".?,
                 "_order".as[Order].?,
-                "questionId".as[QuestionId].?
+                "questionId".as[QuestionId].?,
+                "cardId".as[DemographicsCardId].?
               ) {
                 (
                   start: Option[Start],
                   end: Option[End],
                   sort: Option[String],
                   order: Option[Order],
-                  questionId: Option[QuestionId]
+                  questionId: Option[QuestionId],
+                  cardId: Option[DemographicsCardId]
                 ) =>
                   makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                     requireAdminRole(userAuth.user) {
-                      provideAsync(activeDemographicsCardService.count(questionId)) { count =>
+                      provideAsync(activeDemographicsCardService.count(questionId, cardId)) { count =>
                         onSuccess(
                           activeDemographicsCardService
-                            .list(start, end, sort, order, questionId)
+                            .list(start, end, sort, order, questionId, cardId)
                         ) { activeDemographicsCards =>
                           complete(
                             (

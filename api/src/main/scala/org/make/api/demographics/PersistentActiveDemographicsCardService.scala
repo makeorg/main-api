@@ -35,14 +35,16 @@ import scalikejdbc._
 import scala.concurrent.Future
 
 trait PersistentActiveDemographicsCardService {
+
   def get(id: ActiveDemographicsCardId): Future[Option[ActiveDemographicsCard]]
-  def count(questionId: Option[QuestionId]): Future[Int]
+  def count(questionId: Option[QuestionId], cardId: Option[DemographicsCardId]): Future[Int]
   def list(
     start: Option[Start],
     end: Option[End],
     sort: Option[String],
     order: Option[Order],
-    questionId: Option[QuestionId]
+    questionId: Option[QuestionId],
+    cardId: Option[DemographicsCardId]
   ): Future[Seq[ActiveDemographicsCard]]
   def persist(activeDemographicsCard: ActiveDemographicsCard): Future[ActiveDemographicsCard]
   def delete(id: ActiveDemographicsCardId): Future[Unit]
@@ -78,13 +80,18 @@ trait DefaultPersistentActiveDemographicsCardServiceComponent extends Persistent
         })
       }
 
-      override def count(questionId: Option[QuestionId]): Future[Int] = {
+      override def count(questionId: Option[QuestionId], cardId: Option[DemographicsCardId]): Future[Int] = {
         implicit val context: EC = readExecutionContext
         Future(NamedDB("READ").retryableTx { implicit session =>
           withSQL {
             select(sqls.count)
               .from(table.as(alias))
-              .where(sqls.toAndConditionOpt(questionId.map(qId => sqls.eq(alias.questionId, qId))))
+              .where(
+                sqls.toAndConditionOpt(
+                  questionId.map(qId => sqls.eq(alias.questionId, qId)),
+                  cardId.map(cId     => sqls.eq(alias.demographicsCardId, cId))
+                )
+              )
           }.map(_.int(1))
             .single()
             .apply()
@@ -97,7 +104,8 @@ trait DefaultPersistentActiveDemographicsCardServiceComponent extends Persistent
         end: Option[End],
         sort: Option[String],
         order: Option[Order],
-        questionId: Option[QuestionId]
+        questionId: Option[QuestionId],
+        cardId: Option[DemographicsCardId]
       ): Future[Seq[ActiveDemographicsCard]] = {
         implicit val context: EC = readExecutionContext
         Future(NamedDB("READ").retryableTx { implicit session =>
@@ -109,7 +117,12 @@ trait DefaultPersistentActiveDemographicsCardServiceComponent extends Persistent
               order,
               select
                 .from(table.as(alias))
-                .where(sqls.toAndConditionOpt(questionId.map(qId => sqls.eq(alias.questionId, qId))))
+                .where(
+                  sqls.toAndConditionOpt(
+                    questionId.map(qId => sqls.eq(alias.questionId, qId)),
+                    cardId.map(cId     => sqls.eq(alias.demographicsCardId, cId))
+                  )
+                )
             )
           }.map(table.apply(alias.resultName))
             .list()
@@ -134,6 +147,5 @@ trait DefaultPersistentActiveDemographicsCardServiceComponent extends Persistent
           }.execute().apply()
         }).toUnit
       }
-
     }
 }

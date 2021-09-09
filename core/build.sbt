@@ -30,6 +30,7 @@ libraryDependencies ++= Seq(
   Dependencies.enumeratumScalacheck,
   Dependencies.avro4s,
   Dependencies.circeGeneric,
+  Dependencies.circeParser,
   Dependencies.refinedCirce,
   Dependencies.refinedScala,
   Dependencies.stamina,

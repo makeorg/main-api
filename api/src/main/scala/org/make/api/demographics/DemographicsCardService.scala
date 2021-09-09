@@ -21,7 +21,6 @@ package org.make.api.demographics
 
 import cats.implicits._
 import io.circe.generic.semiauto.deriveEncoder
-import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import org.make.api.technical.security.AESEncryptionComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeRandom}
@@ -168,15 +167,13 @@ trait DefaultDemographicsCardServiceComponent extends DemographicsCardServiceCom
     }
 
     override def getOneRandomCardByQuestion(questionId: QuestionId): Future[Option[DemographicsCardResponse]] = {
-      activeDemographicsCardService
-        .list(start = None, end = None, sort = None, order = None, questionId = Some(questionId))
-        .flatMap { actives =>
-          MakeRandom.shuffleSeq(actives).headOption.map(_.demographicsCardId) match {
-            case Some(id) =>
-              get(id).map(_.map(card => DemographicsCardResponse(card, generateToken(card.id, questionId))))
-            case None => Future.successful(None)
-          }
+      activeDemographicsCardService.list(questionId = Some(questionId), cardId = None).flatMap { actives =>
+        MakeRandom.shuffleSeq(actives).headOption.map(_.demographicsCardId) match {
+          case Some(id) =>
+            get(id).map(_.map(card => DemographicsCardResponse(card, generateToken(card.id, questionId))))
+          case None => Future.successful(None)
         }
+      }
     }
 
     override def getOrPickRandom(
@@ -237,7 +234,7 @@ object DemographicsCardResponse {
       name = card.name,
       layout = card.layout,
       title = card.title,
-      parameters = card.parameters.asJson,
+      parameters = DemographicsCard.parseParameters(card.parameters),
       token = token
     )
 }

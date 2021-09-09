@@ -59,19 +59,23 @@ class DemographicsCardServiceTest
     val questionId: QuestionId = QuestionId("question-id")
     val fakeQuestionId: QuestionId = QuestionId("fake")
 
-    when(activeDemographicsCardService.list(eqTo(None), eqTo(None), eqTo(None), eqTo(None), eqTo(Some(questionId))))
-      .thenReturn(
-        Future.successful(
-          Seq(
-            ActiveDemographicsCard(ActiveDemographicsCardId("active-1"), DemographicsCardId("age"), questionId),
-            ActiveDemographicsCard(ActiveDemographicsCardId("active-2"), DemographicsCardId("gender"), questionId),
-            ActiveDemographicsCard(ActiveDemographicsCardId("active-3"), DemographicsCardId("location"), questionId),
-            ActiveDemographicsCard(ActiveDemographicsCardId("active-4"), DemographicsCardId("pet"), questionId)
-          )
+    when(
+      activeDemographicsCardService
+        .list(eqTo(None), eqTo(None), eqTo(None), eqTo(None), eqTo(Some(questionId)), eqTo(None))
+    ).thenReturn(
+      Future.successful(
+        Seq(
+          ActiveDemographicsCard(ActiveDemographicsCardId("active-1"), DemographicsCardId("age"), questionId),
+          ActiveDemographicsCard(ActiveDemographicsCardId("active-2"), DemographicsCardId("gender"), questionId),
+          ActiveDemographicsCard(ActiveDemographicsCardId("active-3"), DemographicsCardId("location"), questionId),
+          ActiveDemographicsCard(ActiveDemographicsCardId("active-4"), DemographicsCardId("pet"), questionId)
         )
       )
-    when(activeDemographicsCardService.list(eqTo(None), eqTo(None), eqTo(None), eqTo(None), eqTo(Some(fakeQuestionId))))
-      .thenReturn(Future.successful(Seq.empty))
+    )
+    when(
+      activeDemographicsCardService
+        .list(eqTo(None), eqTo(None), eqTo(None), eqTo(None), eqTo(Some(fakeQuestionId)), eqTo(None))
+    ).thenReturn(Future.successful(Seq.empty))
     when(persistentDemographicsCardService.get(any)).thenAnswer { id: DemographicsCardId =>
       Future.successful(Some(demographicsCard(id)))
     }
@@ -110,7 +114,7 @@ class DemographicsCardServiceTest
       val id: DemographicsCardId = DemographicsCardId("dc-id")
 
       val invalidToken = "invalid-token"
-      aesEncryption.decodeAndDecrypt(invalidToken) should not be succeed
+      aesEncryption.decodeAndDecrypt(invalidToken).isSuccess shouldBe false
       demographicsCardService.isTokenValid(invalidToken, id, questionId) shouldBe false
 
       val invalidDate: ZonedDateTime = nowDate.minusDays(1)

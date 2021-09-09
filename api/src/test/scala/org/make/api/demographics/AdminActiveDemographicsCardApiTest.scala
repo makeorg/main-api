@@ -48,6 +48,9 @@ class AdminActiveDemographicsCardApiTest
   }
   when(activeDemographicsCardService.get(eqTo(ActiveDemographicsCardId("fake"))))
     .thenReturn(Future.successful(None))
+  when(questionService.getQuestion(QuestionId("question")))
+    .thenReturn(Future.successful(Some(question(QuestionId("question")))))
+
   Feature("create an activeDemographicsCard") {
     when(activeDemographicsCardService.create(any, any)).thenAnswer {
       (cardId: DemographicsCardId, questionId: QuestionId) =>
@@ -76,8 +79,8 @@ class AdminActiveDemographicsCardApiTest
     Scenario("allow authenticated admin") {
       when(demographicsCardService.get(DemographicsCardId("card")))
         .thenReturn(Future.successful(Some(demographicsCard(DemographicsCardId("card")))))
-      when(questionService.getQuestion(QuestionId("question")))
-        .thenReturn(Future.successful(Some(question(QuestionId("question")))))
+      when(activeDemographicsCardService.list(eqTo(None), eqTo(None), eqTo(None), eqTo(None), any, any))
+        .thenReturn(Future.successful(Seq.empty))
       for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
         Post("/admin/active-demographics-cards")
           .withEntity(HttpEntity(ContentTypes.`application/json`, validRequest))
@@ -92,13 +95,33 @@ class AdminActiveDemographicsCardApiTest
         .thenReturn(Future.successful(Some(demographicsCard(DemographicsCardId("card-id")))))
       when(demographicsCardService.get(DemographicsCardId("fake"))).thenReturn(Future.successful(None))
       when(questionService.getQuestion(QuestionId("fake"))).thenReturn(Future.successful(None))
+      when(activeDemographicsCardService.list(eqTo(None), eqTo(None), eqTo(None), eqTo(None), any, any))
+        .thenReturn(Future.successful(Seq.empty))
+      when(
+        activeDemographicsCardService.list(
+          eqTo(None),
+          eqTo(None),
+          eqTo(None),
+          eqTo(None),
+          eqTo(Some(QuestionId("question"))),
+          eqTo(Some(DemographicsCardId("pair-exists")))
+        )
+      ).thenReturn(
+        Future.successful(
+          Seq(
+            ActiveDemographicsCard(
+              ActiveDemographicsCardId("active-id"),
+              DemographicsCardId("pair-exists"),
+              QuestionId("question")
+            )
+          )
+        )
+      )
+
       for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
         Post("/admin/active-demographics-cards")
           .withEntity(
-            HttpEntity(
-              ContentTypes.`application/json`,
-              """{"demographicsCardId": "fake", "questionId": "questionId"}"""
-            )
+            HttpEntity(ContentTypes.`application/json`, """{"demographicsCardId": "fake", "questionId": "question"}""")
           )
           .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
           status should be(StatusCodes.BadRequest)
@@ -107,10 +130,29 @@ class AdminActiveDemographicsCardApiTest
           errors.head.field should be("demographicsCardId")
         }
       }
+
       for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
         Post("/admin/active-demographics-cards")
           .withEntity(
             HttpEntity(ContentTypes.`application/json`, """{"demographicsCardId": "card-id", "questionId": "fake"}""")
+          )
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size shouldBe 1
+          errors.head.field should be("questionId")
+        }
+      }
+
+      when(demographicsCardService.get(DemographicsCardId("pair-exists")))
+        .thenReturn(Future.successful(Some(demographicsCard(DemographicsCardId("pair-exists")))))
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/active-demographics-cards")
+          .withEntity(
+            HttpEntity(
+              ContentTypes.`application/json`,
+              """{"demographicsCardId": "pair-exists", "questionId": "question"}"""
+            )
           )
           .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
           status should be(StatusCodes.BadRequest)

@@ -20,7 +20,9 @@
 package org.make.core.demographics
 
 import enumeratum.{CirceEnum, Enum, EnumEntry}
-import io.circe.{Codec, Decoder, Encoder}
+import io.circe.generic.semiauto.deriveCodec
+import io.circe.parser._
+import io.circe.{Codec, Decoder, Encoder, Json}
 import org.make.core.StringValue
 import org.make.core.demographics.DemographicsCard.Layout
 import org.make.core.reference.Language
@@ -57,4 +59,15 @@ object DemographicsCard {
 
     override def values: IndexedSeq[Layout] = findValues
   }
+
+  def parseParameters(parameters: String): Json = parse(parameters) match {
+    case Left(_)     => Json.Null
+    case Right(json) => json
+  }
+}
+
+final case class LabelValue(label: String, value: String)
+
+object LabelValue {
+  implicit val codec: Codec[LabelValue] = deriveCodec
 }

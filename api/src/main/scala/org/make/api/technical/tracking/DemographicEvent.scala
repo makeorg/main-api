@@ -54,6 +54,22 @@ object DemographicEvent {
       parameters = request.parameters,
       autoSubmit = request.autoSubmit.contains(true)
     )
+
+  def fromDemographicsV2Request(
+    request: DemographicsV2TrackingRequest,
+    applicationName: Option[ApplicationName],
+    cardDataType: String
+  ): DemographicEvent =
+    DemographicEvent(
+      demographic = cardDataType,
+      value = request.value,
+      questionId = request.questionId,
+      source = request.source,
+      country = request.country,
+      applicationName = applicationName,
+      parameters = request.parameters,
+      autoSubmit = false
+    )
 }
 
 final case class DemographicEventWrapper(

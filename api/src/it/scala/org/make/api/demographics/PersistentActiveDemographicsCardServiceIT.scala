@@ -26,7 +26,8 @@ import org.make.core.demographics.{ActiveDemographicsCard, ActiveDemographicsCar
 import org.make.core.question.QuestionId
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import scala.concurrent.Future
+import java.sql.SQLException
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
 class PersistentActiveDemographicsCardServiceIT
@@ -88,6 +89,10 @@ class PersistentActiveDemographicsCardServiceIT
       whenReady(futureDemographicsCard, Timeout(3.seconds)) { result =>
         result.map(_.id) shouldBe Some(age.id)
       }
+      intercept[SQLException] {
+        logger.info("Expected exception: testing duplicate")
+        Await.result(persistentActiveDemographicsCardService.persist(age), 3.seconds)
+      }
     }
 
     Scenario("Get active demographicsCard by activeDemographicsCardId that does not exists") {
@@ -101,7 +106,7 @@ class PersistentActiveDemographicsCardServiceIT
   }
 
   Feature("list") {
-    Scenario("list all and by questionId") {
+    Scenario("list all and by questionId and cardId") {
       val futurePersistedDemographicsCardList: Future[Seq[ActiveDemographicsCard]] = for {
         l  <- persistentActiveDemographicsCardService.persist(location)
         g1 <- persistentActiveDemographicsCardService.persist(genderq1)
@@ -116,7 +121,8 @@ class PersistentActiveDemographicsCardServiceIT
           end = None,
           sort = None,
           order = None,
-          questionId = None
+          questionId = None,
+          cardId = None
         )
       } yield persisted -> found
 
@@ -131,13 +137,46 @@ class PersistentActiveDemographicsCardServiceIT
           end = None,
           sort = None,
           order = None,
-          questionId = Some(QuestionId("question-2"))
+          questionId = Some(QuestionId("question-2")),
+          cardId = None
         )
       } yield found
 
       whenReady(q2Only, Timeout(3.seconds)) { found =>
         found.size shouldBe 2
         found.map(_.id) should contain theSameElementsAs Seq(genderq2.id, pet.id)
+      }
+
+      val genderOnly: Future[Seq[ActiveDemographicsCard]] = for {
+        found <- persistentActiveDemographicsCardService.list(
+          start = None,
+          end = None,
+          sort = None,
+          order = None,
+          questionId = None,
+          cardId = Some(DemographicsCardId("gender"))
+        )
+      } yield found
+
+      whenReady(genderOnly, Timeout(3.seconds)) { found =>
+        found.size shouldBe 2
+        found.map(_.id) should contain theSameElementsAs Seq(genderq1.id, genderq2.id)
+      }
+
+      val advancedSearch: Future[Seq[ActiveDemographicsCard]] = for {
+        found <- persistentActiveDemographicsCardService.list(
+          start = None,
+          end = None,
+          sort = None,
+          order = None,
+          questionId = Some(QuestionId("question-2")),
+          cardId = Some(DemographicsCardId("gender"))
+        )
+      } yield found
+
+      whenReady(advancedSearch, Timeout(3.seconds)) { found =>
+        found.size shouldBe 1
+        found.map(_.id) should contain theSameElementsAs Seq(genderq2.id)
       }
     }
   }
