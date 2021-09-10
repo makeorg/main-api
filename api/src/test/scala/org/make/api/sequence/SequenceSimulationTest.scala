@@ -141,6 +141,7 @@ class SequenceSimulationTest extends MakeUnitTest {
         testesProposals,
         None
       )
+      chosenSequence.map(_.userId).toSet.size should be(chosenSequence.size)
       val sequence: Seq[IndexedProposal] = if (chosenSequence.size == configuration.sequenceSize.value) {
         chosenSequence
       } else {

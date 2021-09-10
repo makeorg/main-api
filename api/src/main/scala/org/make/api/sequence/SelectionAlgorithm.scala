@@ -63,7 +63,8 @@ object SelectionAlgorithm {
         chosenNewProposals.size
       )
 
-      val chosenTestedProposals = chooseTestedProposal(testedProposals, testedProposalsConfiguration)
+      val deDuplicatedTestedProposals = removeAuthorDuplication(chosenNewProposals, testedProposals)
+      val chosenTestedProposals = chooseTestedProposal(deDuplicatedTestedProposals, testedProposalsConfiguration)
 
       includedProposals ++ MakeRandom.shuffleSeq(chosenNewProposals ++ chosenTestedProposals)
     }
@@ -154,18 +155,28 @@ object SelectionAlgorithm {
 
       val ignoredKeywords = resolveIgnoredKeywords(testedProposals, configuration.keywordsThreshold)
 
-      TestedProposalsChooser.choose(
+      val chosenControversies = TestedProposalsChooser.choose(
         sortedControversies,
         configuration.neededControversies,
         ignoredKeywords,
         configuration.candidatesPoolSize
-      ) ++
+      )
+      val availableTops = removeAuthorDuplication(chosenControversies, sortedTops)
+      chosenControversies ++
         TestedProposalsChooser.choose(
-          sortedTops,
+          availableTops,
           configuration.neededTops,
           ignoredKeywords,
           configuration.candidatesPoolSize
         )
+    }
+
+    private def removeAuthorDuplication(
+      chosenProposals: Seq[IndexedProposal],
+      candidates: Seq[IndexedProposal]
+    ): Seq[IndexedProposal] = {
+      val chosenAuthors = chosenProposals.map(_.userId).toSet
+      candidates.filterNot(p => chosenAuthors.contains(p.userId))
     }
 
     final case class TestedProposalsSelectionConfiguration(
