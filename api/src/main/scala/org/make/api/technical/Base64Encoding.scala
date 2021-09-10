@@ -20,13 +20,14 @@
 package org.make.api.technical
 
 import java.util.Base64
+import scala.util.Try
 
 object Base64Encoding {
   def encode(bytes: Array[Byte]): String = {
     Base64.getEncoder().encodeToString(bytes)
   }
 
-  def decode(string: String): Array[Byte] = {
-    Base64.getDecoder().decode(string)
+  def decode(string: String): Try[Array[Byte]] = {
+    Try(Base64.getDecoder().decode(string))
   }
 }

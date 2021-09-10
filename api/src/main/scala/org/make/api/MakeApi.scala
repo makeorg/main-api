@@ -94,7 +94,12 @@ import org.make.api.technical.graphql._
 import org.make.api.technical.healthcheck._
 import org.make.api.technical.job._
 import org.make.api.technical.monitoring.DefaultMonitoringService
-import org.make.api.technical.security.{DefaultSecurityApiComponent, DefaultSecurityConfigurationComponent, SecurityApi}
+import org.make.api.technical.security.{
+  DefaultAESEncryptionComponent,
+  DefaultSecurityApiComponent,
+  DefaultSecurityConfigurationComponent,
+  SecurityApi
+}
 import org.make.api.technical.storage._
 import org.make.api.technical.tracking.{DefaultTrackingApiComponent, TrackingApi}
 import org.make.api.technical.webflow.{DefaultWebflowClientComponent, DefaultWebflowConfigurationComponent}
@@ -142,6 +147,7 @@ trait MakeApi
     with DefaultAdminTopIdeaApiComponent
     with DefaultAdminUserApiComponent
     with DefaultAdminWidgetApiComponent
+    with DefaultAESEncryptionComponent
     with DefaultAuthenticationApiComponent
     with DefaultClientServiceComponent
     with DefaultConfigComponent

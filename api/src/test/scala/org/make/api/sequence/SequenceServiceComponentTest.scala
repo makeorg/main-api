@@ -21,6 +21,7 @@ package org.make.api.sequence
 
 import grizzled.slf4j.Logging
 import org.make.api.MakeUnitTest
+import org.make.api.demographics.{DemographicsCardService, DemographicsCardServiceComponent}
 import org.make.api.operation.{OperationOfQuestionSearchEngine, OperationOfQuestionSearchEngineComponent}
 import org.make.api.proposal._
 import org.make.api.segment.{SegmentService, SegmentServiceComponent}
@@ -55,6 +56,7 @@ class SequenceServiceComponentTest
     with UserServiceComponent
     with SegmentServiceComponent
     with OperationOfQuestionSearchEngineComponent
+    with DemographicsCardServiceComponent
     with Logging {
 
   override val eventBusService: EventBusService = mock[EventBusService]
@@ -70,6 +72,7 @@ class SequenceServiceComponentTest
   override val segmentService: SegmentService = mock[SegmentService]
   override val elasticsearchOperationOfQuestionAPI: OperationOfQuestionSearchEngine =
     mock[OperationOfQuestionSearchEngine]
+  override val demographicsCardService: DemographicsCardService = mock[DemographicsCardService]
 
   Feature("resolve behaviour") {
     val questionId = QuestionId("question-id")

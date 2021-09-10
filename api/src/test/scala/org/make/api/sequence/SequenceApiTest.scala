@@ -28,6 +28,7 @@ import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.sequence.SequenceBehaviour._
 import org.make.api.technical.auth.MakeAuthentication
 import org.make.core.RequestContext
+import org.make.core.demographics.DemographicsCardId
 import org.make.core.proposal.indexed.Zone
 import org.make.core.proposal.{ProposalId, ProposalKeywordKey}
 import org.make.core.question.QuestionId
@@ -74,9 +75,11 @@ class SequenceApiTest
       maybeUserId = any[Option[UserId]],
       questionId = eqTo(questionId),
       includedProposalsIds = any[Seq[ProposalId]],
-      requestContext = any[RequestContext]
+      requestContext = any[RequestContext],
+      cardId = any[Option[DemographicsCardId]],
+      token = any[Option[String]]
     )(any[SequenceBehaviourProvider[Unit]])
-  ).thenReturn(Future.successful(SequenceResult(Seq.empty)))
+  ).thenReturn(Future.successful(SequenceResult(Seq.empty, None)))
 
   when(
     sequenceService.startNewSequence[ConsensusParam](
@@ -84,9 +87,11 @@ class SequenceApiTest
       maybeUserId = any[Option[UserId]],
       questionId = eqTo(questionId),
       includedProposalsIds = any[Seq[ProposalId]],
-      requestContext = any[RequestContext]
+      requestContext = any[RequestContext],
+      cardId = any[Option[DemographicsCardId]],
+      token = any[Option[String]]
     )(any[SequenceBehaviourProvider[ConsensusParam]])
-  ).thenReturn(Future.successful(SequenceResult(Seq.empty)))
+  ).thenReturn(Future.successful(SequenceResult(Seq.empty, None)))
 
   when(
     sequenceService.startNewSequence[Zone.Controversy.type](
@@ -94,9 +99,11 @@ class SequenceApiTest
       maybeUserId = any[Option[UserId]],
       questionId = eqTo(questionId),
       includedProposalsIds = any[Seq[ProposalId]],
-      requestContext = any[RequestContext]
+      requestContext = any[RequestContext],
+      cardId = any[Option[DemographicsCardId]],
+      token = any[Option[String]]
     )(any[SequenceBehaviourProvider[Zone.Controversy.type]])
-  ).thenReturn(Future.successful(SequenceResult(Seq.empty)))
+  ).thenReturn(Future.successful(SequenceResult(Seq.empty, None)))
 
   when(
     sequenceService.startNewSequence[ProposalKeywordKey](
@@ -104,9 +111,11 @@ class SequenceApiTest
       maybeUserId = any[Option[UserId]],
       questionId = eqTo(questionId),
       includedProposalsIds = any[Seq[ProposalId]],
-      requestContext = any[RequestContext]
+      requestContext = any[RequestContext],
+      cardId = any[Option[DemographicsCardId]],
+      token = any[Option[String]]
     )(any[SequenceBehaviourProvider[ProposalKeywordKey]])
-  ).thenReturn(Future.successful(SequenceResult(Seq.empty)))
+  ).thenReturn(Future.successful(SequenceResult(Seq.empty, None)))
 
   when(
     sequenceService.startNewSequence[Option[Seq[TagId]]](
@@ -114,9 +123,11 @@ class SequenceApiTest
       maybeUserId = any[Option[UserId]],
       questionId = eqTo(questionId),
       includedProposalsIds = any[Seq[ProposalId]],
-      requestContext = any[RequestContext]
+      requestContext = any[RequestContext],
+      cardId = any[Option[DemographicsCardId]],
+      token = any[Option[String]]
     )(any[SequenceBehaviourProvider[Option[Seq[TagId]]]])
-  ).thenReturn(Future.successful(SequenceResult(Seq.empty)))
+  ).thenReturn(Future.successful(SequenceResult(Seq.empty, None)))
 
   Seq("standard", "consensus", "controversy", "tags").foreach { sequenceType =>
     Feature(s"start $sequenceType sequence") {

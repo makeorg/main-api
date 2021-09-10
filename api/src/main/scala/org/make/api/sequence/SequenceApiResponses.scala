@@ -24,6 +24,7 @@ import io.circe.refined._
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
+import org.make.api.demographics.DemographicsCardResponse
 import org.make.api.proposal.ProposalResponse
 import org.make.core.question.QuestionId
 import org.make.core.sequence.{
@@ -40,7 +41,7 @@ import org.make.core.technical.RefinedTypes.Ratio
 
 import scala.annotation.meta.field
 
-final case class SequenceResult(proposals: Seq[ProposalResponse])
+final case class SequenceResult(proposals: Seq[ProposalResponse], demographics: Option[DemographicsCardResponse])
 
 object SequenceResult {
   implicit val encoder: Encoder[SequenceResult] = deriveEncoder[SequenceResult]
@@ -159,7 +160,12 @@ object SpecificSequenceConfigurationResponse {
   }
 }
 
-final case class KeywordSequenceResult(key: String, label: String, proposals: Seq[ProposalResponse])
+final case class KeywordSequenceResult(
+  key: String,
+  label: String,
+  proposals: Seq[ProposalResponse],
+  demographics: Option[DemographicsCardResponse]
+)
 
 object KeywordSequenceResult {
   implicit val encoder: Encoder[KeywordSequenceResult] = deriveEncoder[KeywordSequenceResult]
