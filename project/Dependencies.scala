@@ -53,6 +53,7 @@ object Dependencies {
   val nettyAll: ModuleID = "io.netty" % "netty-all" % nettyVersion
 
   val circeGeneric: ModuleID = "io.circe"                 %% "circe-generic"               % circeVersion
+  val circeParser = "io.circe"                            %% "circe-parser"                % circeVersion
   val akka: ModuleID = "com.typesafe.akka"                %% "akka-actor-typed"            % akkaVersion
   val akkaCluster: ModuleID = "com.typesafe.akka"         %% "akka-cluster-typed"          % akkaVersion
   val akkaClusterTools: ModuleID = "com.typesafe.akka"    %% "akka-cluster-tools"          % akkaVersion

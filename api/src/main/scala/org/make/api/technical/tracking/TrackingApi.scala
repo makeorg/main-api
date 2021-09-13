@@ -24,18 +24,21 @@ import akka.http.scaladsl.server.{Route, RouteConcatenation}
 import cats.data.NonEmptyList
 import cats.data.Validated.{Invalid, Valid}
 import grizzled.slf4j.Logging
-import io.circe.{Decoder, Encoder, Json}
 import io.circe.generic.semiauto.deriveDecoder
+import io.circe.parser._
+import io.circe.{Decoder, Encoder, Json}
 import io.swagger.annotations._
+import org.make.api.demographics.{ActiveDemographicsCardServiceComponent, DemographicsCardServiceComponent}
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.monitoring.MonitoringServiceComponent
 import org.make.api.technical.{EndpointType, EventBusServiceComponent, MakeAuthenticationDirectives, MakeDirectives}
+import org.make.core._
 import org.make.core.auth.UserRights
+import org.make.core.demographics.{DemographicsCardId, LabelValue}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.session.SessionId
-import org.make.core.{HttpCodes, RequestContext, StringValue, ValidationError, Validator}
 import org.slf4j.event.Level
 import scalaoauth2.provider.AuthInfo
 
@@ -103,6 +106,20 @@ trait TrackingApi extends RouteConcatenation {
   @Path(value = "/demographics")
   def trackDemographics: Route
 
+  @ApiOperation(value = "track-demographics-v2", httpMethod = "POST", code = HttpCodes.NoContent)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "body",
+        paramType = "body",
+        dataType = "org.make.api.technical.tracking.DemographicsV2TrackingRequest"
+      )
+    )
+  )
+  @Path(value = "/demographics-v2")
+  def trackDemographicsV2: Route
+
   @ApiOperation(value = "track-concertation", httpMethod = "POST", code = HttpCodes.NoContent)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @ApiImplicitParams(
@@ -118,7 +135,7 @@ trait TrackingApi extends RouteConcatenation {
   def trackConcertation: Route
 
   final def routes: Route =
-    backofficeLogs ~ frontTracking ~ trackFrontPerformances ~ trackDemographics ~ trackConcertation
+    backofficeLogs ~ frontTracking ~ trackFrontPerformances ~ trackDemographics ~ trackDemographicsV2 ~ trackConcertation
 }
 
 trait TrackingApiComponent {
@@ -127,6 +144,8 @@ trait TrackingApiComponent {
 
 trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectives {
   this: MakeDirectivesDependencies
+    with ActiveDemographicsCardServiceComponent
+    with DemographicsCardServiceComponent
     with EventBusServiceComponent
     with MakeAuthenticationDirectives
     with MonitoringServiceComponent
@@ -211,6 +230,76 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
                       DemographicEvent.fromDemographicRequest(request, requestContext.applicationName)
                     )
                     complete(StatusCodes.NoContent)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    def trackDemographicsV2: Route = {
+      post {
+        path("tracking" / "demographics-v2") {
+          makeOperation("DemographicsTrackingV2", EndpointType.Public) { requestContext: RequestContext =>
+            decodeRequest {
+              entity(as[DemographicsV2TrackingRequest]) { request =>
+                val futureQuestion = questionService.getQuestion(request.questionId)
+                val futureCard = demographicsCardService.get(request.demographicsCardId)
+                val futureActiveCards = activeDemographicsCardService.list(
+                  questionId = Some(request.questionId),
+                  cardId = Some(request.demographicsCardId)
+                )
+                val questionNotFoundError = ValidationError(
+                  "questionId",
+                  "not_found",
+                  Some(s"Question ${request.questionId.value} doesn't exist")
+                )
+                val cardNotFoundError = ValidationError(
+                  "demographicsCardId",
+                  "not_found",
+                  Some(s"DemographicsCard ${request.demographicsCardId.value} doesn't exist")
+                )
+                provideAsyncOrBadRequest(futureQuestion, questionNotFoundError) { question =>
+                  provideAsyncOrBadRequest(futureCard, cardNotFoundError) { card =>
+                    provideAsync(futureActiveCards) { activeCards =>
+                      Validation.validate(
+                        Validation.validateField(
+                          "token",
+                          "invalid_value",
+                          demographicsCardService
+                            .isTokenValid(request.token, request.demographicsCardId, request.questionId),
+                          s"Invalid token. Token might be expired or contain invalid value"
+                        ),
+                        Validation.validateField(
+                          "demographicsCardId",
+                          "invalid_value",
+                          activeCards.nonEmpty,
+                          s"Demographics card ${request.demographicsCardId} is not active for question ${request.questionId}"
+                        ),
+                        Validation.validateField(
+                          "country",
+                          "invalid_value",
+                          question.countries.exists(_ == request.country),
+                          s"Country ${request.country} is not defined in question ${request.questionId}"
+                        ),
+                        Validation.validateField(
+                          "value",
+                          "invalid_value",
+                          parse(card.parameters).exists(_.as[Seq[LabelValue]] match {
+                            case Right(values) => values.exists(_.value == request.value)
+                            case Left(_)       => false
+                          }),
+                          s"Provided value is not defined in demographics card ${request.demographicsCardId}"
+                        )
+                      )
+                      eventBusService.publish(
+                        DemographicEvent
+                          .fromDemographicsV2Request(request, requestContext.applicationName, card.dataType)
+                      )
+                      complete(StatusCodes.NoContent)
+                    }
                   }
                 }
               }
@@ -406,4 +495,25 @@ object SectionId {
   implicit lazy val sectionIdDecoder: Decoder[SectionId] =
     Decoder.decodeString.map(SectionId(_))
 
+}
+
+final case class DemographicsV2TrackingRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "eeda4303-8c57-4b56-aabe-d52185dca857")
+  demographicsCardId: DemographicsCardId,
+  @(ApiModelProperty @field)(dataType = "string", example = "18-24")
+  value: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "2b228613-10b9-40ec-94b2-50da258a3b4d")
+  questionId: QuestionId,
+  @(ApiModelProperty @field)(dataType = "string", example = "core")
+  source: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Country,
+  @(ApiModelProperty @field)(dataType = "map[string]")
+  parameters: Map[String, String],
+  @(ApiModelProperty @field)(dataType = "string", example = "yFUMk1+KSVeFh0NQnTXrdA==")
+  token: String
+)
+
+object DemographicsV2TrackingRequest {
+  implicit val decoder: Decoder[DemographicsV2TrackingRequest] = deriveDecoder[DemographicsV2TrackingRequest]
 }

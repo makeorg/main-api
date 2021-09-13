@@ -30,13 +30,14 @@ import scala.concurrent.Future
 trait ActiveDemographicsCardService {
   def get(id: ActiveDemographicsCardId): Future[Option[ActiveDemographicsCard]]
   def list(
-    start: Option[Start],
-    end: Option[End],
-    sort: Option[String],
-    order: Option[Order],
-    questionId: Option[QuestionId]
+    start: Option[Start] = None,
+    end: Option[End] = None,
+    sort: Option[String] = None,
+    order: Option[Order] = None,
+    questionId: Option[QuestionId] = None,
+    cardId: Option[DemographicsCardId] = None
   ): Future[Seq[ActiveDemographicsCard]]
-  def count(questionId: Option[QuestionId]): Future[Int]
+  def count(questionId: Option[QuestionId], cardId: Option[DemographicsCardId]): Future[Int]
   def create(demographicsCardId: DemographicsCardId, questionId: QuestionId): Future[ActiveDemographicsCard]
   def delete(id: ActiveDemographicsCardId): Future[Unit]
 }
@@ -52,16 +53,17 @@ trait DefaultActiveDemographicsCardServiceComponent extends ActiveDemographicsCa
       persistentActiveDemographicsCardService.get(id)
 
     override def list(
-      start: Option[Start],
-      end: Option[End],
-      sort: Option[String],
-      order: Option[Order],
-      questionId: Option[QuestionId]
+      start: Option[Start] = None,
+      end: Option[End] = None,
+      sort: Option[String] = None,
+      order: Option[Order] = None,
+      questionId: Option[QuestionId] = None,
+      cardId: Option[DemographicsCardId] = None
     ): Future[Seq[ActiveDemographicsCard]] =
-      persistentActiveDemographicsCardService.list(start, end, sort, order, questionId)
+      persistentActiveDemographicsCardService.list(start, end, sort, order, questionId, cardId)
 
-    override def count(questionId: Option[QuestionId]): Future[Int] =
-      persistentActiveDemographicsCardService.count(questionId)
+    override def count(questionId: Option[QuestionId], cardId: Option[DemographicsCardId]): Future[Int] =
+      persistentActiveDemographicsCardService.count(questionId, cardId)
 
     override def create(
       demographicsCardId: DemographicsCardId,
