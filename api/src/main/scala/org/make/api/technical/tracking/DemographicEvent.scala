@@ -22,6 +22,7 @@ package org.make.api.technical.tracking
 import com.sksamuel.avro4s
 import com.sksamuel.avro4s.{FieldMapper, SchemaFor}
 import org.apache.avro.Schema
+import org.make.core.demographics.DemographicsCard
 import org.make.core.question.QuestionId
 import org.make.core.reference.Country
 import org.make.core.{ApplicationName, AvroSerializers, EventWrapper}
@@ -62,7 +63,7 @@ object DemographicEvent {
   ): DemographicEvent =
     DemographicEvent(
       demographic = cardDataType,
-      value = request.value,
+      value = request.value.getOrElse(DemographicsCard.SKIPPED),
       questionId = request.questionId,
       source = request.source,
       country = request.country,

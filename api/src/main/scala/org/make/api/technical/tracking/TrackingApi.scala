@@ -265,34 +265,38 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
                   provideAsyncOrBadRequest(futureCard, cardNotFoundError) { card =>
                     provideAsync(futureActiveCards) { activeCards =>
                       Validation.validate(
-                        Validation.validateField(
-                          "token",
-                          "invalid_value",
-                          demographicsCardService
-                            .isTokenValid(request.token, request.demographicsCardId, request.questionId),
-                          s"Invalid token. Token might be expired or contain invalid value"
-                        ),
-                        Validation.validateField(
-                          "demographicsCardId",
-                          "invalid_value",
-                          activeCards.nonEmpty,
-                          s"Demographics card ${request.demographicsCardId} is not active for question ${request.questionId}"
-                        ),
-                        Validation.validateField(
-                          "country",
-                          "invalid_value",
-                          question.countries.exists(_ == request.country),
-                          s"Country ${request.country} is not defined in question ${request.questionId}"
-                        ),
-                        Validation.validateField(
-                          "value",
-                          "invalid_value",
-                          parse(card.parameters).exists(_.as[Seq[LabelValue]] match {
-                            case Right(values) => values.exists(_.value == request.value)
-                            case Left(_)       => false
-                          }),
-                          s"Provided value is not defined in demographics card ${request.demographicsCardId}"
-                        )
+                        Seq(
+                          Validation.validateField(
+                            "token",
+                            "invalid_value",
+                            demographicsCardService
+                              .isTokenValid(request.token, request.demographicsCardId, request.questionId),
+                            s"Invalid token. Token might be expired or contain invalid value"
+                          ),
+                          Validation.validateField(
+                            "demographicsCardId",
+                            "invalid_value",
+                            activeCards.nonEmpty,
+                            s"Demographics card ${request.demographicsCardId} is not active for question ${request.questionId}"
+                          ),
+                          Validation.validateField(
+                            "country",
+                            "invalid_value",
+                            question.countries.exists(_ == request.country),
+                            s"Country ${request.country} is not defined in question ${request.questionId}"
+                          )
+                        ) ++
+                          request.value.map { value =>
+                            Validation.validateField(
+                              "value",
+                              "invalid_value",
+                              parse(card.parameters).exists(_.as[Seq[LabelValue]] match {
+                                case Right(values) => values.exists(_.value == value)
+                                case Left(_)       => false
+                              }),
+                              s"Provided value is not defined in demographics card ${request.demographicsCardId}"
+                            )
+                          }: _*
                       )
                       eventBusService.publish(
                         DemographicEvent
@@ -501,7 +505,7 @@ final case class DemographicsV2TrackingRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "eeda4303-8c57-4b56-aabe-d52185dca857")
   demographicsCardId: DemographicsCardId,
   @(ApiModelProperty @field)(dataType = "string", example = "18-24")
-  value: String,
+  value: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "2b228613-10b9-40ec-94b2-50da258a3b4d")
   questionId: QuestionId,
   @(ApiModelProperty @field)(dataType = "string", example = "core")

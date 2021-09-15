@@ -64,6 +64,8 @@ object DemographicsCard {
     case Left(_)     => Json.Null
     case Right(json) => json
   }
+
+  val SKIPPED = "SKIPPED"
 }
 
 final case class LabelValue(label: String, value: String)
