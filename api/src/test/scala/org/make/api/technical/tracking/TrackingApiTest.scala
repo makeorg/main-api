@@ -35,7 +35,12 @@ import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.technical._
 import org.make.api.technical.monitoring.{MonitoringService, MonitoringServiceComponent}
 import org.make.core.ValidationError
-import org.make.core.demographics.{ActiveDemographicsCard, ActiveDemographicsCardId, DemographicsCardId}
+import org.make.core.demographics.{
+  ActiveDemographicsCard,
+  ActiveDemographicsCardId,
+  DemographicsCard,
+  DemographicsCardId
+}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.mockito.Mockito.{clearInvocations, verifyNoInteractions}
@@ -371,6 +376,7 @@ class TrackingApiTest
       )
       when(demographicsCardService.isTokenValid(eqTo("token"), eqTo(DemographicsCardId("id-age")), eqTo(questionId)))
         .thenReturn(true)
+
       val request =
         """
           |{
@@ -383,10 +389,31 @@ class TrackingApiTest
           |  "token": "token"
           |}
           |""".stripMargin
-      val entity = HttpEntity(ContentTypes.`application/json`, request)
-      Post("/tracking/demographics-v2", entity) ~> routes ~> check {
+
+      val requestEmptyValue =
+        """
+          |{
+          |  "demographicsCardId": "id-age",
+          |  "questionId": "valid",
+          |  "source": "core",
+          |  "country": "FR",
+          |  "parameters": {},
+          |  "token": "token"
+          |}
+          |""".stripMargin
+
+      Post("/tracking/demographics-v2", HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
         status should be(StatusCodes.NoContent)
-        verify(eventBusService).publish(any[DemographicEvent])
+        verify(eventBusService).publish(argThat[DemographicEvent] { ev =>
+          ev.value == "24-42"
+        })
+      }
+
+      Post("/tracking/demographics-v2", HttpEntity(ContentTypes.`application/json`, requestEmptyValue)) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+        verify(eventBusService).publish(argThat[DemographicEvent] { ev =>
+          ev.value == DemographicsCard.SKIPPED
+        })
       }
     }
   }

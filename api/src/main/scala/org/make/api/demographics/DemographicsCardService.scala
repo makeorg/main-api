@@ -22,6 +22,7 @@ package org.make.api.demographics
 import cats.implicits._
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.{Encoder, Json}
+import io.swagger.annotations.ApiModelProperty
 import org.make.api.technical.security.AESEncryptionComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeRandom}
 import org.make.core.demographics.DemographicsCard.Layout
@@ -32,6 +33,7 @@ import org.make.core.technical.Pagination.{End, Start}
 import org.make.core.{CirceFormatters, DateHelperComponent, Order}
 
 import java.time.ZonedDateTime
+import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -217,10 +219,17 @@ object DemographicToken {
 }
 
 final case class DemographicsCardResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "37e46b4c-73e7-41fa-b8e1-5e18efddaac3")
   id: DemographicsCardId,
   name: String,
+  @(ApiModelProperty @field)(
+    dataType = "string",
+    allowableValues = "Select,OneColumnRadio,ThreeColumnsRadio",
+    example = "OneColumnRadio"
+  )
   layout: DemographicsCard.Layout,
   title: String,
+  @(ApiModelProperty @field)(dataType = "object")
   parameters: Json,
   token: String
 )
