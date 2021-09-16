@@ -30,7 +30,6 @@ import org.make.api.sequence.SequenceConfigurationActor
 import org.make.api.sequence.SequenceConfigurationActor.SequenceConfigurationActorProtocol
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.technical.crm._
-import org.make.api.technical.healthcheck.HealthCheckSupervisor
 import org.make.api.technical.job.JobCoordinator
 import org.make.api.technical.tracking.{
   ConcertationProducerBehavior,
@@ -79,7 +78,6 @@ object MakeGuardian {
   private def createTechnicalActors(dependencies: MakeApi)(implicit context: ActorContext[_]): Unit = {
     context.watch(context.spawn(MakeDowningActor(), MakeDowningActor.name))
     context.watch(context.spawn(DeadLettersListenerActor(), DeadLettersListenerActor.name))
-    context.watch(context.actorOf(HealthCheckSupervisor.props, HealthCheckSupervisor.name))
     val spawnActorRef = context.spawn(SpawnProtocol(), MakeGuardian.SpawnActorKey.id)
     context.watch(spawnActorRef)
     context.system.receptionist ! Receptionist.Register(MakeGuardian.SpawnActorKey, spawnActorRef)

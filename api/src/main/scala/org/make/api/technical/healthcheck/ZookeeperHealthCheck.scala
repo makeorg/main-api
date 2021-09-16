@@ -19,22 +19,23 @@
 
 package org.make.api.technical.healthcheck
 
-import akka.actor.Props
+import com.typesafe.config.Config
 import org.apache.curator.framework.{CuratorFramework, CuratorFrameworkFactory}
 import org.apache.curator.retry.RetryNTimes
 import org.apache.curator.utils.CloseableUtils
 import org.apache.zookeeper.CreateMode
+import org.make.api.technical.healthcheck.HealthCheck.Status
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class ZookeeperHealthCheckActor(healthCheckExecutionContext: ExecutionContext) extends HealthCheck {
+class ZookeeperHealthCheck(config: Config) extends HealthCheck {
 
   override val techno: String = "zookeeper"
 
-  override def healthCheck(): Future[String] = {
+  val connectString: String = config.getString("make-api.zookeeper.url")
 
+  override def healthCheck()(implicit ctx: ExecutionContext): Future[Status] = {
     Future {
-      val connectString: String = context.system.settings.config.getString("make-api.zookeeper.url")
       val client: CuratorFramework = CuratorFrameworkFactory.newClient(connectString, new RetryNTimes(3, 500))
       val path: String = "/ephemeral_path"
       val data: String = System.currentTimeMillis.toString
@@ -46,18 +47,10 @@ class ZookeeperHealthCheckActor(healthCheckExecutionContext: ExecutionContext) e
 
       CloseableUtils.closeQuietly(client)
       if (result != data) {
-        log.warning(s"""Unexpected result in zookeeper health check: expected "$result" but got "$data"""")
-        "NOK"
+        Status.NOK(Some(s"""Unexpected result in zookeeper health check: expected "$result" but got "$data""""))
       } else {
-        "OK"
+        Status.OK
       }
-    }(healthCheckExecutionContext)
+    }
   }
-}
-
-object ZookeeperHealthCheckActor extends HealthCheckActorDefinition {
-  override val name: String = "zookeeper-health-check"
-
-  override def props(healthCheckExecutionContext: ExecutionContext): Props =
-    Props(new ZookeeperHealthCheckActor(healthCheckExecutionContext))
 }

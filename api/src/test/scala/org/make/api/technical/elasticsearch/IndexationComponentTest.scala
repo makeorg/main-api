@@ -81,8 +81,6 @@ class IndexationComponentTest
     with PostServiceComponent
     with PostIndexationStream {
 
-  type MakeReadJournal = CassandraReadJournal
-
   override lazy val actorSystemTyped: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "IndexationComponentTest")
   override val elasticsearchPostAPI: PostSearchEngine = mock[PostSearchEngine]
   override val elasticsearchIdeaAPI: IdeaSearchEngine = mock[IdeaSearchEngine]
@@ -97,9 +95,9 @@ class IndexationComponentTest
   override def writeExecutionContext: ExecutionContext = mock[ExecutionContext]
   override def readExecutionContext: ExecutionContext = mock[ExecutionContext]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
-  override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
-  override val userJournal: MakeReadJournal = mock[MakeReadJournal]
-  override val sessionJournal: MakeReadJournal = mock[MakeReadJournal]
+  override val proposalJournal: CassandraReadJournal = mock[CassandraReadJournal]
+  override val userJournal: CassandraReadJournal = mock[CassandraReadJournal]
+  override val sessionJournal: CassandraReadJournal = mock[CassandraReadJournal]
   override val semanticService: SemanticService = mock[SemanticService]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]

@@ -19,56 +19,40 @@
 
 package org.make.api.technical
 
-import akka.actor.Actor
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.scaladsl.{CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal}
 import org.make.api.ActorSystemComponent
 import org.make.api.proposal.ProposalActor
 import org.make.api.sessionhistory.ShardedSessionHistory
-import org.make.api.technical.ReadJournalComponent.DefaultReadJournal
+import org.make.api.technical.BaseReadJournalComponent.DefaultReadJournal
 import org.make.api.userhistory.UserHistoryActor
 
-trait ReadJournalComponent {
-  type MakeReadJournal <: DefaultReadJournal
-
+trait BaseReadJournalComponent[+MakeReadJournal <: DefaultReadJournal] {
   def proposalJournal: MakeReadJournal
   def userJournal: MakeReadJournal
   def sessionJournal: MakeReadJournal
 }
 
-object ReadJournalComponent {
+object BaseReadJournalComponent {
   type DefaultReadJournal = ReadJournal with CurrentPersistenceIdsQuery with CurrentEventsByPersistenceIdQuery
 }
 
-trait DefaultReadJournalComponent extends ReadJournalComponent {
+trait DefaultReadJournalComponent extends BaseReadJournalComponent[CassandraReadJournal] {
   self: ActorSystemComponent =>
 
-  type MakeReadJournal = CassandraReadJournal
-
-  override def proposalJournal: MakeReadJournal =
-    PersistenceQuery(system = actorSystem)
-      .readJournalFor[MakeReadJournal](ProposalActor.QueryJournalPluginId)
-  override def userJournal: MakeReadJournal =
-    PersistenceQuery(system = actorSystem)
-      .readJournalFor[MakeReadJournal](UserHistoryActor.QueryJournalPluginId)
-  override def sessionJournal: MakeReadJournal =
-    PersistenceQuery(system = actorSystem)
-      .readJournalFor[MakeReadJournal](ShardedSessionHistory.queryJournal)
+  override def proposalJournal: CassandraReadJournal = ReadJournal.proposalJournal(actorSystem.toTyped)
+  override def userJournal: CassandraReadJournal = ReadJournal.userJournal(actorSystem.toTyped)
+  override def sessionJournal: CassandraReadJournal = ReadJournal.sessionJournal(actorSystem.toTyped)
 }
 
-trait ActorReadJournalComponent extends ReadJournalComponent {
-  self: Actor =>
-
-  type MakeReadJournal = CassandraReadJournal
-
-  override def proposalJournal: MakeReadJournal =
-    PersistenceQuery(system = context.system)
-      .readJournalFor[MakeReadJournal](ProposalActor.QueryJournalPluginId)
-  override def userJournal: MakeReadJournal =
-    PersistenceQuery(system = context.system)
-      .readJournalFor[MakeReadJournal](UserHistoryActor.QueryJournalPluginId)
-  override def sessionJournal: MakeReadJournal =
-    PersistenceQuery(system = context.system)
-      .readJournalFor[MakeReadJournal](ShardedSessionHistory.queryJournal)
+object ReadJournal {
+  def proposalJournal[T](system: ActorSystem[_]): T =
+    PersistenceQuery(system = system).readJournalFor(ProposalActor.QueryJournalPluginId)
+  def userJournal[T](system: ActorSystem[_]): T =
+    PersistenceQuery(system = system).readJournalFor(UserHistoryActor.QueryJournalPluginId)
+  def sessionJournal[T](system: ActorSystem[_]): T =
+    PersistenceQuery(system = system).readJournalFor(ShardedSessionHistory.queryJournal)
 }

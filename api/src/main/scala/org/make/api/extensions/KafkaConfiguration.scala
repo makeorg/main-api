@@ -23,6 +23,7 @@ import akka.actor.Actor
 import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.actor.typed.{ActorSystem, Extension, ExtensionId}
 import com.typesafe.config.Config
+import org.make.api.ActorSystemTypedComponent
 
 class KafkaConfiguration(override protected val configuration: Config) extends Extension with ConfigurationSupport {
 
@@ -41,4 +42,12 @@ object KafkaConfiguration extends ExtensionId[KafkaConfiguration] {
 
 trait KafkaConfigurationExtension { this: Actor =>
   val kafkaConfiguration: KafkaConfiguration = KafkaConfiguration(context.system.toTyped)
+}
+
+trait KafkaConfigurationComponent {
+  def kafkaConfiguration: KafkaConfiguration
+}
+
+trait DefaultKafkaConfigurationComponent extends KafkaConfigurationComponent { this: ActorSystemTypedComponent =>
+  override lazy val kafkaConfiguration: KafkaConfiguration = KafkaConfiguration(actorSystemTyped)
 }

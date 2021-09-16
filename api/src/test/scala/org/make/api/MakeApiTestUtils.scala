@@ -63,8 +63,6 @@ trait MakeApiTestBase
     with ActorSystemComponent {
   this: MakeAuthentication =>
 
-  type MakeReadJournal = CassandraReadJournal
-
   override val makeSettings: MakeSettings = mock[MakeSettings]
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
@@ -72,9 +70,9 @@ trait MakeApiTestBase
   override val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService =
     mock[SessionHistoryCoordinatorService]
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
-  override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
-  override val userJournal: MakeReadJournal = mock[MakeReadJournal]
-  override val sessionJournal: MakeReadJournal = mock[MakeReadJournal]
+  override val proposalJournal: CassandraReadJournal = mock[CassandraReadJournal]
+  override val userJournal: CassandraReadJournal = mock[CassandraReadJournal]
+  override val sessionJournal: CassandraReadJournal = mock[CassandraReadJournal]
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
   override val actorSystem: ActorSystem = ActorSystem()
 

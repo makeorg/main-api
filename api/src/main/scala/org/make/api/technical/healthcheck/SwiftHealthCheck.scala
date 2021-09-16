@@ -19,32 +19,23 @@
 
 package org.make.api.technical.healthcheck
 
-import akka.actor.Props
-import org.make.api.extensions.KafkaConfigurationExtension
-import io.confluent.kafka.schemaregistry.client.rest.RestService
+import grizzled.slf4j.Logging
+import org.make.api.technical.healthcheck.HealthCheck.Status
+import org.make.swift.SwiftClient
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AvroHealthCheckActor(val healthCheckExecutionContext: ExecutionContext)
-    extends HealthCheck
-    with KafkaConfigurationExtension {
+class SwiftHealthCheck(swiftClient: SwiftClient) extends HealthCheck with Logging {
 
-  override val techno: String = "avro"
+  override val techno: String = "swift"
 
-  override def healthCheck(): Future[String] = {
-    val restService = new RestService(kafkaConfiguration.schemaRegistry)
-    if (restService.getAllSubjects().size() > 0) {
-      Future.successful("OK")
-    } else {
-      Future.successful("NOK")
-    }
+  override def healthCheck()(implicit ctx: ExecutionContext): Future[Status] = {
+    swiftClient
+      .listBuckets()
+      .map {
+        case Seq() =>
+          Status.NOK(Some("Unexpected result in swift health check: containers list is empty"))
+        case _ => Status.OK
+      }
   }
-
-}
-
-object AvroHealthCheckActor extends HealthCheckActorDefinition {
-  override val name: String = "avro-health-check"
-
-  override def props(healthCheckExecutionContext: ExecutionContext): Props =
-    Props(new AvroHealthCheckActor(healthCheckExecutionContext))
 }

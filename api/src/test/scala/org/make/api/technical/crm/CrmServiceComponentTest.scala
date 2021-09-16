@@ -91,14 +91,12 @@ class CrmServiceComponentTest
     with DefaultSpawnActorServiceComponent
     with SpawnActorRefComponent {
 
-  type MakeReadJournal = CassandraReadJournal
-
   override implicit val actorSystemTyped: ActorSystem[Nothing] =
     ActorSystem[Nothing](Behaviors.empty[Nothing], "CrmServiceComponentTest", ConfigFactory.parseString(configuration))
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
-  override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
-  override val userJournal: MakeReadJournal = mock[MakeReadJournal]
-  override val sessionJournal: MakeReadJournal = mock[MakeReadJournal]
+  override val proposalJournal: CassandraReadJournal = mock[CassandraReadJournal]
+  override val userJournal: CassandraReadJournal = mock[CassandraReadJournal]
+  override val sessionJournal: CassandraReadJournal = mock[CassandraReadJournal]
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
   override val operationService: OperationService = mock[OperationService]
   override val questionService: QuestionService = mock[QuestionService]

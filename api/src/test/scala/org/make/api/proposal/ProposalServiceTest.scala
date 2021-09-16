@@ -95,15 +95,13 @@ class ProposalServiceTest
     with ProposalSearchEngineComponent
     with ProposalServiceComponent
     with QuestionServiceComponent
-    with ReadJournalComponent
+    with BaseReadJournalComponent[CassandraReadJournal]
     with SegmentServiceComponent
     with SemanticComponent
     with TagServiceComponent
     with TagTypeServiceComponent
     with UserHistoryCoordinatorServiceComponent
     with UserServiceComponent {
-
-  type MakeReadJournal = CassandraReadJournal
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
@@ -113,9 +111,9 @@ class ProposalServiceTest
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val semanticService: SemanticService = mock[SemanticService]
   override val eventBusService: EventBusService = mock[EventBusService]
-  override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
-  override val userJournal: MakeReadJournal = mock[MakeReadJournal]
-  override val sessionJournal: MakeReadJournal = mock[MakeReadJournal]
+  override val proposalJournal: CassandraReadJournal = mock[CassandraReadJournal]
+  override val userJournal: CassandraReadJournal = mock[CassandraReadJournal]
+  override val sessionJournal: CassandraReadJournal = mock[CassandraReadJournal]
   override val actorSystem: ActorSystem = ActorSystem()
   override val userService: UserService = mock[UserService]
   override val ideaService: IdeaService = mock[IdeaService]

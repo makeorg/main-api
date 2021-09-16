@@ -19,34 +19,35 @@
 
 package org.make.api.technical.healthcheck
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.actor.typed.{ActorRef => TypedActorRef}
-import akka.actor.typed.scaladsl.adapter._
-import akka.testkit.{ImplicitSender, TestProbe}
-import akka.util.Timeout
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, ActorSystem}
+import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
+import akka.util
 import cats.data.NonEmptyList
 import com.typesafe.config.ConfigFactory
 import org.make.api.docker.DockerCassandraService
-import org.make.api.proposal.{ProposalCommand, ProposalCoordinator, ProposeCommand}
 import org.make.api.proposal.ProposalActorResponse.Envelope
+import org.make.api.proposal.{ProposalActorProtocol, ProposalCommand, ProposalCoordinator, ProposeCommand}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorService
-import org.make.api.technical.{DefaultIdGeneratorComponent, TimeSettings}
-import org.make.api.technical.healthcheck.HealthCheckCommands.CheckStatus
+import org.make.api.technical.healthcheck.HealthCheck.Status
+import org.make.api.technical.{DefaultIdGeneratorComponent, ReadJournal, TimeSettings}
 import org.make.api.{ItMakeTest, TestUtilsIT}
 import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext}
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class CassandraHealthCheckActorIT
-    extends TestProbe(CassandraHealthCheckActorIT.actorSystem)
+class CassandraHealthCheckIT
+    extends ScalaTestWithActorTestKit(CassandraHealthCheckIT.actorSystem)
     with DefaultIdGeneratorComponent
     with ItMakeTest
-    with ImplicitSender
     with DockerCassandraService {
 
   override def afterAll(): Unit = {
@@ -54,26 +55,20 @@ class CassandraHealthCheckActorIT
     super.afterAll()
   }
 
-  override val cassandraExposedPort: Int = CassandraHealthCheckActorIT.cassandraExposedPort
-  implicit val timeout: Timeout = TimeSettings.defaultTimeout.duration * 3
+  override val cassandraExposedPort: Int = CassandraHealthCheckIT.cassandraExposedPort
+  implicit override val timeout: util.Timeout = TimeSettings.defaultTimeout
+  implicit val ctx: ExecutionContext = global
 
   val LOCK_DURATION_MILLISECONDS: FiniteDuration = 42.milliseconds
 
   val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService = mock[SessionHistoryCoordinatorService]
 
-  val coordinator: TypedActorRef[ProposalCommand] =
-    ProposalCoordinator(system.toTyped, sessionHistoryCoordinatorService, LOCK_DURATION_MILLISECONDS, idGenerator)
+  val coordinator: ActorRef[ProposalCommand] =
+    ProposalCoordinator(system, sessionHistoryCoordinatorService, LOCK_DURATION_MILLISECONDS, idGenerator)
 
   Feature("Check Cassandra status") {
     Scenario("query proposal journal") {
-      Given("a cassandra health check actor")
-      val actorSystem = system
-      val healthCheckExecutionContext = ExecutionContext.Implicits.global
-      val healthCheckCassandra: ActorRef = actorSystem.actorOf(
-        CassandraHealthCheckActor.props(healthCheckExecutionContext),
-        CassandraHealthCheckActor.name
-      )
-      And("a proposed proposal")
+      val probe = testKit.createTestProbe[ProposalActorProtocol]()
       val proposalId = ProposalId("fake-proposal")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -91,23 +86,23 @@ class CassandraHealthCheckActorIT
           operationId = None
         ),
         initialProposal = false,
-        ref
+        probe.ref
       )
 
-      expectMsgType[Envelope[ProposalId]](1.minute)
+      probe.expectMessage(10.seconds, Envelope(proposalId))
 
-      When("I send a message to check the status of cassandra")
-      healthCheckCassandra ! CheckStatus
-      Then("I get the status")
-      val msg: HealthCheckResponse = expectMsgType[HealthCheckResponse](timeout.duration)
-      And("status is \"OK\"")
-      msg should be(HealthCheckSuccess("cassandra", "OK"))
+      val proposalJournal: CassandraReadJournal = ReadJournal.proposalJournal(system)
+      val hc = new CassandraHealthCheck(proposalJournal, system.settings.config)
+
+      whenReady(hc.healthCheck(), Timeout(30.seconds)) { res =>
+        res should be(Status.OK)
+      }
     }
   }
 
 }
 
-object CassandraHealthCheckActorIT {
+object CassandraHealthCheckIT {
   val cassandraExposedPort = 15000
   // This configuration cannot be dynamic, port values _must_ match reality
   val port = 15100
@@ -170,7 +165,7 @@ object CassandraHealthCheckActorIT {
        |    log-remote-lifecycle-events = off
        |  }
        |
-       |  cluster.seed-nodes = ["akka://CassandraHealthCheckActorIT@localhost:$port"]
+       |  cluster.seed-nodes = ["akka://CassandraHealthCheckIT@localhost:$port"]
        |  cluster.jmx.multi-mbeans-in-same-jvm = on
        |
        |}
@@ -207,7 +202,10 @@ object CassandraHealthCheckActorIT {
        |}
     """.stripMargin
 
-  val actorSystem =
-    ActorSystem("CassandraHealthCheckActorIT", ConfigFactory.load(ConfigFactory.parseString(configuration)))
-
+  val actorSystem: ActorSystem[Nothing] =
+    ActorSystem[Nothing](
+      Behaviors.empty,
+      "CassandraHealthCheckIT",
+      ConfigFactory.load(ConfigFactory.parseString(configuration))
+    )
 }

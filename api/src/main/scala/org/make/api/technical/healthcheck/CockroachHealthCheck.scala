@@ -19,38 +19,23 @@
 
 package org.make.api.technical.healthcheck
 
-import io.circe.{Encoder, Json}
+import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.healthcheck.HealthCheck.Status
+import scalikejdbc._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait HealthCheck {
+class CockroachHealthCheck(defaultAdminEmail: String) extends HealthCheck {
 
-  val techno: String
+  override val techno: String = "cockroach"
 
-  def healthCheck()(implicit ctx: ExecutionContext): Future[Status]
-}
-
-object HealthCheck {
-  sealed trait Status extends Product with Serializable {
-    def message: String
-  }
-
-  object Status {
-    case object OK extends Status {
-      override val message: String = "OK"
-    }
-    final case class NOK(reason: Option[String] = None) extends Status {
-      override val message: String = reason.map(r => s"NOK: $r").getOrElse("NOK")
-    }
-  }
-
-  final case class HealthCheckResponse(service: String, message: String)
-
-  object HealthCheckResponse {
-    implicit val encoderSuccess: Encoder[HealthCheckResponse] = new Encoder[HealthCheckResponse] {
-      override def apply(response: HealthCheckResponse): Json =
-        Json.obj((response.service, Json.fromString(response.message)))
+  override def healthCheck()(implicit ctx: ExecutionContext): Future[Status] = {
+    Future(NamedDB("READ").retryableTx { implicit session =>
+      sql"select first_name from make_user where email=$defaultAdminEmail".map(_.toMap()).list().apply()
+    }).map(_.length).map {
+      case 1 => Status.OK
+      case other =>
+        Status.NOK(Some(s"""Unexpected result in cockroach health check: expected "1" result but got "$other""""))
     }
   }
 }

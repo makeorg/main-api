@@ -79,7 +79,6 @@ class UserApiTest
     with UserServiceComponent
     with SocialServiceComponent
     with UserHistoryCoordinatorServiceComponent
-    with ReadJournalComponent
     with PersistentUserServiceComponent
     with EventBusServiceComponent
     with ActorSystemComponent
@@ -104,10 +103,6 @@ class UserApiTest
 
   when(makeSettings.Authentication).thenReturn(authenticationConfiguration)
   when(idGenerator.nextId()).thenReturn("some-id")
-
-  override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
-  override val userJournal: MakeReadJournal = mock[MakeReadJournal]
-  override val sessionJournal: MakeReadJournal = mock[MakeReadJournal]
 
   val routes: Route = sealRoute(handleRejections(MakeApi.rejectionHandler) {
     userApi.routes
