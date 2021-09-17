@@ -105,7 +105,7 @@ object GraphQLProposalQuery {
     case object Country extends ProposalSortableFieldNames(ProposalElasticsearchFieldName.country.value)
     case object Language extends ProposalSortableFieldNames(ProposalElasticsearchFieldName.language.value)
     case object TopScoreAjustedWithVotes
-        extends ProposalSortableFieldNames(ProposalElasticsearchFieldName.topScoreAjustedWithVotes.value)
+        extends ProposalSortableFieldNames(ProposalElasticsearchFieldName.scoreLowerBound.value)
 
     override def values: IndexedSeq[ProposalSortableFieldNames] = findValues
     implicit val decoder: Decoder[ProposalSortableFieldNames] = Circe.decodeCaseInsensitive(this)

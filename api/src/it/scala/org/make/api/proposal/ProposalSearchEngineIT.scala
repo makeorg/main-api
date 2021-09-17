@@ -208,8 +208,9 @@ class ProposalSearchEngineIT
       sequenceSegmentPool = SequencePool.New,
       keywords = Seq(IndexedProposalKeyword(ProposalKeywordKey("culture"), "permaculture"))
     ).copy(
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 42, 42, 0, 0, 84, 60, Consensus),
-      segmentScores = IndexedScores(1, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10, 0, Limbo),
+      scores = IndexedScores.empty.copy(topScore = IndexedScore(42, 60, 84), zone = Consensus),
+      segmentScores =
+        IndexedScores.empty.copy(topScore = IndexedScore(0, 54, 0), controversy = IndexedScore(0, 21, 0), zone = Limbo),
       context = italianContext,
       question = Some(baseQuestion)
     ),
@@ -260,7 +261,7 @@ class ProposalSearchEngineIT
       sequenceSegmentPool = SequencePool.Tested,
       keywords = Seq(IndexedProposalKeyword(ProposalKeywordKey("culture"), "cultures"))
     ).copy(
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 54, 21, 0, 0, 0, 80, Controversy),
+      scores = IndexedScores.empty.copy(topScore = IndexedScore(54, 21, 0), zone = Controversy),
       segmentScores = IndexedScores.empty,
       context = frenchContext,
       question = Some(baseQuestion)
@@ -312,7 +313,8 @@ class ProposalSearchEngineIT
       sequenceSegmentPool = SequencePool.Tested,
       segment = Some("ubik")
     ).copy(
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 35, 35, 0, 0, 0, 12, Consensus),
+      scores = IndexedScores.empty
+        .copy(topScore = IndexedScore(0, 12, 0), controversy = IndexedScore(0, 35, 0), zone = Consensus),
       segmentScores = IndexedScores.empty,
       context = italianContext,
       question = Some(otherQuestion)
@@ -363,7 +365,7 @@ class ProposalSearchEngineIT
       sequencePool = SequencePool.Tested,
       sequenceSegmentPool = SequencePool.Tested
     ).copy(
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 16, 16, 0, 0, 0, 9.4, Consensus),
+      scores = IndexedScores.empty.copy(topScore = IndexedScore(16, 9.4, 0), zone = Consensus),
       segmentScores = IndexedScores.empty,
       context = frenchContext,
       question = Some(otherQuestion)
@@ -505,7 +507,7 @@ class ProposalSearchEngineIT
       sequencePool = SequencePool.Tested,
       sequenceSegmentPool = SequencePool.Tested
     ).copy(
-      scores = IndexedScores.empty.copy(scoreLowerBound = 80, zone = Consensus),
+      scores = IndexedScores.empty.copy(topScore = IndexedScore(0, 80, 0), zone = Consensus),
       segmentScores = IndexedScores.empty,
       context = frenchContext,
       question = Some(baseQuestion.copy(countries = NonEmptyList.of(Country("IT"))))
@@ -1008,16 +1010,15 @@ class ProposalSearchEngineIT
     val queryTopScore =
       SearchQuery(
         filters = None,
-        sort = Some(
-          Sort(field = Some(ProposalElasticsearchFieldName.topScoreAjustedWithVotes.field), mode = Some(SortOrder.Desc))
-        )
+        sort =
+          Some(Sort(field = Some(ProposalElasticsearchFieldName.scoreLowerBound.field), mode = Some(SortOrder.Desc)))
       )
 
     Scenario("should return a list of proposals sorted by top score") {
       whenReady(elasticsearchProposalAPI.searchProposals(queryTopScore), Timeout(3.seconds)) { result =>
         result.total should be(acceptedProposals.size)
-        result.results.map(_.scores.topScoreAjustedWithVotes) should be(
-          acceptedProposals.map(_.scores.topScoreAjustedWithVotes).sorted.reverse
+        result.results.map(_.scores.topScore.lowerBound) should be(
+          acceptedProposals.map(_.scores.topScore.lowerBound).sorted.reverse
         )
       }
     }
@@ -1282,7 +1283,7 @@ class ProposalSearchEngineIT
         elasticsearchProposalAPI.getTopProposals(otherQuestion.questionId, 10, ProposalElasticsearchFieldName.ideaId),
         Timeout(10.seconds)
       ) { results =>
-        results.take(3).map(_.scores.topScore) should be(Seq(35.0, 16.0))
+        results.take(3).map(_.scores.topScore.lowerBound) should be(Seq(12.0, 9.4))
         results.take(3).flatMap(_.ideaId).map(_.value) should be(Seq("idea-id-2", "idea-id-3"))
       }
     }
@@ -1293,7 +1294,7 @@ class ProposalSearchEngineIT
           .getTopProposals(otherQuestion.questionId, 10, ProposalElasticsearchFieldName.selectedStakeTagId),
         Timeout(10.seconds)
       ) { results =>
-        results.take(3).map(_.scores.topScore) should be(Seq(35.0, 16.0))
+        results.take(3).map(_.scores.topScore.lowerBound) should be(Seq(12.0, 9.4))
         results.take(3).flatMap(_.selectedStakeTag).map(_.label) should be(Seq("beta", "delta"))
       }
     }
@@ -1384,7 +1385,7 @@ class ProposalSearchEngineIT
   Feature("search proposals by min score lower bound") {
     Scenario("should return a list of proposals") {
       val query =
-        SearchQuery(filters = Some(SearchFilters(minScoreLowerBound = Some(MinScoreLowerBoundSearchFilter(42)))))
+        SearchQuery(filters = Some(SearchFilters(minScoreLowerBound = Some(MinScoreLowerBoundSearchFilter(21)))))
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be(3L)

@@ -58,7 +58,7 @@ object ProposalElasticsearchFieldName extends StringEnum[ProposalElasticsearchFi
 
   case object id extends Simple("id")
 
-  case object agreementRate extends Alias("agreementRate", scoreAgreement, sortable = true)
+  case object agreementRate extends Simple("agreementRate", sortable = true)
   case object authorAge extends Simple("author.age")
   case object authorFirstName extends Simple("author.firstName")
   case object authorPostalCode extends Simple("author.postalCode")
@@ -114,7 +114,8 @@ object ProposalElasticsearchFieldName extends StringEnum[ProposalElasticsearchFi
   case object contextOperation extends Simple("context.operation")
   case object contextQuestion extends Simple("context.question")
   case object contextSource extends Simple("context.source")
-  case object controversyLowerBound extends Simple("scores.controversyLowerBound")
+  case object controversyLowerBound extends Simple("scores.controversy.lowerBound")
+  case object controversyLowerBoundLegacy extends Alias("scores.controversyLowerBound", controversyLowerBound)
   case object country extends Alias("country", contextCountry, sortable = true)
   case object createdAt extends Simple("createdAt", sortable = true)
   case object ideaId extends Simple("ideaId")
@@ -132,10 +133,14 @@ object ProposalElasticsearchFieldName extends StringEnum[ProposalElasticsearchFi
   case object questionLanguage extends Simple("question.language", sortable = true)
   case object refusalReason extends Simple("refusalReason")
   case object scores extends Simple("scores")
-  case object scoreAgreement extends Simple("scores.agreement")
-  case object scoreRealistic extends Simple("scores.realistic")
-  case object scoreUpperBound extends Simple("scores.scoreUpperBound")
-  case object scoreLowerBound extends Simple("scores.scoreLowerBound")
+  case object scoreAgreement extends Simple("scores.agreement.lowerBound")
+  case object scoreAgreementLegacy extends Alias("scores.agreement", scoreAgreement)
+  case object scoreRealistic extends Simple("scores.realistic.lowerBound")
+  case object scoreRealisticLegacy extends Alias("scores.realistic", scoreRealistic)
+  case object scoreUpperBound extends Simple("scores.topScore.upperBound")
+  case object scoreUpperBoundLegacy extends Alias("scores.scoreUpperBound", scoreUpperBound)
+  case object scoreLowerBound extends Simple("scores.topScore.lowerBound")
+  case object scoreLowerBoundLegacy extends Alias("scores.scoreLowerBound", scoreLowerBound)
   case object segment extends Simple("segment")
   case object sequenceSegmentPool extends Simple("sequenceSegmentPool")
   case object sequencePool extends Simple("sequencePool")
@@ -145,8 +150,10 @@ object ProposalElasticsearchFieldName extends StringEnum[ProposalElasticsearchFi
   case object tags extends Simple("tags")
   case object selectedStakeTagId extends Simple("selectedStakeTag.tagId")
   case object toEnrich extends Simple("toEnrich")
-  case object topScore extends Simple("scores.topScore")
-  case object topScoreAjustedWithVotes extends Simple("scores.topScoreAjustedWithVotes", sortable = true)
+  case object topScore extends Simple("scores.topScore.score")
+  case object topScoreLegacy extends Alias("scores.topScore", topScore)
+  case object topScoreAjustedWithVotesLegacy
+      extends Alias("scores.topScoreAjustedWithVotes", scoreLowerBound, sortable = true)
   case object trending extends Simple("trending", sortable = true)
   case object updatedAt extends Simple("updatedAt", sortable = true)
   case object userId extends Simple("userId")
@@ -179,6 +186,7 @@ final case class IndexedProposal(
   toEnrich: Boolean,
   scores: IndexedScores,
   segmentScores: IndexedScores,
+  agreementRate: Double,
   context: Option[IndexedContext],
   trending: Option[String],
   labels: Seq[String],
@@ -368,18 +376,14 @@ object Zone extends Enum[Zone] {
 }
 
 final case class IndexedScores(
-  boost: Double = 0,
-  engagement: Double,
-  agreement: Double,
-  adhesion: Double,
-  realistic: Double,
-  platitude: Double,
-  topScore: Double,
-  topScoreAjustedWithVotes: Double,
-  controversyLowerBound: Double,
-  rejection: Double,
-  scoreUpperBound: Double,
-  scoreLowerBound: Double,
+  engagement: IndexedScore,
+  agreement: IndexedScore,
+  adhesion: IndexedScore,
+  realistic: IndexedScore,
+  platitude: IndexedScore,
+  topScore: IndexedScore,
+  controversy: IndexedScore,
+  rejection: IndexedScore,
   zone: Zone
 )
 
@@ -387,7 +391,25 @@ object IndexedScores {
   implicit val encoder: Encoder[IndexedScores] = deriveEncoder[IndexedScores]
   implicit val decoder: Decoder[IndexedScores] = deriveDecoder[IndexedScores]
 
-  def empty: IndexedScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Zone.Limbo)
+  def empty: IndexedScores =
+    IndexedScores(
+      IndexedScore.empty,
+      IndexedScore.empty,
+      IndexedScore.empty,
+      IndexedScore.empty,
+      IndexedScore.empty,
+      IndexedScore.empty,
+      IndexedScore.empty,
+      IndexedScore.empty,
+      Zone.Limbo
+    )
+}
+
+final case class IndexedScore(score: Double, lowerBound: Double, upperBound: Double)
+
+object IndexedScore {
+  implicit val codec: Codec[IndexedScore] = deriveCodec
+  val empty: IndexedScore = IndexedScore(0, 0, 0)
 }
 
 final case class ProposalsSearchResult(total: Long, results: Seq[IndexedProposal])

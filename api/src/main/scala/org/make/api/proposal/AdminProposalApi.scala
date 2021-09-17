@@ -684,7 +684,7 @@ object AdminProposalResponse extends CirceFormatters {
       status = proposal.status,
       tags = proposal.tags,
       createdAt = proposal.createdAt,
-      agreementRate = proposal.scores.agreement,
+      agreementRate = proposal.agreementRate,
       context = Context(proposal.context),
       votes = proposal.votes.map(Vote.apply),
       votesCount = proposal.votesCount
