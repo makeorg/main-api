@@ -28,7 +28,6 @@ import org.make.core.technical.Pagination.{End, Start}
 import org.make.core.user.UserId
 import org.make.core.widget.{Source, SourceId, Widget, WidgetId}
 import org.make.core.{DateHelperComponent, Order}
-import org.yaml.snakeyaml.util.UriEncoder
 
 import scala.concurrent.Future
 
@@ -71,23 +70,22 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
     ): Future[Seq[Widget]] = persistentWidgetService.list(sourceId, start, end, sort, order)
 
     override def create(source: Source, question: Question, country: Country, author: UserId): Future[Widget] = {
-      val title = UriEncoder.encode(question.question)
-      val color = "0:0:0:1"
+      val id = idGenerator.nextWidgetId()
       val url = {
-        s"?questionSlug=${question.slug}&tagsIds[]=&title=${title}&source=${source.source}&color=${color}&country=${country.value}&language=${question.language.value}&owner=${author.value}"
+        s"?questionSlug=${question.slug}&source=${source.source}&country=${country.value}&language=${question.language.value}&widgetId=${id.value}"
       }
       val hash = SecurityHelper.createSecureHash(url, securityConfiguration.secureHashSalt)
       val script =
-        s"""<iframe frameborder="0" scrolling="no" width="100%" height="575" style="min-height: 575px" src="${config
+        s"""<iframe frameborder="0" scrolling="no" width="100%" height="550" style="min-height: 550px" src="${config
           .getString("make-api.urls.widget")}/$url&hash=$hash"></iframe>"""
       persistentWidgetService.persist(
         Widget(
-          id = idGenerator.nextWidgetId(),
+          id = id,
           sourceId = source.id,
           questionId = question.questionId,
           country = country,
           author = author,
-          version = Widget.Version.V1,
+          version = Widget.Version.V2,
           script = script,
           createdAt = dateHelper.now()
         )
