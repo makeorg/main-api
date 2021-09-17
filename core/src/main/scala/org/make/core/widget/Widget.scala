@@ -54,6 +54,7 @@ object Widget {
 
   object Version extends Enum[Version] with CirceEnum[Version] {
     case object V1 extends Version
+    case object V2 extends Version
     override def values: IndexedSeq[Version] = findValues
   }
 
