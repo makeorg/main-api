@@ -19,7 +19,6 @@
 
 package org.make.api.user
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentType, MediaTypes}
 import com.github.t3hnar.bcrypt._
 import org.make.api.extensions.{
@@ -46,7 +45,7 @@ import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailN
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
 import org.make.api.userhistory._
-import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
+import org.make.api.{EmptyActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.core.auth.UserRights
 import org.make.core.profile.Gender.Female
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
@@ -69,7 +68,7 @@ import scala.concurrent.duration.{Duration, DurationInt}
 class UserServiceTest
     extends MakeUnitTest
     with DefaultUserServiceComponent
-    with ActorSystemComponent
+    with EmptyActorSystemComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with UserTokenGeneratorComponent
@@ -89,7 +88,6 @@ class UserServiceTest
     with MailJetConfigurationComponent
     with DateHelperComponent {
 
-  override val actorSystem: ActorSystem = ActorSystem()
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val userTokenGenerator: UserTokenGenerator = mock[UserTokenGenerator]

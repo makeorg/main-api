@@ -35,7 +35,7 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric._
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.{Decoder, Printer}
-import org.make.api.ActorSystemComponent
+import org.make.api.technical.ActorSystemComponent
 import org.make.api.technical.webflow.WebflowClient.UpToOneHundred
 import org.make.api.technical.webflow.WebflowError.{WebflowErrorName, WebflowErrorResponse}
 import org.make.api.technical.webflow.WebflowItem._

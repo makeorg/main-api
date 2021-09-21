@@ -20,7 +20,7 @@
 package org.make.api.userhistory
 
 import akka.actor.typed.ActorRef
-import org.make.api.ShardingTypedActorTest
+import org.make.api.ShardingActorTest
 import org.make.api.sessionhistory.Ack
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.history.HistoryActions.VoteTrust.Trusted
@@ -30,7 +30,7 @@ import org.make.core.{DateHelper, RequestContext}
 
 import java.time.temporal.ChronoUnit
 
-class UserHistoryActorTest extends ShardingTypedActorTest {
+class UserHistoryActorTest extends ShardingActorTest {
 
   val coordinator: ActorRef[UserHistoryCommand] = UserHistoryCoordinator(system)
 

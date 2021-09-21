@@ -23,7 +23,6 @@ import java.util.concurrent.Executors
 
 import akka.stream.scaladsl.{Sink, Source}
 import grizzled.slf4j.Logging
-import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation.{
   CreateOperationOfQuestion,
@@ -41,6 +40,7 @@ import org.make.api.proposal.{
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.tag.TagServiceComponent
+import org.make.api.technical.ActorSystemComponent
 import org.make.api.technical.ExecutorServiceHelper._
 import org.make.api.technical.generator.EntitiesGen
 import org.make.api.technical.security.SecurityConfigurationComponent

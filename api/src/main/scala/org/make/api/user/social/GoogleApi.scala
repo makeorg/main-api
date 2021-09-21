@@ -26,7 +26,7 @@ import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.http.scaladsl.{Http, HttpExt}
 import grizzled.slf4j.Logging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
-import org.make.api.ActorSystemComponent
+import org.make.api.technical.ActorSystemComponent
 import org.make.api.user.social.models.google.PeopleInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global

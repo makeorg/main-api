@@ -33,8 +33,8 @@ import grizzled.slf4j.Logging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import io.circe.syntax._
 import io.circe.Printer
-import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
+import org.make.api.technical.ActorSystemComponent
 import org.make.api.technical.crm.BasicCrmResponse._
 import org.make.api.technical.crm.CrmClient.{Account, Marketing, Transactional}
 import org.make.core.Order

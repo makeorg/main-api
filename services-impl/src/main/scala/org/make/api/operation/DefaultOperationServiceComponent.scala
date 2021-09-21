@@ -24,10 +24,9 @@ import akka.stream.scaladsl.{Sink, Source}
 
 import java.time.LocalDate
 import io.circe.syntax._
-import org.make.api.ActorSystemComponent
 import org.make.api.question.PersistentQuestionServiceComponent
 import org.make.api.tag.PersistentTagServiceComponent
-import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
+import org.make.api.technical.{ActorSystemComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.core.{DateHelper, Order}
 import org.make.core.operation._
 import org.make.core.operation.OperationActionType._

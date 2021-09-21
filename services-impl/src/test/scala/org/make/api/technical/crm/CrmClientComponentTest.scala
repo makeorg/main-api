@@ -19,16 +19,17 @@
 
 package org.make.api.technical.crm
 
-import akka.actor.ActorSystem
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentType, HttpEntity, HttpRequest, HttpResponse, MediaTypes, StatusCodes}
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.{ActorSystemComponent, ShortenedNames}
 import org.make.api.technical.crm.CrmClientException.RequestException.ManageContactListException
-import org.make.api.{ActorSystemComponent, MakeUnitTest}
+import org.make.api.MakeUnitTest
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Promise
@@ -42,7 +43,7 @@ class CrmClientComponentTest
     with MailJetConfigurationComponent
     with ShortenedNames {
 
-  override val actorSystem: ActorSystem = CrmClientComponentTest.actorSystem
+  override val actorSystem: ActorSystem[Nothing] = CrmClientComponentTest.actorSystem
   implicit val ec: EC = ECGlobal
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
 
@@ -106,6 +107,7 @@ object CrmClientComponentTest {
       |}
     """.stripMargin
 
-  val actorSystem: ActorSystem = ActorSystem("CrmClientComponentTest", ConfigFactory.parseString(configuration))
+  val actorSystem: ActorSystem[Nothing] =
+    ActorSystem[Nothing](Behaviors.empty, "CrmClientComponentTest", ConfigFactory.parseString(configuration))
 
 }

@@ -21,7 +21,7 @@ package org.make.api.sessionhistory
 
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
-import org.make.api.ShardingTypedActorTest
+import org.make.api.ShardingActorTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.sessionhistory.SessionHistoryResponse.Error.{ExpiredSession, LockAlreadyAcquired}
 import org.make.api.sessionhistory.SessionHistoryResponse.{Envelope, LockAcquired, LockReleased}
@@ -40,10 +40,7 @@ import org.make.core.{DateHelper, RequestContext}
 import java.time.temporal.ChronoUnit
 import scala.concurrent.duration.{Duration, DurationInt}
 
-class SessionHistoryActorTest
-    extends ShardingTypedActorTest
-    with DefaultIdGeneratorComponent
-    with MakeSettingsComponent {
+class SessionHistoryActorTest extends ShardingActorTest with DefaultIdGeneratorComponent with MakeSettingsComponent {
 
   val userCoordinatorProbe: TestProbe[UserHistoryCommand] = testKit.createTestProbe[UserHistoryCommand]()
   override val makeSettings: MakeSettings = mock[MakeSettings]

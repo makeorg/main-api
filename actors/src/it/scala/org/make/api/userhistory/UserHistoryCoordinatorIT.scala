@@ -19,16 +19,15 @@
 
 package org.make.api.userhistory
 
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.config.{Config, ConfigFactory}
 import enumeratum.values.scalacheck._
-import org.make.api.{ActorSystemTypedComponent, ItMakeTest}
+import org.make.api.{ActorTest, ItMakeTest}
 import org.make.api.docker.DockerCassandraService
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.technical.DefaultIdGeneratorComponent
+import org.make.api.technical.{ActorSystemComponent, DefaultIdGeneratorComponent}
 import org.make.core.{DateHelper, RequestContext}
 import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.proposal.VoteKey
@@ -40,13 +39,13 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.concurrent.duration.DurationInt
 
 class UserHistoryCoordinatorIT
-    extends ScalaTestWithActorTestKit(UserHistoryCoordinatorIT.actorSystem)
+    extends ActorTest(UserHistoryCoordinatorIT.actorSystem)
     with ItMakeTest
     with DefaultIdGeneratorComponent
     with DefaultUserHistoryCoordinatorServiceComponent
     with DockerCassandraService
     with MakeSettingsComponent
-    with ActorSystemTypedComponent
+    with ActorSystemComponent
     with UserHistoryCoordinatorComponent {
 
   override def afterAll(): Unit = {
@@ -54,10 +53,9 @@ class UserHistoryCoordinatorIT
     super.afterAll()
   }
 
-  override implicit val actorSystemTyped: ActorSystem[Nothing] = testKit.system
   override val cassandraExposedPort: Int = UserHistoryCoordinatorIT.cassandraExposedPort
   override val makeSettings: MakeSettings = mock[MakeSettings]
-  override val userHistoryCoordinator: ActorRef[UserHistoryCommand] = UserHistoryCoordinator(actorSystemTyped)
+  override val userHistoryCoordinator: ActorRef[UserHistoryCommand] = UserHistoryCoordinator(actorSystem)
 
   Feature("delete a user") {
 

@@ -20,7 +20,7 @@
 package org.make.api
 
 import akka.actor.typed.scaladsl.AskPattern.schedulerFromActorSystem
-import akka.actor.typed.{SpawnProtocol, ActorRef => TypedActorRef}
+import akka.actor.typed.{ActorRef, SpawnProtocol}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import akka.util.Timeout
@@ -122,7 +122,6 @@ import scala.concurrent.duration.DurationInt
 
 trait MakeApi
     extends ActorSystemComponent
-    with ActorSystemTypedComponent
     with AvroSerializers
     with BuildInfoRoutes
     with ClientDirectives
@@ -294,29 +293,29 @@ trait MakeApi
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
-  override lazy val proposalCoordinator: TypedActorRef[ProposalCommand] =
-    Await.result(actorSystemTyped.findRefByKey(ProposalCoordinator.Key), atMost = 10.seconds)
+  override lazy val proposalCoordinator: ActorRef[ProposalCommand] =
+    Await.result(actorSystem.findRefByKey(ProposalCoordinator.Key), atMost = 10.seconds)
 
-  override lazy val userHistoryCoordinator: TypedActorRef[UserHistoryCommand] =
-    Await.result(actorSystemTyped.findRefByKey(UserHistoryCoordinator.Key), atMost = 10.seconds)
+  override lazy val userHistoryCoordinator: ActorRef[UserHistoryCommand] =
+    Await.result(actorSystem.findRefByKey(UserHistoryCoordinator.Key), atMost = 10.seconds)
 
-  override lazy val sessionHistoryCoordinator: TypedActorRef[SessionHistoryCommand] =
-    Await.result(actorSystemTyped.findRefByKey(SessionHistoryCoordinator.Key), atMost = 10.seconds)
+  override lazy val sessionHistoryCoordinator: ActorRef[SessionHistoryCommand] =
+    Await.result(actorSystem.findRefByKey(SessionHistoryCoordinator.Key), atMost = 10.seconds)
 
-  override lazy val jobCoordinator: TypedActorRef[JobActor.Protocol.Command] = Await.result({
-    actorSystemTyped.findRefByKey(JobCoordinator.Key)
+  override lazy val jobCoordinator: ActorRef[JobActor.Protocol.Command] = Await.result({
+    actorSystem.findRefByKey(JobCoordinator.Key)
   }, atMost = 5.seconds)
 
-  override lazy val spawnActorRef: TypedActorRef[SpawnProtocol.Command] = Await.result({
-    actorSystemTyped.findRefByKey(MakeGuardian.SpawnActorKey)
+  override lazy val spawnActorRef: ActorRef[SpawnProtocol.Command] = Await.result({
+    actorSystem.findRefByKey(MakeGuardian.SpawnActorKey)
   }, atMost = 5.seconds)
 
-  override lazy val sequenceConfigurationActor: TypedActorRef[SequenceConfigurationActorProtocol] = Await.result({
-    actorSystemTyped.findRefByKey(SequenceConfigurationActor.SequenceCacheActorKey)
+  override lazy val sequenceConfigurationActor: ActorRef[SequenceConfigurationActorProtocol] = Await.result({
+    actorSystem.findRefByKey(SequenceConfigurationActor.SequenceCacheActorKey)
   }, atMost = 5.seconds)
 
-  override lazy val readExecutionContext: EC = DatabaseConfigurationExtension(actorSystemTyped).readThreadPool
-  override lazy val writeExecutionContext: EC = DatabaseConfigurationExtension(actorSystemTyped).writeThreadPool
+  override lazy val readExecutionContext: EC = DatabaseConfigurationExtension(actorSystem).readThreadPool
+  override lazy val writeExecutionContext: EC = DatabaseConfigurationExtension(actorSystem).writeThreadPool
 
   override lazy val tokenEndpoint: TokenEndpoint = new TokenEndpoint {
 

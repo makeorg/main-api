@@ -19,9 +19,7 @@
 
 package org.make.api
 
-import akka.actor.ExtendedActorSystem
 import akka.actor.typed.scaladsl.AskPattern.Askable
-import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.{ActorSystem, Scheduler}
 import akka.cluster.typed.Cluster
 import akka.http.scaladsl.Http
@@ -74,44 +72,40 @@ object MakeMain extends App with Logging with MakeApi {
       .resolve()
   }
 
-  override val actorSystemTyped: ActorSystem[MakeGuardian.GuardianCommand] =
+  override implicit val actorSystem: ActorSystem[MakeGuardian.GuardianCommand] =
     ActorSystem(MakeGuardian.createBehavior(this), "make-api", configuration)
 
-  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
-  override implicit val actorSystem: ExtendedActorSystem =
-    actorSystemTyped.toClassic.asInstanceOf[ExtendedActorSystem]
-
-  implicit private val scheduler: Scheduler = actorSystemTyped.scheduler
+  implicit private val scheduler: Scheduler = actorSystem.scheduler
 
   // Wait until cluster is connected before initializing clustered actors
-  while (Cluster(actorSystemTyped).state.leader.isEmpty) {
+  while (Cluster(actorSystem).state.leader.isEmpty) {
     Thread.sleep(100)
   }
 
   Kamon.init(configuration)
 
-  private val databaseConfiguration = actorSystemTyped.registerExtension(DatabaseConfigurationExtension)
+  private val databaseConfiguration = actorSystem.registerExtension(DatabaseConfigurationExtension)
   databaseConfiguration.migrateDatabase()
 
   Await.result(elasticsearchClient.initialize(), 10.seconds)
 
   Await.result(swiftClient.init(), 10.seconds)
 
-  Await.result(actorSystemTyped ? Initialize, atMost = 5.seconds)
+  Await.result(actorSystem ? Initialize, atMost = 5.seconds)
 
-  actorSystemTyped.systemActorOf(ClusterShardingMonitor(), ClusterShardingMonitor.name)
-  actorSystemTyped.systemActorOf(MemoryMonitoringActor(), MemoryMonitoringActor.name)
+  actorSystem.systemActorOf(ClusterShardingMonitor(), ClusterShardingMonitor.name)
+  actorSystem.systemActorOf(MemoryMonitoringActor(), MemoryMonitoringActor.name)
   private val threadPoolMonitor =
-    actorSystemTyped.systemActorOf(ThreadPoolMonitoringActor(), ThreadPoolMonitoringActor.name)
+    actorSystem.systemActorOf(ThreadPoolMonitoringActor(), ThreadPoolMonitoringActor.name)
   threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.readExecutor, "db-read-pool")
   threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.writeExecutor, "db-write-pool")
 
-  private val settings = MakeSettingsExtension(actorSystemTyped)
+  private val settings = MakeSettingsExtension(actorSystem)
 
   // Ensure database stuff is initialized
   Await.result(userService.getUserByEmail(settings.defaultAdmin.email), atMost = 20.seconds)
 
-  implicit val ec: ExecutionContextExecutor = actorSystemTyped.executionContext
+  implicit val ec: ExecutionContextExecutor = actorSystem.executionContext
 
   private val host = settings.Http.host
   private val port = settings.Http.port
@@ -124,7 +118,7 @@ object MakeMain extends App with Logging with MakeApi {
   }.onComplete {
     case util.Failure(ex) =>
       logger.error(s"Failed to bind to $host:$port!", ex)
-      actorSystemTyped.terminate()
+      actorSystem.terminate()
     case _ =>
   }
 

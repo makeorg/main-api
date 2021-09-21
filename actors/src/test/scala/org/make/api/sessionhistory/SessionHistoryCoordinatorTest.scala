@@ -19,7 +19,7 @@
 
 package org.make.api.sessionhistory
 
-import akka.actor.testkit.typed.scaladsl.{ActorTestKit, ScalaTestWithActorTestKit}
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.stream.scaladsl.{Sink, Source}
@@ -27,9 +27,9 @@ import com.typesafe.config.{Config, ConfigFactory}
 import enumeratum.values.scalacheck._
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorTest.actorSystemSeed
-import org.make.api.technical.DefaultIdGeneratorComponent
+import org.make.api.technical.{ActorSystemComponent, DefaultIdGeneratorComponent}
 import org.make.api.userhistory.{UserHistoryActor, UserHistoryCommand}
-import org.make.api.{ActorSystemTypedComponent, MakeUnitTest, TestHelper}
+import org.make.api.{ActorTest, MakeUnitTest, TestHelper}
 import org.make.core.history.HistoryActions
 import org.make.core.history.HistoryActions.VoteTrust
 import org.make.core.proposal.{ProposalId, VoteKey}
@@ -44,14 +44,14 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 class SessionHistoryCoordinatorTest
-    extends ScalaTestWithActorTestKit(SessionHistoryCoordinatorTest.actorSystem)
+    extends ActorTest(SessionHistoryCoordinatorTest.actorSystem)
     with MakeUnitTest
     with ScalaCheckDrivenPropertyChecks
     with DefaultSessionHistoryCoordinatorServiceComponent
     with MakeSettingsComponent
-    with ActorSystemTypedComponent
     with SessionHistoryCoordinatorComponent
-    with DefaultIdGeneratorComponent {
+    with DefaultIdGeneratorComponent
+    with ActorSystemComponent {
 
   val userHistoryCoordinatorProbe: ActorRef[UserHistoryCommand] = testKit.spawn(UserHistoryActor())
 
@@ -70,8 +70,6 @@ class SessionHistoryCoordinatorTest
 
   when(makeSettings.maxHistoryProposalsPerPage).thenReturn(100)
   when(makeSettings.maxUserHistoryEvents).thenReturn(10000)
-
-  override implicit val actorSystemTyped: ActorSystem[Nothing] = testKit.system
 
   override val sessionHistoryCoordinator: ActorRef[SessionHistoryCommand] =
     SessionHistoryCoordinator(actorSystemSeed, userHistoryCoordinatorProbe, idGenerator, makeSettings)

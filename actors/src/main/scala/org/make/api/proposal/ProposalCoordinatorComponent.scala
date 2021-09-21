@@ -20,12 +20,10 @@
 package org.make.api.proposal
 
 import java.time.ZonedDateTime
-
 import akka.actor.typed.ActorRef
 import akka.util.Timeout
 import grizzled.slf4j.Logging
-import org.make.api.ActorSystemTypedComponent
-import org.make.api.technical.TimeSettings
+import org.make.api.technical.{ActorSystemComponent, TimeSettings}
 import org.make.api.technical.BetterLoggingActors._
 import org.make.core.history.HistoryActions.{VoteAndQualifications, VoteTrust}
 import org.make.core.proposal._
@@ -161,7 +159,7 @@ trait ProposalCoordinatorServiceComponent {
 }
 
 trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServiceComponent with Logging {
-  self: ActorSystemTypedComponent with ProposalCoordinatorComponent =>
+  self: ActorSystemComponent with ProposalCoordinatorComponent =>
 
   override lazy val proposalCoordinatorService: ProposalCoordinatorService = new DefaultProposalCoordinatorService
 

@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2018 Make.org
+ *  Copyright (C) 2021 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -19,9 +19,10 @@
 
 package org.make.api
 
-import akka.actor.testkit.typed.scaladsl.{ActorTestKit, ScalaTestWithActorTestKit}
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import org.make.api.technical.ActorSystemComponent
 
-class ShardingTypedActorTest(
-  val actorTesKit: ActorTestKit = ActorTestKit(TestHelper.actorSystemName, TestHelper.fullConfiguration)
-) extends ScalaTestWithActorTestKit(actorTesKit)
-    with MakeUnitTest
+trait EmptyActorSystemComponent extends ActorSystemComponent {
+  override implicit val actorSystem: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, this.getClass.getSimpleName)
+}

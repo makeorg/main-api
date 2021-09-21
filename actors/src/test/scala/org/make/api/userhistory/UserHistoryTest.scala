@@ -21,10 +21,11 @@ package org.make.api.userhistory
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
-import org.make.api.{ActorSystemTypedComponent, MakeUnitTest, StaminaTestUtils}
+import org.make.api.technical.ActorSystemComponent
+import org.make.api.{MakeUnitTest, StaminaTestUtils}
 
-class UserHistoryTest extends MakeUnitTest with ActorSystemTypedComponent {
-  override implicit val actorSystemTyped: ActorSystem[_] = UserHistoryTest.system
+class UserHistoryTest extends MakeUnitTest with ActorSystemComponent {
+  override implicit val actorSystem: ActorSystem[_] = UserHistoryTest.system
 
   Feature("source value of register event after deserialization") {
     Scenario("I get 'core' as source value with an event without source in context and action date after 2018-09-01") {

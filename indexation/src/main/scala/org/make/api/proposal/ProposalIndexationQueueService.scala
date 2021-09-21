@@ -21,7 +21,7 @@ package org.make.api.proposal
 
 import akka.stream._
 import akka.stream.scaladsl.{Keep, RestartFlow, Sink, Source, SourceQueueWithComplete}
-import org.make.api.ActorSystemTypedComponent
+import org.make.api.technical.ActorSystemComponent
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, ProposalIndexationStream}
 import org.make.core.proposal.ProposalId
 
@@ -41,7 +41,7 @@ trait DefaultProposalIndexerServiceComponent
     extends ProposalIndexerServiceComponent
     with ElasticsearchConfigurationComponent
     with ProposalIndexationStream {
-  this: ActorSystemTypedComponent =>
+  this: ActorSystemComponent =>
 
   override lazy val proposalIndexerService: DefaultProposalIndexerService = new DefaultProposalIndexerService
 

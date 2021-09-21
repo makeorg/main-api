@@ -19,13 +19,10 @@
 
 package org.make.api
 
-import akka.actor.ActorSystem
-import akka.actor.typed.{ActorSystem => ActorSystemTyped}
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.ActorSystem
+import org.make.api.technical.ActorSystemComponent
 
-trait ActorSystemTypedComponent {
-  implicit def actorSystemTyped: ActorSystemTyped[Nothing]
-}
-
-trait ActorSystemComponent {
-  implicit def actorSystem: ActorSystem
-}
+abstract class ActorTest(override val actorSystem: ActorSystem[Nothing])
+    extends ScalaTestWithActorTestKit(actorSystem)
+    with ActorSystemComponent

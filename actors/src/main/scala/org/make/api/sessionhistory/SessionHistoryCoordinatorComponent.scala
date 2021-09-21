@@ -22,13 +22,12 @@ package org.make.api.sessionhistory
 import akka.actor.typed.ActorRef
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.Timeout
-import org.make.api.ActorSystemTypedComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryResponse.{Error, LockResponse}
 import org.make.api.sessionhistory.SessionHistoryResponse.Error.ExpiredSession
 import org.make.api.technical.BetterLoggingActors.BetterLoggingTypedActorRef
 import org.make.api.technical.Futures._
-import org.make.api.technical.{StreamUtils, TimeSettings}
+import org.make.api.technical.{ActorSystemComponent, StreamUtils, TimeSettings}
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.{ProposalId, QualificationKey}
 import org.make.core.session.SessionId
@@ -67,7 +66,7 @@ trait SessionHistoryCoordinatorServiceComponent {
 final case class ConcurrentModification(message: String) extends Exception(message)
 
 trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoordinatorServiceComponent {
-  self: SessionHistoryCoordinatorComponent with ActorSystemTypedComponent with MakeSettingsComponent =>
+  self: SessionHistoryCoordinatorComponent with ActorSystemComponent with MakeSettingsComponent =>
 
   type Receiver[T] = ActorRef[SessionHistoryResponse[Error.Expired, T]]
   type LockReceiver = ActorRef[SessionHistoryResponse[Error.LockError, LockResponse]]

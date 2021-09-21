@@ -29,14 +29,13 @@ import com.sksamuel.elastic4s.http.index.CreateIndexResponse
 import com.sksamuel.elastic4s.http.index.admin.AliasActionResponse
 import eu.timepit.refined.auto._
 import grizzled.slf4j.Logging
-import org.make.api.ActorSystemTypedComponent
 import org.make.api.idea._
 import org.make.api.operation.PersistentOperationOfQuestionServiceComponent
 import org.make.api.post.PostServiceComponent
 import org.make.api.technical.Futures._
 import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.api.technical.job.JobCoordinatorServiceComponent
-import org.make.api.technical.{ReadJournalComponent, TimeSettings}
+import org.make.api.technical.{ActorSystemComponent, ReadJournalComponent, TimeSettings}
 import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.idea.Idea
 import org.make.core.job.Job.JobId.{Reindex, ReindexPosts}
@@ -92,7 +91,7 @@ trait DefaultIndexationComponent
     with OperationOfQuestionIndexationStream
     with PostIndexationStream {
 
-  this: ActorSystemTypedComponent
+  this: ActorSystemComponent
     with ElasticsearchConfigurationComponent
     with ElasticsearchClientComponent
     with Logging

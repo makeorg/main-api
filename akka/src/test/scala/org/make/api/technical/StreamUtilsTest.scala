@@ -19,21 +19,16 @@
 
 package org.make.api.technical
 
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.Behaviors
-import org.make.api.MakeUnitTest
+import org.make.api.{EmptyActorSystemComponent, MakeUnitTest}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class StreamUtilsTest extends MakeUnitTest {
+class StreamUtilsTest extends MakeUnitTest with EmptyActorSystemComponent {
 
   val elements: Range.Inclusive = 0.to(10)
-
-  // TODO replace with empty system component
-  implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, getClass.getSimpleName)
 
   Feature("async source") {
 

@@ -22,12 +22,11 @@ package org.make.api.technical.job
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.util.Timeout
-import org.make.api.ActorSystemTypedComponent
 import org.make.api.technical.Futures._
 import org.make.api.technical.job.JobActor.Protocol.Command._
 import org.make.api.technical.job.JobActor.Protocol.Response._
 import org.make.api.technical.job.JobReportingActor.JobReportingActorFacade
-import org.make.api.technical.{IdGeneratorComponent, SpawnActorServiceComponent, TimeSettings}
+import org.make.api.technical.{ActorSystemComponent, IdGeneratorComponent, SpawnActorServiceComponent, TimeSettings}
 import org.make.core.job.Job
 import org.make.core.job.Job.{JobId, Progress}
 
@@ -54,10 +53,7 @@ trait JobCoordinatorServiceComponent {
 }
 
 trait DefaultJobCoordinatorServiceComponent extends JobCoordinatorServiceComponent {
-  self: ActorSystemTypedComponent
-    with IdGeneratorComponent
-    with JobCoordinatorComponent
-    with SpawnActorServiceComponent =>
+  self: ActorSystemComponent with IdGeneratorComponent with JobCoordinatorComponent with SpawnActorServiceComponent =>
 
   override lazy val jobCoordinatorService: JobCoordinatorService = new DefaultJobCoordinatorService
 

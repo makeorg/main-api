@@ -28,7 +28,6 @@ import akka.stream.scaladsl.Sink
 import com.github.t3hnar.bcrypt._
 import eu.timepit.refined.auto._
 import grizzled.slf4j.Logging
-import org.make.api.ActorSystemComponent
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
 import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal

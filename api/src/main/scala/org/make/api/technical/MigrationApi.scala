@@ -23,7 +23,6 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
-import org.make.api.ActorSystemComponent
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.user.UserServiceComponent
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent

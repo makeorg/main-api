@@ -26,7 +26,6 @@ import grizzled.slf4j.Logging
 import io.swagger.annotations._
 
 import javax.ws.rs.Path
-import org.make.api.ActorSystemComponent
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse, ProposalsResultSeededResponse}
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical._

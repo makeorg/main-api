@@ -19,11 +19,10 @@
 
 package org.make.api.operation
 
-import akka.actor.ActorSystem
 import org.make.api.question.{PersistentQuestionService, PersistentQuestionServiceComponent}
 import org.make.api.tag.{PersistentTagService, PersistentTagServiceComponent}
 import org.make.api.technical.IdGeneratorComponent
-import org.make.api.{ActorSystemComponent, MakeUnitTest}
+import org.make.api.{EmptyActorSystemComponent, MakeUnitTest}
 import org.make.core.DateHelper
 import org.make.core.operation.OperationActionType.{OperationCreateAction, OperationUpdateAction}
 import org.make.core.operation.OperationKind.{BusinessConsultation, GreatCause}
@@ -45,9 +44,7 @@ class OperationServiceTest
     with IdGeneratorComponent
     with PersistentOperationServiceComponent
     with OperationOfQuestionServiceComponent
-    with ActorSystemComponent {
-
-  override val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
+    with EmptyActorSystemComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentOperationService: PersistentOperationService = mock[PersistentOperationService]

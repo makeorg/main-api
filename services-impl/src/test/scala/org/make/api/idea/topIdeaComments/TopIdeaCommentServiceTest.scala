@@ -19,8 +19,7 @@
 
 package org.make.api.idea.topIdeaComments
 
-import akka.actor.ActorSystem
-import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
+import org.make.api.{EmptyActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.idea.CommentVoteKey
 import org.make.api.user.{UserService, UserServiceComponent}
@@ -36,12 +35,11 @@ import org.make.core.technical.Pagination.Start
 class TopIdeaCommentServiceTest
     extends MakeUnitTest
     with DefaultTopIdeaCommentServiceComponent
-    with ActorSystemComponent
+    with EmptyActorSystemComponent
     with IdGeneratorComponent
     with PersistentTopIdeaCommentServiceComponent
     with UserServiceComponent {
 
-  override val actorSystem: ActorSystem = ActorSystem()
   override val persistentTopIdeaCommentService: PersistentTopIdeaCommentService = mock[PersistentTopIdeaCommentService]
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val userService: UserService = mock[UserService]

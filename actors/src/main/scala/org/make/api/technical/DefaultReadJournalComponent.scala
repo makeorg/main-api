@@ -20,10 +20,8 @@
 package org.make.api.technical
 
 import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.query.PersistenceQuery
-import org.make.api.ActorSystemComponent
 import org.make.api.proposal.ProposalActor
 import org.make.api.sessionhistory.SessionHistoryActor
 import org.make.api.userhistory.UserHistoryActor
@@ -31,9 +29,9 @@ import org.make.api.userhistory.UserHistoryActor
 trait DefaultReadJournalComponent extends BaseReadJournalComponent[CassandraReadJournal] with ReadJournalComponent {
   self: ActorSystemComponent =>
 
-  override def proposalJournal: CassandraReadJournal = ReadJournal.proposalJournal(actorSystem.toTyped)
-  override def userJournal: CassandraReadJournal = ReadJournal.userJournal(actorSystem.toTyped)
-  override def sessionJournal: CassandraReadJournal = ReadJournal.sessionJournal(actorSystem.toTyped)
+  override def proposalJournal: CassandraReadJournal = ReadJournal.proposalJournal(actorSystem)
+  override def userJournal: CassandraReadJournal = ReadJournal.userJournal(actorSystem)
+  override def sessionJournal: CassandraReadJournal = ReadJournal.sessionJournal(actorSystem)
 }
 
 object ReadJournal {

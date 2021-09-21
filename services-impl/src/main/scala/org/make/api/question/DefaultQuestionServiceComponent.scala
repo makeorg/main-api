@@ -21,13 +21,12 @@ package org.make.api.question
 
 import akka.stream.scaladsl.{Sink, Source}
 import cats.data.NonEmptyList
-import org.make.api.ActorSystemComponent
 import org.make.api.idea.topIdeaComments.PersistentTopIdeaCommentServiceComponent
 import org.make.api.idea.{PersistentTopIdeaServiceComponent, TopIdeaServiceComponent}
 import org.make.api.organisation.OrganisationSearchEngineComponent
 import org.make.api.personality.QuestionPersonalityServiceComponent
 import org.make.api.proposal.ProposalSearchEngineComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeRandom}
+import org.make.api.technical.{ActorSystemComponent, IdGeneratorComponent, MakeRandom}
 import org.make.api.user.UserServiceComponent
 import org.make.core.idea.TopIdeaId
 import org.make.core.operation.OperationId

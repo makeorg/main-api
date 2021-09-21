@@ -27,7 +27,6 @@ import com.sksamuel.elastic4s.searches.sort.SortOrder
 import grizzled.slf4j.Logging
 import kamon.Kamon
 import kamon.tag.TagSet
-import org.make.api.ActorSystemComponent
 import org.make.api.idea.IdeaServiceComponent
 import org.make.api.partner.PartnerServiceComponent
 import org.make.api.question.{AuthorRequest, QuestionServiceComponent}
@@ -38,7 +37,13 @@ import org.make.api.tagtype.TagTypeServiceComponent
 import org.make.api.technical.Futures.RichFutures
 import org.make.api.technical.crm.QuestionResolver
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
-import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeRandom, ReadJournalComponent}
+import org.make.api.technical.{
+  ActorSystemComponent,
+  EventBusServiceComponent,
+  IdGeneratorComponent,
+  MakeRandom,
+  ReadJournalComponent
+}
 import org.make.api.user.UserServiceComponent
 import org.make.api.userhistory._
 import org.make.core.common.indexed.Sort
