@@ -306,7 +306,7 @@ trait MakeApi
 
   override lazy val sessionHistoryCoordinator: ActorRef = Await.result(
     actorSystem
-      .actorSelection(actorSystem / MakeGuardian.name / SessionHistoryCoordinator.name)
+      .actorSelection(actorSystem / SessionHistoryCoordinator.name)
       .resolveOne()(Timeout(10.seconds)),
     atMost = 10.seconds
   )
@@ -325,7 +325,7 @@ trait MakeApi
 
   override lazy val healthCheckSupervisor: ActorRef = Await.result(
     actorSystem
-      .actorSelection(actorSystem / MakeGuardian.name / HealthCheckSupervisor.name)
+      .actorSelection(actorSystem / HealthCheckSupervisor.name)
       .resolveOne()(Timeout(10.seconds)),
     atMost = 10.seconds
   )
@@ -437,7 +437,7 @@ trait MakeApi
     }
 
   lazy val makeRoutes: Route =
-    (documentation ~
+    documentation ~
       optionsCors ~
       optionsAuthorized ~
       buildRoutes ~
@@ -487,7 +487,7 @@ trait MakeApi
       trackingApi.routes ~
       userApi.routes ~
       viewApi.routes ~
-      widgetApi.routes)
+      widgetApi.routes
 }
 
 object MakeApi extends Logging with Directives with ErrorAccumulatingCirceSupport {

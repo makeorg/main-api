@@ -19,26 +19,25 @@
 
 package org.make.api
 
-import java.net.InetAddress
-import java.nio.file.{Files, Paths}
-import akka.actor.typed.ActorSystem
+import akka.actor.ExtendedActorSystem
+import akka.actor.typed.scaladsl.AskPattern.Askable
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.{ExtendedActorSystem, PoisonPill, ActorSystem => ClassicActorSystem}
+import akka.actor.typed.{ActorSystem, Scheduler}
 import akka.cluster.typed.Cluster
-import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.server.Route
-import akka.pattern.ask
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import kamon.Kamon
-import org.make.api.MakeGuardian.Ping
+import org.make.api.MakeGuardian.Initialize
 import org.make.api.extensions.ThreadPoolMonitoringActor.MonitorThreadPool
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings, ThreadPoolMonitoringActor}
-import org.make.api.sessionhistory.ShardedSessionHistory
 import org.make.api.technical.MakePersistentActor.StartShard
 import org.make.api.technical.{ClusterShardingMonitor, MemoryMonitoringActor}
 
+import java.net.InetAddress
+import java.nio.file.{Files, Paths}
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.jdk.CollectionConverters._
@@ -76,10 +75,14 @@ object MakeMain extends App with Logging with MakeApi {
       .resolve()
   }
 
+  override val actorSystemTyped: ActorSystem[MakeGuardian.GuardianCommand] =
+    ActorSystem(MakeGuardian.createBehavior(this), "make-api", configuration)
+
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   override implicit val actorSystem: ExtendedActorSystem =
-    ClassicActorSystem.apply("make-api", configuration).asInstanceOf[ExtendedActorSystem]
-  override val actorSystemTyped: ActorSystem[Nothing] = actorSystem.toTyped
+    actorSystemTyped.toClassic.asInstanceOf[ExtendedActorSystem]
+
+  implicit private val scheduler: Scheduler = actorSystemTyped.scheduler
 
   // Wait until cluster is connected before initializing clustered actors
   while (Cluster(actorSystemTyped).state.leader.isEmpty) {
@@ -95,9 +98,7 @@ object MakeMain extends App with Logging with MakeApi {
 
   Await.result(swiftClient.init(), 10.seconds)
 
-  private val guardian = actorSystem.actorOf(MakeGuardian.props(makeApi = this), MakeGuardian.name)
-
-  Await.result(guardian ? Ping, atMost = 5.seconds)
+  Await.result(actorSystemTyped ? (Initialize(_)), atMost = 5.seconds)
 
   actorSystemTyped.systemActorOf(ClusterShardingMonitor(), ClusterShardingMonitor.name)
   actorSystemTyped.systemActorOf(MemoryMonitoringActor(), MemoryMonitoringActor.name)
@@ -112,9 +113,6 @@ object MakeMain extends App with Logging with MakeApi {
   }
 
   private val settings = MakeSettings(actorSystemTyped)
-
-  // Initialize journals
-  actorSystem.actorOf(ShardedSessionHistory.props(userHistoryCoordinator, 1.second, idGenerator), "fake-session") ! PoisonPill
 
   // Ensure database stuff is initialized
   Await.result(userService.getUserByEmail(settings.defaultAdmin.email), atMost = 20.seconds)
