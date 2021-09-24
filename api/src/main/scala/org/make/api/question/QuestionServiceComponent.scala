@@ -36,7 +36,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user._
 import org.make.core.user.indexed.OrganisationSearchResult
-import org.make.core.{Order, ValidationError, ValidationFailedError}
+import org.make.core.{ValidationError, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -85,18 +85,6 @@ trait QuestionService {
     seed: Option[Int]
   ): Future[Option[QuestionTopIdeaResultWithSeed]]
 }
-
-final case class SearchQuestionRequest(
-  maybeQuestionIds: Option[Seq[QuestionId]] = None,
-  maybeOperationIds: Option[Seq[OperationId]] = None,
-  country: Option[Country] = None,
-  language: Option[Language] = None,
-  maybeSlug: Option[String] = None,
-  skip: Option[Start] = None,
-  end: Option[End] = None,
-  sort: Option[String] = None,
-  order: Option[Order] = None
-)
 
 trait QuestionServiceComponent {
   def questionService: QuestionService

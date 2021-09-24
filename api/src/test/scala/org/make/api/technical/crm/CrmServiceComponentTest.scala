@@ -972,7 +972,7 @@ class CrmServiceComponentTest
 
       whenReady(crmService.getPropertiesFromUser(user, resolver), Timeout(5.seconds)) { result =>
         result.operationActivity should contain(question.slug)
-        val persistentUser = PersistentCrmUser.fromContactProperty(user.email, user.fullName.get, result)
+        val persistentUser = result.toPersistentCrmUser(user.email, user.fullName.get)
         persistentUser.operationActivity should contain(question.slug)
         persistentUser.totalNumberProposals should contain(2)
       }

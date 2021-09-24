@@ -26,7 +26,6 @@ import org.make.api.proposal.ProposalScorer.VotesCounter
 import org.make.api.sequence.SelectionAlgorithm.ExplorationSelectionAlgorithm
 import org.make.api.sequence.SequenceSimulationTest.{counter, extractDeciles}
 import org.make.api.technical.MakeRandom
-import org.make.api.technical.elasticsearch.ProposalIndexationStream.buildScore
 import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.core.proposal.QualificationKey.{
   DoNotCare,
@@ -40,7 +39,13 @@ import org.make.core.proposal.QualificationKey.{
   PlatitudeDisagree
 }
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
-import org.make.core.proposal.indexed.{IndexedProposal, IndexedProposalKeyword, IndexedQualification, IndexedVote}
+import org.make.core.proposal.indexed.{
+  IndexedProposal,
+  IndexedProposalKeyword,
+  IndexedQualification,
+  IndexedScores,
+  IndexedVote
+}
 import org.make.core.proposal.{ProposalId, ProposalKeywordKey, QualificationKey, VoteKey}
 import org.make.core.sequence.{ExplorationSequenceConfiguration, ExplorationSequenceConfigurationId}
 import org.make.core.user.UserId
@@ -199,7 +204,7 @@ class SequenceSimulationTest extends MakeUnitTest {
       votesCount = proposal.votesCount + 1,
       votesVerifiedCount = proposal.votesVerifiedCount + 1,
       votesSequenceCount = proposal.votesSequenceCount + 1,
-      scores = buildScore(ProposalScorer(updatedVotes, votesCounter, nonSequenceRatio))
+      scores = IndexedScores(ProposalScorer(updatedVotes, votesCounter, nonSequenceRatio))
     )
   }
 

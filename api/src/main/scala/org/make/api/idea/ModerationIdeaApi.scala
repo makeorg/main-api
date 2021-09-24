@@ -21,7 +21,6 @@ package org.make.api.idea
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
-import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
@@ -37,7 +36,7 @@ import org.make.core.idea._
 import org.make.core.idea.indexed.IndexedIdea
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.{HttpCodes, ParameterExtractors, RequestContext, Validation}
+import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -349,37 +348,6 @@ final case class UpdateIdeaRequest(
 
 object UpdateIdeaRequest {
   implicit val decoder: Decoder[UpdateIdeaRequest] = deriveDecoder[UpdateIdeaRequest]
-}
-
-final case class IdeaFiltersRequest(
-  name: Option[String],
-  questionId: Option[QuestionId],
-  limit: Option[Int],
-  skip: Option[Int],
-  sort: Option[String],
-  order: Option[Order]
-) {
-  def toSearchQuery(requestContext: RequestContext): IdeaSearchQuery = {
-    val fuzziness = Fuzziness.Auto
-    val filters: Option[IdeaSearchFilters] =
-      IdeaSearchFilters.parse(name = name.map(text => {
-        NameSearchFilter(text, Some(fuzziness))
-      }), questionId = questionId.map(question => QuestionIdSearchFilter(question)))
-
-    IdeaSearchQuery(
-      filters = filters,
-      limit = limit,
-      skip = skip,
-      sort = sort,
-      order = order,
-      language = requestContext.language
-    )
-
-  }
-}
-
-object IdeaFiltersRequest {
-  val empty: IdeaFiltersRequest = IdeaFiltersRequest(None, None, None, None, None, None)
 }
 
 final case class IdeaIdResponse(

@@ -24,7 +24,7 @@ import akka.actor.{ActorRef, PoisonPill}
 import akka.actor.typed.{ActorSystem, Scheduler, ActorRef => TypedRef}
 import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.util.Timeout
-import org.make.api.extensions.MakeSettingsExtension
+import org.make.api.extensions.ActorMakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryActor._
 import org.make.api.technical.BetterLoggingActors.BetterLoggingTypedActorRef
 import org.make.api.technical.{ActorEventBusServiceComponent, MakePersistentActor}
@@ -49,7 +49,7 @@ class SessionHistoryActor(
   lockDuration: FiniteDuration,
   idGenerator: IdGenerator
 ) extends MakePersistentActor(classOf[SessionHistory], classOf[SessionHistoryEvent[_]])
-    with MakeSettingsExtension
+    with ActorMakeSettingsComponent
     with ActorEventBusServiceComponent {
 
   implicit val timeout: Timeout = defaultTimeout

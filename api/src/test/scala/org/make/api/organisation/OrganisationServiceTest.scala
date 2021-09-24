@@ -32,7 +32,7 @@ import org.make.api.proposal.{
 }
 import org.make.api.technical.auth.{UserTokenGenerator, UserTokenGeneratorComponent}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGeneratorComponent}
-import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
+import org.make.api.user.PersistentUserService.UpdateFailed
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user._
 import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals

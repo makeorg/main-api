@@ -29,7 +29,7 @@ import com.sksamuel.elastic4s.IndexAndType
 import grizzled.slf4j.Logging
 import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
 import org.make.api.organisation.OrganisationServiceComponent
-import org.make.api.proposal.ProposalScorer.{Score, VotesCounter}
+import org.make.api.proposal.ProposalScorer.VotesCounter
 import org.make.api.proposal.{
   ProposalCoordinatorServiceComponent,
   ProposalScorer,
@@ -43,8 +43,7 @@ import org.make.api.sequence.SequenceConfigurationComponent
 import org.make.core.sequence.SequenceConfiguration
 import org.make.api.tag.TagServiceComponent
 import org.make.api.tagtype.TagTypeServiceComponent
-import org.make.api.technical.Futures
-import org.make.api.technical.elasticsearch.ProposalIndexationStream.buildScore
+import org.make.api.technical.RetryableFuture
 import org.make.api.user.UserServiceComponent
 import org.make.core.SlugHelper
 import org.make.core.operation.{OperationOfQuestion, SimpleOperation}
@@ -55,7 +54,6 @@ import org.make.core.proposal.indexed.{
   IndexedProposal,
   IndexedProposalKeyword,
   IndexedProposalQuestion,
-  IndexedScore,
   IndexedScores,
   IndexedTag,
   IndexedVote,
@@ -92,7 +90,7 @@ trait ProposalIndexationStream
     def maybeIndexedProposal(implicit mat: Materializer): Flow[ProposalId, Option[IndexedProposal], NotUsed] =
       Flow[ProposalId]
         .mapAsync(parallelism) { proposalId =>
-          Futures.retryOnAskTimeout(() => getIndexedProposal(proposalId))
+          RetryableFuture.retryOnAskTimeout(() => getIndexedProposal(proposalId))
         }
 
     def runIndexProposals(proposalIndexName: String): Flow[Seq[IndexedProposal], Done, NotUsed] =
@@ -279,8 +277,8 @@ trait ProposalIndexationStream
       votesSequenceCount = proposal.votes.map(_.countSequence).sum,
       votesSegmentCount = proposal.votes.map(_.countSegment).sum,
       toEnrich = needsEnrichment,
-      scores = buildScore(sequenceScore),
-      segmentScores = segmentScore.map(buildScore).getOrElse(IndexedScores.empty),
+      scores = IndexedScores(sequenceScore),
+      segmentScores = segmentScore.map(IndexedScores.apply).getOrElse(IndexedScores.empty),
       agreementRate = BaseVote.rate(proposal.votes, VoteKey.Agree),
       context = Some(ProposalContext(proposal.creationContext, isBeforeContextSourceFeature)),
       trending = None,
@@ -351,24 +349,6 @@ trait ProposalIndexationStream
       }
   }
 
-}
-
-object ProposalIndexationStream {
-  def buildScore(scorer: ProposalScorer): IndexedScores = {
-    def toIndexed(score: Score): IndexedScore =
-      IndexedScore(score = score.score, lowerBound = score.lowerBound, upperBound = score.upperBound)
-    IndexedScores(
-      engagement = toIndexed(scorer.engagement),
-      agreement = toIndexed(scorer.agree),
-      adhesion = toIndexed(scorer.adhesion),
-      realistic = toIndexed(scorer.realistic),
-      platitude = toIndexed(scorer.platitude),
-      topScore = toIndexed(scorer.topScore),
-      controversy = toIndexed(scorer.controversy),
-      rejection = toIndexed(scorer.rejection),
-      zone = scorer.zone
-    )
-  }
 }
 
 sealed trait ProposalFlow {

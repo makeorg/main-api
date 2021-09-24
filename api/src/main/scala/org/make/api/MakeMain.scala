@@ -32,7 +32,7 @@ import grizzled.slf4j.Logging
 import kamon.Kamon
 import org.make.api.MakeGuardian.Initialize
 import org.make.api.extensions.ThreadPoolMonitoringActor.MonitorThreadPool
-import org.make.api.extensions.{DatabaseConfiguration, MakeSettings, ThreadPoolMonitoringActor}
+import org.make.api.extensions.{DatabaseConfigurationExtension, MakeSettingsExtension, ThreadPoolMonitoringActor}
 import org.make.api.technical.MakePersistentActor.StartShard
 import org.make.api.technical.{ClusterShardingMonitor, MemoryMonitoringActor}
 
@@ -91,7 +91,7 @@ object MakeMain extends App with Logging with MakeApi {
 
   Kamon.init(configuration)
 
-  private val databaseConfiguration = actorSystemTyped.registerExtension(DatabaseConfiguration)
+  private val databaseConfiguration = actorSystemTyped.registerExtension(DatabaseConfigurationExtension)
   databaseConfiguration.migrateDatabase()
 
   Await.result(elasticsearchClient.initialize(), 10.seconds)
@@ -112,7 +112,7 @@ object MakeMain extends App with Logging with MakeApi {
     sessionHistoryCoordinator ! StartShard(i.toString)
   }
 
-  private val settings = MakeSettings(actorSystemTyped)
+  private val settings = MakeSettingsExtension(actorSystemTyped)
 
   // Ensure database stuff is initialized
   Await.result(userService.getUserByEmail(settings.defaultAdmin.email), atMost = 20.seconds)

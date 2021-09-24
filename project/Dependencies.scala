@@ -117,7 +117,7 @@ object Dependencies {
       .exclude("org.slf4j", "slf4j-log4j12")
       .exclude("io.netty", "netty")
 
-  val configuration: ModuleID = "com.typesafe" % "config" % "1.3.3"
+  val configuration: ModuleID = "com.typesafe" % "config" % "1.4.0"
 
   val elastic4s: ModuleID = "com.sksamuel.elastic4s"      %% "elastic4s-core"  % elastic4sVersion
   val elastic4sHttp: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-http"  % elastic4sVersion
@@ -145,15 +145,15 @@ object Dependencies {
   val enumeratumScalacheck: ModuleID = "com.beachape" %% "enumeratum-scalacheck" % enumeratumVersion
 
   // Test related dependencies
-  val akkaTest: ModuleID = "com.typesafe.akka"            %% "akka-actor-testkit-typed" % akkaVersion     % "it,test"
-  val akkaStreamTest: ModuleID = "com.typesafe.akka"      %% "akka-stream-testkit"      % akkaVersion     % "it,test"
-  val scalaTest: ModuleID = "org.scalatest"               %% "scalatest"                % "3.2.9"         % "it,test"
-  val scalaTestScalaCheck: ModuleID = "org.scalatestplus" %% "scalacheck-1-15"          % "3.2.9.0"       % "it,test"
+  val akkaTest: ModuleID = "com.typesafe.akka"            %% "akka-actor-testkit-typed" % akkaVersion % "it,test"
+  val akkaStreamTest: ModuleID = "com.typesafe.akka"      %% "akka-stream-testkit"      % akkaVersion % "it,test"
+  val scalaTest: ModuleID = "org.scalatest"               %% "scalatest"                % "3.2.9"
+  val scalaTestScalaCheck: ModuleID = "org.scalatestplus" %% "scalacheck-1-15"          % "3.2.9.0"
   val akkaHttpTest: ModuleID = "com.typesafe.akka"        %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
-  val mockito: ModuleID = "org.mockito"                   %% "mockito-scala"            % mockitoVersion  % "it,test"
-  val mockitoScalatest: ModuleID = "org.mockito"          %% "mockito-scala-scalatest"  % mockitoVersion  % "it,test"
-  val dockerScalatest: ModuleID = "com.whisk"             %% "docker-testkit-scalatest" % "0.9.9"         % "it"
-  val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.9" % "it")
+  val mockito: ModuleID = "org.mockito"                   %% "mockito-scala"            % mockitoVersion
+  val mockitoScalatest: ModuleID = "org.mockito"          %% "mockito-scala-scalatest"  % mockitoVersion
+  val dockerScalatest: ModuleID = "com.whisk"             %% "docker-testkit-scalatest" % "0.9.9"
+  val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.9")
     .exclude("io.netty", "netty-handler")
     .exclude("io.netty", "netty-transport-native-epoll")
 

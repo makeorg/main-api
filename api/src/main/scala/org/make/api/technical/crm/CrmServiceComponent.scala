@@ -274,15 +274,47 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
     }
 
     def createCsv(formattedDate: String, list: CrmList, csvDirectory: Path): Future[Seq[Path]] = {
+
+      def toContactProperties(user: PersistentCrmUser): ContactProperties = {
+        ContactProperties(
+          userId = Some(UserId(user.userId)),
+          firstName = Some(user.firstname),
+          postalCode = user.zipcode,
+          dateOfBirth = user.dateOfBirth,
+          emailValidationStatus = Some(user.emailValidationStatus),
+          emailHardBounceValue = Some(user.emailHardbounceStatus),
+          unsubscribeStatus = Some(user.unsubscribeStatus),
+          accountCreationDate = user.accountCreationDate,
+          accountCreationSource = user.accountCreationSource,
+          accountCreationOrigin = user.accountCreationOrigin,
+          accountCreationSlug = user.accountCreationOperation,
+          accountCreationCountry = user.accountCreationCountry,
+          accountCreationLocation = user.accountCreationLocation,
+          countriesActivity = user.countriesActivity,
+          lastCountryActivity = user.lastCountryActivity,
+          totalProposals = user.totalNumberProposals,
+          totalVotes = user.totalNumberVotes,
+          firstContributionDate = user.firstContributionDate,
+          lastContributionDate = user.lastContributionDate,
+          operationActivity = user.operationActivity,
+          sourceActivity = user.sourceActivity,
+          daysOfActivity = user.daysOfActivity,
+          daysOfActivity30 = user.daysOfActivity30d,
+          userType = user.userType,
+          accountType = user.accountType,
+          updatedAt = Some(formattedDate),
+          daysBeforeDeletion = user.daysBeforeDeletion,
+          lastActivityDate = user.lastActivityDate,
+          sessionsCount = user.sessionsCount,
+          eventsCount = user.eventsCount
+        )
+      }
+
       StreamUtils
         .asyncPageToPageSource(persistentCrmUserService.list(list.unsubscribed, list.hardBounced, _, batchSize))
         .mapConcat(identity)
         .map { crmUser =>
-          Contact(
-            email = crmUser.email,
-            name = Some(crmUser.fullName),
-            properties = Some(crmUser.toContactProperties(Some(formattedDate)))
-          ).toStringCsv
+          Contact(email = crmUser.email, name = Some(crmUser.fullName), properties = Some(toContactProperties(crmUser))).toStringCsv
         }
         .map(ByteString.apply(_, StandardCharsets.UTF_8))
         .runWith(LogRotatorSink(fileSizeTriggerCreator(csvDirectory)))
@@ -372,6 +404,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
     }
 
     private def computeAndPersistCrmUsers(questionResolver: QuestionResolver): Future[Unit] = {
+
       val start = System.currentTimeMillis()
       StreamUtils
         .asyncPageToPageSource(persistentCrmSynchroUserService.findUsersForCrmSynchro(None, None, _, batchSize))
@@ -384,7 +417,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
         .groupedWithin(batchSize, 5.seconds)
         .map { contacts =>
           contacts.map {
-            case (email, fullName, properties) => PersistentCrmUser.fromContactProperty(email, fullName, properties)
+            case (email, fullName, properties) => properties.toPersistentCrmUser(email, fullName)
           }
         }
         .mapAsync(persistCrmUsersParallelism) { crmUsers =>

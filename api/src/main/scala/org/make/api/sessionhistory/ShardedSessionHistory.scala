@@ -24,7 +24,7 @@ import akka.actor.{ActorLogging, Props, ReceiveTimeout}
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
-import org.make.api.extensions.MakeSettingsExtension
+import org.make.api.extensions.ActorMakeSettingsComponent
 import org.make.api.technical.MakePersistentActor.StartShard
 import org.make.api.userhistory.UserHistoryCommand
 import org.make.core.technical.IdGenerator
@@ -37,7 +37,7 @@ class ShardedSessionHistory(
   idGenerator: IdGenerator
 ) extends SessionHistoryActor(userHistoryCoordinator, lockDuration, idGenerator)
     with ActorLogging
-    with MakeSettingsExtension {
+    with ActorMakeSettingsComponent {
 
   context.setReceiveTimeout(settings.SessionCookie.lifetime)
 

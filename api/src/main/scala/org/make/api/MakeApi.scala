@@ -323,8 +323,8 @@ trait MakeApi
     actorSystemTyped.findRefByKey(SequenceConfigurationActor.SequenceCacheActorKey)
   }, atMost = 5.seconds)
 
-  override lazy val readExecutionContext: EC = DatabaseConfiguration(actorSystemTyped).readThreadPool
-  override lazy val writeExecutionContext: EC = DatabaseConfiguration(actorSystemTyped).writeThreadPool
+  override lazy val readExecutionContext: EC = DatabaseConfigurationExtension(actorSystemTyped).readThreadPool
+  override lazy val writeExecutionContext: EC = DatabaseConfigurationExtension(actorSystemTyped).writeThreadPool
 
   override lazy val tokenEndpoint: TokenEndpoint = new TokenEndpoint {
 

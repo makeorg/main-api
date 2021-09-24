@@ -378,6 +378,41 @@ final case class ContactProperties(
       }
     }.mkString(",")
   }
+
+  def toPersistentCrmUser(email: String, fullName: String): PersistentCrmUser = PersistentCrmUser(
+    userId = userId.map(_.value).getOrElse(""),
+    email = email,
+    fullName = fullName,
+    firstname = firstName.getOrElse(""),
+    zipcode = postalCode,
+    dateOfBirth = dateOfBirth,
+    emailValidationStatus = emailValidationStatus.getOrElse(false),
+    emailHardbounceStatus = emailHardBounceValue.getOrElse(false),
+    unsubscribeStatus = unsubscribeStatus.getOrElse(false),
+    accountCreationDate = accountCreationDate,
+    accountCreationSource = accountCreationSource,
+    accountCreationOrigin = accountCreationOrigin,
+    accountCreationOperation = accountCreationSlug,
+    accountCreationCountry = accountCreationCountry,
+    accountCreationLocation = accountCreationLocation,
+    countriesActivity = countriesActivity,
+    lastCountryActivity = lastCountryActivity,
+    totalNumberProposals = totalProposals,
+    totalNumberVotes = totalVotes,
+    firstContributionDate = firstContributionDate,
+    lastContributionDate = lastContributionDate,
+    operationActivity = operationActivity,
+    sourceActivity = sourceActivity,
+    daysOfActivity = daysOfActivity,
+    daysOfActivity30d = daysOfActivity30,
+    userType = userType,
+    accountType = accountType,
+    daysBeforeDeletion = daysBeforeDeletion,
+    lastActivityDate = lastActivityDate,
+    sessionsCount = sessionsCount,
+    eventsCount = eventsCount
+  )
+
 }
 
 object ContactProperties {
