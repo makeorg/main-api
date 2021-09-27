@@ -21,21 +21,25 @@ package org.make.api.technical.auth
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.string.Uri
 import grizzled.slf4j.Logging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.refined._
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
-
-import javax.ws.rs.Path
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical._
+import org.make.api.user.UserServiceComponent
 import org.make.core.auth.{Client, ClientId, UserRights}
-import org.make.core.user.{CustomRole, Role, UserId}
-import org.make.core.{HttpCodes, ParameterExtractors, Validation}
+import org.make.core.technical.Pagination._
+import org.make.core.user.{CustomRole, Role, User, UserId}
+import org.make.core.{HttpCodes, ParameterExtractors, Requirement, Validation}
 import scalaoauth2.provider._
 
+import javax.ws.rs.Path
 import scala.annotation.meta.field
-import org.make.core.technical.Pagination._
+import scala.concurrent.Future
 
 @Api(value = "Client OAuth")
 @Path(value = "/admin/clients")
@@ -142,7 +146,7 @@ trait DefaultAdminClientApiComponent
     with MakeAuthenticationDirectives
     with Logging
     with ParameterExtractors {
-  self: MakeDirectivesDependencies with ClientServiceComponent =>
+  self: MakeDirectivesDependencies with ClientServiceComponent with UserServiceComponent =>
 
   override lazy val adminClientApi: AdminClientApi = new DefaultAdminClientApi
 
@@ -158,22 +162,28 @@ trait DefaultAdminClientApiComponent
               requireAdminRole(auth.user) {
                 decodeRequest {
                   entity(as[AdminCreateClientRequest]) { request: AdminCreateClientRequest =>
-                    Validation.validate(Validation.validateUserInput("name", request.name, None))
-                    onSuccess(
-                      clientService.createClient(
-                        name = request.name,
-                        allowedGrantTypes = request.allowedGrantTypes,
-                        secret = request.secret,
-                        scope = request.scope,
-                        redirectUri = request.redirectUri,
-                        defaultUserId = request.defaultUserId,
-                        roles = request.roles.map(CustomRole.apply),
-                        tokenExpirationSeconds = request.tokenExpirationSeconds,
-                        refreshExpirationSeconds = request.refreshExpirationSeconds,
-                        reconnectExpirationSeconds = request.reconnectExpirationSeconds
-                      )
-                    ) { client =>
-                      complete(StatusCodes.Created -> ClientResponse(client))
+                    val futureUser = request.defaultUserId match {
+                      case Some(id) => userService.getUser(id)
+                      case None     => Future.successful(None)
+                    }
+                    provideAsync(futureUser) { maybeUser =>
+                      Validation.validate(AdminCreateClientRequest.validations(request, maybeUser): _*)
+                      onSuccess(
+                        clientService.createClient(
+                          name = request.name,
+                          allowedGrantTypes = request.allowedGrantTypes,
+                          secret = request.secret,
+                          scope = request.scope,
+                          redirectUri = request.redirectUri.map(_.value),
+                          defaultUserId = request.defaultUserId,
+                          roles = request.roles.map(CustomRole.apply),
+                          tokenExpirationSeconds = request.tokenExpirationSeconds,
+                          refreshExpirationSeconds = request.refreshExpirationSeconds,
+                          reconnectExpirationSeconds = request.reconnectExpirationSeconds
+                        )
+                      ) { client =>
+                        complete(StatusCodes.Created -> ClientResponse(client))
+                      }
                     }
                   }
                 }
@@ -204,23 +214,29 @@ trait DefaultAdminClientApiComponent
             requireAdminRole(userAuth.user) {
               decodeRequest {
                 entity(as[AdminCreateClientRequest]) { request: AdminCreateClientRequest =>
-                  Validation.validate(Validation.validateUserInput("name", request.name, None))
-                  provideAsyncOrNotFound(
-                    clientService.updateClient(
-                      clientId = clientId,
-                      name = request.name,
-                      allowedGrantTypes = request.allowedGrantTypes,
-                      secret = request.secret,
-                      scope = request.scope,
-                      redirectUri = request.redirectUri,
-                      defaultUserId = request.defaultUserId,
-                      roles = request.roles.map(CustomRole.apply),
-                      tokenExpirationSeconds = request.tokenExpirationSeconds,
-                      refreshExpirationSeconds = request.refreshExpirationSeconds,
-                      reconnectExpirationSeconds = request.reconnectExpirationSeconds
-                    )
-                  ) { client =>
-                    complete(ClientResponse(client))
+                  val futureUser = request.defaultUserId match {
+                    case Some(id) => userService.getUser(id)
+                    case None     => Future.successful(None)
+                  }
+                  provideAsync(futureUser) { maybeUser =>
+                    Validation.validate(AdminCreateClientRequest.validations(request, maybeUser): _*)
+                    provideAsyncOrNotFound(
+                      clientService.updateClient(
+                        clientId = clientId,
+                        name = request.name,
+                        allowedGrantTypes = request.allowedGrantTypes,
+                        secret = request.secret,
+                        scope = request.scope,
+                        redirectUri = request.redirectUri.map(_.value),
+                        defaultUserId = request.defaultUserId,
+                        roles = request.roles.map(CustomRole.apply),
+                        tokenExpirationSeconds = request.tokenExpirationSeconds,
+                        refreshExpirationSeconds = request.refreshExpirationSeconds,
+                        reconnectExpirationSeconds = request.reconnectExpirationSeconds
+                      )
+                    ) { client =>
+                      complete(ClientResponse(client))
+                    }
                   }
                 }
               }
@@ -253,13 +269,14 @@ trait DefaultAdminClientApiComponent
 
 final case class ClientResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "331ec138-1a68-4432-99a1-983a4200e1d1")
-  clientId: ClientId,
+  id: ClientId,
   name: String,
   allowedGrantTypes: Seq[String],
   @(ApiModelProperty @field)(dataType = "string", example = "ebe271b8-236f-46da-94ca-fec0b83534ca")
   secret: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "3ffd4b4a-c603-4fbb-aada-639edd169836")
   scope: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/redirect-uri")
   redirectUri: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "59043bc6-d540-4c8e-9c66-fe8601c2c67d")
   defaultUserId: Option[UserId],
@@ -276,7 +293,7 @@ object ClientResponse {
   implicit val decoder: Decoder[ClientResponse] = deriveDecoder[ClientResponse]
   def apply(client: Client): ClientResponse =
     ClientResponse(
-      clientId = client.clientId,
+      id = client.clientId,
       name = client.name,
       allowedGrantTypes = client.allowedGrantTypes,
       secret = client.secret,
@@ -292,12 +309,12 @@ object ClientResponse {
 
 final case class AdminCreateClientRequest(
   name: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "ebe271b8-236f-46da-94ca-fec0b83534ca")
+  @(ApiModelProperty @field)(dataType = "string", example = "s3Cr3T")
   secret: Option[String],
   allowedGrantTypes: Seq[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "3ffd4b4a-c603-4fbb-aada-639edd169836")
   scope: Option[String],
-  redirectUri: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/redirect-uri")
+  redirectUri: Option[String Refined Uri],
   @(ApiModelProperty @field)(dataType = "string", example = "59043bc6-d540-4c8e-9c66-fe8601c2c67d")
   defaultUserId: Option[UserId],
   @(ApiModelProperty @field)(
@@ -314,4 +331,30 @@ final case class AdminCreateClientRequest(
 object AdminCreateClientRequest {
   implicit val encoder: Encoder[AdminCreateClientRequest] = deriveEncoder[AdminCreateClientRequest]
   implicit val decoder: Decoder[AdminCreateClientRequest] = deriveDecoder[AdminCreateClientRequest]
+  val validGrantTypes: Seq[String] = Seq(
+    OAuthGrantType.AUTHORIZATION_CODE,
+    OAuthGrantType.REFRESH_TOKEN,
+    OAuthGrantType.CLIENT_CREDENTIALS,
+    OAuthGrantType.PASSWORD,
+    OAuthGrantType.IMPLICIT
+  )
+
+  def validations(request: AdminCreateClientRequest, maybeUser: Option[User]): Seq[Requirement] =
+    Seq(
+      Validation.validateUserInput("name", request.name, None),
+      Validation.validChoices(
+        "allowedGrantTypes",
+        Some(s"At least one allowed grant types is invalid. Valid choices: ${AdminCreateClientRequest.validGrantTypes
+          .mkString(",")}"),
+        request.allowedGrantTypes,
+        AdminCreateClientRequest.validGrantTypes
+      ),
+      Validation.validateField(
+        "defaultUserId",
+        "not_found",
+        request.defaultUserId.isEmpty || maybeUser.isDefined,
+        s"User ${request.defaultUserId} not found."
+      )
+    )
+
 }

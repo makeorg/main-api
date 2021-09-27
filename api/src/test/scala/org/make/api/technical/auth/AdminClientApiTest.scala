@@ -23,16 +23,28 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
+import org.make.api.user.{UserService, UserServiceComponent}
+import org.make.core.ValidationError
 import org.make.core.auth.ClientId
 import org.make.core.user.{CustomRole, UserId}
 
 import scala.concurrent.Future
 
-class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiComponent with ClientServiceComponent {
+class AdminClientApiTest
+    extends MakeApiTestBase
+    with DefaultAdminClientApiComponent
+    with ClientServiceComponent
+    with UserServiceComponent {
 
   override val clientService: ClientService = mock[ClientService]
+  override val userService: UserService = mock[UserService]
 
   val routes: Route = sealRoute(adminClientApi.routes)
+
+  val userId: UserId = UserId("123456-12345")
+  val fakeUserId: UserId = UserId("fake")
+  when(userService.getUser(userId)).thenReturn(Future.successful(Some(user(userId))))
+  when(userService.getUser(fakeUserId)).thenReturn(Future.successful(None))
 
   Feature("create a client") {
     val validClient = client(clientId = ClientId("apiclient"), name = "client", secret = Some("secret"))
@@ -41,7 +53,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
       clientService
         .createClient(
           name = eqTo("client"),
-          allowedGrantTypes = eqTo(Seq("grant_type")),
+          allowedGrantTypes = eqTo(Seq("implicit")),
           secret = eqTo(Some("secret")),
           scope = eqTo(Some("scope")),
           redirectUri = eqTo(Some("http://redirect-uri.com")),
@@ -80,7 +92,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
           .withEntity(HttpEntity(ContentTypes.`application/json`, """{
               |  "name" : "client",
               |  "secret" : "secret",
-              |  "allowedGrantTypes" : ["grant_type"],
+              |  "allowedGrantTypes" : ["implicit"],
               |  "scope" : "scope",
               |  "redirectUri" : "http://redirect-uri.com",
               |  "defaultUserId" : "123456-12345",
@@ -91,6 +103,30 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
               |}""".stripMargin))
           .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
           status should be(StatusCodes.Created)
+        }
+      }
+    }
+
+    Scenario("bad requests") {
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/clients")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+              |  "name" : "<i>client</i>",
+              |  "secret" : "secret",
+              |  "allowedGrantTypes" : ["invalid"],
+              |  "scope" : "scope",
+              |  "redirectUri" : "http://redirect-uri.com",
+              |  "defaultUserId" : "fake",
+              |  "roles" : ["role_custom","role_default"],
+              |  "tokenExpirationSeconds": 300,
+              |  "refreshExpirationSeconds": 400,
+              |  "reconnectExpirationSeconds": 900
+              |}""".stripMargin))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size shouldBe 3
+          errors.map(_.field) should contain theSameElementsAs Seq("name", "allowedGrantTypes", "defaultUserId")
         }
       }
     }
@@ -128,7 +164,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
           .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
           status should be(StatusCodes.OK)
           val client: ClientResponse = entityAs[ClientResponse]
-          client.clientId should be(client.clientId)
+          client.id should be(client.id)
           client.name should be(client.name)
         }
       }
@@ -155,7 +191,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
     val updatedClient = client(
       clientId = ClientId("apiclient"),
       name = "updated client",
-      allowedGrantTypes = Seq("first_grant_type", "second_grant_type"),
+      allowedGrantTypes = Seq("implicit", "refresh_token"),
       secret = Some("secret")
     )
 
@@ -165,7 +201,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
       clientService.updateClient(
         eqTo(ClientId("apiclient")),
         eqTo("updated client"),
-        eqTo(Seq("first_grant_type", "second_grant_type")),
+        eqTo(Seq("implicit", "refresh_token")),
         eqTo(Some("secret")),
         eqTo(None),
         eqTo(None),
@@ -216,27 +252,48 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
       for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
         Put("/admin/clients/apiclient")
           .withEntity(
-            HttpEntity(
-              ContentTypes.`application/json`,
-              """{
-                                               | "name" : "updated client",
-                                               |  "secret" : "secret",
-                                               |  "allowedGrantTypes" : ["first_grant_type","second_grant_type"],
-                                               |  "scope" : null,
-                                               |  "redirectUri" : null,
-                                               |  "defaultUserId" : null,
-                                               |  "roles" : [],
-                                               |  "tokenExpirationSeconds": 300,
-                                               |  "refreshExpirationSeconds": 400,
-                                               |  "reconnectExpirationSeconds": 900
-                                               |}""".stripMargin
-            )
+            HttpEntity(ContentTypes.`application/json`, """{
+              | "name" : "updated client",
+              |  "secret" : "secret",
+              |  "allowedGrantTypes" : ["implicit", "refresh_token"],
+              |  "scope" : null,
+              |  "redirectUri" : null,
+              |  "defaultUserId" : null,
+              |  "roles" : [],
+              |  "tokenExpirationSeconds": 300,
+              |  "refreshExpirationSeconds": 400,
+              |  "reconnectExpirationSeconds": 900
+              |}""".stripMargin)
           )
           .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
           status should be(StatusCodes.OK)
           val client: ClientResponse = entityAs[ClientResponse]
-          client.clientId should be(updatedClient.clientId)
+          client.id should be(updatedClient.clientId)
           client.name should be(updatedClient.name)
+        }
+      }
+    }
+
+    Scenario("bad requests") {
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Put("/admin/clients/apiclient")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+              | "name" : "<i>updated client</i>",
+              |  "secret" : "secret",
+              |  "allowedGrantTypes" : ["implicit", "invalid"],
+              |  "scope" : null,
+              |  "redirectUri" : null,
+              |  "defaultUserId" : "fake",
+              |  "roles" : [],
+              |  "tokenExpirationSeconds": 300,
+              |  "refreshExpirationSeconds": 400,
+              |  "reconnectExpirationSeconds": 900
+              |}""".stripMargin))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size shouldBe 3
+          errors.map(_.field) should contain theSameElementsAs Seq("name", "allowedGrantTypes", "defaultUserId")
         }
       }
     }
@@ -245,12 +302,10 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
       for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
         Put("/admin/clients/fake-client")
           .withEntity(
-            HttpEntity(
-              ContentTypes.`application/json`,
-              """{
+            HttpEntity(ContentTypes.`application/json`, """{
                                                |  "name" : "fake-client",
                                                |  "secret" : "secret",
-                                               |  "allowedGrantTypes" : ["first_grant_type","second_grant_type"],
+                                               |  "allowedGrantTypes" : ["implicit", "refresh_token"],
                                                |  "scope" : null,
                                                |  "redirectUri" : null,
                                                |  "defaultUserId" : null,
@@ -258,8 +313,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
                                                |  "tokenExpirationSeconds": 300,
                                                |  "refreshExpirationSeconds": 400,
                                                |  "reconnectExpirationSeconds": 900
-                                               |}""".stripMargin
-            )
+                                               |}""".stripMargin)
           )
           .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
           status should be(StatusCodes.NotFound)
