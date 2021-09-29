@@ -27,6 +27,7 @@ import eu.timepit.refined.collection.MaxSize
 import eu.timepit.refined.types.all.NonNegInt
 import org.make.api.proposal.ProposalScorer
 import org.make.api.proposal.ProposalScorer.VotesCounter
+import org.make.api.technical.elasticsearch.ProposalIndexationStream
 import org.make.core.demographics.{DemographicsCard, DemographicsCardId}
 import org.make.core.demographics.DemographicsCard.Layout
 import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
@@ -242,34 +243,9 @@ trait TestUtilsIT {
       votesSequenceCount = votes.map(_.countSequence).sum,
       votesSegmentCount = votes.map(_.countSegment).sum,
       toEnrich = toEnrich,
-      scores = IndexedScores(
-        engagement = regularScore.engagement.lowerBound,
-        agreement = regularScore.adhesion.lowerBound,
-        adhesion = regularScore.adhesion.lowerBound,
-        realistic = regularScore.realistic.lowerBound,
-        platitude = regularScore.platitude.lowerBound,
-        topScore = regularScore.topScore.score,
-        topScoreAjustedWithVotes = regularScore.topScore.score,
-        controversyLowerBound = regularScore.controversy.lowerBound,
-        rejection = regularScore.rejection.lowerBound,
-        scoreUpperBound = regularScore.topScore.upperBound,
-        scoreLowerBound = regularScore.topScore.lowerBound,
-        zone = regularScore.zone
-      ),
-      segmentScores = IndexedScores(
-        engagement = segmentScore.engagement.lowerBound,
-        agreement = segmentScore.adhesion.lowerBound,
-        adhesion = segmentScore.adhesion.lowerBound,
-        realistic = segmentScore.realistic.lowerBound,
-        platitude = segmentScore.platitude.lowerBound,
-        topScore = segmentScore.topScore.score,
-        topScoreAjustedWithVotes = segmentScore.topScore.score,
-        controversyLowerBound = segmentScore.controversy.lowerBound,
-        rejection = segmentScore.rejection.lowerBound,
-        scoreUpperBound = segmentScore.topScore.upperBound,
-        scoreLowerBound = segmentScore.topScore.lowerBound,
-        zone = segmentScore.zone
-      ),
+      scores = ProposalIndexationStream.buildScore(regularScore),
+      segmentScores = ProposalIndexationStream.buildScore(segmentScore),
+      agreementRate = BaseVote.rate(votes, VoteKey.Agree),
       context = requestContext.map(IndexedContext.apply(_, false)),
       trending = None,
       labels = Seq.empty,

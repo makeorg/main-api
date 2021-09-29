@@ -990,53 +990,141 @@
         "scores": {
           "type": "object",
           "properties": {
-            "boost": {
-              "type": "double",
-              "index": true
-            },
             "engagement": {
-              "type": "double",
-              "index": true
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "double",
+                  "index": true
+                },
+                "lowerBound": {
+                  "type": "double",
+                  "index": true
+                },
+                "upperBound": {
+                  "type": "double",
+                  "index": true
+                }
+              }
             },
             "agreement": {
-              "type": "double",
-              "index": true
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "double",
+                  "index": true
+                },
+                "lowerBound": {
+                  "type": "double",
+                  "index": true
+                },
+                "upperBound": {
+                  "type": "double",
+                  "index": true
+                }
+              }
             },
             "adhesion": {
-              "type": "double",
-              "index": true
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "double",
+                  "index": true
+                },
+                "lowerBound": {
+                  "type": "double",
+                  "index": true
+                },
+                "upperBound": {
+                  "type": "double",
+                  "index": true
+                }
+              }
             },
             "realistic": {
-              "type": "double",
-              "index": true
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "double",
+                  "index": true
+                },
+                "lowerBound": {
+                  "type": "double",
+                  "index": true
+                },
+                "upperBound": {
+                  "type": "double",
+                  "index": true
+                }
+              }
             },
             "platitude": {
-              "type": "double",
-              "index": true
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "double",
+                  "index": true
+                },
+                "lowerBound": {
+                  "type": "double",
+                  "index": true
+                },
+                "upperBound": {
+                  "type": "double",
+                  "index": true
+                }
+              }
             },
             "topScore": {
-              "type": "double",
-              "index": true
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "double",
+                  "index": true
+                },
+                "lowerBound": {
+                  "type": "double",
+                  "index": true
+                },
+                "upperBound": {
+                  "type": "double",
+                  "index": true
+                }
+              }
             },
-            "topScoreAjustedWithVotes": {
-              "type": "double",
-              "index": true
-            },
-            "controversyLowerBound": {
-              "type": "double",
-              "index": true
+            "controversy": {
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "double",
+                  "index": true
+                },
+                "lowerBound": {
+                  "type": "double",
+                  "index": true
+                },
+                "upperBound": {
+                  "type": "double",
+                  "index": true
+                }
+              }
             },
             "rejection": {
-              "type": "double",
-              "index": true
-            },
-            "scoreUpperBound": {
-              "type": "double",
-              "index": true
-            },
-            "scoreLowerBound": {
-              "type": "double",
-              "index": true
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "double",
+                  "index": true
+                },
+                "lowerBound": {
+                  "type": "double",
+                  "index": true
+                },
+                "upperBound": {
+                  "type": "double",
+                  "index": true
+                }
+              }
             },
             "zone": {
               "type": "keyword",
@@ -1047,59 +1135,151 @@
         "segmentScores": {
           "type": "object",
           "properties": {
-            "boost": {
-              "type": "double",
-              "index": true
-            },
             "engagement": {
-              "type": "double",
-              "index": true
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "double",
+                  "index": true
+                },
+                "lowerBound": {
+                  "type": "double",
+                  "index": true
+                },
+                "upperBound": {
+                  "type": "double",
+                  "index": true
+                }
+              }
             },
             "agreement": {
-              "type": "double",
-              "index": true
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "double",
+                  "index": true
+                },
+                "lowerBound": {
+                  "type": "double",
+                  "index": true
+                },
+                "upperBound": {
+                  "type": "double",
+                  "index": true
+                }
+              }
             },
             "adhesion": {
-              "type": "double",
-              "index": true
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "double",
+                  "index": true
+                },
+                "lowerBound": {
+                  "type": "double",
+                  "index": true
+                },
+                "upperBound": {
+                  "type": "double",
+                  "index": true
+                }
+              }
             },
             "realistic": {
-              "type": "double",
-              "index": true
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "double",
+                  "index": true
+                },
+                "lowerBound": {
+                  "type": "double",
+                  "index": true
+                },
+                "upperBound": {
+                  "type": "double",
+                  "index": true
+                }
+              }
             },
             "platitude": {
-              "type": "double",
-              "index": true
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "double",
+                  "index": true
+                },
+                "lowerBound": {
+                  "type": "double",
+                  "index": true
+                },
+                "upperBound": {
+                  "type": "double",
+                  "index": true
+                }
+              }
             },
             "topScore": {
-              "type": "double",
-              "index": true
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "double",
+                  "index": true
+                },
+                "lowerBound": {
+                  "type": "double",
+                  "index": true
+                },
+                "upperBound": {
+                  "type": "double",
+                  "index": true
+                }
+              }
             },
-            "topScoreAjustedWithVotes": {
-              "type": "double",
-              "index": true
-            },
-            "controversyLowerBound": {
-              "type": "double",
-              "index": true
+            "controversy": {
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "double",
+                  "index": true
+                },
+                "lowerBound": {
+                  "type": "double",
+                  "index": true
+                },
+                "upperBound": {
+                  "type": "double",
+                  "index": true
+                }
+              }
             },
             "rejection": {
-              "type": "double",
-              "index": true
-            },
-            "scoreUpperBound": {
-              "type": "double",
-              "index": true
-            },
-            "scoreLowerBound": {
-              "type": "double",
-              "index": true
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "double",
+                  "index": true
+                },
+                "lowerBound": {
+                  "type": "double",
+                  "index": true
+                },
+                "upperBound": {
+                  "type": "double",
+                  "index": true
+                }
+              }
             },
             "zone": {
               "type": "keyword",
               "index": true
             }
           }
+        },
+        "agreementRate": {
+          "type": "double",
+          "index": true
         },
         "slug": {
           "type": "keyword",

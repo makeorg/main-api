@@ -173,6 +173,17 @@ trait BaseVote extends BaseVoteOrQualification[VoteKey] {
   def qualifications: Seq[BaseQualification]
 }
 
+object BaseVote {
+  def rate(votes: Seq[BaseVote], key: VoteKey): Double = {
+    val total = votes.map(_.count).sum
+    if (total == 0) {
+      0
+    } else {
+      votes.find(_.key == key).map(_.count).getOrElse(0).toDouble / total
+    }
+  }
+}
+
 final case class Vote(
   @(ApiModelProperty @field)(dataType = "string", example = "agree")
   override val key: VoteKey,

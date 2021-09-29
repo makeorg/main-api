@@ -234,10 +234,8 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
     override def proposalTrendingMode(proposal: IndexedProposal): Option[String] = {
       val totalVotes: Int = proposal.votes.map(_.count).sum
-      val agreeVote: Int = proposal.votes.find(_.key == Agree).map(_.count).getOrElse(0)
-      val disagreeVote: Int = proposal.votes.find(_.key == Disagree).map(_.count).getOrElse(0)
-      val agreementRate: Float = agreeVote.toFloat / totalVotes.toFloat
-      val disagreementRate: Float = disagreeVote.toFloat / totalVotes.toFloat
+      val agreementRate: Float = BaseVote.rate(proposal.votes, Agree).toFloat
+      val disagreementRate: Float = BaseVote.rate(proposal.votes, Disagree).toFloat
 
       val ruleControversial: Boolean = totalVotes >= 50 && agreementRate >= 0.4f && disagreementRate >= 0.4f
       val rulePopular: Boolean = totalVotes >= 50 && agreementRate >= 0.8f
@@ -341,10 +339,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
       // This aggregation create a field "maxTopScore" with the max value of indexedProposal.scores.topScore
       val maxAggregation: AbstractAggregation =
-        MaxAggregation(
-          name = maxAggregationName,
-          field = Some(ProposalElasticsearchFieldName.topScoreAjustedWithVotes.field)
-        )
+        MaxAggregation(name = maxAggregationName, field = Some(ProposalElasticsearchFieldName.scoreLowerBound.field))
 
       // This aggregation sort each bucket from the field "maxTopScore"
       val bucketSortAggregation: AbstractAggregation = BucketSortPipelineAgg(
@@ -356,9 +351,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val topHitsAggregation: AbstractAggregation =
         TopHitsAggregation(
           name = topHitsAggregationName,
-          sorts = Seq(
-            FieldSort(field = ProposalElasticsearchFieldName.topScoreAjustedWithVotes.field, order = SortOrder.DESC)
-          ),
+          sorts = Seq(FieldSort(field = ProposalElasticsearchFieldName.scoreLowerBound.field, order = SortOrder.DESC)),
           size = Some(1)
         )
 

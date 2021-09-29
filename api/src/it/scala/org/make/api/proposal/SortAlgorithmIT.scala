@@ -113,45 +113,63 @@ class SortAlgorithmIT
           Seq(IndexedTag(TagId("tag-1"), "tag1", display = true), IndexedTag(TagId("tag-2"), "tag2", display = true))
       ),
     indexedProposal(ProposalId("controversy-1"))
-      .copy(scores = IndexedScores.empty.copy(controversyLowerBound = 0.15), sequencePool = SequencePool.Tested),
+      .copy(
+        scores = IndexedScores.empty.copy(controversy = IndexedScore(0, 0.15, 0)),
+        sequencePool = SequencePool.Tested
+      ),
     indexedProposal(ProposalId("controversy-2"))
-      .copy(scores = IndexedScores.empty.copy(controversyLowerBound = 0.95), sequencePool = SequencePool.Tested),
+      .copy(
+        scores = IndexedScores.empty.copy(controversy = IndexedScore(0, 0.95, 0)),
+        sequencePool = SequencePool.Tested
+      ),
     indexedProposal(ProposalId("controversy-3"))
       .copy(
-        scores = IndexedScores.empty.copy(controversyLowerBound = 0.21),
+        scores = IndexedScores.empty.copy(controversy = IndexedScore(0, 0.21, 0)),
         operationId = Some(OperationId("ope-controversy")),
         sequencePool = SequencePool.Tested
       ),
     indexedProposal(ProposalId("controversy-4"))
-      .copy(scores = IndexedScores.empty.copy(controversyLowerBound = 0.14), sequencePool = SequencePool.Tested),
+      .copy(
+        scores = IndexedScores.empty.copy(controversy = IndexedScore(0, 0.14, 0)),
+        sequencePool = SequencePool.Tested
+      ),
     indexedProposal(ProposalId("controversy-new"))
-      .copy(scores = IndexedScores.empty.copy(controversyLowerBound = 0.95), sequencePool = SequencePool.New),
+      .copy(scores = IndexedScores.empty.copy(controversy = IndexedScore(0, 0.95, 0)), sequencePool = SequencePool.New),
     indexedProposal(ProposalId("realistic-1"))
-      .copy(scores = IndexedScores.empty.copy(realistic = 0.15), sequencePool = SequencePool.Tested),
+      .copy(
+        scores = IndexedScores.empty.copy(realistic = IndexedScore(0, 0.15, 0)),
+        sequencePool = SequencePool.Tested
+      ),
     indexedProposal(ProposalId("realistic-2"))
-      .copy(scores = IndexedScores.empty.copy(realistic = 0.95), sequencePool = SequencePool.Tested),
+      .copy(
+        scores = IndexedScores.empty.copy(realistic = IndexedScore(0, 0.95, 0)),
+        sequencePool = SequencePool.Tested
+      ),
     indexedProposal(ProposalId("realistic-3"))
       .copy(
-        scores = IndexedScores.empty.copy(realistic = 0.21),
+        scores = IndexedScores.empty.copy(realistic = IndexedScore(0, 0.21, 0)),
         operationId = Some(OperationId("ope-realistic")),
         sequencePool = SequencePool.Tested
       ),
     indexedProposal(ProposalId("realistic-4"))
-      .copy(scores = IndexedScores.empty.copy(realistic = 0.25), sequencePool = SequencePool.Tested),
+      .copy(
+        scores = IndexedScores.empty.copy(realistic = IndexedScore(0, 0.25, 0)),
+        sequencePool = SequencePool.Tested
+      ),
     indexedProposal(ProposalId("realistic-new"))
-      .copy(scores = IndexedScores.empty.copy(realistic = 0.95), sequencePool = SequencePool.New),
+      .copy(scores = IndexedScores.empty.copy(realistic = IndexedScore(0, 0.95, 0)), sequencePool = SequencePool.New),
     indexedProposal(ProposalId("popular-1"))
-      .copy(sequencePool = SequencePool.Tested, scores = IndexedScores.empty.copy(scoreLowerBound = 1.4)),
+      .copy(sequencePool = SequencePool.Tested, scores = IndexedScores.empty.copy(topScore = IndexedScore(0, 1.4, 0))),
     indexedProposal(ProposalId("popular-2"))
-      .copy(sequencePool = SequencePool.Tested, scores = IndexedScores.empty.copy(scoreLowerBound = 0.1)),
+      .copy(sequencePool = SequencePool.Tested, scores = IndexedScores.empty.copy(topScore = IndexedScore(0, 0.1, 0))),
     indexedProposal(ProposalId("popular-3"))
       .copy(
         sequencePool = SequencePool.Tested,
-        scores = IndexedScores.empty.copy(scoreLowerBound = 4.2),
+        scores = IndexedScores.empty.copy(topScore = IndexedScore(0, 4.2, 0)),
         operationId = Some(OperationId("ope-popular"))
       ),
     indexedProposal(ProposalId("popular-new"))
-      .copy(sequencePool = SequencePool.New, scores = IndexedScores.empty.copy(scoreLowerBound = 1.4)),
+      .copy(sequencePool = SequencePool.New, scores = IndexedScores.empty.copy(topScore = IndexedScore(0, 1.4, 0))),
     newEmptyOrganisationProposal("b2b-1"),
     newEmptyOrganisationProposal("b2b-2"),
     newEmptyPersonalityProposal("b2b-3")
@@ -163,10 +181,12 @@ class SortAlgorithmIT
       val identicalResults = for {
         first  <- elasticsearchProposalAPI.searchProposals(query)
         second <- elasticsearchProposalAPI.searchProposals(query)
-      } yield first.results.nonEmpty && first == second
+      } yield (first, second)
 
-      whenReady(identicalResults, Timeout(3.seconds)) { result =>
-        result should be(true)
+      whenReady(identicalResults, Timeout(3.seconds)) {
+        case (first, second) =>
+          first.results should not be empty
+          first should be(second)
       }
     }
     Scenario("results are different for a different seed") {
@@ -176,10 +196,11 @@ class SortAlgorithmIT
       val randomResults = for {
         first  <- elasticsearchProposalAPI.searchProposals(firstQuery)
         second <- elasticsearchProposalAPI.searchProposals(secondQuery)
-      } yield first != second
+      } yield (first, second)
 
-      whenReady(randomResults, Timeout(3.seconds)) { result =>
-        result should be(true)
+      whenReady(randomResults, Timeout(3.seconds)) {
+        case (first, second) =>
+          first should not be (second)
       }
     }
   }
@@ -204,8 +225,8 @@ class SortAlgorithmIT
         whenReady(elasticsearchProposalAPI.searchProposals(secondQuery), Timeout(3.seconds)) { secondResult =>
           secondResult.total should be > 4L
           secondResult.results.take(4).map(_.id.value) should be(Seq("actor-4", "actor-3", "actor-2", "actor-1"))
-          firstResult.results != secondResult.results should be(true)
-          firstResult.results.take(4) == secondResult.results.take(4) should be(true)
+          firstResult.results should not be (secondResult.results)
+          firstResult.results.take(4) should be(secondResult.results.take(4))
         }
       }
     }

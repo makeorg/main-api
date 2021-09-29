@@ -29,7 +29,7 @@ import com.sksamuel.elastic4s.IndexAndType
 import grizzled.slf4j.Logging
 import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
 import org.make.api.organisation.OrganisationServiceComponent
-import org.make.api.proposal.ProposalScorer.VotesCounter
+import org.make.api.proposal.ProposalScorer.{Score, VotesCounter}
 import org.make.api.proposal.{
   ProposalCoordinatorServiceComponent,
   ProposalScorer,
@@ -55,6 +55,7 @@ import org.make.core.proposal.indexed.{
   IndexedProposal,
   IndexedProposalKeyword,
   IndexedProposalQuestion,
+  IndexedScore,
   IndexedScores,
   IndexedTag,
   IndexedVote,
@@ -280,6 +281,7 @@ trait ProposalIndexationStream
       toEnrich = needsEnrichment,
       scores = buildScore(sequenceScore),
       segmentScores = segmentScore.map(buildScore).getOrElse(IndexedScores.empty),
+      agreementRate = BaseVote.rate(proposal.votes, VoteKey.Agree),
       context = Some(ProposalContext(proposal.creationContext, isBeforeContextSourceFeature)),
       trending = None,
       labels = proposal.labels.map(_.value),
@@ -353,18 +355,17 @@ trait ProposalIndexationStream
 
 object ProposalIndexationStream {
   def buildScore(scorer: ProposalScorer): IndexedScores = {
+    def toIndexed(score: Score): IndexedScore =
+      IndexedScore(score = score.score, lowerBound = score.lowerBound, upperBound = score.upperBound)
     IndexedScores(
-      engagement = scorer.engagement.lowerBound,
-      agreement = scorer.adhesion.lowerBound,
-      adhesion = scorer.adhesion.lowerBound,
-      realistic = scorer.realistic.lowerBound,
-      platitude = scorer.platitude.lowerBound,
-      topScore = scorer.topScore.score,
-      topScoreAjustedWithVotes = scorer.topScore.lowerBound,
-      controversyLowerBound = scorer.controversy.lowerBound,
-      rejection = scorer.rejection.lowerBound,
-      scoreUpperBound = scorer.topScore.upperBound,
-      scoreLowerBound = scorer.topScore.lowerBound,
+      engagement = toIndexed(scorer.engagement),
+      agreement = toIndexed(scorer.agree),
+      adhesion = toIndexed(scorer.adhesion),
+      realistic = toIndexed(scorer.realistic),
+      platitude = toIndexed(scorer.platitude),
+      topScore = toIndexed(scorer.topScore),
+      controversy = toIndexed(scorer.controversy),
+      rejection = toIndexed(scorer.rejection),
       zone = scorer.zone
     )
   }

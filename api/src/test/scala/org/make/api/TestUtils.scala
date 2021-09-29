@@ -255,6 +255,7 @@ trait TestUtils {
       toEnrich = toEnrich,
       scores = ProposalIndexationStream.buildScore(regularScore),
       segmentScores = ProposalIndexationStream.buildScore(segmentScore),
+      agreementRate = BaseVote.rate(votes, VoteKey.Agree),
       context = requestContext.map(IndexedContext.apply(_, false)),
       trending = None,
       labels = Seq.empty,

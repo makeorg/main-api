@@ -91,7 +91,7 @@ class SequenceSimulationTest extends MakeUnitTest {
           logger.info(s"Zone $zone has ${proposals.size} proposals")
       }
 
-      val deciles = extractDeciles(result.sortBy(_.scores.topScore))
+      val deciles = extractDeciles(result.sortBy(_.scores.topScore.score))
       val votesAverage = deciles.map { q =>
         if (q.isEmpty) {
           0
