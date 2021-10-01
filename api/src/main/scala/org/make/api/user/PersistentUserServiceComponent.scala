@@ -342,6 +342,7 @@ trait PersistentUserService {
     end: Option[End],
     sort: Option[String],
     order: Option[Order],
+    ids: Option[Seq[UserId]],
     email: Option[String],
     firstName: Option[String],
     lastName: Option[String],
@@ -354,6 +355,7 @@ trait PersistentUserService {
     end: Option[End],
     sort: Option[String],
     order: Option[Order],
+    ids: Option[Seq[UserId]],
     organisationName: Option[String]
   ): Future[Seq[User]]
   def findUserIdByEmail(email: String): Future[Option[UserId]]
@@ -389,8 +391,9 @@ trait PersistentUserService {
   def removeAnonymizedUserFromFollowedUserTable(userId: UserId): Future[Unit]
   def followUser(followedUserId: UserId, userId: UserId): Future[Unit]
   def unfollowUser(followedUserId: UserId, userId: UserId): Future[Unit]
-  def countOrganisations(organisationName: Option[String]): Future[Int]
+  def countOrganisations(ids: Option[Seq[UserId]], organisationName: Option[String]): Future[Int]
   def adminCountUsers(
+    ids: Option[Seq[UserId]],
     email: Option[String],
     firstName: Option[String],
     lastName: Option[String],
@@ -541,6 +544,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       end: Option[End],
       sort: Option[String],
       order: Option[Order],
+      ids: Option[Seq[UserId]],
       email: Option[String],
       firstName: Option[String],
       lastName: Option[String],
@@ -554,6 +558,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
             .from(PersistentUser.as(userAlias))
             .where(
               sqls.toAndConditionOpt(
+                ids.map(userIds => sqls.in(userAlias.uuid, userIds.map(_.value))),
                 email.map(email => sqls.like(userAlias.email, s"%${email.replace("%", "\\%")}%")),
                 firstName.map(
                   firstName =>
@@ -593,6 +598,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       end: Option[End],
       sort: Option[String],
       order: Option[Order],
+      ids: Option[Seq[UserId]],
       organisationName: Option[String]
     ): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
@@ -605,12 +611,15 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
                 sqls
                   .eq(userAlias.userType, UserType.UserTypeOrganisation)
                   .and(
-                    organisationName.map(
-                      organisationName =>
-                        sqls.like(
-                          sqls.lower(userAlias.organisationName),
-                          s"%${organisationName.replace("%", "\\%").toLowerCase}%"
-                        )
+                    sqls.toAndConditionOpt(
+                      ids.map(userIds => sqls.in(userAlias.uuid, userIds.map(_.value))),
+                      organisationName.map(
+                        organisationName =>
+                          sqls.like(
+                            sqls.lower(userAlias.organisationName),
+                            s"%${organisationName.replace("%", "\\%").toLowerCase}%"
+                          )
+                      )
                     )
                   )
               )
@@ -1098,7 +1107,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       }).toUnit
     }
 
-    override def countOrganisations(organisationName: Option[String]): Future[Int] = {
+    override def countOrganisations(ids: Option[Seq[UserId]], organisationName: Option[String]): Future[Int] = {
       implicit val ctx: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
@@ -1108,12 +1117,15 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               sqls
                 .eq(userAlias.userType, UserType.UserTypeOrganisation)
                 .and(
-                  organisationName.map(
-                    organisationName =>
-                      sqls.like(
-                        sqls.lower(userAlias.organisationName),
-                        s"%${organisationName.replace("%", "\\%").toLowerCase}%"
-                      )
+                  sqls.toAndConditionOpt(
+                    ids.map(userId => sqls.in(userAlias.uuid, userId.map(_.value))),
+                    organisationName.map(
+                      organisationName =>
+                        sqls.like(
+                          sqls.lower(userAlias.organisationName),
+                          s"%${organisationName.replace("%", "\\%").toLowerCase}%"
+                        )
+                    )
                   )
                 )
             )
@@ -1122,6 +1134,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
     }
 
     override def adminCountUsers(
+      ids: Option[Seq[UserId]],
       email: Option[String],
       firstName: Option[String],
       lastName: Option[String],
@@ -1135,6 +1148,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
             .from(PersistentUser.as(userAlias))
             .where(
               sqls.toAndConditionOpt(
+                ids.map(userIds            => sqls.in(userAlias.uuid, userIds.map(_.value))),
                 email.map(email            => sqls.like(userAlias.email, s"%${email.replace("%", "\\%")}%")),
                 firstName.map(firstName    => sqls.like(userAlias.firstName, s"%${firstName.replace("%", "\\%")}%")),
                 lastName.map(lastName      => sqls.like(userAlias.lastName, s"%${lastName.replace("%", "\\%")}%")),

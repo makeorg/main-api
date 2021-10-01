@@ -74,7 +74,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     anonymousParticipation = true
   )
 
-  val jennaDoo = TestUtilsIT.user(
+  val jennaDoo: User = TestUtilsIT.user(
     id = UserId("2"),
     email = "jennaDoo@example.com",
     firstName = Some("Jenna"),
@@ -86,7 +86,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     verificationTokenExpiresAt = before
   )
 
-  val janeDee = TestUtilsIT.user(
+  val janeDee: User = TestUtilsIT.user(
     id = UserId("3"),
     email = "janeDee@example.com",
     firstName = Some("Jane"),
@@ -99,7 +99,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     roles = Seq(Role.RoleAdmin, Role.RoleModerator)
   )
 
-  val passwordUser = TestUtilsIT.user(
+  val passwordUser: User = TestUtilsIT.user(
     id = UserId("4"),
     email = "password@example.com",
     firstName = Some("user-with"),
@@ -112,7 +112,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     roles = Seq(Role.RoleAdmin, Role.RoleModerator)
   )
 
-  val socialUser = TestUtilsIT.user(
+  val socialUser: User = TestUtilsIT.user(
     id = UserId("5"),
     email = "social@example.com",
     firstName = Some("Social"),
@@ -125,7 +125,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     profile = Profile.parseProfile(dateOfBirth = Some(LocalDate.parse("1970-01-01")))
   )
 
-  val userOrganisationDGSE = TestUtilsIT.user(
+  val userOrganisationDGSE: User = TestUtilsIT.user(
     id = UserId("DGSE"),
     email = "dgse@secret-agency.com",
     firstName = None,
@@ -139,7 +139,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     userType = UserType.UserTypeOrganisation
   )
 
-  val userOrganisationCSIS = TestUtilsIT.user(
+  val userOrganisationCSIS: User = TestUtilsIT.user(
     id = UserId("CSIS"),
     email = "csis@secret-agency.com",
     firstName = None,
@@ -153,7 +153,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     userType = UserType.UserTypeOrganisation
   )
 
-  val userOrganisationFSB = TestUtilsIT.user(
+  val userOrganisationFSB: User = TestUtilsIT.user(
     id = UserId("FSB"),
     email = "fsb@secret-agency.com",
     firstName = None,
@@ -182,7 +182,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     profile = johnDoeProfile.map(_.copy(registerQuestionId = None))
   )
 
-  val userOrganisationCIA = TestUtilsIT.user(
+  val userOrganisationCIA: User = TestUtilsIT.user(
     id = UserId("CIA"),
     email = "cia@secret-agency.com",
     firstName = None,
@@ -197,7 +197,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     userType = UserType.UserTypeOrganisation
   )
 
-  val userOrganisationFBI = TestUtilsIT.user(
+  val userOrganisationFBI: User = TestUtilsIT.user(
     id = UserId("FBI"),
     email = "fbi@secret-agency.com",
     firstName = None,
@@ -212,7 +212,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     userType = UserType.UserTypeOrganisation
   )
 
-  val userOrganisationMI5 = TestUtilsIT.user(
+  val userOrganisationMI5: User = TestUtilsIT.user(
     id = UserId("MI5"),
     email = "mi5@secret-agency.com",
     firstName = None,
@@ -227,7 +227,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     userType = UserType.UserTypeOrganisation
   )
 
-  val updateUser = TestUtilsIT.user(
+  val updateUser: User = TestUtilsIT.user(
     id = UserId("update-user-1"),
     email = "foo@example.com",
     firstName = Some("John"),
@@ -241,7 +241,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     profile = johnDoeProfile
   )
 
-  val personalityUser = TestUtilsIT.user(
+  val personalityUser: User = TestUtilsIT.user(
     id = UserId("personality"),
     email = "personality@example.com",
     firstName = Some("perso"),
@@ -502,13 +502,14 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
   Feature("find users by organisation") {
     Scenario("find all organisations") {
       val futureOrganisations = for {
-        cia <- persistentUserService.persist(userOrganisationCIA)
-        fbi <- persistentUserService.persist(userOrganisationFBI)
-      } yield (cia, fbi)
+        _ <- persistentUserService.persist(userOrganisationCIA)
+        _ <- persistentUserService.persist(userOrganisationFBI)
+        _ <- persistentUserService.persist(userOrganisationMI5)
+      } yield {}
 
       whenReady(futureOrganisations, Timeout(3.seconds)) { _ =>
         whenReady(persistentUserService.findAllOrganisations(), Timeout(3.seconds)) { organisations =>
-          organisations.size should be(4)
+          organisations.size should be(5)
           organisations.exists(_.userId == UserId("FBI")) should be(true)
           organisations.exists(_.userId == UserId("CIA")) should be(true)
         }
@@ -523,7 +524,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
             end = Some(End(2)),
             sort = Some("organisation_name"),
             order = Some(Order.asc),
-            None
+            ids = None,
+            organisationName = None
           )
       ) { organisations =>
         organisations.size should be(2)
@@ -532,18 +534,48 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       }
     }
 
-    Scenario(("find organisation with organisation name filter")) {
+    Scenario("find organisation with ids filter") {
       whenReady(
-        persistentUserService.findOrganisations(start = Start.zero, end = None, sort = None, order = None, Some("CIA"))
+        persistentUserService.findOrganisations(
+          start = Start.zero,
+          end = None,
+          sort = None,
+          order = None,
+          ids = Some(Seq(UserId("MI5"), UserId("CIA"))),
+          organisationName = None
+        )
+      ) { organisations =>
+        organisations.size should be(2)
+        organisations.map(_.userId) should contain theSameElementsAs Seq(UserId("MI5"), UserId("CIA"))
+      }
+    }
+
+    Scenario("find organisation with organisation name filter") {
+      whenReady(
+        persistentUserService.findOrganisations(
+          start = Start.zero,
+          end = None,
+          sort = None,
+          order = None,
+          ids = None,
+          organisationName = Some("CIA")
+        )
       ) { organisations =>
         organisations.size should be(1)
         organisations.head.userId should be(UserId("CIA"))
       }
     }
 
-    Scenario(("find organisation with organisation name filter - check case insensitivity")) {
+    Scenario("find organisation with organisation name filter - check case insensitivity") {
       whenReady(
-        persistentUserService.findOrganisations(start = Start.zero, end = None, sort = None, order = None, Some("cia"))
+        persistentUserService.findOrganisations(
+          start = Start.zero,
+          end = None,
+          sort = None,
+          order = None,
+          ids = None,
+          organisationName = Some("cia")
+        )
       ) { organisations =>
         organisations.size should be(1)
         organisations.head.userId should be(UserId("CIA"))
@@ -559,6 +591,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           end = None,
           sort = None,
           order = None,
+          ids = None,
           email = None,
           firstName = None,
           lastName = None,
@@ -579,6 +612,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
             end = None,
             sort = None,
             order = None,
+            ids = None,
             email = Some("doe@example.com"),
             firstName = None,
             lastName = None,
@@ -588,6 +622,28 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         Timeout(3.seconds)
       ) { moderators =>
         moderators.size should be(1)
+      }
+    }
+
+    Scenario("find user with id filter") {
+      whenReady(
+        persistentUserService
+          .adminFindUsers(
+            start = Start.zero,
+            end = None,
+            sort = None,
+            order = None,
+            ids = Some(Seq(UserId("MI5"), UserId("CIA"))),
+            email = None,
+            firstName = None,
+            lastName = None,
+            maybeRole = None,
+            maybeUserType = None
+          ),
+        Timeout(3.seconds)
+      ) { res =>
+        res.size should be(2)
+        res.map(_.userId) should contain theSameElementsAs Seq(UserId("MI5"), UserId("CIA"))
       }
     }
   }

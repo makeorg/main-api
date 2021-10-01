@@ -56,7 +56,7 @@ class AdminUserApiTest
     adminUserApi.routes
   })
 
-  val citizen = defaultCitizenUser.copy(profile =
+  val citizen: User = defaultCitizenUser.copy(profile =
     Profile.parseProfile(optInNewsletter = false, avatarUrl = Some("https://example.com/foo.png"))
   )
   val citizenId: UserId = citizen.userId
@@ -290,7 +290,7 @@ class AdminUserApiTest
     Scenario("get all users") {
       when(
         userService
-          .adminCountUsers(email = None, firstName = None, lastName = None, role = None, userType = None)
+          .adminCountUsers(ids = None, email = None, firstName = None, lastName = None, role = None, userType = None)
       ).thenReturn(Future.successful(listUsers.size))
       when(
         userService
@@ -299,6 +299,7 @@ class AdminUserApiTest
             end = None,
             sort = None,
             order = None,
+            ids = None,
             email = None,
             firstName = None,
             lastName = None,
@@ -309,6 +310,7 @@ class AdminUserApiTest
 
       when(
         userService.adminCountUsers(
+          ids = None,
           email = None,
           firstName = None,
           lastName = None,
@@ -322,6 +324,7 @@ class AdminUserApiTest
           end = None,
           sort = None,
           order = None,
+          ids = None,
           email = None,
           firstName = None,
           lastName = None,

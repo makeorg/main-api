@@ -64,9 +64,10 @@ trait OrganisationService extends ShortenedNames {
     end: Option[End],
     sort: Option[String],
     order: Option[Order],
+    ids: Option[Seq[UserId]],
     organisationName: Option[String]
   ): Future[Seq[User]]
-  def count(organisationName: Option[String]): Future[Int]
+  def count(ids: Option[Seq[UserId]], organisationName: Option[String]): Future[Int]
   def search(
     organisationName: Option[String],
     slug: Option[String],
@@ -149,13 +150,14 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       end: Option[End],
       sort: Option[String],
       order: Option[Order],
+      ids: Option[Seq[UserId]],
       organisationName: Option[String]
     ): Future[Seq[User]] = {
-      persistentUserService.findOrganisations(start, end, sort, order, organisationName)
+      persistentUserService.findOrganisations(start, end, sort, order, ids, organisationName)
     }
 
-    override def count(organisationName: Option[String]): Future[Int] = {
-      persistentUserService.countOrganisations(organisationName)
+    override def count(ids: Option[Seq[UserId]], organisationName: Option[String]): Future[Int] = {
+      persistentUserService.countOrganisations(ids, organisationName)
     }
 
     /**

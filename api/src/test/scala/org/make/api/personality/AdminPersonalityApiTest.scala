@@ -184,6 +184,7 @@ class AdminPersonalityApiTest
           end = None,
           sort = None,
           order = None,
+          ids = None,
           email = None,
           firstName = None,
           lastName = None,
@@ -193,6 +194,7 @@ class AdminPersonalityApiTest
       ).thenReturn(Future.successful(Seq(personality)))
       when(
         userService.adminCountUsers(
+          ids = None,
           email = None,
           firstName = None,
           lastName = None,

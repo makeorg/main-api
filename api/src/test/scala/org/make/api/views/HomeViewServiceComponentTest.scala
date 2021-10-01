@@ -257,6 +257,7 @@ class HomeViewServiceComponentTest
 
       when(
         userService.adminCountUsers(
+          any[Option[Seq[UserId]]],
           any[Option[String]],
           any[Option[String]],
           any[Option[String]],

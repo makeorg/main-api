@@ -131,6 +131,7 @@ class AdminModeratorApiTest
 
     when(
       userService.adminCountUsers(
+        ids = None,
         email = None,
         firstName = None,
         lastName = None,
@@ -167,6 +168,7 @@ class AdminModeratorApiTest
             end = None,
             sort = None,
             order = None,
+            ids = None,
             email = None,
             firstName = None,
             lastName = None,
@@ -176,6 +178,7 @@ class AdminModeratorApiTest
       ).thenReturn(Future.successful(listModerator))
       when(
         userService.adminCountUsers(
+          ids = None,
           email = None,
           firstName = None,
           lastName = None,
