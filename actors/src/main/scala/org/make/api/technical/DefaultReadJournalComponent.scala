@@ -25,7 +25,7 @@ import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.query.PersistenceQuery
 import org.make.api.ActorSystemComponent
 import org.make.api.proposal.ProposalActor
-import org.make.api.sessionhistory.ShardedSessionHistory
+import org.make.api.sessionhistory.SessionHistoryActor
 import org.make.api.userhistory.UserHistoryActor
 
 trait DefaultReadJournalComponent extends BaseReadJournalComponent[CassandraReadJournal] with ReadJournalComponent {
@@ -42,5 +42,5 @@ object ReadJournal {
   def userJournal[T](system: ActorSystem[_]): T =
     PersistenceQuery(system = system).readJournalFor(UserHistoryActor.QueryJournalPluginId)
   def sessionJournal[T](system: ActorSystem[_]): T =
-    PersistenceQuery(system = system).readJournalFor(ShardedSessionHistory.queryJournal)
+    PersistenceQuery(system = system).readJournalFor(SessionHistoryActor.QueryJournalPluginId)
 }

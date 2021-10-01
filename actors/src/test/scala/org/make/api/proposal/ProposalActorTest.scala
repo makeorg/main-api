@@ -22,7 +22,7 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 import akka.actor.typed.ActorRef
 import cats.data.NonEmptyList
-import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, TransactionalSessionHistoryEvent}
+import org.make.api.sessionhistory.{LoggableHistoryEvent, SessionHistoryCoordinatorService}
 import org.make.api.{ShardingTypedActorTest, TestUtils}
 import org.make.api.proposal.ProposalActorResponse._
 import org.make.api.proposal.ProposalActorResponse.Error._
@@ -111,7 +111,7 @@ class ProposalActorTest
   val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService = mock[SessionHistoryCoordinatorService]
   when(
     sessionHistoryCoordinatorService
-      .logTransactionalHistory(any[TransactionalSessionHistoryEvent[_]])
+      .logTransactionalHistory(any[LoggableHistoryEvent[_]])
   ).thenReturn(Future.unit)
 
   val coordinator: ActorRef[ProposalCommand] =

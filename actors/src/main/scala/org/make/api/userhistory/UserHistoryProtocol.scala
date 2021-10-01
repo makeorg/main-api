@@ -20,8 +20,9 @@
 package org.make.api.userhistory
 
 import akka.actor.typed.ActorRef
-import org.make.api.sessionhistory.SessionHistoryActor.{LogAcknowledged, SessionEventsInjected}
+import org.make.api.sessionhistory.Ack
 import org.make.api.technical.{ActorCommand, ActorProtocol}
+import org.make.api.userhistory.UserHistoryResponse.SessionEventsInjected
 import org.make.core.MakeSerializable
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
@@ -29,7 +30,7 @@ import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
-sealed trait UserHistoryActorProtocol extends ActorProtocol
+//State
 
 final case class UserVotesAndQualifications(votesAndQualifications: Map[ProposalId, VoteAndQualifications])
     extends MakeSerializable
@@ -38,6 +39,12 @@ object UserVotesAndQualifications {
   implicit val formatter: RootJsonFormat[UserVotesAndQualifications] =
     DefaultJsonProtocol.jsonFormat1(UserVotesAndQualifications.apply)
 }
+
+// Protocol
+
+sealed trait UserHistoryActorProtocol extends ActorProtocol
+
+// Commands
 
 sealed trait UserHistoryCommand extends ActorCommand[UserId] with UserHistoryActorProtocol {
   def id: UserId = userId
@@ -63,7 +70,7 @@ final case class RequestUserVotedProposalsPaginate(
 final case class UserHistoryTransactionalEnvelope[T <: TransactionalUserHistoryEvent[_]](
   userId: UserId,
   event: T,
-  replyTo: ActorRef[UserHistoryResponse[LogAcknowledged.type]]
+  replyTo: ActorRef[UserHistoryResponse[Ack.type]]
 ) extends UserHistoryCommand
 
 final case class UserHistoryEnvelope[T <: UserHistoryEvent[_]](userId: UserId, event: T) extends UserHistoryCommand
@@ -76,4 +83,10 @@ final case class InjectSessionEvents(
 
 final case class Stop(userId: UserId, replyTo: ActorRef[UserHistoryResponse[Unit]]) extends UserHistoryCommand
 
+// Responses
+
 final case class UserHistoryResponse[T](value: T) extends UserHistoryActorProtocol
+
+object UserHistoryResponse {
+  case object SessionEventsInjected
+}

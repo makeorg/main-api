@@ -21,7 +21,7 @@ package org.make.api.userhistory
 
 import akka.actor.typed.ActorRef
 import org.make.api.ShardingTypedActorTest
-import org.make.api.sessionhistory.SessionHistoryActor.LogAcknowledged
+import org.make.api.sessionhistory.Ack
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
@@ -52,7 +52,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId), probe.ref)
       val response = probe.expectMessageType[UserHistoryResponse[Map[ProposalId, VoteAndQualifications]]].value
@@ -71,7 +71,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event1, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event2 = LogUserUnvoteEvent(
         userId,
@@ -80,7 +80,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event2, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId), probe.ref)
       probe.expectMessage(UserHistoryResponse(Map.empty))
@@ -101,7 +101,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event1, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event2 = LogUserUnvoteEvent(
         userId,
@@ -114,7 +114,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event2, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event3 = LogUserVoteEvent(
         userId,
@@ -123,7 +123,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event3, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId), probe.ref)
       val response = probe.expectMessageType[UserHistoryResponse[Map[ProposalId, VoteAndQualifications]]].value
@@ -142,7 +142,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event1, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event2 = LogUserQualificationEvent(
         userId,
@@ -151,7 +151,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event2, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId), probe.ref)
       val response = probe.expectMessageType[UserHistoryResponse[Map[ProposalId, VoteAndQualifications]]].value
@@ -170,7 +170,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event1, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event2 = LogUserQualificationEvent(
         userId,
@@ -183,7 +183,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event2, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event3 = LogUserQualificationEvent(
         userId,
@@ -196,7 +196,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event3, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId), probe.ref)
       val response = probe.expectMessageType[UserHistoryResponse[Map[ProposalId, VoteAndQualifications]]].value
@@ -218,7 +218,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event1, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event2 = LogUserQualificationEvent(
         userId,
@@ -231,7 +231,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event2, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event3 = LogUserQualificationEvent(
         userId,
@@ -244,7 +244,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event3, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event4 = LogUserQualificationEvent(
         userId,
@@ -257,7 +257,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event4, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId), probe.ref)
       val response = probe.expectMessageType[UserHistoryResponse[Map[ProposalId, VoteAndQualifications]]].value
@@ -280,7 +280,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event1, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event2 = LogUserQualificationEvent(
         userId,
@@ -293,7 +293,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event2, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event3 = LogUserQualificationEvent(
         userId,
@@ -306,7 +306,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event3, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event4 = LogUserUnqualificationEvent(
         userId,
@@ -319,7 +319,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event4, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event5 = LogUserQualificationEvent(
         userId,
@@ -332,7 +332,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event5, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId), probe.ref)
       val response = probe.expectMessageType[UserHistoryResponse[Map[ProposalId, VoteAndQualifications]]].value
@@ -354,7 +354,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event1, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event2 = LogUserQualificationEvent(
         userId,
@@ -367,7 +367,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event2, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event3 = LogUserQualificationEvent(
         userId,
@@ -380,7 +380,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event3, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId), probe.ref)
       val response1 = probe.expectMessageType[UserHistoryResponse[Map[ProposalId, VoteAndQualifications]]].value
@@ -397,7 +397,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event4, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId), probe.ref)
       val response2 = probe.expectMessageType[UserHistoryResponse[Map[ProposalId, VoteAndQualifications]]].value
@@ -419,7 +419,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event1, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event2 = LogUserQualificationEvent(
         userId,
@@ -432,7 +432,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event2, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event3 = LogUserQualificationEvent(
         userId,
@@ -445,7 +445,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event3, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId), probe.ref)
       val response1 = probe.expectMessageType[UserHistoryResponse[Map[ProposalId, VoteAndQualifications]]].value
@@ -466,7 +466,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event4, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId), probe.ref)
       val response2 = probe.expectMessageType[UserHistoryResponse[Map[ProposalId, VoteAndQualifications]]].value
@@ -491,7 +491,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event1, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event2 = LogUserVoteEvent(
         userId,
@@ -504,7 +504,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event2, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event3 = LogUserVoteEvent(
         userId,
@@ -517,7 +517,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event3, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId1, proposalId2, proposalId3), probe.ref)
       val response = probe.expectMessageType[UserHistoryResponse[Map[ProposalId, VoteAndQualifications]]].value
@@ -546,7 +546,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event1, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event2 = LogUserQualificationEvent(
         userId,
@@ -559,7 +559,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event2, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event3 = LogUserVoteEvent(
         userId,
@@ -572,7 +572,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event3, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event4 = LogUserQualificationEvent(
         userId,
@@ -585,7 +585,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event4, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event5 = LogUserQualificationEvent(
         userId,
@@ -598,7 +598,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event5, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       val event6 = LogUserVoteEvent(
         userId,
@@ -611,7 +611,7 @@ class UserHistoryActorTest extends ShardingTypedActorTest {
       )
       coordinator ! UserHistoryTransactionalEnvelope(userId, event6, probe.ref)
 
-      probe.expectMessage(UserHistoryResponse(LogAcknowledged))
+      probe.expectMessage(UserHistoryResponse(Ack))
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId1, proposalId2, proposalId3), probe.ref)
       val response = probe.expectMessageType[UserHistoryResponse[Map[ProposalId, VoteAndQualifications]]].value

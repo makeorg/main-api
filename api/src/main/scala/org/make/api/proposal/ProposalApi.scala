@@ -28,7 +28,6 @@ import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.question.QuestionServiceComponent
-import org.make.api.sessionhistory.{RequestSessionVoteValues, RequestSessionVotedProposals}
 import org.make.api.technical.MakeAuthenticationDirectives
 import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
@@ -243,7 +242,7 @@ trait DefaultProposalApiComponent
             provideAsyncOrNotFound(proposalService.getProposalById(proposalId, requestContext)) { proposal =>
               provideAsync(
                 sessionHistoryCoordinatorService
-                  .retrieveVoteAndQualifications(RequestSessionVoteValues(requestContext.sessionId, Seq(proposalId)))
+                  .retrieveVoteAndQualifications(requestContext.sessionId, Seq(proposalId))
               ) { votes =>
                 val proposalKey =
                   proposalService.generateProposalKeyHash(
@@ -345,7 +344,7 @@ trait DefaultProposalApiComponent
                       val futureExcludedProposalIds = isNotVoted match {
                         case Some(true) =>
                           sessionHistoryCoordinatorService
-                            .retrieveVotedProposals(RequestSessionVotedProposals(requestContext.sessionId))
+                            .retrieveVotedProposals(requestContext.sessionId)
                             .map {
                               case Seq() => None
                               case voted => Some(voted)

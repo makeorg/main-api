@@ -19,17 +19,25 @@
 
 package org.make.api.sessionhistory
 
-import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
 import org.make.api.technical.MakeEventSerializer
 import org.make.api.technical.security.SecurityConfiguration
 import org.make.core.SprayJsonFormatters
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsObject
 import spray.json.lenses.JsonLenses._
-import stamina.json.{from, JsonPersister}
 import stamina._
+import stamina.json.{from, JsonPersister}
 
 final class SessionHistorySerializers(securityConfiguration: SecurityConfiguration) extends SprayJsonFormatters {
+
+  private val activeSessionSerializer: JsonPersister[Active, V1] = json.persister[Active]("active-session")
+
+  private val closedSessionSerializer: JsonPersister[Closed, V1] = json.persister[Closed]("closed-session")
+
+  private val transformingSessionSerializer: JsonPersister[Transforming, V1] =
+    json.persister[Transforming]("transforming-session")
+
+  private val expiredSessionSerializer: JsonPersister[Expired, V1] = json.persister[Expired]("expired-session")
 
   private val logSessionSearchEventSerializer: JsonPersister[LogSessionSearchProposalsEvent, V3] =
     json.persister[LogSessionSearchProposalsEvent, V3](
@@ -169,8 +177,15 @@ final class SessionHistorySerializers(securityConfiguration: SecurityConfigurati
       )
     )
 
+  private val sessionTransformingEventSerializer: JsonPersister[SessionTransforming, V1] =
+    json.persister[SessionTransforming]("session-transforming-event")
+
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(
+      activeSessionSerializer,
+      closedSessionSerializer,
+      transformingSessionSerializer,
+      expiredSessionSerializer,
       logSessionSearchEventSerializer,
       logSessionVoteEventSerializer,
       logSessionUnvoteEventSerializer,
@@ -180,7 +195,8 @@ final class SessionHistorySerializers(securityConfiguration: SecurityConfigurati
       logSessionExpiredSerializer,
       logSessionStartSequenceEventSerializer,
       saveLastEventDateSerializer,
-      SessionHistorySerializer
+      SessionHistorySerializer,
+      sessionTransformingEventSerializer
     )
 }
 

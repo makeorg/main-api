@@ -240,9 +240,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           userHistoryCoordinatorService.retrieveVoteAndQualifications(userId = userId, searchResult.results.map(_.id))
         }.getOrElse {
           sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(
-              RequestSessionVoteValues(sessionId = requestContext.sessionId, searchResult.results.map(_.id))
-            )
+            .retrieveVoteAndQualifications(sessionId = requestContext.sessionId, searchResult.results.map(_.id))
         }.map { votes =>
           val proposals = searchResult.results.map { indexedProposal =>
             val proposalKey =
@@ -510,9 +508,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           userHistoryCoordinatorService.retrieveVoteAndQualifications(userId, Seq(proposalId))
         case None =>
           sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(
-              RequestSessionVoteValues(sessionId = sessionId, proposalIds = Seq(proposalId))
-            )
+            .retrieveVoteAndQualifications(sessionId = sessionId, proposalIds = Seq(proposalId))
       }
       votesHistory
     }

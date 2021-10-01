@@ -21,7 +21,7 @@ package org.make.api.technical
 
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.AskPattern.Askable
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, ActorSystem, BackoffSupervisorStrategy, Behavior, Scheduler, SupervisorStrategy}
 import akka.util.Timeout
 
@@ -54,4 +54,6 @@ object ActorSystemHelper {
   def superviseWithBackoff[T](behavior: Behavior[T]): Behavior[T] = {
     Behaviors.supervise(behavior).onFailure(DefaultFallbackStrategy)
   }
+
+  implicit def contextToSystem(implicit context: ActorContext[_]): ActorSystem[_] = context.system
 }

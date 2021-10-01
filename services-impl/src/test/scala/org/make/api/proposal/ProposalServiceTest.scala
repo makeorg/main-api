@@ -30,7 +30,12 @@ import org.make.api.partner.{PartnerService, PartnerServiceComponent}
 import org.make.api.question.{AuthorRequest, QuestionService, QuestionServiceComponent}
 import org.make.api.segment.{SegmentService, SegmentServiceComponent}
 import org.make.api.semantic._
-import org.make.api.sessionhistory._
+import org.make.api.sessionhistory.{
+  ConcurrentModification,
+  SessionHistoryCoordinatorService,
+  SessionHistoryCoordinatorServiceComponent
+}
+import org.make.core.proposal.Vote
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.tagtype.{TagTypeService, TagTypeServiceComponent}
 import org.make.api.technical._
@@ -1059,13 +1064,13 @@ class ProposalServiceTest
       val gil: User = user(UserId("gil-user-id"))
       when(
         sessionHistoryCoordinatorService
-          .retrieveVotedProposals(eqTo(RequestSessionVotedProposals(sessionId = SessionId("my-session"))))
+          .retrieveVotedProposals(eqTo(SessionId("my-session")), eqTo(None))
       ).thenReturn(Future.successful(Seq(gilProposal1.id, gilProposal2.id)))
       when(
         userHistoryCoordinatorService
           .retrieveVotedProposals(eqTo(RequestUserVotedProposals(gil.userId)))
       ).thenReturn(Future.successful(Seq(gilProposal1.id, gilProposal2.id)))
-      when(sessionHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestSessionVoteValues]))
+      when(sessionHistoryCoordinatorService.retrieveVoteAndQualifications(any[SessionId], any[Seq[ProposalId]]))
         .thenReturn(
           Future.successful(
             Map(
@@ -1538,7 +1543,7 @@ class ProposalServiceTest
         .thenReturn(Future.unit)
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+          .retrieveVoteAndQualifications(sessionId, Seq(proposalId))
       ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
       when(
         proposalCoordinatorService
@@ -1569,7 +1574,7 @@ class ProposalServiceTest
 
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+          .retrieveVoteAndQualifications(sessionId, Seq(proposalId))
       ).thenReturn(Future.successful(Map(proposalId -> votes)))
       when(
         proposalCoordinatorService
@@ -1599,7 +1604,7 @@ class ProposalServiceTest
         .thenReturn(Future.unit)
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+          .retrieveVoteAndQualifications(sessionId, Seq(proposalId))
       ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
       when(
         proposalCoordinatorService
@@ -1654,7 +1659,7 @@ class ProposalServiceTest
         .thenReturn(Future.unit)
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+          .retrieveVoteAndQualifications(sessionId, Seq(proposalId))
       ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
       when(
         proposalCoordinatorService
@@ -1683,7 +1688,7 @@ class ProposalServiceTest
         .thenReturn(Future.unit)
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+          .retrieveVoteAndQualifications(sessionId, Seq(proposalId))
       ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
       when(
         proposalCoordinatorService
@@ -1714,7 +1719,7 @@ class ProposalServiceTest
 
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+          .retrieveVoteAndQualifications(sessionId, Seq(proposalId))
       ).thenReturn(Future.successful(Map(proposalId -> votes)))
       when(
         proposalCoordinatorService
@@ -1744,7 +1749,7 @@ class ProposalServiceTest
         .thenReturn(Future.unit)
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+          .retrieveVoteAndQualifications(sessionId, Seq(proposalId))
       ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
       when(
         proposalCoordinatorService
@@ -1802,7 +1807,7 @@ class ProposalServiceTest
 
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+          .retrieveVoteAndQualifications(sessionId, Seq(proposalId))
       ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
 
       when(
@@ -1845,7 +1850,7 @@ class ProposalServiceTest
 
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+          .retrieveVoteAndQualifications(sessionId, Seq(proposalId))
       ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
 
       when(
@@ -1919,7 +1924,7 @@ class ProposalServiceTest
 
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+          .retrieveVoteAndQualifications(sessionId, Seq(proposalId))
       ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
 
       when(
@@ -1959,7 +1964,7 @@ class ProposalServiceTest
 
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+          .retrieveVoteAndQualifications(sessionId, Seq(proposalId))
       ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
 
       when(
@@ -2114,9 +2119,7 @@ class ProposalServiceTest
 
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(
-            RequestSessionVoteValues(SessionId("my-session"), Seq(ProposalId("voted"), ProposalId("unvoted")))
-          )
+          .retrieveVoteAndQualifications(SessionId("my-session"), Seq(ProposalId("voted"), ProposalId("unvoted")))
       ).thenReturn(
         Future
           .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
@@ -2157,9 +2160,7 @@ class ProposalServiceTest
 
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(
-            RequestSessionVoteValues(SessionId("my-session"), Seq(ProposalId("voted"), ProposalId("no-vote")))
-          )
+          .retrieveVoteAndQualifications(SessionId("my-session"), Seq(ProposalId("voted"), ProposalId("no-vote")))
       ).thenReturn(
         Future
           .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
@@ -2189,9 +2190,7 @@ class ProposalServiceTest
 
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(
-            RequestSessionVoteValues(SessionId("my-session"), Seq(ProposalId("voted"), ProposalId("no-vote")))
-          )
+          .retrieveVoteAndQualifications(SessionId("my-session"), Seq(ProposalId("voted"), ProposalId("no-vote")))
       ).thenReturn(
         Future
           .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
@@ -2617,9 +2616,7 @@ class ProposalServiceTest
 
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(
-            RequestSessionVoteValues(SessionId("session-featured-proposals"), Seq(ProposalId("a-result")))
-          )
+          .retrieveVoteAndQualifications(SessionId("session-featured-proposals"), Seq(ProposalId("a-result")))
       ).thenReturn(
         Future
           .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
@@ -2673,9 +2670,7 @@ class ProposalServiceTest
 
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(
-            RequestSessionVoteValues(SessionId("session-featured-proposals"), Seq(ProposalId("a-result")))
-          )
+          .retrieveVoteAndQualifications(SessionId("session-featured-proposals"), Seq(ProposalId("a-result")))
       ).thenReturn(
         Future
           .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
@@ -2758,9 +2753,7 @@ class ProposalServiceTest
 
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(
-            RequestSessionVoteValues(SessionId("session-featured-proposals"), Seq(ProposalId("a-partner-result")))
-          )
+          .retrieveVoteAndQualifications(SessionId("session-featured-proposals"), Seq(ProposalId("a-partner-result")))
       ).thenReturn(
         Future
           .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
@@ -2783,9 +2776,7 @@ class ProposalServiceTest
 
       when(
         sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(
-            RequestSessionVoteValues(SessionId("session-featured-proposals"), Seq(ProposalId("a-result")))
-          )
+          .retrieveVoteAndQualifications(SessionId("session-featured-proposals"), Seq(ProposalId("a-result")))
       ).thenReturn(
         Future
           .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))

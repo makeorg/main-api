@@ -66,7 +66,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     ): Future[SequenceResult] = {
       val log = logStartSequenceUserHistory(questionId, maybeUserId, includedProposalsIds, requestContext)
       val votedProposals =
-        sessionHistoryCoordinatorService.retrieveVotedProposals(RequestSessionVotedProposals(requestContext.sessionId))
+        sessionHistoryCoordinatorService.retrieveVotedProposals(requestContext.sessionId)
       val behaviour = createBehaviour(behaviourParam, questionId, requestContext)
       for {
         _                  <- log
@@ -199,9 +199,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       maybeUserId.map { userId =>
         userHistoryCoordinatorService.retrieveVoteAndQualifications(userId, proposals)
       }.getOrElse {
-        sessionHistoryCoordinatorService.retrieveVoteAndQualifications(
-          RequestSessionVoteValues(requestContext.sessionId, proposals)
-        )
+        sessionHistoryCoordinatorService.retrieveVoteAndQualifications(requestContext.sessionId, proposals)
       }
 
     private def searchProposals(excluded: Seq[ProposalId], limit: Int)(

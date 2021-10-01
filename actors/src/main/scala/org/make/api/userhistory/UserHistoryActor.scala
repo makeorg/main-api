@@ -24,8 +24,9 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, ReplyEffect, RetentionCriteria}
 import grizzled.slf4j.Logging
-import org.make.api.sessionhistory.SessionHistoryActor.{LogAcknowledged, SessionEventsInjected}
+import org.make.api.sessionhistory.Ack
 import org.make.api.technical.EffectBuilderHelper._
+import org.make.api.userhistory.UserHistoryResponse.SessionEventsInjected
 import org.make.core.history.HistoryActions._
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 
@@ -100,13 +101,13 @@ object UserHistoryActor extends Logging {
       Effect
         .persist[UserHistoryEvent[_], UserVotesAndQualifications](event)
         .thenPublish(event)
-        .thenReply(replyTo)(_ => UserHistoryResponse(LogAcknowledged))
+        .thenReply(replyTo)(_ => UserHistoryResponse(Ack))
     case (_, UserHistoryEnvelope(_, event: UserHistoryEvent[_])) =>
       Effect
         .persist[UserHistoryEvent[_], UserVotesAndQualifications](event)
         .thenPublish(event)
         .thenNoReply()
-    case (_, Stop(_, replyTo)) => Effect.stop().thenReply(replyTo)(_ => UserHistoryResponse(LogAcknowledged))
+    case (_, Stop(_, replyTo)) => Effect.stop().thenReply(replyTo)(_ => UserHistoryResponse(Ack))
   }
 
   def eventHandler: (UserVotesAndQualifications, UserHistoryEvent[_]) => UserVotesAndQualifications = {
