@@ -185,30 +185,6 @@ trait ModerationQuestionComponent {
   def moderationQuestionApi: ModerationQuestionApi
 }
 
-final case class AuthorRequest(
-  @(ApiModelProperty @field)(dataType = "integer", example = "23", allowableValues = "range[8, 120)")
-  age: Option[Int],
-  firstName: String,
-  lastName: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "12345")
-  postalCode: Option[String],
-  profession: Option[String]
-) {
-  validate(
-    validateAge("age", age.map(DateHelper.computeBirthDate)),
-    validateUserInput("firstName", firstName, None),
-    validateField("firstName", "mandatory", firstName.nonEmpty, "firstName should not be empty"),
-    validateOptionalUserInput("lastName", lastName, None),
-    validateOptionalUserInput("postalCode", postalCode, None),
-    validateOptionalUserInput("profession", profession, None)
-  )
-  validateOptional(postalCode.map(value => validatePostalCode("postalCode", value, None)))
-}
-
-object AuthorRequest {
-  implicit val decoder: Decoder[AuthorRequest] = deriveDecoder[AuthorRequest]
-}
-
 final case class CreateInitialProposalRequest(
   content: String,
   country: Country,

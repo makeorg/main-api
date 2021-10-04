@@ -21,8 +21,7 @@ package org.make.api.user.social
 
 import java.time.ZonedDateTime
 import grizzled.slf4j.Logging
-import org.make.api.technical.auth.AuthenticationApi.TokenResponse
-import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenResponse}
 import org.make.api.user.SocialProvider.{Facebook, GooglePeople}
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.{SocialLoginResponse, SocialProvider, UserServiceComponent}

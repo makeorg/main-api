@@ -20,6 +20,8 @@
 name := "tests"
 
 libraryDependencies ++= Seq(
+  Dependencies.akkaPersistenceInMemory,
+  Dependencies.akkaTest,
   Dependencies.mockito,
   Dependencies.mockitoScalatest,
   Dependencies.scalaTest,

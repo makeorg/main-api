@@ -23,7 +23,6 @@ import java.time.{LocalDate, ZonedDateTime}
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import cats.data.NonEmptyList
-import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import eu.timepit.refined.W
 import eu.timepit.refined.auto._
 import eu.timepit.refined.api.Refined
@@ -36,7 +35,7 @@ import io.circe.{Codec, Decoder, Encoder}
 import io.swagger.annotations._
 
 import javax.ws.rs.Path
-import org.make.api.question.{QuestionServiceComponent, SimpleQuestionWordingResponse}
+import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
@@ -967,53 +966,4 @@ object ModerationOperationOfQuestionSearchResult {
     ModerationOperationOfQuestionSearchResult(ooq.questionId, ooq.slug)
 
   implicit val codec: Codec[ModerationOperationOfQuestionSearchResult] = deriveCodec
-}
-
-sealed abstract class ModerationMode(val value: String) extends StringEnumEntry with Product with Serializable
-
-object ModerationMode extends StringEnum[ModerationMode] with StringCirceEnum[ModerationMode] {
-
-  case object Enrichment extends ModerationMode("Enrichment")
-  case object Moderation extends ModerationMode("Moderation")
-
-  override def values: IndexedSeq[ModerationMode] = findValues
-}
-
-final case class ModerationOperationOfQuestionInfosResponse(
-  @(ApiModelProperty @field)(dataType = "string", example = "a90d4223-a198-480b-b412-53970c5f1151")
-  questionId: QuestionId,
-  slug: String,
-  @(ApiModelProperty @field)(dataType = "org.make.api.question.SimpleQuestionWordingResponse")
-  wording: SimpleQuestionWordingResponse,
-  @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  countries: NonEmptyList[Country],
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Language,
-  @(ApiModelProperty @field)(dataType = "dateTime") startDate: ZonedDateTime,
-  @(ApiModelProperty @field)(dataType = "dateTime") endDate: ZonedDateTime,
-  totalProposalCount: Int,
-  proposalToModerateCount: Int,
-  hasTags: Boolean
-)
-
-object ModerationOperationOfQuestionInfosResponse {
-  def apply(
-    question: IndexedOperationOfQuestion,
-    proposalToModerateCount: Int,
-    totalProposalCount: Int,
-    hasTags: Boolean
-  ): ModerationOperationOfQuestionInfosResponse = ModerationOperationOfQuestionInfosResponse(
-    questionId = question.questionId,
-    slug = question.slug,
-    wording = SimpleQuestionWordingResponse(question.operationTitle, question.question),
-    countries = question.countries,
-    language = question.language,
-    startDate = question.startDate,
-    endDate = question.endDate,
-    totalProposalCount = totalProposalCount,
-    proposalToModerateCount = proposalToModerateCount,
-    hasTags = hasTags
-  )
-
-  implicit val codec: Codec[ModerationOperationOfQuestionInfosResponse] = deriveCodec
 }

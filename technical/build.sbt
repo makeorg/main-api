@@ -19,4 +19,10 @@
 
 name := "technical"
 
-libraryDependencies ++= Seq(Dependencies.configuration, Dependencies.kamonExecutors)
+libraryDependencies ++= Seq(
+  Dependencies.cats,
+  Dependencies.configuration,
+  Dependencies.kamonExecutors,
+  Dependencies.scalaOAuth,
+  Dependencies.swiftClient
+)

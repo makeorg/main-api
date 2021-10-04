@@ -45,7 +45,7 @@ import org.make.api.proposal.{
 }
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.technical._
-import org.make.api.technical.auth.AuthenticationApi.TokenResponse
+import org.make.api.technical.auth.TokenResponse
 import org.make.api.technical.auth._
 import org.make.api.technical.directives.ClientDirectives
 import org.make.api.technical.storage.Content.FileContent

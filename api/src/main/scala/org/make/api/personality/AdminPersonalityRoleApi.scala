@@ -28,7 +28,6 @@ import io.swagger.annotations.{ApiImplicitParam, _}
 import javax.ws.rs.Path
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
-import org.make.core.Validation._
 import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.personality.{
@@ -554,48 +553,6 @@ trait DefaultAdminPersonalityRoleApiComponent
 
   }
 
-}
-
-final case class CreatePersonalityRoleRequest(name: String) {
-  validate(validateUserInput("name", name, None))
-}
-
-object CreatePersonalityRoleRequest {
-  implicit val decoder: Decoder[CreatePersonalityRoleRequest] = deriveDecoder[CreatePersonalityRoleRequest]
-}
-
-final case class UpdatePersonalityRoleRequest(name: String) {
-  validate(validateUserInput("name", name, None))
-}
-
-object UpdatePersonalityRoleRequest {
-  implicit val decoder: Decoder[UpdatePersonalityRoleRequest] = deriveDecoder[UpdatePersonalityRoleRequest]
-}
-
-final case class CreatePersonalityRoleFieldRequest(
-  name: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "STRING", allowableValues = "INT,STRING,BOOLEAN")
-  fieldType: FieldType,
-  required: Boolean
-) {
-  validate(validateUserInput("name", name, None))
-}
-
-object CreatePersonalityRoleFieldRequest {
-  implicit val decoder: Decoder[CreatePersonalityRoleFieldRequest] = deriveDecoder[CreatePersonalityRoleFieldRequest]
-}
-
-final case class UpdatePersonalityRoleFieldRequest(
-  name: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "STRING", allowableValues = "INT,STRING,BOOLEAN")
-  fieldType: FieldType,
-  required: Boolean
-) {
-  validate(validateUserInput("name", name, None))
-}
-
-object UpdatePersonalityRoleFieldRequest {
-  implicit val decoder: Decoder[UpdatePersonalityRoleFieldRequest] = deriveDecoder[UpdatePersonalityRoleFieldRequest]
 }
 
 final case class PersonalityRoleResponse(

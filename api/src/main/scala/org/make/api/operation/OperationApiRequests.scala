@@ -21,11 +21,9 @@ package org.make.api.operation
 
 import java.net.URL
 
-import enumeratum.{Circe, Enum, EnumEntry}
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
-import org.make.api.operation.ResultsLinkRequest.ResultsLinkKind
 import org.make.core.Validation.{validateUserInput, _}
 import org.make.core.operation.{OperationKind, OperationStatus, ResultsLink}
 
@@ -88,21 +86,6 @@ final case class ResultsLinkRequest(
 }
 
 object ResultsLinkRequest {
-
-  sealed abstract class ResultsLinkKind extends EnumEntry
-
-  object ResultsLinkKind extends Enum[ResultsLinkKind] {
-
-    case object External extends ResultsLinkKind
-    case object Internal extends ResultsLinkKind
-
-    override val values: IndexedSeq[ResultsLinkKind] = findValues
-
-    implicit val decoder: Decoder[ResultsLinkKind] = Circe.decodeCaseInsensitive(this)
-    implicit val encoder: Encoder[ResultsLinkKind] = Circe.encoderLowercase(this)
-  }
-
   implicit val decoder: Decoder[ResultsLinkRequest] = deriveDecoder
   implicit val encoder: Encoder[ResultsLinkRequest] = deriveEncoder
-
 }

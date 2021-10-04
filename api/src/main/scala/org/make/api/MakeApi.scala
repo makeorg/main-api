@@ -20,8 +20,8 @@
 package org.make.api
 
 import akka.actor.typed.scaladsl.AskPattern.schedulerFromActorSystem
-import akka.actor.typed.{SpawnProtocol, ActorRef => TypedActorRef, ActorSystem => ActorSystemTyped}
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.typed.{SpawnProtocol, ActorRef => TypedActorRef}
+import akka.actor.ActorRef
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import akka.util.Timeout
@@ -557,18 +557,6 @@ object MakeApi extends Logging with Directives with ErrorAccumulatingCirceSuppor
       res
     }
 
-}
-
-trait ActorSystemTypedComponent {
-  implicit def actorSystemTyped: ActorSystemTyped[Nothing]
-}
-
-trait ActorSystemComponent {
-  implicit def actorSystem: ActorSystem
-}
-
-trait ConfigComponent {
-  def config: Config
 }
 
 trait DefaultConfigComponent extends ConfigComponent {

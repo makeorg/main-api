@@ -31,6 +31,7 @@ import io.circe.{Codec, Decoder, Encoder}
 import io.circe.refined._
 import io.swagger.annotations.ApiModelProperty
 import org.make.api.technical.RequestHelper
+import org.make.api.user.validation.UserProfileRequestValidation
 import org.make.core.Validation.{
   mandatoryField,
   maxLength,
@@ -169,12 +170,6 @@ object ProfileRequest extends CirceFormatters {
     )
     Some(profile)
   }
-}
-
-trait UserProfileRequestValidation {
-  val dateOfBirth: Option[LocalDate]
-  val legalMinorConsent: Option[Boolean]
-  val legalAdvisorApproval: Option[Boolean]
 }
 
 final case class RegisterUserRequest(

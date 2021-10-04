@@ -291,7 +291,7 @@ class QuestionApiTest
         questionDetailsResponse.operation.questions.size should be(1)
         questionDetailsResponse.operation.questions.map(_.questionId) should contain(baseQuestion.questionId)
         questionDetailsResponse.operation.questions.flatMap(_.resultsLink) should contain(
-          ResultsLinkResponse(ResultsLinkRequest.ResultsLinkKind.Internal, ResultsLink.Internal.TopIdeas.value)
+          ResultsLinkResponse(ResultsLinkKind.Internal, ResultsLink.Internal.TopIdeas.value)
         )
         questionDetailsResponse.activeFeatures should be(Seq(FeatureSlug("f1")))
         questionDetailsResponse.activeFeatureData.topProposal should be(empty)

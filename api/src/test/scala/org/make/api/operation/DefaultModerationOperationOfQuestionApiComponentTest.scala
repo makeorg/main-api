@@ -422,7 +422,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       consultationImageAlt = None,
       descriptionImage = None,
       descriptionImageAlt = None,
-      resultsLink = Some(ResultsLinkRequest(ResultsLinkRequest.ResultsLinkKind.External, "https://example.com/results")),
+      resultsLink = Some(ResultsLinkRequest(ResultsLinkKind.External, "https://example.com/results")),
       actions = Some("some actions"),
       featured = false,
       votesTarget = 100_000,
@@ -468,8 +468,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
               consultationImageAlt = None,
               descriptionImage = None,
               descriptionImageAlt = None,
-              resultsLink =
-                Some(ResultsLinkRequest(ResultsLinkRequest.ResultsLinkKind.External, "https://example.com/results")),
+              resultsLink = Some(ResultsLinkRequest(ResultsLinkKind.External, "https://example.com/results")),
               actions = Some("some actions"),
               featured = false,
               votesTarget = 100_000,

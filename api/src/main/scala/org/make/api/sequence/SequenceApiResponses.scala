@@ -41,12 +41,6 @@ import org.make.core.technical.RefinedTypes.Ratio
 
 import scala.annotation.meta.field
 
-final case class SequenceResult(proposals: Seq[ProposalResponse], demographics: Option[DemographicsCardResponse])
-
-object SequenceResult {
-  implicit val encoder: Encoder[SequenceResult] = deriveEncoder[SequenceResult]
-}
-
 final case class ExplorationSequenceConfigurationResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "9963fff6-85c7-4cb5-8698-31c5e8204d6e")
   explorationSequenceConfigurationId: ExplorationSequenceConfigurationId,

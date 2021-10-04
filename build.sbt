@@ -100,14 +100,35 @@ addCommandAlias("fixStyle", ";scalafmtAll;scalafmtSbt")
 
 lazy val phantom = module("phantom", ".")
   .settings(moduleName := "make-phantom": _*)
-  .aggregate(api, cockroachdb, core, integrationTests, persistence, technical, tests)
+  .aggregate(
+    actors,
+    akka,
+    api,
+    cockroachdb,
+    core,
+    indexation,
+    integrationTests,
+    persistence,
+    search,
+    services,
+    servicesImpl,
+    technical,
+    tests,
+    webflow
+  )
+
+lazy val actors = module("actors")
+  .dependsOn(akka, core, tests % Test, integrationTests % IntegrationTest)
+
+lazy val akka = module("akka")
+  .dependsOn(technical, tests % Test)
 
 lazy val api = module("api")
   .settings(imageName := {
     val alias = dockerAlias.value
     s"${alias.registryHost.map(_ + "/").getOrElse("")}${alias.name}:${alias.tag.getOrElse("latest")}"
   })
-  .dependsOn(cockroachdb, core, integrationTests % IntegrationTest, technical, tests % Test)
+  .dependsOn(cockroachdb, core, indexation, servicesImpl, technical, tests % Test, integrationTests % IntegrationTest)
 
 lazy val cockroachdb = module("cockroachdb")
   .dependsOn(persistence, technical, tests % Test)
@@ -117,16 +138,32 @@ lazy val core = module("core")
   .dependsOn(technical)
   .dependsOn("tests", Test)
 
+lazy val indexation = module("indexation")
+  .dependsOn(services, persistence, tests % Test)
+
 lazy val integrationTests = module("integration-tests")
   .dependsOn(cockroachdb, core, tests)
 
 lazy val persistence = module("persistence")
   .dependsOn(core)
 
+lazy val search = module("search")
+  .dependsOn(core, technical, tests % Test, integrationTests % IntegrationTest)
+
+lazy val services = module("services")
+  .dependsOn(actors, core, persistence, search, tests % Test)
+
+lazy val servicesImpl = module("services-impl")
+  .dependsOn(services, technical, webflow, tests % Test)
+
 lazy val technical = module("technical")
+  .dependsOn("tests", Test)
 
 lazy val tests = module("tests")
   .dependsOn(core)
+
+lazy val webflow = module("webflow")
+  .dependsOn(akka, tests % Test)
 
 ThisBuild / Test / fork            := true
 ThisBuild / IntegrationTest / fork := true

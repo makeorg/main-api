@@ -21,7 +21,6 @@ name := "make-core"
 
 libraryDependencies ++= Seq(
   Dependencies.akkaPersistenceQuery,
-  Dependencies.akkaClusterSharding,
   Dependencies.akkaHttpSwagger, // TODO: import only swagger not akka-http
   Dependencies.apacheMath,
   Dependencies.elastic4s,

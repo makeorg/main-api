@@ -31,9 +31,8 @@ import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.idea.TopIdeaServiceComponent
 import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
-import org.make.api.question.{QuestionTopIdeaWithAvatarResponse, SimpleQuestionResponse}
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
-import org.make.api.technical.{MakeAuthenticationDirectives}
+import org.make.api.technical.MakeAuthenticationDirectives
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.core.Validation._
 import org.make.core._
@@ -390,56 +389,4 @@ final case class CreateTopIdeaCommentRequest(
 object CreateTopIdeaCommentRequest {
   implicit val decoder: Decoder[CreateTopIdeaCommentRequest] = deriveDecoder[CreateTopIdeaCommentRequest]
   implicit val encoder: Encoder[CreateTopIdeaCommentRequest] = deriveEncoder[CreateTopIdeaCommentRequest]
-}
-
-@ApiModel
-final case class TopIdeaCommentResponse(
-  @(ApiModelProperty @field)(dataType = "string", example = "828cada5-52e1-4a27-9d45-756766c485d2")
-  id: TopIdeaCommentId,
-  @(ApiModelProperty @field)(dataType = "string", example = "886251c3-e302-49eb-add5-84cabf46878a")
-  topIdeaId: TopIdeaId,
-  @(ApiModelProperty @field)(dataType = "string", example = "6002582e-60b9-409a-8aec-6eaf0863101a")
-  personalityId: UserId,
-  comment1: Option[String],
-  comment2: Option[String],
-  comment3: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "agree", allowableValues = "agree,disagree,other")
-  vote: CommentVoteKey,
-  @(ApiModelProperty @field)(
-    dataType = "string",
-    example = "doable",
-    allowableValues = "priority,doable,noWay,nonPriority,exists,toBePrecised"
-  )
-  qualification: Option[CommentQualificationKey]
-)
-
-object TopIdeaCommentResponse {
-  implicit val decoder: Decoder[TopIdeaCommentResponse] = deriveDecoder[TopIdeaCommentResponse]
-  implicit val encoder: Encoder[TopIdeaCommentResponse] = deriveEncoder[TopIdeaCommentResponse]
-
-  def apply(comment: TopIdeaComment): TopIdeaCommentResponse =
-    TopIdeaCommentResponse(
-      id = comment.topIdeaCommentId,
-      topIdeaId = comment.topIdeaId,
-      personalityId = comment.personalityId,
-      comment1 = comment.comment1,
-      comment2 = comment.comment2,
-      comment3 = comment.comment3,
-      vote = comment.vote,
-      qualification = comment.qualification
-    )
-}
-
-@ApiModel
-final case class PersonalityOpinionResponse(
-  @(ApiModelProperty @field)(dataType = "org.make.api.question.SimpleQuestionResponse") question: SimpleQuestionResponse,
-  @(ApiModelProperty @field)(dataType = "org.make.api.question.QuestionTopIdeaWithAvatarResponse") topIdea: QuestionTopIdeaWithAvatarResponse,
-  @(ApiModelProperty @field)(dataType = "org.make.api.personality.TopIdeaCommentResponse") comment: Option[
-    TopIdeaCommentResponse
-  ]
-)
-
-object PersonalityOpinionResponse {
-  implicit val decoder: Decoder[PersonalityOpinionResponse] = deriveDecoder[PersonalityOpinionResponse]
-  implicit val encoder: Encoder[PersonalityOpinionResponse] = deriveEncoder[PersonalityOpinionResponse]
 }

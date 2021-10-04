@@ -661,6 +661,12 @@ trait DefaultAdminProposalApiComponent
 
 }
 
+final case class UpdateProposalVotesRequest(votes: Seq[UpdateVoteRequest])
+
+object UpdateProposalVotesRequest {
+  implicit val codec: Codec[UpdateProposalVotesRequest] = deriveCodec
+}
+
 final case class AdminProposalResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b") id: ProposalId,
   author: AdminProposalResponse.Author,

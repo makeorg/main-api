@@ -41,6 +41,8 @@ object Dependencies {
   private val zioVersion = "1.0.1"
   private val mockitoVersion = "1.16.37"
 
+  val cats: ModuleID = "org.typelevel" %% "cats-core" % "2.6.1"
+
   val grizzledSlf4j: ModuleID = "org.clapper"             %% "grizzled-slf4j"  % "1.3.4"
   val logger: ModuleID = "org.apache.logging.log4j"       % "log4j"            % log4jVersion
   val loggerBridge: ModuleID = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4jVersion
@@ -145,7 +147,7 @@ object Dependencies {
   val enumeratumScalacheck: ModuleID = "com.beachape" %% "enumeratum-scalacheck" % enumeratumVersion
 
   // Test related dependencies
-  val akkaTest: ModuleID = "com.typesafe.akka"            %% "akka-actor-testkit-typed" % akkaVersion % "it,test"
+  val akkaTest: ModuleID = "com.typesafe.akka"            %% "akka-actor-testkit-typed" % akkaVersion
   val akkaStreamTest: ModuleID = "com.typesafe.akka"      %% "akka-stream-testkit"      % akkaVersion % "it,test"
   val scalaTest: ModuleID = "org.scalatest"               %% "scalatest"                % "3.2.9"
   val scalaTestScalaCheck: ModuleID = "org.scalatestplus" %% "scalacheck-1-15"          % "3.2.9.0"
@@ -158,9 +160,9 @@ object Dependencies {
     .exclude("io.netty", "netty-transport-native-epoll")
 
   // Needed to use the client....
-  val jerseyServer: ModuleID = "org.glassfish.jersey.core"      % "jersey-server"              % jerseyVersion  % "it"
-  val jerseyHk2: ModuleID = "org.glassfish.jersey.inject"       % "jersey-hk2"                 % jerseyVersion  % "it"
-  val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2"     % "it,test"
+  val jerseyServer: ModuleID = "org.glassfish.jersey.core"      % "jersey-server"              % jerseyVersion % "it"
+  val jerseyHk2: ModuleID = "org.glassfish.jersey.inject"       % "jersey-hk2"                 % jerseyVersion % "it"
+  val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2"
   val staminaTestKit: ModuleID = "com.scalapenos"               %% "stamina-testkit"           % staminaVersion % "test"
 
   val scalaCsv: ModuleID = "com.github.tototoshi" %% "scala-csv" % "1.3.8" % "test"

@@ -247,42 +247,6 @@ trait DefaultAdminPartnerApiComponent
   }
 }
 
-final case class CreatePartnerRequest(
-  name: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/logo.png")
-  logo: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/link")
-  link: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
-  organisationId: Option[UserId],
-  @(ApiModelProperty @field)(dataType = "string", example = "FOUNDER")
-  partnerKind: PartnerKind,
-  @(ApiModelProperty @field)(dataType = "string", example = "6a90575f-f625-4025-a485-8769e8a26967")
-  questionId: QuestionId,
-  weight: Float
-)
-
-object CreatePartnerRequest {
-  implicit val decoder: Decoder[CreatePartnerRequest] = deriveDecoder[CreatePartnerRequest]
-}
-
-final case class UpdatePartnerRequest(
-  name: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/logo.png")
-  logo: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/link")
-  link: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
-  organisationId: Option[UserId],
-  @(ApiModelProperty @field)(dataType = "string", example = "FOUNDER")
-  partnerKind: PartnerKind,
-  weight: Float
-)
-
-object UpdatePartnerRequest {
-  implicit val decoder: Decoder[UpdatePartnerRequest] = deriveDecoder[UpdatePartnerRequest]
-}
-
 final case class PartnerResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "5c95a5b1-3722-4f49-93ec-2c2fcb5da051")
   id: PartnerId,

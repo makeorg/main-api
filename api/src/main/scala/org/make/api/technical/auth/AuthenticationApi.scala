@@ -24,12 +24,11 @@ import akka.http.scaladsl.model.headers.HttpCookie
 import akka.http.scaladsl.server.{Directives, Route}
 import grizzled.slf4j.Logging
 import io.circe.generic.semiauto.deriveDecoder
-import io.circe.{Decoder, Encoder}
+import io.circe.Decoder
 import io.swagger.annotations._
 import org.make.api.technical.Futures.RichFutures
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical._
-import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.MakeDataHandler.{CreatedAtParameter, RefreshTokenExpirationParameter}
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.{AuthCode, ClientId, UserRights}
@@ -177,54 +176,6 @@ object AuthenticationApi {
       grantResult.params.get(RefreshTokenExpirationParameter).map(_.toLong),
       grantResult.params.getOrElse(CreatedAtParameter, DateHelper.format(DateHelper.now()))
     )
-
-  final case class TokenResponse(
-    @(ApiModelProperty @field)(name = "token_type")
-    tokenType: String,
-    @(ApiModelProperty @field)(name = "access_token")
-    accessToken: String,
-    @(ApiModelProperty @field)(name = "expires_in")
-    expiresIn: Long,
-    @(ApiModelProperty @field)(name = "refresh_token")
-    refreshToken: Option[String],
-    @(ApiModelProperty @field)(name = "refresh_expires_in", dataType = "int")
-    refreshExpiresIn: Option[Long],
-    @(ApiModelProperty @field)(name = "created_at")
-    createdAt: String
-  )
-
-  object TokenResponse {
-    def fromAccessToken(tokenResult: AccessToken): TokenResponse = {
-      TokenResponse(
-        "Bearer",
-        tokenResult.token,
-        tokenResult.expiresIn.getOrElse(1L),
-        tokenResult.refreshToken,
-        tokenResult.params.get(RefreshTokenExpirationParameter).map(_.toLong),
-        tokenResult.params.getOrElse(CreatedAtParameter, "")
-      )
-    }
-
-    implicit val encoder: Encoder[TokenResponse] = {
-      Encoder.forProduct6(
-        "token_type",
-        "access_token",
-        "expires_in",
-        "refresh_token",
-        "refresh_expires_in",
-        "created_at"
-      ) { response =>
-        (
-          response.tokenType,
-          response.accessToken,
-          response.expiresIn,
-          response.refreshToken,
-          response.refreshExpiresIn,
-          response.createdAt
-        )
-      }
-    }
-  }
 
 }
 

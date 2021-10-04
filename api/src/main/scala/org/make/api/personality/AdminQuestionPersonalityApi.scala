@@ -325,30 +325,6 @@ trait DefaultAdminQuestionPersonalityApiComponent
   }
 }
 
-final case class CreateQuestionPersonalityRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
-  userId: UserId,
-  @(ApiModelProperty @field)(dataType = "string", example = "6a90575f-f625-4025-a485-8769e8a26967")
-  questionId: QuestionId,
-  @(ApiModelProperty @field)(dataType = "string", example = "0c3cbbf4-42c1-4801-b08a-d0e60d136041")
-  personalityRoleId: PersonalityRoleId
-)
-
-object CreateQuestionPersonalityRequest {
-  implicit val decoder: Decoder[CreateQuestionPersonalityRequest] = deriveDecoder[CreateQuestionPersonalityRequest]
-}
-
-final case class UpdateQuestionPersonalityRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
-  userId: UserId,
-  @(ApiModelProperty @field)(dataType = "string", example = "0c3cbbf4-42c1-4801-b08a-d0e60d136041")
-  personalityRoleId: PersonalityRoleId
-)
-
-object UpdateQuestionPersonalityRequest {
-  implicit val decoder: Decoder[UpdateQuestionPersonalityRequest] = deriveDecoder[UpdateQuestionPersonalityRequest]
-}
-
 final case class AdminQuestionPersonalityResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "5c95a5b1-3722-4f49-93ec-2c2fcb5da051")
   id: PersonalityId,

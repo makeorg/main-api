@@ -29,7 +29,6 @@ import javax.ws.rs.Path
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.{RequestSessionVoteValues, RequestSessionVotedProposals}
-import org.make.api.technical.security.SecurityHelper
 import org.make.api.technical.MakeAuthenticationDirectives
 import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
@@ -247,7 +246,7 @@ trait DefaultProposalApiComponent
                   .retrieveVoteAndQualifications(RequestSessionVoteValues(requestContext.sessionId, Seq(proposalId)))
               ) { votes =>
                 val proposalKey =
-                  SecurityHelper.generateProposalKeyHash(
+                  proposalService.generateProposalKeyHash(
                     proposalId,
                     requestContext.sessionId,
                     requestContext.location,
