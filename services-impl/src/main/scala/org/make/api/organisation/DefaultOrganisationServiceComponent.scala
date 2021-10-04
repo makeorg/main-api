@@ -31,11 +31,11 @@ import org.make.api.user.{
   PersistentUserToAnonymizeServiceComponent,
   UserServiceComponent
 }
-import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
 import org.make.api.userhistory.{
   OrganisationEmailChangedEvent,
   OrganisationRegisteredEvent,
   OrganisationUpdatedEvent,
+  RequestUserVotedProposals,
   UserHistoryCoordinatorServiceComponent
 }
 import org.make.core.common.indexed.Sort

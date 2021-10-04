@@ -19,30 +19,16 @@
 
 package org.make.api.organisation
 
-import java.time.ZonedDateTime
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.{MakeUnitTest, TestUtils}
-import org.make.api.proposal.{
-  ProposalResponse,
-  ProposalSearchEngine,
-  ProposalSearchEngineComponent,
-  ProposalService,
-  ProposalServiceComponent,
-  ProposalsResultSeededResponse
-}
+import org.make.api.proposal._
 import org.make.api.technical.auth.{UserTokenGenerator, UserTokenGeneratorComponent}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.PersistentUserService.UpdateFailed
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user._
-import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
-import org.make.api.userhistory.{
-  OrganisationEmailChangedEvent,
-  OrganisationRegisteredEvent,
-  OrganisationUpdatedEvent,
-  UserHistoryCoordinatorService,
-  UserHistoryCoordinatorServiceComponent
-}
+import org.make.api.userhistory._
+import org.make.api.{MakeUnitTest, TestUtils}
+import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.profile.Profile
@@ -54,11 +40,11 @@ import org.make.core.technical.IdGenerator
 import org.make.core.user.Role.RoleActor
 import org.make.core.user._
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
-import org.make.core.RequestContext
 import org.mockito.Mockito.clearInvocations
 import org.scalatest.RecoverMethods
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import java.time.ZonedDateTime
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, DurationInt}

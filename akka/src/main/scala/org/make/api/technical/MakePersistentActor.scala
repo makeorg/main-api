@@ -20,8 +20,8 @@
 package org.make.api.technical
 
 import akka.actor.{ActorLogging, ClassicActorSystemProvider}
-import akka.persistence.cassandra.cleanup.{Cleanup, CleanupSettings}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
+import akka.persistence.cassandra.cleanup.{Cleanup, CleanupSettings}
 import akka.util.Timeout
 import com.typesafe.config.ConfigValueFactory
 import org.make.api.technical.Futures._
@@ -32,11 +32,11 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 abstract class MakePersistentActor[State, Event <: AnyRef](
-  stateClass: Class[State],
-  eventClass: Class[Event],
-  autoSnapshot: Boolean = true
-) extends PersistentActor
-    with ActorLogging {
+                                                            stateClass: Class[State],
+                                                            eventClass: Class[Event],
+                                                            autoSnapshot: Boolean = true
+                                                          ) extends PersistentActor
+  with ActorLogging {
 
   protected val defaultTimeout: Timeout = TimeSettings.defaultTimeout
 
@@ -106,5 +106,4 @@ object MakePersistentActor extends ShortenedNames {
       )
     ).deleteAll(persistenceId = id.value, neverUsePersistenceIdAgain = true).toUnit
   }
-
 }

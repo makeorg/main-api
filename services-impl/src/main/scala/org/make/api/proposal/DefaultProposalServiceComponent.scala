@@ -41,7 +41,6 @@ import org.make.api.technical.crm.QuestionResolver
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeRandom, ReadJournalComponent}
 import org.make.api.user.UserServiceComponent
-import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
 import org.make.api.userhistory._
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.VoteTrust._

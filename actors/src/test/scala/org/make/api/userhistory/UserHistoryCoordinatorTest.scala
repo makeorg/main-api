@@ -27,7 +27,6 @@ import com.typesafe.config.{Config, ConfigFactory}
 import enumeratum.values.scalacheck._
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.DefaultIdGeneratorComponent
-import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
 import org.make.api.userhistory.UserHistoryCoordinatorTest.actorSystemSeed
 import org.make.api.{ActorSystemTypedComponent, MakeUnitTest, TestHelper}
 import org.make.core.history.HistoryActions

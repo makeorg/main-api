@@ -19,11 +19,10 @@
 
 package org.make.api.proposal
 
-import java.time.{LocalDate, ZonedDateTime}
+import akka.Done
 import akka.actor.ActorSystem
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.stream.scaladsl.Source
-import akka.Done
 import cats.data.NonEmptyList
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import org.make.api.idea._
@@ -36,15 +35,22 @@ import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.tagtype.{TagTypeService, TagTypeServiceComponent}
 import org.make.api.technical._
 import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent}
+import org.make.api.technical.crm.QuestionResolver
 import org.make.api.user.{UserService, UserServiceComponent}
-import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
+import org.make.api.userhistory.{
+  RequestUserVotedProposals,
+  UserHistoryCoordinatorService,
+  UserHistoryCoordinatorServiceComponent
+}
 import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.core.common.indexed.Sort
-import org.make.core.history.HistoryActions._
 import org.make.core.history.HistoryActions.VoteTrust._
+import org.make.core.history.HistoryActions._
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
+import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.profile.Profile
+import org.make.core.proposal.ProposalActionType.{ProposalAcceptAction, ProposalProposeAction}
 import org.make.core.proposal.ProposalStatus.{Accepted, Pending}
 import org.make.core.proposal.QualificationKey.{
   DoNotCare,
@@ -58,28 +64,24 @@ import org.make.core.proposal.QualificationKey.{
   PlatitudeDisagree
 }
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
-import org.make.core.proposal.{ProposalAction, Vote, _}
 import org.make.core.proposal.indexed._
+import org.make.core.proposal.{Vote => _, _}
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
 import org.make.core.session.SessionId
 import org.make.core.tag._
-import org.make.core.user.{Role, User, UserId, UserType}
-import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
-
-import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
-import org.make.api.technical.crm.QuestionResolver
-import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
-import org.make.core.partner.{Partner, PartnerId, PartnerKind}
-import org.make.core.proposal.ProposalActionType.{ProposalAcceptAction, ProposalProposeAction}
 import org.make.core.technical.IdGenerator
 import org.make.core.technical.Pagination.Start
+import org.make.core.user.{Role, User, UserId, UserType}
+import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import org.mockito.Mockito.clearInvocations
 import org.scalatest.Assertion
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import java.time.temporal.ChronoUnit
+import java.time.{LocalDate, ZonedDateTime}
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class ProposalServiceTest
     extends MakeUnitTest

@@ -27,10 +27,9 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryActor.LogAcknowledged
 import org.make.api.technical.BetterLoggingActors._
 import org.make.api.technical.{MakePersistentActor, StreamUtils, TimeSettings}
-import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
 import org.make.core.{ValidationError, ValidationFailedError}
 import org.make.core.history.HistoryActions.VoteAndQualifications
-import org.make.core.proposal.ProposalId
+import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.user._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -133,3 +132,10 @@ trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinat
     }
   }
 }
+
+final case class RequestUserVotedProposals(
+  userId: UserId,
+  filterVotes: Option[Seq[VoteKey]] = None,
+  filterQualifications: Option[Seq[QualificationKey]] = None,
+  proposalsIds: Option[Seq[ProposalId]] = None
+)
