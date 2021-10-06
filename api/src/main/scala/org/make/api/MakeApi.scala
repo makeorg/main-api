@@ -184,6 +184,7 @@ trait MakeApi
     with DefaultIndexationComponent
     with DefaultJobApiComponent
     with DefaultJobCoordinatorServiceComponent
+    with DefaultKafkaConfigurationComponent
     with DefaultKeywordServiceComponent
     with DefaultMailJetConfigurationComponent
     with DefaultMailJetTemplateConfigurationComponent
@@ -285,7 +286,6 @@ trait MakeApi
     with DefaultWidgetServiceComponent
     with DefaultWebflowClientComponent
     with DefaultWebflowConfigurationComponent
-    with HealthCheckComponent
     with JobCoordinatorComponent
     with MakeAuthentication
     with MakeDBExecutionContextComponent
@@ -322,13 +322,6 @@ trait MakeApi
   override lazy val sequenceConfigurationActor: TypedActorRef[SequenceConfigurationActorProtocol] = Await.result({
     actorSystemTyped.findRefByKey(SequenceConfigurationActor.SequenceCacheActorKey)
   }, atMost = 5.seconds)
-
-  override lazy val healthCheckSupervisor: ActorRef = Await.result(
-    actorSystem
-      .actorSelection(actorSystem / HealthCheckSupervisor.name)
-      .resolveOne()(Timeout(10.seconds)),
-    atMost = 10.seconds
-  )
 
   override lazy val readExecutionContext: EC = DatabaseConfiguration(actorSystemTyped).readThreadPool
   override lazy val writeExecutionContext: EC = DatabaseConfiguration(actorSystemTyped).writeThreadPool

@@ -19,47 +19,48 @@
 
 package org.make.api.technical.healthcheck
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.testkit.{ImplicitSender, TestKit}
-import akka.util.Timeout
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import akka.util
 import com.typesafe.config.ConfigFactory
+import org.make.api.ItMakeTest
 import org.make.api.docker.DockerSwiftAllInOne
+import org.make.api.extensions.SwiftClientExtension
 import org.make.api.technical.TimeSettings
-import org.make.api.technical.healthcheck.HealthCheckCommands.CheckStatus
-import org.make.api.{ActorSystemComponent, ItMakeTest}
+import org.make.swift.SwiftClient
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContext.global
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext}
 
-class SwiftHealthCheckActorIT
-    extends TestKit(SwiftHealthCheckActorIT.actorSystem)
+class SwiftHealthCheckIT
+    extends ScalaTestWithActorTestKit(SwiftHealthCheckIT.actorSystem)
     with ItMakeTest
-    with ImplicitSender
-    with ActorSystemComponent
     with DockerSwiftAllInOne {
 
-  override val externalPort: Option[Int] = Some(SwiftHealthCheckActorIT.port)
-  override val actorSystem: ActorSystem = SwiftHealthCheckActorIT.actorSystem
+  override val externalPort: Option[Int] = Some(SwiftHealthCheckIT.port)
 
-  implicit val timeout: Timeout = TimeSettings.defaultTimeout
+  implicit override val timeout: util.Timeout = TimeSettings.defaultTimeout
+  implicit val ctx: ExecutionContext = global
+
+  lazy val client: SwiftClient = SwiftClientExtension(system).swiftClient
 
   Feature("Check Swift status") {
     ignore("list swift container") {
-      Given("a swift health check actor")
-      val healthCheckExecutionContext = ExecutionContext.Implicits.global
-      val healthCheckSwift: ActorRef =
-        actorSystem.actorOf(SwiftHealthCheckActor.props(healthCheckExecutionContext), SwiftHealthCheckActor.name)
+      Await.result(client.init(), atMost = 30.seconds)
 
-      When("I send a message to check the status of swift")
-      healthCheckSwift ! CheckStatus
-      Then("I get the status")
-      val msg: HealthCheckResponse = expectMsgType[HealthCheckResponse](timeout.duration)
-      And("status is \"OK\"")
-      msg should be(HealthCheckSuccess("swift", "OK"))
+      val hc = new SwiftHealthCheck(client)
+
+      whenReady(hc.healthCheck(), Timeout(30.seconds)) { res =>
+        res should be("OK")
+      }
     }
   }
 }
 
-object SwiftHealthCheckActorIT {
+object SwiftHealthCheckIT {
   val port = 60000
   val bucket: String = "healthcheck"
   val configuration: String =
@@ -79,8 +80,10 @@ object SwiftHealthCheckActorIT {
        |}
      """.stripMargin
 
-  val actorSystem: ActorSystem = {
-    val config = ConfigFactory.load(ConfigFactory.parseString(configuration))
-    ActorSystem(classOf[SwiftHealthCheckActorIT].getSimpleName, config)
-  }
+  val actorSystem: ActorSystem[Nothing] =
+    ActorSystem[Nothing](
+      Behaviors.empty,
+      "SwiftHealthCheckIT",
+      ConfigFactory.load(ConfigFactory.parseString(configuration))
+    )
 }

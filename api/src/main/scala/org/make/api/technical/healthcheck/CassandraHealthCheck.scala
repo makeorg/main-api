@@ -18,41 +18,29 @@
  */
 
 package org.make.api.technical.healthcheck
-import akka.actor.Props
+import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom
-import org.make.api.technical.{ActorReadJournalComponent, ShortenedNames}
+import com.typesafe.config.Config
+import org.make.api.technical.healthcheck.HealthCheck.Status
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class CassandraHealthCheckActor(healthCheckExecutionContext: ExecutionContext)
-    extends HealthCheck
-    with ShortenedNames
-    with ActorReadJournalComponent {
+class CassandraHealthCheck(proposalJournal: CassandraReadJournal, config: Config) extends HealthCheck {
 
   override val techno: String = "cassandra"
 
-  val keyspace: String =
-    context.system.settings.config.getString("make-api.event-sourcing.proposals.journal.keyspace")
-  val table: String =
-    context.system.settings.config.getString("make-api.event-sourcing.proposals.journal.table")
+  val keyspace: String = config.getString("make-api.event-sourcing.proposals.journal.keyspace")
+  val table: String = config.getString("make-api.event-sourcing.proposals.journal.table")
 
-  override def healthCheck(): Future[String] = {
+  override def healthCheck()(implicit ctx: ExecutionContext): Future[Status] = {
     proposalJournal.session
       .selectOne(selectFrom(keyspace, table).column("persistence_id").limit(1).build())
       .map { row =>
         if (row.isDefined) {
-          "OK"
+          Status.OK
         } else {
-          "NOK"
+          Status.NOK()
         }
-      }(healthCheckExecutionContext)
+      }
   }
-
-}
-
-object CassandraHealthCheckActor extends HealthCheckActorDefinition {
-  override val name: String = "cassandra-health-check"
-
-  override def props(healthCheckExecutionContext: ExecutionContext): Props =
-    Props(new CassandraHealthCheckActor(healthCheckExecutionContext))
 }

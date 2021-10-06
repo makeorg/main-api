@@ -19,21 +19,22 @@
 
 package org.make.api.technical.healthcheck
 
-import java.util.Properties
-
-import akka.actor.Props
+import akka.util.Timeout
 import org.apache.kafka.clients.admin.{AdminClient, DescribeClusterOptions}
 import org.apache.kafka.clients.producer.ProducerConfig
-import org.make.api.extensions.KafkaConfigurationExtension
+import org.make.api.extensions.KafkaConfiguration
+import org.make.api.technical.TimeSettings
+import org.make.api.technical.healthcheck.HealthCheck.Status
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.Using
-import scala.util.Success
-import scala.util.Failure
+import java.util.Properties
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Using}
 
-class KafkaHealthCheckActor extends HealthCheck with KafkaConfigurationExtension {
+class KafkaHealthCheck(kafkaConfiguration: KafkaConfiguration) extends HealthCheck {
 
   override val techno: String = "kafka"
+
+  val timeout: Timeout = TimeSettings.defaultTimeout
 
   private def createClient() = {
     val properties = new Properties
@@ -41,35 +42,17 @@ class KafkaHealthCheckActor extends HealthCheck with KafkaConfigurationExtension
     AdminClient.create(properties)
   }
 
-  override def healthCheck(): Future[String] = {
-
-    val promise = Promise[String]()
-
-    Using(createClient()) { client =>
-      client
-        .describeCluster(new DescribeClusterOptions().timeoutMs(kafkaConfiguration.pollTimeout.toInt))
-        .clusterId()
-        .whenComplete((_, throwable) => {
-          if (throwable != null) {
-            promise.failure(throwable)
-          } else {
-            promise.success("OK")
-          }
-        })
-
-      promise.future
-    } match {
-      case Success(result) => result
-      case Failure(e)      => Future.failed(e)
+  override def healthCheck()(implicit ctx: ExecutionContext): Future[Status] = {
+    Future {
+      Using(createClient()) { client =>
+        client
+          .describeCluster(new DescribeClusterOptions().timeoutMs(kafkaConfiguration.pollTimeout.toInt))
+          .clusterId()
+          .get(timeout.duration.length, timeout.duration.unit)
+      } match {
+        case Success(_) => Status.OK
+        case Failure(e) => Status.NOK(Some(e.getMessage))
+      }
     }
-
   }
-}
-
-object KafkaHealthCheckActor extends HealthCheckActorDefinition {
-
-  override val name: String = "kafka-health-check"
-
-  override def props(healthCheckExecutionContext: ExecutionContext): Props = Props(new KafkaHealthCheckActor)
-
 }

@@ -64,6 +64,7 @@ import org.make.core.user.{HasUserType, UserId}
 import org.make.core.user.UserType._
 import org.make.core.{DateHelper, Order}
 
+import java.util.UUID
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.jdk.CollectionConverters._
@@ -293,7 +294,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
       var size: Long = max
       element: ByteString =>
         if (size + element.size > max) {
-          val path = Files.createFile(csvDirectory.resolve(s"${DateHelper.now().toString}.csv"))
+          val path = Files.createFile(csvDirectory.resolve(s"${UUID.randomUUID().toString}.csv"))
           size = element.size
           Some(path)
         } else {

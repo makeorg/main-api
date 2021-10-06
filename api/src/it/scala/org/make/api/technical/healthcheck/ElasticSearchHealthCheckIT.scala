@@ -18,57 +18,52 @@
  */
 
 package org.make.api.technical.healthcheck
-import java.time.ZonedDateTime
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.testkit.{ImplicitSender, TestKit}
-import akka.util.Timeout
 import com.sksamuel.elastic4s.ElasticImplicits.RichString
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.{ElasticApi, IndexAndType}
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.syntax._
 import org.make.api.docker.DockerElasticsearchService
 import org.make.api.proposal.ProposalSearchEngine
-import org.make.api.technical.TimeSettings
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
   DefaultElasticsearchConfigurationComponent,
   RichHttpClient
 }
-import org.make.api.technical.healthcheck.HealthCheckCommands.CheckStatus
-import org.make.api.{ActorSystemComponent, DefaultConfigComponent, ItMakeTest, TestUtilsIT}
-import org.make.core.{CirceFormatters, RequestContext}
+import org.make.api.technical.healthcheck.HealthCheck.Status
+import org.make.api.{ConfigComponent, ItMakeTest, TestUtilsIT}
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
+import org.make.core.{CirceFormatters, RequestContext}
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import java.time.ZonedDateTime
 import scala.collection.immutable.Seq
+import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
 
-class ElasticSearchHealthCheckActorIT
-    extends TestKit(ElasticSearchHealthCheckActorIT.actorSystem)
-    with ImplicitSender
-    with ItMakeTest
+class ElasticSearchHealthCheckIT
+    extends ItMakeTest
     with CirceFormatters
     with DefaultElasticsearchConfigurationComponent
     with DefaultElasticsearchClientComponent
-    with DefaultConfigComponent
-    with ActorSystemComponent
+    with ConfigComponent
     with DockerElasticsearchService
     with TestUtilsIT {
+
+  override val config: Config = ElasticSearchHealthCheckIT.configuration
 
   override def beforeAll(): Unit = {
     super.beforeAll()
     initializeElasticsearch()
   }
 
-  override def actorSystem: ActorSystem = system
-
-  val proposal =
+  val proposal: IndexedProposal =
     indexedProposal(
       id = ProposalId("f4b02e75-8670-4bd0-a1aa-6d91c4de968a"),
       userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
@@ -126,40 +121,27 @@ class ElasticSearchHealthCheckActorIT
 
   }
 
-  override def afterAll(): Unit = {
-    system.terminate()
-    super.afterAll()
-  }
+  override val elasticsearchExposedPort: Int = ElasticSearchHealthCheckIT.elasticsearchExposedPort
 
-  override val elasticsearchExposedPort: Int = ElasticSearchHealthCheckActorIT.elasticsearchExposedPort
+  implicit val ctx: ExecutionContext = global
 
-  implicit val timeout: Timeout = TimeSettings.defaultTimeout
   Feature("Check Elasticsearch status") {
     Scenario("count proposals") {
-      Given("an elasticsesarch health check actor")
-      val actorSystem = system
-      val healthCheckExecutionContext = ExecutionContext.Implicits.global
-      val healthCheckElasticsearch: ActorRef = actorSystem.actorOf(
-        ElasticsearchHealthCheckActor.props(healthCheckExecutionContext),
-        ElasticsearchHealthCheckActor.name
-      )
+      val hc = new ElasticsearchHealthCheck(elasticsearchConfiguration, elasticsearchClient)
 
-      When("I send a message to check the status of elasticsearch")
-      healthCheckElasticsearch ! CheckStatus
-      Then("I get the status")
-      val msg: HealthCheckResponse = expectMsgType[HealthCheckResponse](timeout.duration)
-      And("status is \"OK\"")
-      msg should be(HealthCheckSuccess("elasticsearch", "OK"))
+      whenReady(hc.healthCheck(), Timeout(30.seconds)) { res =>
+        res should be(Status.OK)
+      }
     }
   }
 }
 
-object ElasticSearchHealthCheckActorIT {
+object ElasticSearchHealthCheckIT {
   val elasticsearchExposedPort = 30004
 
   // This configuration cannot be dynamic, port values _must_ match reality
-  val configuration: String =
-    s"""
+  val configuration: Config =
+    ConfigFactory.parseString(s"""
        |make-api.elasticSearch = {
        |  connection-string = "localhost:$elasticsearchExposedPort"
        |  index-name = "make"
@@ -171,7 +153,5 @@ object ElasticSearchHealthCheckActorIT {
        |  buffer-size = 100
        |  bulk-size = 100
        |}
-    """.stripMargin
-
-  val actorSystem = ActorSystem("ElasticSearchHealthCheckActorIT", ConfigFactory.parseString(configuration))
+    """.stripMargin)
 }

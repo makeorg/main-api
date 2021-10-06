@@ -19,17 +19,17 @@
 
 package org.make.api.technical.healthcheck
 
-import akka.actor.ActorRef
-import org.make.api.technical.healthcheck.HealthCheckCommands.CheckExternalServices
-import akka.pattern.ask
-import akka.util.Timeout
-import org.make.api.technical.TimeSettings
+import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
+import org.make.api.ConfigComponent
+import org.make.api.extensions.{KafkaConfigurationComponent, MakeSettingsComponent}
+import org.make.api.technical.BaseReadJournalComponent
+import org.make.api.technical.ExecutorServiceHelper.RichExecutorService
+import org.make.api.technical.elasticsearch.{ElasticsearchClientComponent, ElasticsearchConfigurationComponent}
+import org.make.api.technical.healthcheck.HealthCheck.HealthCheckResponse
+import org.make.api.technical.storage.SwiftClientComponent
 
-import scala.concurrent.Future
-
-trait HealthCheckComponent {
-  def healthCheckSupervisor: ActorRef
-}
+import java.util.concurrent.Executors
+import scala.concurrent.{ExecutionContext, Future}
 
 trait HealthCheckService {
   def runAllHealthChecks(): Future[Seq[HealthCheckResponse]]
@@ -40,15 +40,37 @@ trait HealthCheckServiceComponent {
 }
 
 trait DefaultHealthCheckServiceComponent extends HealthCheckServiceComponent {
-  self: HealthCheckComponent =>
+  self: BaseReadJournalComponent[CassandraReadJournal]
+    with ConfigComponent
+    with ElasticsearchClientComponent
+    with ElasticsearchConfigurationComponent
+    with KafkaConfigurationComponent
+    with MakeSettingsComponent
+    with SwiftClientComponent =>
 
   override lazy val healthCheckService: HealthCheckService = new DefaultHealthCheckService
 
   class DefaultHealthCheckService extends HealthCheckService {
-    private implicit val timeout: Timeout = TimeSettings.defaultTimeout.duration * 2
+    implicit val ctx: ExecutionContext =
+      Executors.newFixedThreadPool(10).instrument("healthchecks").toExecutionContext
+
+    val healthChecks: Seq[(String, HealthCheck)] = Seq(
+      "avro-health-check" -> new AvroHealthCheck(kafkaConfiguration),
+      "cassandra-health-check" -> new CassandraHealthCheck(proposalJournal, config),
+      "cockroach-health-check" -> new CockroachHealthCheck(makeSettings.defaultAdmin.email),
+      "elasticsearch-health-check" -> new ElasticsearchHealthCheck(elasticsearchConfiguration, elasticsearchClient),
+      "kafka-health-check" -> new KafkaHealthCheck(kafkaConfiguration),
+      "swift-health-check" -> new SwiftHealthCheck(swiftClient),
+      "zookeeper-health-check" -> new ZookeeperHealthCheck(config)
+    )
 
     override def runAllHealthChecks(): Future[Seq[HealthCheckResponse]] = {
-      (healthCheckSupervisor ? CheckExternalServices).mapTo[Seq[HealthCheckResponse]]
+      Future.traverse(healthChecks) {
+        case (name, hc) =>
+          hc.healthCheck().map(status => HealthCheckResponse(name, status.message)).recoverWith {
+            case e => Future.successful(HealthCheckResponse(name, e.getMessage))
+          }
+      }
     }
   }
 }
