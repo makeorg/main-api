@@ -28,6 +28,7 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.refined._
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiImplicitParam, _}
+import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.storage.{Content, StorageConfigurationComponent, StorageServiceComponent, UploadResponse}
 import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
@@ -67,6 +68,7 @@ trait AdminUserApi extends Directives {
       new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "id", paramType = "query", dataType = "string", allowMultiple = true),
       new ApiImplicitParam(name = "email", paramType = "query", dataType = "string"),
       new ApiImplicitParam(
         name = "role",
@@ -308,6 +310,7 @@ trait DefaultAdminUserApiComponent
             "_end".as[End].?,
             "_sort".?,
             "_order".as[Order].?,
+            "id".csv[UserId],
             "email".?,
             "role".as[String].?,
             "userType".as[UserType].?
@@ -317,6 +320,7 @@ trait DefaultAdminUserApiComponent
               end: Option[End],
               sort: Option[String],
               order: Option[Order],
+              ids: Option[Seq[UserId]],
               email: Option[String],
               maybeRole: Option[String],
               userType: Option[UserType]
@@ -326,6 +330,7 @@ trait DefaultAdminUserApiComponent
                   val role: Option[Role] = maybeRole.map(Role.apply)
                   provideAsync(
                     userService.adminCountUsers(
+                      ids = ids,
                       email = email,
                       firstName = None,
                       lastName = None,
@@ -339,6 +344,7 @@ trait DefaultAdminUserApiComponent
                         end,
                         sort,
                         order,
+                        ids = ids,
                         email = email,
                         firstName = None,
                         lastName = None,
@@ -591,7 +597,7 @@ trait DefaultAdminUserApiComponent
 }
 
 final case class AnonymizeUserRequest(email: String) {
-  validate(validateUserInput("email", email, None), validateEmail("email", email, None))
+  Validation.validate(validateUserInput("email", email, None), validateEmail("email", email, None))
 }
 
 object AnonymizeUserRequest {
@@ -616,7 +622,7 @@ final case class AdminUserResponse(
   optInNewsletter: Option[Boolean],
   avatarUrl: Option[String]
 ) {
-  validate(validateUserInput("email", email, None))
+  Validation.validate(validateUserInput("email", email, None))
 }
 
 object AdminUserResponse extends CirceFormatters {
@@ -677,7 +683,7 @@ final case class AdminUpdateUserEmail(
   @(ApiModelProperty @field)(dataType = "string", example = "yopmail+old@make.org") oldEmail: String,
   @(ApiModelProperty @field)(dataType = "string", example = "yopmail+new@make.org") newEmail: String
 ) {
-  validate(validateEmail("oldEmail", oldEmail.toLowerCase), validateEmail("newEmail", newEmail.toLowerCase))
+  Validation.validate(validateEmail("oldEmail", oldEmail.toLowerCase), validateEmail("newEmail", newEmail.toLowerCase))
 }
 
 object AdminUpdateUserEmail {
@@ -689,7 +695,7 @@ final case class UpdateUserRolesRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org") email: String,
   @(ApiModelProperty @field)(dataType = "list[string]") roles: Seq[Role]
 ) {
-  validate(
+  Validation.validate(
     validateEmail(fieldName = "email", fieldValue = email.toLowerCase),
     validateUserInput(fieldName = "email", fieldValue = email, message = None)
   )

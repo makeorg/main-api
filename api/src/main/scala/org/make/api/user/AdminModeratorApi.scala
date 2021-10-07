@@ -25,6 +25,7 @@ import grizzled.slf4j.Logging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiImplicitParam, _}
+import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.core.Validation.{validateField, _}
@@ -88,6 +89,7 @@ trait AdminModeratorApi extends Directives {
       new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "id", paramType = "query", dataType = "string", allowMultiple = true),
       new ApiImplicitParam(name = "email", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "firstName", paramType = "query", dataType = "string")
     )
@@ -198,12 +200,21 @@ trait DefaultAdminModeratorApiComponent
     override def getModerators: Route = get {
       path("admin" / "moderators") {
         makeOperation("GetModerators") { _ =>
-          parameters("_start".as[Start].?, "_end".as[End].?, "_sort".?, "_order".as[Order].?, "email".?, "firstName".?) {
+          parameters(
+            "_start".as[Start].?,
+            "_end".as[End].?,
+            "_sort".?,
+            "_order".as[Order].?,
+            "id".csv[UserId],
+            "email".?,
+            "firstName".?
+          ) {
             (
               start: Option[Start],
               end: Option[End],
               sort: Option[String],
               order: Option[Order],
+              ids: Option[Seq[UserId]],
               email: Option[String],
               firstName: Option[String]
             ) =>
@@ -211,6 +222,7 @@ trait DefaultAdminModeratorApiComponent
                 requireAdminRole(auth.user) {
                   provideAsync(
                     userService.adminCountUsers(
+                      ids = ids,
                       email = email,
                       firstName = firstName,
                       lastName = None,
@@ -224,6 +236,7 @@ trait DefaultAdminModeratorApiComponent
                         end,
                         sort,
                         order,
+                        ids = ids,
                         email = email,
                         firstName = firstName,
                         lastName = None,
@@ -350,7 +363,7 @@ final case class CreateModeratorRequest(
   @(ApiModelProperty @field)(dataType = "list[string]", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
   availableQuestions: Seq[QuestionId]
 ) {
-  validate(
+  Validation.validate(
     mandatoryField("firstName", firstName),
     validateOptionalUserInput("firstName", firstName, None),
     validateOptionalUserInput("lastName", lastName, None),
@@ -414,7 +427,7 @@ final case class ModeratorResponse(
   @(ApiModelProperty @field)(dataType = "list[string]")
   availableQuestions: Seq[QuestionId]
 ) {
-  validate(
+  Validation.validate(
     validateUserInput("email", email, None),
     validateOptionalUserInput("firstName", firstName, None),
     validateOptionalUserInput("lastName", lastName, None)

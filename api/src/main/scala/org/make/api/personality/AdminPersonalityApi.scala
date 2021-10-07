@@ -29,6 +29,7 @@ import io.circe.refined._
 import io.swagger.annotations.{ApiImplicitParam, _}
 
 import javax.ws.rs.Path
+import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.api.user.{PersonalityRegisterData, UserServiceComponent}
@@ -79,6 +80,7 @@ trait AdminPersonalityApi extends Directives {
       new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "id", paramType = "query", dataType = "string", allowMultiple = true),
       new ApiImplicitParam(name = "email", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "firstName", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "lastName", paramType = "query", dataType = "string")
@@ -171,6 +173,7 @@ trait DefaultAdminPersonalityApiComponent
             "_end".as[End].?,
             "_sort".?,
             "_order".as[Order].?,
+            "id".csv[UserId],
             "email".?,
             "firstName".?,
             "lastName".?
@@ -180,6 +183,7 @@ trait DefaultAdminPersonalityApiComponent
               end: Option[End],
               sort: Option[String],
               order: Option[Order],
+              ids: Option[Seq[UserId]],
               email: Option[String],
               firstName: Option[String],
               lastName: Option[String]
@@ -188,6 +192,7 @@ trait DefaultAdminPersonalityApiComponent
                 requireAdminRole(auth.user) {
                   provideAsync(
                     userService.adminCountUsers(
+                      ids = ids,
                       email = email,
                       firstName = firstName,
                       lastName = lastName,
@@ -201,6 +206,7 @@ trait DefaultAdminPersonalityApiComponent
                         end,
                         sort,
                         order,
+                        ids = ids,
                         email = email,
                         firstName = firstName,
                         lastName = lastName,
@@ -340,7 +346,7 @@ final case class CreatePersonalityRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
   website: Option[String Refined Url]
 ) {
-  validate(
+  Validation.validate(
     mandatoryField("firstName", firstName),
     validateOptionalUserInput("firstName", firstName, None),
     validateOptionalUserInput("lastName", lastName, None),
@@ -398,7 +404,7 @@ final case class PersonalityResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
   website: Option[String]
 ) {
-  validate(
+  Validation.validate(
     validateUserInput("email", email, None),
     validateOptionalUserInput("firstName", firstName, None),
     validateOptionalUserInput("lastName", lastName, None)

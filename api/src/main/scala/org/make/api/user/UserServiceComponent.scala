@@ -82,6 +82,7 @@ trait UserService extends ShortenedNames {
     end: Option[End],
     sort: Option[String],
     order: Option[Order],
+    ids: Option[Seq[UserId]],
     email: Option[String],
     firstName: Option[String],
     lastName: Option[String],
@@ -124,6 +125,7 @@ trait UserService extends ShortenedNames {
   def unfollowUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId]
   def retrieveOrCreateVirtualUser(userInfo: AuthorRequest, country: Country): Future[User]
   def adminCountUsers(
+    ids: Option[Seq[UserId]],
     email: Option[String],
     firstName: Option[String],
     lastName: Option[String],
@@ -239,13 +241,14 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       end: Option[End],
       sort: Option[String],
       order: Option[Order],
+      ids: Option[Seq[UserId]],
       email: Option[String],
       firstName: Option[String],
       lastName: Option[String],
       role: Option[Role],
       userType: Option[UserType]
     ): Future[Seq[User]] = {
-      persistentUserService.adminFindUsers(start, end, sort, order, email, firstName, lastName, role, userType)
+      persistentUserService.adminFindUsers(start, end, sort, order, ids, email, firstName, lastName, role, userType)
     }
 
     private def registerUser(
@@ -985,13 +988,14 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     }
 
     override def adminCountUsers(
+      ids: Option[Seq[UserId]],
       email: Option[String],
       firstName: Option[String],
       lastName: Option[String],
       role: Option[Role],
       userType: Option[UserType]
     ): Future[Int] = {
-      persistentUserService.adminCountUsers(email, firstName, lastName, role, userType)
+      persistentUserService.adminCountUsers(ids, email, firstName, lastName, role, userType)
     }
 
     private def getConnectionModes(user: User): Seq[ConnectionMode] = {

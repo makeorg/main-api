@@ -33,6 +33,7 @@ import io.circe.refined._
 import io.swagger.annotations._
 
 import javax.ws.rs.Path
+import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.api.user.{ProfileRequest, ProfileResponse}
@@ -110,7 +111,8 @@ trait ModerationOrganisationApi extends Directives {
       new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "id", paramType = "query", dataType = "string", allowMultiple = true)
     )
   )
   @ApiResponses(
@@ -228,18 +230,26 @@ trait DefaultModerationOrganisationApiComponent
       get {
         path("moderation" / "organisations") {
           makeOperation("ModerationGetOrganisations") { _ =>
-            parameters("_start".as[Start].?, "_end".as[End].?, "_sort".?, "_order".as[Order].?, "organisationName".?) {
+            parameters(
+              "_start".as[Start].?,
+              "_end".as[End].?,
+              "_sort".?,
+              "_order".as[Order].?,
+              "id".csv[UserId],
+              "organisationName".?
+            ) {
               (
                 start: Option[Start],
                 end: Option[End],
                 sort: Option[String],
                 order: Option[Order],
+                ids: Option[Seq[UserId]],
                 organisationName: Option[String]
               ) =>
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
                   requireAdminRole(auth.user) {
-                    provideAsync(organisationService.count(organisationName)) { count =>
-                      provideAsync(organisationService.find(start.orZero, end, sort, order, organisationName)) {
+                    provideAsync(organisationService.count(ids, organisationName)) { count =>
+                      provideAsync(organisationService.find(start.orZero, end, sort, order, ids, organisationName)) {
                         result =>
                           complete(
                             (

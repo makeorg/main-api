@@ -63,6 +63,7 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.user.Role.RoleAdmin
 import scalaoauth2.provider.AuthInfo
+import org.make.api.operation.DefaultModerationOperationOfQuestionApiComponent._
 
 import scala.annotation.meta.field
 import org.make.core.technical.Pagination._
@@ -92,23 +93,23 @@ trait ModerationOperationOfQuestionApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", required = false, dataType = "integer"),
-      new ApiImplicitParam(name = "_end", paramType = "query", required = false, dataType = "integer"),
-      new ApiImplicitParam(name = "_sort", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "_order", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "questionId", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "operationId", paramType = "query", required = false, dataType = "string"),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "id", paramType = "query", dataType = "string", allowMultiple = true),
+      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string", allowMultiple = true),
+      new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(
         name = "operationKind",
         paramType = "query",
-        required = false,
         dataType = "string",
         allowableValues = "GREAT_CAUSE,PRIVATE_CONSULTATION,BUSINESS_CONSULTATION",
         allowMultiple = true
       ),
-      new ApiImplicitParam(name = "openAt", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "endAfter", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "slug", paramType = "query", required = false, dataType = "string")
+      new ApiImplicitParam(name = "openAt", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "endAfter", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "slug", paramType = "query", dataType = "string")
     )
   )
   @Path(value = "/")
@@ -244,11 +245,11 @@ trait ModerationOperationOfQuestionApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", required = false, dataType = "integer"),
-      new ApiImplicitParam(name = "_end", paramType = "query", required = false, dataType = "integer"),
-      new ApiImplicitParam(name = "_sort", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "_order", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "slug", paramType = "query", required = false, dataType = "string")
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "slug", paramType = "query", dataType = "string")
     )
   )
   @Path(value = "/search")
@@ -327,7 +328,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
                 "_end".as[End].?,
                 "_sort".?,
                 "_order".as[Order].?,
-                "questionId".as[Seq[QuestionId]].?,
+                "id".csv[QuestionId],
+                "questionId".csv[QuestionId],
                 "operationId".as[OperationId].?,
                 "operationKind".csv[OperationKind],
                 "openAt".as[ZonedDateTime].?,
@@ -339,6 +341,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                   end: Option[End],
                   sort: Option[String],
                   order: Option[Order],
+                  ids,
                   questionIds,
                   operationId,
                   operationKinds,
@@ -348,11 +351,12 @@ trait DefaultModerationOperationOfQuestionApiComponent
                 ) =>
                   val resolvedQuestions: Option[Seq[QuestionId]] = {
                     if (auth.user.roles.contains(RoleAdmin)) {
-                      questionIds
+                      questionIds.plusDistinct(ids)
                     } else {
-                      questionIds.map { questions =>
-                        questions.filter(id => auth.user.availableQuestions.contains(id))
-                      }.orElse(Some(auth.user.availableQuestions))
+                      questionIds
+                        .plusDistinct(ids)
+                        .map(_.filter(id => auth.user.availableQuestions.contains(id)))
+                        .orElse(Some(auth.user.availableQuestions))
                     }
                   }
                   provideAsync(
@@ -674,8 +678,20 @@ trait DefaultModerationOperationOfQuestionApiComponent
     }
 
   }
+
 }
 
+object DefaultModerationOperationOfQuestionApiComponent {
+  implicit class PlusDistinctRichOptionSeq[T](val self: Option[Seq[T]]) extends AnyVal {
+    def plusDistinct(other: Option[Seq[T]]): Option[Seq[T]] = {
+      if (self.orElse(other).isDefined) {
+        Some((self.getOrElse(Seq.empty) ++ other.getOrElse(Seq.empty)).distinct)
+      } else {
+        None
+      }
+    }
+  }
+}
 @ApiModel
 final case class ModifyOperationOfQuestionRequest(
   @(ApiModelProperty @field)(dataType = "dateTime")

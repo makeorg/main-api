@@ -39,7 +39,7 @@ class ModerationOrganisationApiTest
 
   val routes: Route = sealRoute(moderationOrganisationApi.routes)
 
-  val fakeOrganisation = TestUtils.user(
+  val fakeOrganisation: User = TestUtils.user(
     id = UserId("ABCD"),
     email = "foo@bar.com",
     firstName = None,
@@ -281,14 +281,21 @@ class ModerationOrganisationApiTest
 
     Scenario("get organisations with moderation role") {
 
-      when(organisationService.count(None)).thenReturn(Future.successful(1))
+      when(organisationService.count(any[Option[Seq[UserId]]], any[Option[String]])).thenReturn(Future.successful(1))
 
       Given("a moderator")
       When("I want to get organisations")
       Then("I should get a forbidden status")
       when(
         organisationService
-          .find(any[Start], any[Option[End]], any[Option[String]], any[Option[Order]], any[Option[String]])
+          .find(
+            any[Start],
+            any[Option[End]],
+            any[Option[String]],
+            any[Option[Order]],
+            any[Option[Seq[UserId]]],
+            any[Option[String]]
+          )
       ).thenReturn(Future.successful(Seq(fakeOrganisation)))
       Get("/moderation/organisations")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
@@ -298,14 +305,21 @@ class ModerationOrganisationApiTest
 
     Scenario("get organisations with admin role") {
 
-      when(organisationService.count(None)).thenReturn(Future.successful(1))
+      when(organisationService.count(any[Option[Seq[UserId]]], any[Option[String]])).thenReturn(Future.successful(1))
 
       Given("a moderator")
       When("I want to get organisations")
       Then("I should get an OK status")
       when(
         organisationService
-          .find(any[Start], any[Option[End]], any[Option[String]], any[Option[Order]], any[Option[String]])
+          .find(
+            any[Start],
+            any[Option[End]],
+            any[Option[String]],
+            any[Option[Order]],
+            any[Option[Seq[UserId]]],
+            any[Option[String]]
+          )
       ).thenReturn(Future.successful(Seq(fakeOrganisation)))
       for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
         Get("/moderation/organisations")

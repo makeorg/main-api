@@ -65,6 +65,7 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
           .map(_.results.map(QuestionOfOperationResponse.apply))
 
       val futurePartnersCount = userService.adminCountUsers(
+        ids = None,
         email = None,
         firstName = None,
         lastName = None,
