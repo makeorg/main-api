@@ -50,16 +50,12 @@ class CrmClientComponentTest
 
     def client(maxFailures: Int): CrmClient = new DefaultCrmClient {
       var failures = 0
-      override lazy val httpFlow: Flow[
-        (HttpRequest, Promise[HttpResponse]),
-        (Try[HttpResponse], Promise[HttpResponse]),
-        Http.HostConnectionPool
-      ] =
+      override lazy val httpFlow: Flow[(HttpRequest, Ctx), (Try[HttpResponse], Ctx), Http.HostConnectionPool] =
         Flow
           .fromFunction[(HttpRequest, Promise[HttpResponse]), (Try[HttpResponse], Promise[HttpResponse])] {
             case (_, promise) =>
               val response = {
-                if (failures >= maxFailures)
+                if (failures >= maxFailures) {
                   HttpResponse(
                     status = StatusCodes.OK,
                     entity = HttpEntity.Strict(
@@ -67,18 +63,14 @@ class CrmClientComponentTest
                       ByteString("""{"Count": 0, "Total": 0, "Data": []}""")
                     )
                   )
-                else {
+                } else {
                   failures += 1
                   HttpResponse(StatusCodes.InternalServerError)
                 }
               }
               (Success(response), promise)
           }
-          .asInstanceOf[Flow[
-            (HttpRequest, Promise[HttpResponse]),
-            (Try[HttpResponse], Promise[HttpResponse]),
-            Http.HostConnectionPool
-          ]]
+          .asInstanceOf[Flow[(HttpRequest, Ctx), (Try[HttpResponse], Ctx), Http.HostConnectionPool]]
     }
 
     Scenario("it works with few failures") {
