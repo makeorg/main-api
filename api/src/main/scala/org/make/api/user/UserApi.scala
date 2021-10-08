@@ -56,33 +56,6 @@ import scala.concurrent.Future
 @Path(value = "/user")
 trait UserApi extends Directives {
 
-  @Path(value = "/{userId}")
-  @ApiOperation(
-    value = "get-user",
-    httpMethod = "GET",
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "user", description = "application user"),
-          new AuthorizationScope(scope = "admin", description = "BO Admin")
-        )
-      )
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        name = "userId",
-        paramType = "path",
-        dataType = "string",
-        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
-      )
-    )
-  )
-  def getUser: Route
-
   @Path(value = "/{userId}/profile")
   @ApiOperation(
     value = "get-user-profile",
@@ -111,6 +84,7 @@ trait UserApi extends Directives {
     )
   )
   def getUserProfile: Route
+
   @Path(value = "/me")
   @ApiOperation(
     value = "get-me",
@@ -527,7 +501,6 @@ trait UserApi extends Directives {
   def routes: Route =
     getMe ~
       currentUser ~
-      getUser ~
       register ~
       socialLogin ~
       resetPasswordRequestRoute ~
@@ -582,24 +555,6 @@ trait DefaultUserApiComponent
   override lazy val userApi: UserApi = new DefaultUserApi
 
   class DefaultUserApi extends UserApi {
-
-    override def getUser: Route = {
-      get {
-        path("user" / userId) { userId =>
-          makeOperation("GetUser") { _ =>
-            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-              authorize(userId == userAuth.user.userId || userAuth.user.roles.contains(RoleAdmin)) {
-                provideAsyncOrNotFound(userService.getUser(userId)) { user =>
-                  provideAsync(userService.getFollowedUsers(userId)) { followedUsers =>
-                    complete(UserResponse(user, followedUsers))
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
 
     override def getUserProfile: Route = {
       get {
