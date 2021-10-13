@@ -1800,44 +1800,6 @@ class UserApiTest
 
   Feature("read user information") {
 
-    Scenario("get user when not connected") {
-      Get(s"/user/${sylvain.userId.value}") ~> routes ~> check {
-        status should be(StatusCodes.Unauthorized)
-      }
-    }
-
-    Scenario("get user with the correct connected user") {
-      when(userService.getUser(eqTo(sylvain.userId)))
-        .thenReturn(Future.successful(Some(sylvain)))
-
-      Get(s"/user/${sylvain.userId.value}")
-        .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val result = entityAs[UserResponse]
-        result.userId should be(sylvain.userId)
-      }
-    }
-
-    Scenario("get user with an incorrect connected user") {
-
-      Get(s"/user/${sylvain.userId.value}")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
-      }
-    }
-
-    Scenario("get user with as admin") {
-      when(userService.getUser(eqTo(sylvain.userId)))
-        .thenReturn(Future.successful(Some(sylvain)))
-
-      Get(s"/user/${sylvain.userId.value}")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val result = entityAs[UserResponse]
-        result.userId should be(sylvain.userId)
-      }
-    }
-
     Scenario("get user profile when not connected") {
       Get(s"/user/${sylvain.userId.value}/profile") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
