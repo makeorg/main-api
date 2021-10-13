@@ -22,7 +22,7 @@ package org.make.api.idea
 import java.time.ZonedDateTime
 import com.sksamuel.avro4s._
 import org.make.core.idea.{Idea, IdeaId}
-import org.make.core.{AvroSerializers, DateHelper, EventWrapper, MakeSerializable}
+import org.make.core.{DateHelper, MakeSerializable}
 
 sealed trait IdeaEvent {
   def ideaId: IdeaId
@@ -32,15 +32,6 @@ sealed trait IdeaEvent {
 
 object IdeaEvent {
   val defaultDate: ZonedDateTime = ZonedDateTime.parse("2017-11-01T09:00:00Z")
-}
-
-final case class IdeaEventWrapper(version: Int, id: String, date: ZonedDateTime, eventType: String, event: IdeaEvent)
-    extends EventWrapper[IdeaEvent]
-
-object IdeaEventWrapper extends AvroSerializers {
-  implicit lazy val schemaFor: SchemaFor[IdeaEventWrapper] = SchemaFor.gen[IdeaEventWrapper]
-  implicit lazy val avroDecoder: Decoder[IdeaEventWrapper] = Decoder.gen[IdeaEventWrapper]
-  implicit lazy val avroEncoder: Encoder[IdeaEventWrapper] = Encoder.gen[IdeaEventWrapper]
 }
 
 @AvroSortPriority(2)

@@ -26,7 +26,7 @@ import cats.data.Validated.{Invalid, Valid}
 import grizzled.slf4j.Logging
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.parser._
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.Decoder
 import io.swagger.annotations._
 import org.make.api.demographics.{ActiveDemographicsCardServiceComponent, DemographicsCardServiceComponent}
 import org.make.api.question.QuestionServiceComponent
@@ -35,10 +35,9 @@ import org.make.api.technical.monitoring.MonitoringServiceComponent
 import org.make.api.technical.{EndpointType, EventBusServiceComponent, MakeAuthenticationDirectives, MakeDirectives}
 import org.make.core._
 import org.make.core.auth.UserRights
-import org.make.core.demographics.{DemographicsCardId, LabelValue}
+import org.make.core.demographics.{DemographicsCard, DemographicsCardId, LabelValue}
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
-import org.make.core.session.SessionId
+import org.make.core.reference.Country
 import org.slf4j.event.Level
 import scalaoauth2.provider.AuthInfo
 
@@ -187,9 +186,7 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
           makeOperation("TrackingFront", EndpointType.Public) { requestContext: RequestContext =>
             decodeRequest {
               entity(as[FrontTrackingRequest]) { request: FrontTrackingRequest =>
-                eventBusService.publish(
-                  TrackingEvent.eventfromFront(frontRequest = request, requestContext = requestContext)
-                )
+                eventBusService.publish(request.toEvent(requestContext = requestContext))
                 complete(StatusCodes.NoContent)
               }
             }
@@ -226,9 +223,7 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
                   )
                 ) { _ =>
                   validate(request, DemographicsTrackingRequest.validator) {
-                    eventBusService.publish(
-                      DemographicEvent.fromDemographicRequest(request, requestContext.applicationName)
-                    )
+                    eventBusService.publish(request.toEvent(requestContext.applicationName))
                     complete(StatusCodes.NoContent)
                   }
                 }
@@ -298,10 +293,7 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
                             )
                           }: _*
                       )
-                      eventBusService.publish(
-                        DemographicEvent
-                          .fromDemographicsV2Request(request, requestContext.applicationName, card.dataType)
-                      )
+                      eventBusService.publish(request.toEvent(requestContext.applicationName, card.dataType))
                       complete(StatusCodes.NoContent)
                     }
                   }
@@ -320,9 +312,7 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
             entity(as[ConcertationTrackingRequest]) { request =>
               makeOperationForConcertation("ConcertationTracking", request.context.location) {
                 requestContext: RequestContext =>
-                  eventBusService.publish(
-                    ConcertationEvent.fromConcertationRequest(request, requestContext.applicationName)
-                  )
+                  eventBusService.publish(request.toEvent(requestContext.applicationName))
                   complete(StatusCodes.NoContent)
               }
             }
@@ -344,7 +334,19 @@ final case class FrontTrackingRequest(
   eventType: String,
   eventName: Option[String],
   @(ApiModelProperty @field)(dataType = "map[string]") eventParameters: Option[Map[String, String]]
-)
+) {
+  def toEvent(requestContext: RequestContext): TrackingEvent = {
+    TrackingEvent(
+      eventProvider = "front",
+      eventType = Some(eventType),
+      eventName = eventName,
+      eventParameters = eventParameters,
+      requestContext = requestContext,
+      createdAt = DateHelper.now()
+    )
+  }
+
+}
 
 object FrontTrackingRequest {
   implicit val decoder: Decoder[FrontTrackingRequest] =
@@ -399,7 +401,19 @@ final case class DemographicsTrackingRequest(
   parameters: Map[String, String],
   @(ApiModelProperty @field)(dataType = "boolean", example = "false")
   autoSubmit: Option[Boolean]
-)
+) {
+  def toEvent(applicationName: Option[ApplicationName]): DemographicEvent =
+    DemographicEvent(
+      demographic = demographic,
+      value = value,
+      questionId = questionId,
+      source = source,
+      country = country,
+      applicationName = applicationName,
+      parameters = parameters,
+      autoSubmit = autoSubmit.contains(true)
+    )
+}
 
 object DemographicsTrackingRequest {
   implicit val decoder: Decoder[DemographicsTrackingRequest] = deriveDecoder
@@ -464,41 +478,13 @@ final case class ConcertationTrackingRequest(
   context: ConcertationContext,
   @(ApiModelProperty @field)(dataType = "map[string]")
   parameters: Map[String, String]
-)
+) {
+  def toEvent(applicationName: Option[ApplicationName]): ConcertationEvent =
+    ConcertationEvent(eventName = eventName, context = context, parameters = parameters)
+}
 
 object ConcertationTrackingRequest {
   implicit val decoder: Decoder[ConcertationTrackingRequest] = deriveDecoder[ConcertationTrackingRequest]
-}
-
-final case class ConcertationContext(
-  @(ApiModelProperty @field)(dataType = "string", example = "4ee15013-b5a6-415c-8270-da8438766644")
-  sessionId: SessionId,
-  concertationSlug: Option[String],
-  projectSlug: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "4ee15013-b5a6-415c-8270-da8438766644")
-  sectionId: Option[SectionId],
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Language,
-  @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Country,
-  location: String,
-  @(ApiModelProperty @field)(dataType = "map[string]")
-  getParameters: Map[String, String]
-)
-
-object ConcertationContext {
-  implicit val decoder: Decoder[ConcertationContext] = deriveDecoder[ConcertationContext]
-}
-
-final case class SectionId(value: String) extends StringValue
-
-object SectionId {
-
-  implicit lazy val sectionIdEncoder: Encoder[SectionId] =
-    (a: SectionId) => Json.fromString(a.value)
-  implicit lazy val sectionIdDecoder: Decoder[SectionId] =
-    Decoder.decodeString.map(SectionId(_))
-
 }
 
 final case class DemographicsV2TrackingRequest(
@@ -516,7 +502,20 @@ final case class DemographicsV2TrackingRequest(
   parameters: Map[String, String],
   @(ApiModelProperty @field)(dataType = "string", example = "yFUMk1+KSVeFh0NQnTXrdA==")
   token: String
-)
+) {
+  def toEvent(applicationName: Option[ApplicationName], cardDataType: String): DemographicEvent =
+    DemographicEvent(
+      demographic = cardDataType,
+      value = value.getOrElse(DemographicsCard.SKIPPED),
+      questionId = questionId,
+      source = source,
+      country = country,
+      applicationName = applicationName,
+      parameters = parameters,
+      autoSubmit = false
+    )
+
+}
 
 object DemographicsV2TrackingRequest {
   implicit val decoder: Decoder[DemographicsV2TrackingRequest] = deriveDecoder[DemographicsV2TrackingRequest]

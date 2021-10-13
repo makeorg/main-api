@@ -19,8 +19,7 @@
 
 package org.make.api.proposal
 
-import com.sksamuel.avro4s
-import com.sksamuel.avro4s.{AvroDefault, AvroSortPriority, SchemaFor}
+import com.sksamuel.avro4s.{AvroDefault, AvroSortPriority}
 import org.make.api.proposal.ProposalEvent.DeprecatedEvent
 import org.make.core.SprayJsonFormatters._
 import org.make.core.history.HistoryActions.VoteTrust
@@ -88,22 +87,6 @@ sealed trait PublishedProposalEvent extends ProposalEvent {
 object PublishedProposalEvent {
 
   private val defaultDate: ZonedDateTime = ZonedDateTime.parse("2017-11-01T09:00:00Z")
-
-  final case class ProposalEventWrapper(
-    version: Int,
-    id: String,
-    date: ZonedDateTime,
-    eventType: String,
-    event: PublishedProposalEvent,
-    eventId: Option[EventId] = None
-  ) extends EventWrapper[PublishedProposalEvent]
-      with WithEventId
-
-  object ProposalEventWrapper extends AvroSerializers {
-    implicit lazy val schemaFor: SchemaFor[ProposalEventWrapper] = SchemaFor.gen[ProposalEventWrapper]
-    implicit lazy val avroDecoder: avro4s.Decoder[ProposalEventWrapper] = avro4s.Decoder.gen[ProposalEventWrapper]
-    implicit lazy val avroEncoder: avro4s.Encoder[ProposalEventWrapper] = avro4s.Encoder.gen[ProposalEventWrapper]
-  }
 
   @AvroSortPriority(6)
   final case class ProposalPatched(
@@ -190,7 +173,7 @@ object PublishedProposalEvent {
     requestContext: RequestContext,
     updatedAt: ZonedDateTime,
     moderator: Option[UserId] = None,
-    @Deprecated(since = "30/10/2017. Use the edition field instead")
+    //@Deprecated(since = "30/10/2017. Use the edition field instead")
     content: String = "",
     edition: Option[ProposalEdition] = None,
     theme: Option[ThemeId] = None,
@@ -359,7 +342,7 @@ object PublishedProposalEvent {
     id: ProposalId,
     maybeUserId: Option[UserId],
     eventDate: ZonedDateTime,
-    @Deprecated(since = "05/09/2018. Use the maybeOrganisationId field instead")
+    //@Deprecated(since = "05/09/2018. Use the maybeOrganisationId field instead")
     organisationInfo: Option[OrganisationInfo] = None,
     maybeOrganisationId: Option[UserId],
     requestContext: RequestContext,
@@ -383,7 +366,7 @@ object PublishedProposalEvent {
     id: ProposalId,
     maybeUserId: Option[UserId],
     eventDate: ZonedDateTime,
-    @Deprecated(since = "05/09/2018. Use the maybeOrganisationId field instead")
+    //@Deprecated(since = "05/09/2018. Use the maybeOrganisationId field instead")
     organisationInfo: Option[OrganisationInfo] = None,
     maybeOrganisationId: Option[UserId],
     requestContext: RequestContext,

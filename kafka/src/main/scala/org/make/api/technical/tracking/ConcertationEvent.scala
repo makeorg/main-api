@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2018 Make.org
+ *  Copyright (C) 2021 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -17,16 +17,6 @@
  *
  */
 
-package org.make.api.semantic
+package org.make.api.technical.tracking
 
-import org.make.core.proposal.ProposalId
-import org.make.core.tag.TagId
-
-sealed trait PredictedTagsEvents
-
-final case class PredictedTagsEvent(
-  proposalId: ProposalId,
-  predictedTags: Seq[TagId],
-  selectedTags: Seq[TagId],
-  modelName: String
-) extends PredictedTagsEvents
+final case class ConcertationEvent(eventName: String, context: ConcertationContext, parameters: Map[String, String])

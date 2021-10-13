@@ -50,7 +50,7 @@ final case class Proposal(
   refusalReason: Option[String] = None,
   tags: Seq[TagId] = Seq.empty,
   votes: Seq[Vote],
-  @Deprecated(since = "05/12/2019. Use the organisationIds field instead")
+  //@Deprecated(since = "05/12/2019. Use the organisationIds field instead")
   organisations: Seq[OrganisationInfo] = Seq.empty,
   organisationIds: Seq[UserId] = Seq.empty,
   questionId: Option[QuestionId] = None,

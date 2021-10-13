@@ -17,16 +17,8 @@
  *
  */
 
-package org.make.api.semantic
+package org.make.api
 
-import org.make.core.proposal.ProposalId
-import org.make.core.tag.TagId
-
-sealed trait PredictedTagsEvents
-
-final case class PredictedTagsEvent(
-  proposalId: ProposalId,
-  predictedTags: Seq[TagId],
-  selectedTags: Seq[TagId],
-  modelName: String
-) extends PredictedTagsEvents
+object kafka {
+  val kafkaDispatcher: String = "make-api.kafka.dispatcher"
+}

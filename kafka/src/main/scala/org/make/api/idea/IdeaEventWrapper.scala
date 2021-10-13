@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2018 Make.org
+ *  Copyright (C) 2021 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -17,16 +17,18 @@
  *
  */
 
-package org.make.api.semantic
+package org.make.api.idea
 
-import org.make.core.proposal.ProposalId
-import org.make.core.tag.TagId
+import com.sksamuel.avro4s.{Decoder, Encoder, SchemaFor}
+import org.make.core.{AvroSerializers, EventWrapper}
 
-sealed trait PredictedTagsEvents
+import java.time.ZonedDateTime
 
-final case class PredictedTagsEvent(
-  proposalId: ProposalId,
-  predictedTags: Seq[TagId],
-  selectedTags: Seq[TagId],
-  modelName: String
-) extends PredictedTagsEvents
+final case class IdeaEventWrapper(version: Int, id: String, date: ZonedDateTime, eventType: String, event: IdeaEvent)
+    extends EventWrapper[IdeaEvent]
+
+object IdeaEventWrapper extends AvroSerializers {
+  implicit lazy val schemaFor: SchemaFor[IdeaEventWrapper] = SchemaFor.gen[IdeaEventWrapper]
+  implicit lazy val avroDecoder: Decoder[IdeaEventWrapper] = Decoder.gen[IdeaEventWrapper]
+  implicit lazy val avroEncoder: Encoder[IdeaEventWrapper] = Encoder.gen[IdeaEventWrapper]
+}
