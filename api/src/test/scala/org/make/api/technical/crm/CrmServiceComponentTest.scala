@@ -34,7 +34,9 @@ import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.proposal.{ProposalService, ProposalServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical._
+import org.make.api.technical.crm.CrmClient.{Account, Marketing, Transactional}
 import org.make.api.technical.crm.CrmServiceComponentTest.configuration
+import org.make.api.technical.crm.ManageContactAction.Remove
 import org.make.api.technical.crm.arbitraries._
 import org.make.api.technical.job.{JobCoordinatorService, JobCoordinatorServiceComponent}
 import org.make.api.user.PersistentCrmSynchroUserService.{CrmSynchroUser, MakeUser}
@@ -850,14 +852,14 @@ class CrmServiceComponentTest
     val emails: Seq[String] = Seq("toto@tata.com", "tata@tata.com", "titi@tata.com")
 
     Scenario("all users anonymized") {
-      when(crmClient.deleteContactByEmail(eqTo("toto@tata.com"))(any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(eqTo("toto@tata.com"), eqTo(Marketing))(any[ExecutionContext]))
         .thenReturn(Future.successful(true))
-      when(crmClient.deleteContactByEmail(eqTo("tata@tata.com"))(any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(eqTo("tata@tata.com"), eqTo(Marketing))(any[ExecutionContext]))
         .thenReturn(Future.successful(true))
-      when(crmClient.deleteContactByEmail(eqTo("titi@tata.com"))(any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(eqTo("titi@tata.com"), eqTo(Marketing))(any[ExecutionContext]))
         .thenReturn(Future.successful(true))
 
-      val futureRemovedEmails: Future[Unit] = crmService.deleteAnonymizedContacts(emails)
+      val futureRemovedEmails: Future[Unit] = crmService.deleteAnonymizedContacts(emails, Marketing)
 
       whenReady(futureRemovedEmails, Timeout(3.seconds)) { _ =>
         verify(persistentUserToAnonymizeService)
@@ -866,14 +868,14 @@ class CrmServiceComponentTest
     }
 
     Scenario("one users not found in mailjet") {
-      when(crmClient.deleteContactByEmail(eqTo("toto@tata.com"))(any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(eqTo("toto@tata.com"), eqTo(Marketing))(any[ExecutionContext]))
         .thenReturn(Future.successful(true))
-      when(crmClient.deleteContactByEmail(eqTo("tata@tata.com"))(any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(eqTo("tata@tata.com"), eqTo(Marketing))(any[ExecutionContext]))
         .thenReturn(Future.successful(true))
-      when(crmClient.deleteContactByEmail(eqTo("titi@tata.com"))(any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(eqTo("titi@tata.com"), eqTo(Marketing))(any[ExecutionContext]))
         .thenReturn(Future.successful(false))
 
-      val futureRemovedEmails: Future[Unit] = crmService.deleteAnonymizedContacts(emails)
+      val futureRemovedEmails: Future[Unit] = crmService.deleteAnonymizedContacts(emails, Marketing)
 
       whenReady(futureRemovedEmails, Timeout(3.seconds)) { _ =>
         verify(persistentUserToAnonymizeService)
@@ -882,16 +884,16 @@ class CrmServiceComponentTest
     }
 
     Scenario("zero users anonymized") {
-      when(crmClient.deleteContactByEmail(eqTo("toto@tata.com"))(any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(eqTo("toto@tata.com"), eqTo(Marketing))(any[ExecutionContext]))
         .thenReturn(Future.successful(false))
-      when(crmClient.deleteContactByEmail(eqTo("tata@tata.com"))(any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(eqTo("tata@tata.com"), eqTo(Marketing))(any[ExecutionContext]))
         .thenReturn(Future.successful(false))
-      when(crmClient.deleteContactByEmail(eqTo("titi@tata.com"))(any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(eqTo("titi@tata.com"), eqTo(Marketing))(any[ExecutionContext]))
         .thenReturn(Future.successful(false))
 
       clearInvocations(persistentUserToAnonymizeService)
 
-      val futureRemovedEmails: Future[Unit] = crmService.deleteAnonymizedContacts(emails)
+      val futureRemovedEmails: Future[Unit] = crmService.deleteAnonymizedContacts(emails, Marketing)
 
       whenReady(futureRemovedEmails, Timeout(3.seconds)) { _ =>
         verify(persistentUserToAnonymizeService, never).removeAllByEmails(any[Seq[String]])
@@ -900,11 +902,50 @@ class CrmServiceComponentTest
 
     Scenario("invalid email") {
 
-      val futureRemovedEmails: Future[Unit] = crmService.deleteAnonymizedContacts(Seq("invalid"))
+      val futureRemovedEmails: Future[Unit] = crmService.deleteAnonymizedContacts(Seq("invalid"), Marketing)
 
       whenReady(futureRemovedEmails, Timeout(3.seconds)) { _ =>
         verify(persistentUserToAnonymizeService)
           .removeAllByEmails(Seq("invalid"))
+      }
+    }
+
+    Scenario("anonymize in crm manager") {
+      clearInvocations(crmClient)
+
+      val emails = Seq("first@example.com", "second@example.com", "notanemail")
+
+      when(persistentUserToAnonymizeService.findAll())
+        .thenReturn(Future.successful(emails))
+      when(
+        crmClient
+          .manageContactList(
+            manageContactList = eqTo(
+              ManageManyContacts(
+                contacts = emails.map(Contact(_)),
+                contactList = Seq(
+                  ContactList(mailJetConfiguration.hardBounceListId, Remove),
+                  ContactList(mailJetConfiguration.unsubscribeListId, Remove),
+                  ContactList(mailJetConfiguration.optInListId, Remove)
+                )
+              )
+            ),
+            account = any[Account]
+          )(any[ExecutionContext])
+      ).thenReturn(Future.successful(BasicCrmResponse[JobId](0, 0, Seq.empty)))
+
+      emails.foreach { email =>
+        when(crmClient.deleteContactByEmail(eqTo(email), any[Account])(any[ExecutionContext]))
+          .thenReturn(Future.successful(true))
+      }
+
+      whenReady(crmService.anonymize(), Timeout(10.seconds)) { _ =>
+        verify(crmClient).deleteContactByEmail(eqTo("first@example.com"), eqTo(Marketing))(any[ExecutionContext])
+        verify(crmClient).deleteContactByEmail(eqTo("first@example.com"), eqTo(Transactional))(any[ExecutionContext])
+        verify(crmClient).deleteContactByEmail(eqTo("second@example.com"), eqTo(Marketing))(any[ExecutionContext])
+        verify(crmClient).deleteContactByEmail(eqTo("second@example.com"), eqTo(Transactional))(any[ExecutionContext])
+
+        verify(crmClient, never).deleteContactByEmail(eqTo("notanemail"), any[Account])(any[ExecutionContext])
       }
     }
   }
@@ -1287,7 +1328,7 @@ class CrmServiceComponentTest
           Future.successful(Seq.empty)
         )
 
-      when(crmClient.sendCsv(any[String], any[Path])(any[ExecutionContext])).thenReturn(
+      when(crmClient.sendCsv(any[String], any[Path], any[Account])(any[ExecutionContext])).thenReturn(
         Future.successful(SendCsvResponse(1L)),
         Future.successful(SendCsvResponse(2L)),
         Future.successful(SendCsvResponse(3L)),
@@ -1309,12 +1350,12 @@ class CrmServiceComponentTest
         )
       }
 
-      when(crmClient.manageContactListWithCsv(any[CsvImport])(any[ExecutionContext])).thenAnswer {
+      when(crmClient.manageContactListWithCsv(any[CsvImport], any[Account])(any[ExecutionContext])).thenAnswer {
         (request: CsvImport) =>
           Future.successful(csvImportResponse(request.csvId.toLong * 10, request.csvId.toLong, 0, "Pending"))
       }
 
-      when(crmClient.monitorCsvImport(eqTo(10L))(any[ExecutionContext]))
+      when(crmClient.monitorCsvImport(eqTo(10L), any[Account])(any[ExecutionContext]))
         .thenReturn(
           Future.successful(csvImportResponse(10L, 1L, 0, "Pending")),
           Future.successful(csvImportResponse(10L, 1L, 0, "Pending")),
@@ -1323,7 +1364,7 @@ class CrmServiceComponentTest
           Future.successful(csvImportResponse(10L, 1L, 0, "Completed"))
         )
 
-      when(crmClient.monitorCsvImport(eqTo(20L))(any[ExecutionContext]))
+      when(crmClient.monitorCsvImport(eqTo(20L), any[Account])(any[ExecutionContext]))
         .thenReturn(
           Future.successful(csvImportResponse(20L, 2L, 0, "Pending")),
           Future.successful(csvImportResponse(20L, 2L, 0, "Pending")),
@@ -1332,7 +1373,7 @@ class CrmServiceComponentTest
           Future.successful(csvImportResponse(20L, 2L, 0, "Completed"))
         )
 
-      when(crmClient.monitorCsvImport(eqTo(30L))(any[ExecutionContext]))
+      when(crmClient.monitorCsvImport(eqTo(30L), any[Account])(any[ExecutionContext]))
         .thenReturn(
           Future.successful(csvImportResponse(30L, 3L, 0, "Pending")),
           Future.successful(csvImportResponse(30L, 3L, 0, "Pending")),
@@ -1341,7 +1382,7 @@ class CrmServiceComponentTest
           Future.successful(csvImportResponse(30L, 3L, 0, "Completed"))
         )
 
-      when(crmClient.monitorCsvImport(eqTo(40L))(any[ExecutionContext]))
+      when(crmClient.monitorCsvImport(eqTo(40L), any[Account])(any[ExecutionContext]))
         .thenReturn(
           Future.failed(new IllegalStateException("Don't worry, this exception is fake")),
           Future.successful(csvImportResponse(40L, 4L, 0, "Pending")),
@@ -1350,7 +1391,7 @@ class CrmServiceComponentTest
           Future.successful(csvImportResponse(40L, 4L, 0, "Completed"))
         )
 
-      when(crmClient.monitorCsvImport(eqTo(50L))(any[ExecutionContext]))
+      when(crmClient.monitorCsvImport(eqTo(50L), any[Account])(any[ExecutionContext]))
         .thenReturn(
           Future.successful(csvImportResponse(50L, 5L, 0, "Pending")),
           Future.successful(csvImportResponse(50L, 5L, 0, "Pending")),
@@ -1359,7 +1400,7 @@ class CrmServiceComponentTest
           Future.successful(csvImportResponse(50L, 5L, 2, "Completed"))
         )
 
-      when(crmClient.monitorCsvImport(eqTo(60L))(any[ExecutionContext]))
+      when(crmClient.monitorCsvImport(eqTo(60L), any[Account])(any[ExecutionContext]))
         .thenReturn(
           Future.successful(csvImportResponse(60L, 6L, 0, "Pending")),
           Future.successful(csvImportResponse(60L, 6L, 0, "Pending")),
@@ -1377,7 +1418,7 @@ class CrmServiceComponentTest
         Timeout(60.seconds)
       ) { _ =>
         verify(crmClient, times(30))
-          .monitorCsvImport(any[Long])(any[ExecutionContext])
+          .monitorCsvImport(any[Long], any[Account])(any[ExecutionContext])
       }
     }
   }
@@ -1519,7 +1560,7 @@ class CrmServiceComponentTest
     Scenario("sending email randomly fails") {
       forAll { (message: SendEmail, outcome: Either[Boolean, Unit]) =>
         Given("an unreliable email provider")
-        when(crmClient.sendEmail(eqTo(SendMessages(message)))(any[ExecutionContext]))
+        when(crmClient.sendEmail(eqTo(SendMessages(message)), any[Account])(any[ExecutionContext]))
           .thenReturn(outcome match {
             case Left(clientError) =>
               Future.failed(

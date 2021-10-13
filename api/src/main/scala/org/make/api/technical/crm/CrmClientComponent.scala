@@ -21,7 +21,6 @@ package org.make.api.technical.crm
 
 import java.net.URL
 import java.nio.file.Path
-
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
@@ -37,6 +36,7 @@ import org.make.api
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.technical.crm.BasicCrmResponse._
+import org.make.api.technical.crm.CrmClient.{Account, Marketing, Transactional}
 import org.make.api.technical.security.SecurityHelper
 import org.make.core.Order
 
@@ -46,19 +46,25 @@ import scala.util.{Failure, Success, Try}
 
 trait CrmClient {
 
-  def manageContactList(manageContactList: ManageManyContacts)(
+  def manageContactList(manageContactList: ManageManyContacts, account: Account = Marketing)(
     implicit executionContext: ExecutionContext
   ): Future[ManageManyContactsResponse]
 
-  def manageContactListWithCsv(csvImport: CsvImport)(
+  def manageContactListWithCsv(csvImport: CsvImport, account: Account = Marketing)(
     implicit executionContext: ExecutionContext
   ): Future[ManageContactsWithCsvResponse]
 
-  def sendCsv(listId: String, csv: Path)(implicit executionContext: ExecutionContext): Future[SendCsvResponse]
+  def sendCsv(listId: String, csv: Path, account: Account = Marketing)(
+    implicit executionContext: ExecutionContext
+  ): Future[SendCsvResponse]
 
-  def monitorCsvImport(jobId: Long)(implicit executionContext: ExecutionContext): Future[ManageContactsWithCsvResponse]
+  def monitorCsvImport(jobId: Long, account: Account = Marketing)(
+    implicit executionContext: ExecutionContext
+  ): Future[ManageContactsWithCsvResponse]
 
-  def sendEmail(message: SendMessages)(implicit executionContext: ExecutionContext): Future[SendEmailResponse]
+  def sendEmail(message: SendMessages, account: Account = Transactional)(
+    implicit executionContext: ExecutionContext
+  ): Future[SendEmailResponse]
 
   def getUsersInformationMailFromList(
     listId: Option[String] = None,
@@ -66,13 +72,26 @@ trait CrmClient {
     order: Option[Order] = None,
     countOnly: Option[Boolean] = None,
     limit: Int,
-    offset: Int = 0
+    offset: Int = 0,
+    account: Account = Marketing
   )(implicit executionContext: ExecutionContext): Future[ContactsResponse]
-  def getContactsProperties(offset: Int, limit: Int)(
+
+  def getContactsProperties(offset: Int, limit: Int, account: Account = Marketing)(
     implicit executionContext: ExecutionContext
   ): Future[GetMailjetContactProperties]
-  def deleteContactByEmail(email: String)(implicit executionContext: ExecutionContext): Future[Boolean]
-  def deleteContactById(contactId: String)(implicit executionContext: ExecutionContext): Future[Unit]
+
+  def deleteContactByEmail(email: String, account: Account)(
+    implicit executionContext: ExecutionContext
+  ): Future[Boolean]
+
+  def deleteContactById(contactId: String, account: Account)(implicit executionContext: ExecutionContext): Future[Unit]
+}
+
+object CrmClient {
+  sealed trait Account
+
+  case object Marketing extends Account
+  case object Transactional extends Account
 }
 
 trait CrmClientComponent {
@@ -89,13 +108,10 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
     lazy val printer: Printer = Printer.noSpaces.copy(dropNullValues = false)
     lazy val url = new URL(mailJetConfiguration.url)
     val httpPort: Int = 443
+    type Ctx = Promise[HttpResponse]
 
-    lazy val httpFlow: Flow[
-      (HttpRequest, Promise[HttpResponse]),
-      (Try[HttpResponse], Promise[HttpResponse]),
-      Http.HostConnectionPool
-    ] =
-      Http(actorSystem).cachedHostConnectionPoolHttps[Promise[HttpResponse]](host = url.getHost, port = httpPort)
+    lazy val httpFlow: Flow[(HttpRequest, Ctx), (Try[HttpResponse], Ctx), Http.HostConnectionPool] =
+      Http(actorSystem).cachedHostConnectionPoolHttps[Ctx](host = url.getHost, port = httpPort)
 
     private lazy val bufferSize = mailJetConfiguration.httpBufferSize
 
@@ -117,14 +133,21 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       BasicHttpCredentials(mailJetConfiguration.apiKey, mailJetConfiguration.secretKey)
     )
 
-    override def manageContactList(
-      manageContactList: ManageManyContacts
-    )(implicit executionContext: ExecutionContext): Future[ManageManyContactsResponse] = {
+    private def choseAccount(account: Account): Authorization = {
+      account match {
+        case Marketing     => campaignApiAuthorization
+        case Transactional => transactionalApiAuthorization
+      }
+    }
+
+    override def manageContactList(manageContactList: ManageManyContacts, account: Account)(
+      implicit executionContext: ExecutionContext
+    ): Future[ManageManyContactsResponse] = {
       val request =
         HttpRequest(
           method = HttpMethods.POST,
           uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contact/managemanycontacts"),
-          headers = immutable.Seq(campaignApiAuthorization),
+          headers = immutable.Seq(choseAccount(account)),
           entity = HttpEntity(ContentTypes.`application/json`, printer.print(manageContactList.asJson))
         )
       doHttpCall(request).flatMap {
@@ -141,13 +164,13 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       }
     }
 
-    override def sendCsv(listId: String, csv: Path)(
+    override def sendCsv(listId: String, csv: Path, account: Account)(
       implicit executionContext: ExecutionContext
     ): Future[SendCsvResponse] = {
       val request: HttpRequest = HttpRequest(
         method = HttpMethods.POST,
         uri = Uri(s"${mailJetConfiguration.url}/v3/DATA/contactslist/$listId/CSVData/application:octet-stream"),
-        headers = immutable.Seq(campaignApiAuthorization),
+        headers = immutable.Seq(choseAccount(account)),
         entity = HttpEntity(contentType = ContentTypes.`application/octet-stream`, data = FileIO.fromPath(csv))
       )
       doHttpCall(request).flatMap {
@@ -164,14 +187,14 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       }
     }
 
-    override def manageContactListWithCsv(
-      csvImport: CsvImport
-    )(implicit executionContext: ExecutionContext): Future[ManageContactsWithCsvResponse] = {
+    override def manageContactListWithCsv(csvImport: CsvImport, account: Account)(
+      implicit executionContext: ExecutionContext
+    ): Future[ManageContactsWithCsvResponse] = {
       val request: HttpRequest =
         HttpRequest(
           method = HttpMethods.POST,
           uri = Uri(s"${mailJetConfiguration.url}/v3/REST/csvimport"),
-          headers = immutable.Seq(campaignApiAuthorization),
+          headers = immutable.Seq(choseAccount(account)),
           entity = HttpEntity(ContentTypes.`application/json`, printer.print(csvImport.asJson))
         )
       doHttpCall(request).flatMap {
@@ -188,14 +211,14 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       }
     }
 
-    override def monitorCsvImport(
-      jobId: Long
-    )(implicit executionContext: ExecutionContext): Future[ManageContactsWithCsvResponse] = {
+    override def monitorCsvImport(jobId: Long, account: Account)(
+      implicit executionContext: ExecutionContext
+    ): Future[ManageContactsWithCsvResponse] = {
       val request: HttpRequest =
         HttpRequest(
           method = HttpMethods.GET,
           uri = Uri(s"${mailJetConfiguration.url}/v3/REST/csvimport/$jobId"),
-          headers = immutable.Seq(campaignApiAuthorization)
+          headers = immutable.Seq(choseAccount(account))
         )
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, responseEntity, _) if code.isSuccess() =>
@@ -211,9 +234,9 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       }
     }
 
-    override def sendEmail(
-      message: SendMessages
-    )(implicit executionContext: ExecutionContext): Future[SendEmailResponse] = {
+    override def sendEmail(message: SendMessages, account: Account)(
+      implicit executionContext: ExecutionContext
+    ): Future[SendEmailResponse] = {
       val messagesWithErrorHandling = message.copy(messages = message.messages.map(
         _.copy(templateErrorReporting = Some(
           TemplateErrorReporting(
@@ -228,7 +251,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       val request: HttpRequest = HttpRequest(
         method = HttpMethods.POST,
         uri = Uri(s"${mailJetConfiguration.url}/v3.1/send"),
-        headers = immutable.Seq(transactionalApiAuthorization),
+        headers = immutable.Seq(choseAccount(account)),
         entity = HttpEntity(ContentTypes.`application/json`, printer.print(messagesWithErrorHandling.asJson))
       )
       doHttpCall(request).flatMap {
@@ -251,7 +274,8 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       order: Option[Order] = None,
       countOnly: Option[Boolean] = None,
       limit: Int,
-      offset: Int = 0
+      offset: Int = 0,
+      account: Account
     )(implicit executionContext: ExecutionContext): Future[ContactsResponse] = {
       val sortQuery: Option[String] = (sort, order) match {
         case (Some(s), Some(o)) => Some(s"$s+$o")
@@ -269,7 +293,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       val request = HttpRequest(
         method = HttpMethods.GET,
         uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contact?$paramsQuery"),
-        headers = immutable.Seq(campaignApiAuthorization)
+        headers = immutable.Seq(choseAccount(account))
       )
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, responseEntity, _) if code.isSuccess() =>
@@ -285,14 +309,14 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       }
     }
 
-    override def getContactsProperties(offset: Int, limit: Int)(
+    override def getContactsProperties(offset: Int, limit: Int, account: Account)(
       implicit executionContext: ExecutionContext
     ): Future[GetMailjetContactProperties] = {
       val paramsQuery = s"Limit=$limit&Offset=$offset"
       val request = HttpRequest(
         method = HttpMethods.GET,
         uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contactdata?$paramsQuery"),
-        headers = immutable.Seq(campaignApiAuthorization)
+        headers = immutable.Seq(choseAccount(account))
       )
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, entity, _) if code.isSuccess() =>
@@ -308,13 +332,13 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       }
     }
 
-    private def getContactByMailOrContactId(
-      identifier: String
-    )(implicit executionContext: ExecutionContext): Future[ContactsResponse] = {
+    private def getContactByMailOrContactId(identifier: String, account: Account)(
+      implicit executionContext: ExecutionContext
+    ): Future[ContactsResponse] = {
       val request = HttpRequest(
         method = HttpMethods.GET,
         uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contact/$identifier"),
-        headers = immutable.Seq(campaignApiAuthorization)
+        headers = immutable.Seq(choseAccount(account))
       )
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, entity, _) if code.isSuccess() =>
@@ -330,11 +354,13 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       }
     }
 
-    override def deleteContactById(contactId: String)(implicit executionContext: ExecutionContext): Future[Unit] = {
+    override def deleteContactById(contactId: String, account: Account)(
+      implicit executionContext: ExecutionContext
+    ): Future[Unit] = {
       val request = HttpRequest(
         method = HttpMethods.DELETE,
         uri = Uri(s"${mailJetConfiguration.url}/v4/contacts/$contactId"),
-        headers = immutable.Seq(campaignApiAuthorization)
+        headers = immutable.Seq(choseAccount(account))
       )
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, entity, _) if code.isSuccess() =>
@@ -351,13 +377,15 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       }
     }
 
-    override def deleteContactByEmail(email: String)(implicit executionContext: ExecutionContext): Future[Boolean] = {
-      getContactByMailOrContactId(email).flatMap {
+    override def deleteContactByEmail(email: String, account: Account)(
+      implicit executionContext: ExecutionContext
+    ): Future[Boolean] = {
+      getContactByMailOrContactId(email, account).flatMap {
         case BasicCrmResponse(_, _, head +: _) =>
           val id = head.id.toString
           val foundEmail = head.email
-          deleteContactById(id).flatMap { _ =>
-            getContactByMailOrContactId(id).map(anon => anon.data.headOption.forall(_.email != foundEmail))
+          deleteContactById(id, account).flatMap { _ =>
+            getContactByMailOrContactId(id, account).map(anon => anon.data.headOption.forall(_.email != foundEmail))
           }
         case _ => Future.successful(false)
       }.recoverWith {
@@ -369,6 +397,8 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
     }
 
     private def doHttpCall(request: HttpRequest)(implicit executionContext: ExecutionContext): Future[HttpResponse] = {
+      val defaultLoops = 5
+
       @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
       def loop(request: HttpRequest, retries: Int): Future[HttpResponse] = {
         val promise = Promise[HttpResponse]()
@@ -387,7 +417,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
           case QueueOfferResult.QueueClosed => Future.failed(CrmClientException.QueueException.QueueClosed)
         }
       }
-      loop(request, 5)
+      loop(request, defaultLoops)
     }
   }
 }
@@ -416,7 +446,7 @@ final case class SentEmail(
   cc: Seq[MessageDetails],
   bcc: Seq[MessageDetails]
 ) {
-  override def toString =
+  override def toString: String =
     s"SentEmail: (status = $status, errors = ${errors.map(_.mkString("[", ",", "]"))}, customId = $customId, to = ${to
       .mkString("[", ",", "]")}, cc = ${cc.mkString("[", ",", "]")}, bcc = ${bcc.mkString("[", ",", "]")})"
 }
@@ -433,8 +463,9 @@ final case class SendMessageError(
   errorMessage: String,
   errorRelatedTo: String
 ) {
-  override def toString =
-    s"SendMessageError: (errorIdentifier = $errorIdentifier, errorCode = $errorCode, statusCode = $statusCode, errorMessage = $errorMessage, errorRelatedTo = $errorRelatedTo)"
+  override def toString: String =
+    s"SendMessageError: (errorIdentifier = $errorIdentifier, errorCode = $errorCode, " +
+      s"statusCode = $statusCode, errorMessage = $errorMessage, errorRelatedTo = $errorRelatedTo)"
 }
 
 object SendMessageError {
@@ -445,8 +476,9 @@ object SendMessageError {
 }
 
 final case class MessageDetails(email: String, messageUuid: String, messageId: Long, messageHref: String) {
-  override def toString =
-    s"MessageDetails: (email = ${SecurityHelper.anonymizeEmail(email)}, messageUuid = $messageUuid, messageId = $messageId, messageHref = $messageHref)"
+  override def toString: String =
+    s"MessageDetails: (email = ${SecurityHelper.anonymizeEmail(email)}, messageUuid = $messageUuid, " +
+      s"messageId = $messageId, messageHref = $messageHref)"
 }
 
 object MessageDetails {

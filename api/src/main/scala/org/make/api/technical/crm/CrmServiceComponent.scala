@@ -52,6 +52,7 @@ import org.make.api.technical.crm.ManageContactAction.{AddNoForce, Remove}
 import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.api.technical.job.JobCoordinatorServiceComponent
 import org.make.api.technical._
+import org.make.api.technical.crm.CrmClient.{Account, Marketing, Transactional}
 import org.make.api.user.PersistentCrmSynchroUserService.CrmSynchroUser
 import org.make.api.user.{PersistentCrmSynchroUserServiceComponent, PersistentUserToAnonymizeServiceComponent}
 import org.make.api.userhistory._
@@ -69,7 +70,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.jdk.CollectionConverters._
 import scala.math.Ordering.Implicits.infixOrderingOps
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 trait CrmService {
   def sendEmail(message: SendEmail): Future[SendEmailResponse]
@@ -85,7 +86,6 @@ trait CrmService {
     limit: Int,
     offset: Int = 0
   ): Future[GetUsersMail]
-  def deleteAllContactsBefore(maxUpdatedAt: ZonedDateTime, deleteEmptyProperties: Boolean): Future[Int]
 }
 
 trait CrmServiceComponent {
@@ -184,36 +184,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
             logger.error(e.message)
             Future.successful(GetUsersMail(0, 0, Seq.empty))
           case e => Future.failed(e)
-        }
-    }
-
-    override def deleteAllContactsBefore(maxUpdatedAt: ZonedDateTime, deleteEmptyProperties: Boolean): Future[Int] = {
-      def isBefore(updatedAt: String): Boolean =
-        Try(ZonedDateTime.parse(updatedAt)).toOption.forall(_.isBefore(maxUpdatedAt))
-
-      StreamUtils
-        .asyncPageToPageSource(crmClient.getContactsProperties(_, batchSize).map(_.data))
-        .map(_.filter { contacts =>
-          deleteEmptyProperties && contacts.properties.isEmpty ||
-          contacts.properties.find(_.name == "updated_at").exists(updatedAt => isBefore(updatedAt.value))
-        }.map(_.contactId.toString))
-        .mapConcat(identity)
-        .throttle(1, 1.second)
-        .mapAsync(1) { obsoleteContactId =>
-          crmClient
-            .deleteContactById(obsoleteContactId)
-            .map(_ => 1)
-            .recoverWith {
-              case e: CrmClientException =>
-                logger.error(e.message)
-                Future.successful(0)
-              case e => Future.failed(e)
-            }
-        }
-        .runFold(0)(_ + _)
-        .map { total =>
-          logger.info(s"$total contacts has been removed from mailjet.")
-          total
         }
     }
 
@@ -424,11 +394,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
         .map(_ => logger.info(s"Crm users creation completed in ${System.currentTimeMillis() - start} ms"))
     }
 
-    final def deleteAnonymizedContacts(emails: Seq[String]): Future[Unit] = {
+    final def deleteAnonymizedContacts(emails: Seq[String], account: Account): Future[Unit] = {
       Source(emails)
         .mapAsync(3) { email =>
           if (email.matches(emailRegex.regex)) {
-            crmClient.deleteContactByEmail(email).map(res => email -> res).withoutFailure
+            crmClient.deleteContactByEmail(email, account).map(res => email -> res).withoutFailure
           } else {
             // If email is invalid, delete it from user to anonymize
             Future.successful(Right(email -> true))
@@ -452,7 +422,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
       for {
         foundEmails <- persistentUserToAnonymizeService.findAll()
         _           <- hardRemoveEmailsFromAllLists(foundEmails)
-        _           <- deleteAnonymizedContacts(foundEmails)
+        _           <- deleteAnonymizedContacts(foundEmails, Marketing)
+        _           <- deleteAnonymizedContacts(foundEmails, Transactional)
       } yield ()
     }
 
