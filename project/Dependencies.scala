@@ -56,11 +56,7 @@ object Dependencies {
 
   val circeGeneric: ModuleID = "io.circe"                 %% "circe-generic"               % circeVersion
   val circeParser = "io.circe"                            %% "circe-parser"                % circeVersion
-  val akka: ModuleID = "com.typesafe.akka"                %% "akka-actor-typed"            % akkaVersion
-  val akkaCluster: ModuleID = "com.typesafe.akka"         %% "akka-cluster-typed"          % akkaVersion
-  val akkaClusterTools: ModuleID = "com.typesafe.akka"    %% "akka-cluster-tools"          % akkaVersion
   val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion
-  val akkaStream: ModuleID = "com.typesafe.akka"          %% "akka-stream-typed"           % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"                   % akkaHttpVersion
   val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"             % "1.37.0"
   val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "1.2.0")
@@ -123,11 +119,9 @@ object Dependencies {
 
   val elastic4s: ModuleID = "com.sksamuel.elastic4s"      %% "elastic4s-core"  % elastic4sVersion
   val elastic4sHttp: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-http"  % elastic4sVersion
-  val elastic4sAkka: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-akka"  % elastic4sVersion
   val elastic4sCirce: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-circe" % elastic4sVersion
 
   val stamina: ModuleID = "com.scalapenos"    %% "stamina-json" % staminaVersion
-  val sprayJson: ModuleID = "io.spray"        %% "spray-json"   % "1.3.5"
   val jsonLenses = "net.virtual-void"         %% "json-lenses"  % "0.6.2"
   val scalaCheck: ModuleID = "org.scalacheck" %% "scalacheck"   % "1.15.4"
 
