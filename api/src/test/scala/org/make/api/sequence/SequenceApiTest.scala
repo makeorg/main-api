@@ -32,7 +32,6 @@ import org.make.core.demographics.DemographicsCardId
 import org.make.core.proposal.indexed.Zone
 import org.make.core.proposal.{ProposalId, ProposalKeywordKey}
 import org.make.core.question.QuestionId
-import org.make.core.tag.TagId
 import org.make.core.user.UserId
 
 import scala.collection.immutable.Seq
@@ -117,19 +116,7 @@ class SequenceApiTest
     )(any[SequenceBehaviourProvider[ProposalKeywordKey]])
   ).thenReturn(Future.successful(SequenceResult(Seq.empty, None)))
 
-  when(
-    sequenceService.startNewSequence[Option[Seq[TagId]]](
-      behaviourParam = any[Option[Seq[TagId]]],
-      maybeUserId = any[Option[UserId]],
-      questionId = eqTo(questionId),
-      includedProposalsIds = any[Seq[ProposalId]],
-      requestContext = any[RequestContext],
-      cardId = any[Option[DemographicsCardId]],
-      token = any[Option[String]]
-    )(any[SequenceBehaviourProvider[Option[Seq[TagId]]]])
-  ).thenReturn(Future.successful(SequenceResult(Seq.empty, None)))
-
-  Seq("standard", "consensus", "controversy", "tags").foreach { sequenceType =>
+  Seq("standard", "consensus", "controversy").foreach { sequenceType =>
     Feature(s"start $sequenceType sequence") {
       Scenario("valid question") {
         Get(s"/sequences/$sequenceType/question-id") ~> routes ~> check {

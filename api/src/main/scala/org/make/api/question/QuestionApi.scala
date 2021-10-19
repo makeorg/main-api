@@ -43,9 +43,8 @@ import org.make.api.proposal.{
   ProposalsResultResponse,
   ProposalsResultSeededResponse
 }
-import org.make.api.sequence.{SequenceResult, SequenceServiceComponent}
+import org.make.api.sequence.SequenceServiceComponent
 import org.make.api.tag.TagServiceComponent
-import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.{EndpointType, MakeAuthenticationDirectives}
 import org.make.core.Validation.validateField
@@ -61,8 +60,6 @@ import org.make.core.personality.PersonalityRoleId
 import org.make.core.proposal.{
   MinScoreLowerBoundSearchFilter,
   PopularAlgorithm,
-  ProposalId,
-  ProposalKeywordKey,
   QuestionSearchFilter,
   SearchFilters,
   SearchQuery,
@@ -98,18 +95,6 @@ trait QuestionApi extends Directives {
   )
   @Path(value = "/{questionSlugOrQuestionId}/details")
   def questionDetails: Route
-
-  @Deprecated
-  @ApiOperation(value = "start-sequence-by-question", httpMethod = "GET", code = HttpCodes.OK)
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "include", paramType = "query", dataType = "string", allowMultiple = true)
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SequenceResult])))
-  @Path(value = "/{questionId}/start-sequence")
-  def startSequenceByQuestionId: Route
 
   @ApiOperation(value = "get-search-question", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -310,7 +295,7 @@ trait QuestionApi extends Directives {
   def getKeywords: Route
 
   def routes: Route =
-    questionDetails ~ startSequenceByQuestionId ~ searchQuestions ~ getPopularTags ~ getTopProposals ~ getPartners ~
+    questionDetails ~ searchQuestions ~ getPopularTags ~ getTopProposals ~ getPartners ~
       getPersonalities ~ getTopIdeas ~ getTopIdea ~ listQuestions ~ featuredProposals ~ getKeywords
 }
 
@@ -490,45 +475,7 @@ trait DefaultQuestionApiComponent
 
       for {
         topProposal <- futureTopProposal
-      } yield (ActiveFeatureData(topProposal))
-    }
-
-    @Deprecated
-    override def startSequenceByQuestionId: Route = get {
-      path("questions" / questionId / "start-sequence") { questionId =>
-        makeOperation("StartSequenceByQuestionId") { requestContext =>
-          optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters("zone".as[Zone].?, "keyword".as[ProposalKeywordKey].?, "include".csv[ProposalId]) {
-              (zone, keyword, includes) =>
-                val zoneOrKeyword = !(zone.isDefined && keyword.isDefined)
-                Validation.validate(
-                  validateField(
-                    "keyword",
-                    "invalid_value",
-                    zoneOrKeyword,
-                    "Cannot use both zone and keyword parameters."
-                  )
-                )
-                provideAsync(
-                  sequenceService
-                    .startNewSequence(
-                      zone = zone,
-                      keyword = keyword,
-                      maybeUserId = userAuth.map(_.user.userId),
-                      questionId = questionId,
-                      includedProposalIds = includes.getOrElse(Seq.empty),
-                      tagsIds = None,
-                      requestContext = requestContext,
-                      cardId = None,
-                      token = None
-                    )
-                ) { sequences =>
-                  complete(sequences)
-                }
-            }
-          }
-        }
-      }
+      } yield ActiveFeatureData(topProposal)
     }
 
     override def searchQuestions: Route = get {
@@ -863,7 +810,7 @@ trait DefaultQuestionApiComponent
 
     override def getKeywords: Route = get {
       path("questions" / questionId / "keywords") { questionId =>
-        makeOperation("GetKeywords") { requestContext =>
+        makeOperation("GetKeywords") { _ =>
           parameters("limit".as[Int]) { (limit: Int) =>
             provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
               provideAsync(keywordService.findTop(questionId, limit)) { keywords =>

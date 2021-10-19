@@ -30,7 +30,6 @@ import org.make.core.proposal.indexed.{IndexedProposal, SequencePool, Zone}
 import org.make.core.question.QuestionId
 import org.make.core.sequence._
 import org.make.core.session.SessionId
-import org.make.core.tag.TagId
 
 import eu.timepit.refined.auto._
 
@@ -243,38 +242,6 @@ object SequenceBehaviour extends Logging {
       )
     }
   }
-
-  final case class Tags(
-    tagsIds: Option[Seq[TagId]],
-    override val configuration: SequenceConfiguration,
-    questionId: QuestionId,
-    maybeSegment: Option[String],
-    sessionId: SessionId
-  ) extends SequenceBehaviour
-      with ExplorationBehavior {
-
-    override def newProposals(search: SearchFunction): Future[Seq[IndexedProposal]] = {
-      search(
-        questionId,
-        maybeSegment,
-        Some(SequencePool.New),
-        proposal.SearchQuery(filters = Some(proposal.SearchFilters(tags = tagsIds.map(proposal.TagsSearchFilter.apply)))
-        ),
-        CreationDateAlgorithm(SortOrder.Asc)
-      )
-    }
-
-    override def testedProposals(search: SearchFunction): Future[Seq[IndexedProposal]] = {
-      search(
-        questionId,
-        maybeSegment,
-        Some(SequencePool.Tested),
-        proposal.SearchQuery(filters = Some(proposal.SearchFilters(tags = tagsIds.map(proposal.TagsSearchFilter.apply)))
-        ),
-        RandomAlgorithm(MakeRandom.nextInt())
-      )
-    }
-  }
 }
 
 trait SequenceBehaviourProvider[T] {
@@ -323,13 +290,4 @@ object SequenceBehaviourProvider {
     maybeSegment: Option[String],
     sessionId: SessionId
   ) => SequenceBehaviour.Keyword(keyword, configuration, questionId, maybeSegment, sessionId)
-
-  implicit val tags: SequenceBehaviourProvider[Option[Seq[TagId]]] = (
-    tagsIds: Option[Seq[TagId]],
-    configuration: SequenceConfiguration,
-    questionId: QuestionId,
-    maybeSegment: Option[String],
-    sessionId: SessionId
-  ) => SequenceBehaviour.Tags(tagsIds, configuration, questionId, maybeSegment, sessionId)
-
 }

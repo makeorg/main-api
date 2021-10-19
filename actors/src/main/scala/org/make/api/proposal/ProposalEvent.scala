@@ -190,7 +190,7 @@ object PublishedProposalEvent {
     requestContext: RequestContext,
     updatedAt: ZonedDateTime,
     moderator: Option[UserId] = None,
-// @deprecated "Use the edition field instead"
+    @Deprecated(since = "30/10/2017. Use the edition field instead")
     content: String = "",
     edition: Option[ProposalEdition] = None,
     theme: Option[ThemeId] = None,
@@ -359,7 +359,7 @@ object PublishedProposalEvent {
     id: ProposalId,
     maybeUserId: Option[UserId],
     eventDate: ZonedDateTime,
-// @deprecated "Use the maybeOrganisationId field instead"
+    @Deprecated(since = "05/09/2018. Use the maybeOrganisationId field instead")
     organisationInfo: Option[OrganisationInfo] = None,
     maybeOrganisationId: Option[UserId],
     requestContext: RequestContext,
@@ -383,7 +383,7 @@ object PublishedProposalEvent {
     id: ProposalId,
     maybeUserId: Option[UserId],
     eventDate: ZonedDateTime,
-// @deprecated "Use the maybeOrganisationId field instead"
+    @Deprecated(since = "05/09/2018. Use the maybeOrganisationId field instead")
     organisationInfo: Option[OrganisationInfo] = None,
     maybeOrganisationId: Option[UserId],
     requestContext: RequestContext,

@@ -23,15 +23,13 @@ import grizzled.slf4j.Logging
 import org.make.api.operation.OperationOfQuestionSearchEngineComponent
 import org.make.api.proposal._
 import org.make.api.segment.SegmentServiceComponent
-import org.make.api.sequence.SequenceBehaviour.ConsensusParam
 import org.make.api.sessionhistory._
 import org.make.api.technical.security.SecurityConfigurationComponent
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.{IndexedProposal, SequencePool, Zone}
+import org.make.core.proposal.indexed.{IndexedProposal, SequencePool}
 import org.make.core.question.QuestionId
-import org.make.core.tag.TagId
 import org.make.core.user._
 import org.make.core.{proposal, DateHelper, RequestContext}
 import eu.timepit.refined.auto._
@@ -112,43 +110,6 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       )
     }
 
-    @Deprecated
-    override def startNewSequence(
-      zone: Option[Zone],
-      keyword: Option[ProposalKeywordKey],
-      maybeUserId: Option[UserId],
-      questionId: QuestionId,
-      includedProposalIds: Seq[ProposalId],
-      tagsIds: Option[Seq[TagId]],
-      requestContext: RequestContext,
-      cardId: Option[DemographicsCardId],
-      token: Option[String]
-    ): Future[SequenceResult] = {
-      val votedProposals =
-        sessionHistoryCoordinatorService.retrieveVotedProposals(RequestSessionVotedProposals(requestContext.sessionId))
-      for {
-        _                  <- logStartSequenceUserHistory(questionId, maybeUserId, includedProposalIds, requestContext)
-        behaviour          <- resolveBehaviour(questionId, requestContext, zone, keyword, tagsIds)
-        proposalsToExclude <- votedProposals
-        sequenceProposals  <- chooseSequenceProposals(includedProposalIds, behaviour, proposalsToExclude)
-        sequenceVotes      <- votesForProposals(maybeUserId, requestContext, sequenceProposals.map(_.id))
-        demographicsCard   <- demographicsCardService.getOrPickRandom(cardId, token, questionId)
-      } yield SequenceResult(
-        proposals = sequenceProposals
-          .map(indexed => {
-            val proposalKey =
-              proposalService.generateProposalKeyHash(
-                indexed.id,
-                requestContext.sessionId,
-                requestContext.location,
-                securityConfiguration.secureVoteSalt
-              )
-            ProposalResponse(indexed, maybeUserId.contains(indexed.userId), sequenceVotes.get(indexed.id), proposalKey)
-          }),
-        demographics = demographicsCard
-      )
-    }
-
     private def logStartSequenceUserHistory(
       questionId: QuestionId,
       maybeUserId: Option[UserId],
@@ -183,12 +144,6 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       }
     }
 
-    @Deprecated
-    private def futureTop20ConsensusThreshold(questionId: QuestionId): Future[Option[Double]] =
-      elasticsearchOperationOfQuestionAPI
-        .findOperationOfQuestionById(questionId)
-        .map(_.flatMap(_.top20ConsensusThreshold))
-
     private def futureIncludedProposals(includedProposalsIds: Seq[ProposalId]): Future[Seq[IndexedProposal]] =
       if (includedProposalsIds.nonEmpty) {
         elasticsearchProposalAPI
@@ -202,45 +157,6 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       } else {
         Future.successful(Seq.empty)
       }
-
-    @Deprecated
-    def resolveBehaviour(
-      questionId: QuestionId,
-      requestContext: RequestContext,
-      zone: Option[Zone],
-      keyword: Option[ProposalKeywordKey],
-      tagsIds: Option[Seq[TagId]]
-    ): Future[SequenceBehaviour] = {
-      val futureParams = for {
-        maybeSegment <- segmentService.resolveSegment(requestContext)
-        config       <- sequenceConfigurationService.getSequenceConfigurationByQuestionId(questionId)
-      } yield (maybeSegment, config)
-      futureParams.flatMap {
-        case (maybeSegment, config) =>
-          (keyword, tagsIds, zone) match {
-            case (None, None, None) =>
-              Future.successful(SequenceBehaviour.Standard(config, questionId, maybeSegment, requestContext.sessionId))
-            case (Some(kw), _, _) =>
-              Future.successful(
-                SequenceBehaviour.Keyword(kw, config, questionId, maybeSegment, requestContext.sessionId)
-              )
-            case (_, _, Some(Zone.Consensus)) =>
-              futureTop20ConsensusThreshold(questionId).map(
-                threshold =>
-                  SequenceBehaviour
-                    .Consensus(ConsensusParam(threshold), config, questionId, maybeSegment, requestContext.sessionId)
-              )
-            case (_, _, Some(_)) =>
-              Future.successful(
-                SequenceBehaviour.Controversy(config, questionId, maybeSegment, requestContext.sessionId)
-              )
-            case (_, tags, _) =>
-              Future.successful(
-                SequenceBehaviour.Tags(tags, config, questionId, maybeSegment, requestContext.sessionId)
-              )
-          }
-      }
-    }
 
     private def chooseSequenceProposals(
       includedProposalsIds: Seq[ProposalId],

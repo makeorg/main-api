@@ -282,7 +282,6 @@ trait MakeApi
     with DefaultUserServiceComponent
     with DefaultUserTokenGeneratorComponent
     with DefaultViewApiComponent
-    with DefaultWidgetApiComponent
     with DefaultWidgetServiceComponent
     with DefaultWebflowClientComponent
     with DefaultWebflowConfigurationComponent
@@ -405,8 +404,7 @@ trait MakeApi
       classOf[TagApi],
       classOf[TrackingApi],
       classOf[UserApi],
-      classOf[ViewApi],
-      classOf[WidgetApi]
+      classOf[ViewApi]
     ) ++ envDependentApiClasses
 
   private lazy val optionsCors: Route = options {
@@ -479,8 +477,7 @@ trait MakeApi
       tagApi.routes ~
       trackingApi.routes ~
       userApi.routes ~
-      viewApi.routes ~
-      widgetApi.routes
+      viewApi.routes
 }
 
 object MakeApi extends Logging with Directives with ErrorAccumulatingCirceSupport {

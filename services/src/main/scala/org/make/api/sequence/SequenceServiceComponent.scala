@@ -24,9 +24,7 @@ import io.circe.generic.semiauto.deriveEncoder
 import org.make.api.demographics.DemographicsCardResponse
 import org.make.api.proposal.ProposalResponse
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.Zone
 import org.make.core.question.QuestionId
-import org.make.core.tag.TagId
 import org.make.core.user._
 import org.make.core.RequestContext
 import org.make.core.demographics.DemographicsCardId
@@ -43,18 +41,6 @@ trait SequenceService {
     maybeUserId: Option[UserId],
     questionId: QuestionId,
     includedProposalsIds: Seq[ProposalId],
-    requestContext: RequestContext,
-    cardId: Option[DemographicsCardId],
-    token: Option[String]
-  ): Future[SequenceResult]
-
-  def startNewSequence(
-    zone: Option[Zone],
-    keyword: Option[ProposalKeywordKey],
-    maybeUserId: Option[UserId],
-    questionId: QuestionId,
-    includedProposalIds: Seq[ProposalId],
-    tagsIds: Option[Seq[TagId]],
     requestContext: RequestContext,
     cardId: Option[DemographicsCardId],
     token: Option[String]

@@ -37,9 +37,8 @@ import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.{PartnerService, PartnerServiceComponent}
 import org.make.api.personality.{PersonalityRoleService, PersonalityRoleServiceComponent}
 import org.make.api.proposal._
-import org.make.api.sequence.{SequenceResult, SequenceService}
+import org.make.api.sequence.SequenceService
 import org.make.api.tag.{TagService, TagServiceComponent}
-import org.make.core.demographics.DemographicsCardId
 import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId, FeatureSlug, Feature => Feat}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.keyword.Keyword
@@ -177,36 +176,6 @@ class QuestionApiTest
       case Some(Zone.Controversy) => 24
       case _                      => 0
     }) / (if (query.filters.flatMap(_.sequencePool.map(_.sequencePool)).contains(SequencePool.Tested)) 1 else 2))
-  }
-
-  Feature("start sequence by question id") {
-    Scenario("valid question") {
-      val questionId = QuestionId("question-id")
-      when(
-        sequenceService.startNewSequence(
-          zone = eqTo(None),
-          keyword = eqTo(None),
-          maybeUserId = any[Option[UserId]],
-          questionId = eqTo(questionId),
-          includedProposalIds = any[Seq[ProposalId]],
-          tagsIds = any[Option[Seq[TagId]]],
-          requestContext = any[RequestContext],
-          cardId = any[Option[DemographicsCardId]],
-          token = any[Option[String]]
-        )
-      ).thenReturn(Future.successful(SequenceResult(Seq.empty, None)))
-      Get(s"/questions/${questionId.value}/start-sequence") ~> routes ~> check {
-        status should be(StatusCodes.OK)
-      }
-    }
-
-    Scenario("invalid params") {
-      val questionId = QuestionId("question-id")
-      Get(s"/questions/${questionId.value}/start-sequence?zone=zone&keyword=keyword") ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-      }
-    }
-
   }
 
   Feature("get question details") {
