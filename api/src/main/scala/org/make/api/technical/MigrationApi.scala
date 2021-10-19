@@ -24,28 +24,17 @@ import akka.http.scaladsl.server.{Directives, Route}
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
 import org.make.api.ActorSystemComponent
-import org.make.api.proposal.{
-  PatchProposalRequest,
-  ProposalCoordinatorServiceComponent,
-  UpdateQualificationRequest,
-  UpdateVoteRequest
-}
+import org.make.api.technical.Futures.RichFutures
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.user.UserServiceComponent
+import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core._
-import org.make.core.proposal.{
-  BaseVoteOrQualification,
-  Key,
-  ProposalId,
-  ProposalStatus,
-  Qualification,
-  QualificationKey,
-  Vote,
-  VoteKey
-}
+import org.make.core.user.UserId
 
 import javax.ws.rs.Path
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 @Api(value = "Migrations")
 @Path(value = "/migrations")
@@ -54,7 +43,7 @@ trait MigrationApi extends Directives {
   def emptyRoute: Route
 
   @ApiOperation(
-    value = "snapshot-all-proposals",
+    value = "cleanup-user-history",
     httpMethod = "POST",
     code = HttpCodes.NoContent,
     authorizations = Array(
@@ -64,12 +53,14 @@ trait MigrationApi extends Directives {
       )
     )
   )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "dry", paramType = "query", dataType = "boolean")))
+  @ApiImplicitParams(
+    value = Array(new ApiImplicitParam(name = "dry", paramType = "query", dataType = "boolean", required = true))
+  )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
-  @Path(value = "/snapshot-all-proposals")
-  def snapshotAllProposals: Route
+  @Path(value = "/cleanup-user-history")
+  def cleanUserHistory: Route
 
-  def routes: Route = snapshotAllProposals
+  def routes: Route = cleanUserHistory
 }
 
 trait MigrationApiComponent {
@@ -79,9 +70,9 @@ trait MigrationApiComponent {
 trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthenticationDirectives with Logging {
   this: MakeDirectivesDependencies
     with ActorSystemComponent
-    with DateHelperComponent
     with ReadJournalComponent
-    with ProposalCoordinatorServiceComponent =>
+    with UserServiceComponent
+    with UserHistoryCoordinatorServiceComponent =>
 
   override lazy val migrationApi: MigrationApi = new DefaultMigrationApi
 
@@ -93,115 +84,48 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
         }
       }
 
-    override def snapshotAllProposals: Route = post {
-      path("migrations" / "snapshot-all-proposals") {
-        makeOperation("SnapshotAllProposals") { requestContext =>
-          makeOAuth2 { userAuth =>
-            requireAdminRole(userAuth.user) {
-              parameters("dry".as[Boolean].?) { dry =>
-                type Field[Element, Request] = (String, Element => Int, Request => Request)
+    override def cleanUserHistory: Route = post {
+      path("migrations" / "cleanup-user-history") {
+        makeOAuth2 { userAuth =>
+          requireAdminRole(userAuth.user) {
+            parameter("dry".as[Boolean]) { dry =>
+              val batchSize: Int = 1000
+              val startTime = System.currentTimeMillis()
+              userJournal
+                .currentPersistenceIds()
+                .map(UserId.apply)
+                .grouped(batchSize)
+                .mapAsync(1) { ids =>
+                  userService.getUsersByUserIds(ids).map { foundUsers =>
+                    val realUsers = foundUsers
+                      .filter(u => !u.email.startsWith("yopmail+") || !u.email.endsWith("@make.org"))
+                      .map(_.userId)
+                      .toSet
 
-                val voteFields: Seq[Field[Vote, UpdateVoteRequest]] = Seq(
-                  ("count", _.count, _.copy(count = Some(0))),
-                  ("countVerified", _.countVerified, _.copy(countVerified = Some(0))),
-                  ("countSegment", _.countSegment, _.copy(countSegment = Some(0))),
-                  ("countSequence", _.countSequence, _.copy(countSequence = Some(0)))
-                )
-                val qualificationFields: Seq[Field[Qualification, UpdateQualificationRequest]] = Seq(
-                  ("count", _.count, _.copy(count = Some(0))),
-                  ("countVerified", _.countVerified, _.copy(countVerified = Some(0))),
-                  ("countSegment", _.countSegment, _.copy(countSegment = Some(0))),
-                  ("countSequence", _.countSequence, _.copy(countSequence = Some(0)))
-                )
-
-                def getUpdates[E, R](id: ProposalId, key: Key, e: E, fields: Seq[Field[E, R]]): Seq[R => R] = {
-                  fields.flatMap {
-                    case (name, get, set) =>
-                      val count = get(e)
-                      if (count < 0) {
-                        logger.warn(s"Proposal $id has negative $key $name: $count")
-                        Some(set)
-                      } else {
-                        None
-                      }
+                    ids.filter(!realUsers.contains(_))
                   }
                 }
-
-                def buildRequests[K <: Key, Element <: BaseVoteOrQualification[K], Request, SubParam](
-                  id: ProposalId,
-                  buildSubParams: Element => Seq[SubParam],
-                  elements: Seq[Element],
-                  fields: Seq[Field[Element, Request]],
-                  requestBuilder: (K, Seq[SubParam]) => Request
-                ): Seq[Request] = {
-                  elements.flatMap { e =>
-                    val updates = getUpdates(id, e.key, e, fields)
-                    val subParams = buildSubParams(e)
-                    if (updates.isEmpty && subParams.isEmpty) {
-                      None
-                    } else {
-                      Some(updates.foldLeft(requestBuilder(e.key, subParams)) { (request, set) =>
-                        set(request)
-                      })
-                    }
+                .mapConcat(identity)
+                .mapAsync(1) { id =>
+                  if (dry) {
+                    Future.unit
+                  } else {
+                    userHistoryCoordinatorService
+                      .delete(id)
+                      .toUnit
                   }
                 }
+                .map(_ => 1)
+                .runFold(0)(_ + _)
+                .onComplete {
+                  case Success(count) =>
+                    val time = System.currentTimeMillis() - startTime
+                    logger.info(s"$count users have had their events deleted in $time ms")
+                  case Failure(exception) =>
+                    logger.error("Error while deleting anonymized user events:", exception)
+                }
 
-                proposalJournal
-                  .currentPersistenceIds()
-                  .map(ProposalId.apply)
-                  .mapAsync(4) { id =>
-                    proposalCoordinatorService.getProposal(id).map {
-                      case Some(proposal)
-                          if Seq(ProposalStatus.Accepted, ProposalStatus.Archived, ProposalStatus.Refused)
-                            .contains(proposal.status) =>
-                        val updateVoteRequests =
-                          buildRequests[VoteKey, Vote, UpdateVoteRequest, UpdateQualificationRequest](
-                            id = proposal.proposalId,
-                            buildSubParams = vote =>
-                              buildRequests[QualificationKey, Qualification, UpdateQualificationRequest, Nothing](
-                                id = proposal.proposalId,
-                                buildSubParams = _ => Nil,
-                                elements = vote.qualifications,
-                                fields = qualificationFields,
-                                requestBuilder = { case (key, _) => UpdateQualificationRequest(key) }
-                              ),
-                            elements = proposal.votes,
-                            fields = voteFields,
-                            requestBuilder = {
-                              case (key, qualifs) => UpdateVoteRequest(key, None, None, None, None, qualifs)
-                            }
-                          )
-                        val update =
-                          if (updateVoteRequests.isEmpty) Future.successful(Some(proposal))
-                          else {
-                            logger.info(s"Update proposal $id votes with $updateVoteRequests")
-                            if (dry.contains(false))
-                              proposalCoordinatorService
-                                .updateVotes(
-                                  userAuth.user.userId,
-                                  id,
-                                  requestContext,
-                                  dateHelper.now(),
-                                  updateVoteRequests
-                                )
-                            else Future.successful(Some(proposal))
-                          }
-                        update.flatMap {
-                          case Some(_) if (dry.contains(false)) =>
-                            proposalCoordinatorService
-                              .patch(id, userAuth.user.userId, PatchProposalRequest(), requestContext)
-                          case other =>
-                            if (other.isEmpty) logger.error(s"Updating votes of proposal $id failed")
-                            Future.successful(None)
-                        }
-                      case Some(_) => ()
-                      case None    => logger.error(s"No proposal found with id $id")
-                    }
-                  }
-                  .run()
-                complete(StatusCodes.NoContent)
-              }
+              complete(StatusCodes.NoContent)
             }
           }
         }
