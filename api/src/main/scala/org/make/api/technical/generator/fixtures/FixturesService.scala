@@ -43,7 +43,7 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.ExecutorServiceHelper._
 import org.make.api.technical.generator.EntitiesGen
-import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
+import org.make.api.technical.security.SecurityConfigurationComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.operation.{OperationId, SimpleOperation}
 import org.make.core.partner.Partner
@@ -268,7 +268,7 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Logg
       val sampleSize = if (proposals.size > 50) 50 else proposals.size
       val proposalsSample = Gen.pick(sampleSize, proposals).value
       def proposalKey(proposalId: ProposalId, sessionId: SessionId): String =
-        SecurityHelper.generateProposalKeyHash(
+        proposalService.generateProposalKeyHash(
           proposalId,
           sessionId,
           Some("fixtures"),

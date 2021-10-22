@@ -20,8 +20,8 @@
 package org.make.api
 
 import akka.actor.typed.scaladsl.AskPattern.schedulerFromActorSystem
-import akka.actor.typed.{SpawnProtocol, ActorRef => TypedActorRef, ActorSystem => ActorSystemTyped}
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.typed.{SpawnProtocol, ActorRef => TypedActorRef}
+import akka.actor.ActorRef
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import akka.util.Timeout
@@ -323,8 +323,8 @@ trait MakeApi
     actorSystemTyped.findRefByKey(SequenceConfigurationActor.SequenceCacheActorKey)
   }, atMost = 5.seconds)
 
-  override lazy val readExecutionContext: EC = DatabaseConfiguration(actorSystemTyped).readThreadPool
-  override lazy val writeExecutionContext: EC = DatabaseConfiguration(actorSystemTyped).writeThreadPool
+  override lazy val readExecutionContext: EC = DatabaseConfigurationExtension(actorSystemTyped).readThreadPool
+  override lazy val writeExecutionContext: EC = DatabaseConfigurationExtension(actorSystemTyped).writeThreadPool
 
   override lazy val tokenEndpoint: TokenEndpoint = new TokenEndpoint {
 
@@ -557,18 +557,6 @@ object MakeApi extends Logging with Directives with ErrorAccumulatingCirceSuppor
       res
     }
 
-}
-
-trait ActorSystemTypedComponent {
-  implicit def actorSystemTyped: ActorSystemTyped[Nothing]
-}
-
-trait ActorSystemComponent {
-  implicit def actorSystem: ActorSystem
-}
-
-trait ConfigComponent {
-  def config: Config
 }
 
 trait DefaultConfigComponent extends ConfigComponent {

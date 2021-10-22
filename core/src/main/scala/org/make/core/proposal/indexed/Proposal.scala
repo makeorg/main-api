@@ -25,6 +25,7 @@ import enumeratum.{Circe, Enum, EnumEntry}
 import io.circe.generic.semiauto._
 import io.circe.{Codec, Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
+import org.make.api.proposal.ProposalScorer
 import org.make.core.elasticsearch.ElasticsearchFieldName
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{OperationId, OperationKind}
@@ -403,6 +404,20 @@ object IndexedScores {
       IndexedScore.empty,
       Zone.Limbo
     )
+
+  def apply(scorer: ProposalScorer): IndexedScores =
+    IndexedScores(
+      engagement = IndexedScore(scorer.engagement),
+      agreement = IndexedScore(scorer.agree),
+      adhesion = IndexedScore(scorer.adhesion),
+      realistic = IndexedScore(scorer.realistic),
+      platitude = IndexedScore(scorer.platitude),
+      topScore = IndexedScore(scorer.topScore),
+      controversy = IndexedScore(scorer.controversy),
+      rejection = IndexedScore(scorer.rejection),
+      zone = scorer.zone
+    )
+
 }
 
 final case class IndexedScore(score: Double, lowerBound: Double, upperBound: Double)
@@ -410,6 +425,9 @@ final case class IndexedScore(score: Double, lowerBound: Double, upperBound: Dou
 object IndexedScore {
   implicit val codec: Codec[IndexedScore] = deriveCodec
   val empty: IndexedScore = IndexedScore(0, 0, 0)
+
+  def apply(score: ProposalScorer.Score): IndexedScore =
+    IndexedScore(score = score.score, lowerBound = score.lowerBound, upperBound = score.upperBound)
 }
 
 final case class ProposalsSearchResult(total: Long, results: Seq[IndexedProposal])

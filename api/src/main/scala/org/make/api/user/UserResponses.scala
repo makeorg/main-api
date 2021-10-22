@@ -23,7 +23,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import io.circe.{Codec, Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
 import io.swagger.annotations.ApiModelProperty
-import org.make.api.technical.auth.AuthenticationApi.TokenResponse
+import org.make.api.technical.auth.TokenResponse
 import org.make.core.CirceFormatters
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.question.QuestionId

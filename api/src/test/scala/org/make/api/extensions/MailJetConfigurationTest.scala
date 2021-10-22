@@ -65,7 +65,7 @@ class MailJetConfigurationTest
     TestKit.shutdownActorSystem(system)
   }
 
-  val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(system.toTyped)
+  val mailJetConfiguration: MailJetConfiguration = MailJetConfigurationExtension(system.toTyped)
 
   Scenario("Register user and create proposal") {
     mailJetConfiguration.apiKey shouldBe ("apikey")

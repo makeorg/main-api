@@ -41,6 +41,8 @@ object Dependencies {
   private val zioVersion = "1.0.1"
   private val mockitoVersion = "1.16.37"
 
+  val cats: ModuleID = "org.typelevel" %% "cats-core" % "2.6.1"
+
   val grizzledSlf4j: ModuleID = "org.clapper"             %% "grizzled-slf4j"  % "1.3.4"
   val logger: ModuleID = "org.apache.logging.log4j"       % "log4j"            % log4jVersion
   val loggerBridge: ModuleID = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4jVersion
@@ -54,11 +56,7 @@ object Dependencies {
 
   val circeGeneric: ModuleID = "io.circe"                 %% "circe-generic"               % circeVersion
   val circeParser = "io.circe"                            %% "circe-parser"                % circeVersion
-  val akka: ModuleID = "com.typesafe.akka"                %% "akka-actor-typed"            % akkaVersion
-  val akkaCluster: ModuleID = "com.typesafe.akka"         %% "akka-cluster-typed"          % akkaVersion
-  val akkaClusterTools: ModuleID = "com.typesafe.akka"    %% "akka-cluster-tools"          % akkaVersion
   val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion
-  val akkaStream: ModuleID = "com.typesafe.akka"          %% "akka-stream-typed"           % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"                   % akkaHttpVersion
   val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"             % "1.37.0"
   val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "1.2.0")
@@ -117,15 +115,13 @@ object Dependencies {
       .exclude("org.slf4j", "slf4j-log4j12")
       .exclude("io.netty", "netty")
 
-  val configuration: ModuleID = "com.typesafe" % "config" % "1.3.3"
+  val configuration: ModuleID = "com.typesafe" % "config" % "1.4.0"
 
   val elastic4s: ModuleID = "com.sksamuel.elastic4s"      %% "elastic4s-core"  % elastic4sVersion
   val elastic4sHttp: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-http"  % elastic4sVersion
-  val elastic4sAkka: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-akka"  % elastic4sVersion
   val elastic4sCirce: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-circe" % elastic4sVersion
 
   val stamina: ModuleID = "com.scalapenos"    %% "stamina-json" % staminaVersion
-  val sprayJson: ModuleID = "io.spray"        %% "spray-json"   % "1.3.5"
   val jsonLenses = "net.virtual-void"         %% "json-lenses"  % "0.6.2"
   val scalaCheck: ModuleID = "org.scalacheck" %% "scalacheck"   % "1.15.4"
 
@@ -145,22 +141,22 @@ object Dependencies {
   val enumeratumScalacheck: ModuleID = "com.beachape" %% "enumeratum-scalacheck" % enumeratumVersion
 
   // Test related dependencies
-  val akkaTest: ModuleID = "com.typesafe.akka"            %% "akka-actor-testkit-typed" % akkaVersion     % "it,test"
-  val akkaStreamTest: ModuleID = "com.typesafe.akka"      %% "akka-stream-testkit"      % akkaVersion     % "it,test"
-  val scalaTest: ModuleID = "org.scalatest"               %% "scalatest"                % "3.2.9"         % "it,test"
-  val scalaTestScalaCheck: ModuleID = "org.scalatestplus" %% "scalacheck-1-15"          % "3.2.9.0"       % "it,test"
+  val akkaTest: ModuleID = "com.typesafe.akka"            %% "akka-actor-testkit-typed" % akkaVersion
+  val akkaStreamTest: ModuleID = "com.typesafe.akka"      %% "akka-stream-testkit"      % akkaVersion % "it,test"
+  val scalaTest: ModuleID = "org.scalatest"               %% "scalatest"                % "3.2.9"
+  val scalaTestScalaCheck: ModuleID = "org.scalatestplus" %% "scalacheck-1-15"          % "3.2.9.0"
   val akkaHttpTest: ModuleID = "com.typesafe.akka"        %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
-  val mockito: ModuleID = "org.mockito"                   %% "mockito-scala"            % mockitoVersion  % "it,test"
-  val mockitoScalatest: ModuleID = "org.mockito"          %% "mockito-scala-scalatest"  % mockitoVersion  % "it,test"
-  val dockerScalatest: ModuleID = "com.whisk"             %% "docker-testkit-scalatest" % "0.9.9"         % "it"
-  val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.9" % "it")
+  val mockito: ModuleID = "org.mockito"                   %% "mockito-scala"            % mockitoVersion
+  val mockitoScalatest: ModuleID = "org.mockito"          %% "mockito-scala-scalatest"  % mockitoVersion
+  val dockerScalatest: ModuleID = "com.whisk"             %% "docker-testkit-scalatest" % "0.9.9"
+  val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.9")
     .exclude("io.netty", "netty-handler")
     .exclude("io.netty", "netty-transport-native-epoll")
 
   // Needed to use the client....
-  val jerseyServer: ModuleID = "org.glassfish.jersey.core"      % "jersey-server"              % jerseyVersion  % "it"
-  val jerseyHk2: ModuleID = "org.glassfish.jersey.inject"       % "jersey-hk2"                 % jerseyVersion  % "it"
-  val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2"     % "it,test"
+  val jerseyServer: ModuleID = "org.glassfish.jersey.core"      % "jersey-server"              % jerseyVersion % "it"
+  val jerseyHk2: ModuleID = "org.glassfish.jersey.inject"       % "jersey-hk2"                 % jerseyVersion % "it"
+  val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2"
   val staminaTestKit: ModuleID = "com.scalapenos"               %% "stamina-testkit"           % staminaVersion % "test"
 
   val scalaCsv: ModuleID = "com.github.tototoshi" %% "scala-csv" % "1.3.8" % "test"

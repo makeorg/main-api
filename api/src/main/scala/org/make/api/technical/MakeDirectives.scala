@@ -34,8 +34,7 @@ import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
-import org.make.api.technical.auth.AuthenticationApi.TokenResponse
-import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent, TokenResponse}
 import org.make.api.technical.directives.{FutureDirectives, ValidationDirectives}
 import org.make.api.technical.monitoring.MonitoringMessageHelper
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
@@ -980,11 +979,4 @@ final case class `X-Make-Custom-Data`(override val value: String) extends Modele
 object `X-Make-Custom-Data` extends ModeledCustomHeaderCompanion[`X-Make-Custom-Data`] {
   override val name: String = "x-make-custom-data"
   override def parse(value: String): Try[`X-Make-Custom-Data`] = Success(new `X-Make-Custom-Data`(value))
-}
-
-final case class IpAndHash(ip: String, hash: String)
-
-object IpAndHash {
-  def obfuscateIp(ip: String): String =
-    s"${ip.take(ip.lastIndexOf("."))}.x"
 }

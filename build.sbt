@@ -19,6 +19,7 @@
 
 import java.time.LocalDate
 
+import Syntax._
 import Tasks._
 import org.make.GitHooks
 import sbt.Keys.scalacOptions
@@ -45,16 +46,8 @@ lazy val commonSettings = Seq(
       Nil
     }
   },
-  kanelaVersion := Dependencies.kanelaVersion,
-  libraryDependencies ++= Seq(
-    Dependencies.logger,
-    Dependencies.loggerBridge,
-    Dependencies.grizzledSlf4j,
-    Dependencies.scalaTest,
-    Dependencies.scalaTestScalaCheck,
-    Dependencies.mockito,
-    Dependencies.mockitoScalatest
-  ),
+  kanelaVersion       := Dependencies.kanelaVersion,
+  libraryDependencies ++= Seq(Dependencies.logger, Dependencies.loggerBridge, Dependencies.grizzledSlf4j),
   publishTo := {
     if (isSnapshot.value) {
       Some("Sonatype Snapshots Nexus".at("https://nexus.prod.makeorg.tech/repository/maven-snapshots/"))
@@ -82,6 +75,7 @@ lazy val commonSettings = Seq(
   IntegrationTest / scalastyleFailOnError   := (scalastyle / scalastyleFailOnError).value,
   IntegrationTest / scalastyleFailOnWarning := (scalastyle / scalastyleFailOnWarning).value,
   IntegrationTest / scalastyleSources       := Seq((IntegrationTest / scalaSource).value),
+  IntegrationTest / testOptions             += Tests.Argument("-oF"),
   wartremoverErrors in (Compile, compile) ++= Warts.allBut(
     Wart.Any,
     Wart.DefaultArguments,
@@ -104,30 +98,75 @@ lazy val commonSettings = Seq(
 addCommandAlias("checkStyle", ";scalastyle;test:scalastyle;it:scalastyle;scalafmtCheckAll;scalafmtSbtCheck")
 addCommandAlias("fixStyle", ";scalafmtAll;scalafmtSbt")
 
-lazy val phantom = project
-  .in(file("."))
-  .configs(IntegrationTest)
-  .settings(Defaults.itSettings: _*)
-  .settings(commonSettings: _*)
+lazy val phantom = module("phantom", ".")
   .settings(moduleName := "make-phantom": _*)
-  .aggregate(core, api)
+  .aggregate(
+    actors,
+    akka,
+    api,
+    cockroachdb,
+    core,
+    indexation,
+    integrationTests,
+    persistence,
+    search,
+    services,
+    servicesImpl,
+    technical,
+    tests,
+    webflow
+  )
 
-lazy val core = project
-  .in(file("core"))
-  .configs(IntegrationTest)
-  .settings(commonSettings: _*)
-  .settings(Defaults.itSettings: _*)
+lazy val actors = module("actors")
+  .dependsOn(akka, core, tests % Test, integrationTests % IntegrationTest)
 
-lazy val api = project
-  .in(file("api"))
-  .configs(IntegrationTest)
-  .settings(commonSettings: _*)
-  .settings(Defaults.itSettings: _*)
+lazy val akka = module("akka")
+  .dependsOn(technical, tests % Test)
+
+lazy val api = module("api")
   .settings(imageName := {
     val alias = dockerAlias.value
     s"${alias.registryHost.map(_ + "/").getOrElse("")}${alias.name}:${alias.tag.getOrElse("latest")}"
-  }, testOptions in IntegrationTest += Tests.Argument("-oF"))
+  })
+  .dependsOn(cockroachdb, core, indexation, servicesImpl, technical, tests % Test, integrationTests % IntegrationTest)
+
+lazy val cockroachdb = module("cockroachdb")
+  .dependsOn(persistence, technical, tests % Test)
+  .dependsOn("integration-tests", IntegrationTest)
+
+lazy val core = module("core")
+  .dependsOn(technical)
+  .dependsOn("tests", Test)
+
+lazy val indexation = module("indexation")
+  .dependsOn(services, persistence, tests % Test)
+
+lazy val integrationTests = module("integration-tests")
+  .dependsOn(cockroachdb, core, tests)
+
+lazy val persistence = module("persistence")
   .dependsOn(core)
+
+lazy val search = module("search")
+  .dependsOn(core, technical, tests % Test, integrationTests % IntegrationTest)
+
+lazy val services = module("services")
+  .dependsOn(actors, core, persistence, search, tests % Test)
+
+lazy val servicesImpl = module("services-impl")
+  .dependsOn(services, technical, webflow, tests % Test)
+
+lazy val technical = module("technical")
+  .dependsOn("tests", Test)
+
+lazy val tests = module("tests")
+  .dependsOn(core)
+
+lazy val webflow = module("webflow")
+  .dependsOn(akka, tests % Test)
+
+ThisBuild / Test / fork            := true
+ThisBuild / IntegrationTest / fork := true
 
 isSnapshot in ThisBuild := false
 
@@ -160,3 +199,10 @@ swiftContainerDirectory := {
 swiftReportsToSendPath := {
   (Compile / crossTarget).value / "scoverage-report"
 }
+
+def module(id: String): Project = module(id, id)
+def module(id: String, base: String): Project =
+  Project(id, file(base))
+    .configs(IntegrationTest)
+    .settings(commonSettings: _*)
+    .settings(Defaults.itSettings: _*)

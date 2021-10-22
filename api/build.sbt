@@ -27,71 +27,34 @@ libraryDependencies ++= Seq(
   Dependencies.commonsLoggingBridge,
   Dependencies.log4jJul,
   Dependencies.kamonCore,
-  Dependencies.kamonExecutors,
   Dependencies.kamonAkka,
   Dependencies.kamonAkkaHttp,
-  Dependencies.kamonAnnotations,
   Dependencies.kamonScalaFutures,
   Dependencies.kamonPrometheus,
   Dependencies.kamonSystemMetrics,
   Dependencies.kanela,
   Dependencies.akkaSlf4j,
-  Dependencies.akkaStream,
-  Dependencies.akkaPersistence,
   Dependencies.akkaPersistenceQuery,
   Dependencies.akkaHttp,
   Dependencies.akkaHttpSwagger,
-  Dependencies.akkaHttpCirce,
-  Dependencies.akkaClusterSharding,
-  Dependencies.akkaPersistenceCassandra,
-  Dependencies.kryoSerializer,
-  Dependencies.stamina,
   Dependencies.caliban,
   Dependencies.calibanAkkaHttp,
   Dependencies.cassandraQueryBuilder,
   Dependencies.zio,
   Dependencies.zioStreams,
   Dependencies.circeGeneric,
-  Dependencies.constructr,
-  Dependencies.constructrZookeeper,
   Dependencies.swaggerUi,
   Dependencies.kafkaClients,
   Dependencies.avroSerializer,
   Dependencies.avro4s,
-  Dependencies.scalaOAuth,
-  Dependencies.scalaBcrypt,
-  Dependencies.scalike,
-  Dependencies.scalikeMacros,
-  Dependencies.swiftClient,
-  Dependencies.postgresql,
-  Dependencies.flywaydb,
-  Dependencies.nettyAll,
   Dependencies.elastic4s,
   Dependencies.elastic4sHttp,
-  Dependencies.elastic4sCirce,
   Dependencies.akkaHttpTest,
-  Dependencies.akkaPersistenceInMemory,
-  Dependencies.akkaTest,
   Dependencies.akkaStreamTest,
-  Dependencies.dockerClient,
-  Dependencies.dockerScalatest,
   Dependencies.jerseyServer,
   Dependencies.jerseyHk2,
-  Dependencies.jaxRsApi,
-  Dependencies.jsonLenses,
-  Dependencies.apacheMath,
-  Dependencies.staminaTestKit,
-  Dependencies.alpakka,
-  Dependencies.scalaCsv
+  Dependencies.jaxRsApi
 )
-
-libraryDependencies += {
-  if (System.getProperty("os.name").toLowerCase.contains("mac")) {
-    Dependencies.nettyEpollMac
-  } else {
-    Dependencies.nettyEpoll
-  }
-}
 
 lazy val swaggerUiVersion: SettingKey[String] =
   SettingKey[String]("swaggerUiVersion", "version of swagger ui").withRank(KeyRanks.Invisible)
@@ -116,9 +79,7 @@ buildInfoKeys :=
     swaggerUiVersion
   )
 
-fork in run             := true
-fork in Test            := true
-fork in IntegrationTest := true
+run / fork := true
 
 val kamonInstrumentationWorkaround = Seq("--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED")
 

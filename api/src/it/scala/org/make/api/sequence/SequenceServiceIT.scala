@@ -111,7 +111,7 @@ import org.make.api.technical.job.{
   JobCoordinator,
   JobCoordinatorComponent
 }
-import org.make.api.technical.security.{DefaultSecurityConfigurationComponent, SecurityHelper}
+import org.make.api.technical.security.DefaultSecurityConfigurationComponent
 import org.make.api.technical.storage.{StorageService, StorageServiceComponent}
 import org.make.api.user.{
   DefaultPersistentUserServiceComponent,
@@ -356,7 +356,7 @@ class SequenceServiceIT
                         requestContext,
                         VoteKey.Agree,
                         Some(
-                          SecurityHelper.generateProposalKeyHash(
+                          proposalService.generateProposalKeyHash(
                             proposal.id,
                             requestContext.sessionId,
                             requestContext.location,

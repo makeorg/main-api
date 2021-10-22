@@ -5,6 +5,7 @@
 
 - Install the _scalafmt_ IntelliJ plugin
 - Install the _scala_ IntelliJ plugin
+- Check _sbt shell - use for: build_ in _Build > Build tools > sbt_ settings
 
 ## Setting up the dev environment with Code
 
