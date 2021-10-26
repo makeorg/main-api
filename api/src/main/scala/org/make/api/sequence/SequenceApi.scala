@@ -24,7 +24,6 @@ import grizzled.slf4j.Logging
 import io.swagger.annotations._
 import org.make.api.keyword.KeywordServiceComponent
 import org.make.api.operation.OperationOfQuestionSearchEngineComponent
-import org.make.api.proposal.ProposalsResultSeededResponse
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sequence.SequenceBehaviour.ConsensusParam
 import org.make.api.technical.CsvReceptacle._
@@ -34,7 +33,6 @@ import org.make.core.demographics.DemographicsCardId
 import org.make.core.proposal.indexed.Zone
 import org.make.core.proposal.{ProposalId, ProposalKeywordKey}
 import org.make.core.question.QuestionId
-import org.make.core.tag.TagId
 import org.make.core.user.{CountrySearchFilter => _, DescriptionSearchFilter => _, LanguageSearchFilter => _}
 import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
@@ -106,24 +104,8 @@ trait SequenceApi extends Directives {
   @Path(value = "/keyword/{questionId}/{keywordKey}")
   def startKeywordSequence: Route
 
-  @Deprecated
-  @ApiOperation(value = "start-tags-sequence", httpMethod = "GET", code = HttpCodes.OK)
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(name = "questionSlug", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string", allowMultiple = true),
-      new ApiImplicitParam(name = "include", paramType = "query", dataType = "string", allowMultiple = true)
-    )
-  )
-  @ApiResponses(
-    value =
-      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse]))
-  )
-  @Path(value = "/tags/{questionSlug}")
-  def startTagsSequence: Route
-
   def routes: Route =
-    startStandardSequence ~ startConsensusSequence ~ startControversySequence ~ startKeywordSequence ~ startTagsSequence
+    startStandardSequence ~ startConsensusSequence ~ startControversySequence ~ startKeywordSequence
 }
 
 trait DefaultSequenceApiComponent extends SequenceApiComponent {
@@ -139,7 +121,6 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent {
   class DefaultSequenceApi extends SequenceApi with Logging with ParameterExtractors {
 
     private val questionId: PathMatcher1[QuestionId] = Segment.map(QuestionId.apply)
-    private val questionSlug: PathMatcher1[String] = Segment
     private val keywordKey: PathMatcher1[ProposalKeywordKey] = Segment.map(ProposalKeywordKey.apply)
 
     override def startStandardSequence: Route = get {
@@ -263,41 +244,6 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent {
                         )
                       )
                     }
-                  }
-                }
-            }
-          }
-        }
-      }
-    }
-
-    @Deprecated
-    override def startTagsSequence: Route = get {
-      path("sequences" / "tags" / questionSlug) { questionSlug =>
-        makeOperation("StartTagsSequence") { requestContext =>
-          optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters("tagsIds".csv[TagId], "include".csv[ProposalId]) {
-              (tagsIds: Option[Seq[TagId]], includes: Option[Seq[ProposalId]]) =>
-                provideAsyncOrNotFound(questionService.getQuestionByQuestionIdValueOrSlug(questionSlug)) { question =>
-                  provideAsync(
-                    sequenceService
-                      .startNewSequence(
-                        behaviourParam = tagsIds,
-                        maybeUserId = userAuth.map(_.user.userId),
-                        questionId = question.questionId,
-                        includedProposalsIds = includes.getOrElse(Seq.empty),
-                        requestContext = requestContext,
-                        cardId = None,
-                        token = None
-                      )
-                  ) { sequenceResult =>
-                    complete(
-                      ProposalsResultSeededResponse(
-                        total = sequenceResult.proposals.size.toLong,
-                        results = sequenceResult.proposals,
-                        None
-                      )
-                    )
                   }
                 }
             }
