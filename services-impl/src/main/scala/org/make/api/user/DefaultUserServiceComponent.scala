@@ -344,7 +344,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         .map { lowerCasedEmail =>
           persistentUserService.findByEmail(lowerCasedEmail).flatMap {
             case Some(user) =>
-              updateUserFromSocial(user, userInfo, country, requestContext.ipAddress, privacyPolicyApprovalDate)
+              updateUserFromSocial(user, userInfo, requestContext.ipAddress, privacyPolicyApprovalDate)
                 .map((_, false))
             case None =>
               createUserFromSocial(
@@ -422,7 +422,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     private def updateUserFromSocial(
       user: User,
       userInfo: UserInfo,
-      country: Country,
       clientIp: Option[String],
       privacyPolicyApprovalDate: Option[ZonedDateTime]
     ): Future[User] = {
@@ -440,7 +439,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         user.copy(
           firstName = userInfo.firstName,
           lastIp = clientIp,
-          country = country,
           profile = updatedProfile,
           hashedPassword = hashedPassword,
           emailVerified = true,
