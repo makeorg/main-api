@@ -35,7 +35,7 @@ import scala.concurrent.Future
 trait DefaultPersistentWidgetServiceComponent extends PersistentWidgetServiceComponent {
   self: MakeDBExecutionContextComponent =>
 
-  override def persistentWidgetService: PersistentWidgetService = new PersistentWidgetService with ShortenedNames {
+  override lazy val persistentWidgetService: PersistentWidgetService = new PersistentWidgetService with ShortenedNames {
 
     private val widgets = SQLSyntaxSupportFactory[Widget]()
     private val w = widgets.syntax

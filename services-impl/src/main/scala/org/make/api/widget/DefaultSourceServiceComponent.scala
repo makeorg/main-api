@@ -32,7 +32,7 @@ import scala.concurrent.Future
 trait DefaultSourceServiceComponent extends SourceServiceComponent {
   self: DateHelperComponent with IdGeneratorComponent with PersistentSourceServiceComponent =>
 
-  override def sourceService: SourceService = new SourceService {
+  override lazy val sourceService: SourceService = new SourceService {
 
     override def get(id: SourceId): Future[Option[Source]] = persistentSourceService.get(id)
 

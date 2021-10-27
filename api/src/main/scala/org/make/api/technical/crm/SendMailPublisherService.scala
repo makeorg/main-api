@@ -179,7 +179,7 @@ trait DefaultSendMailPublisherServiceComponent
     }
   }
 
-  override def sendMailPublisherService: SendMailPublisherService = new DefaultSendMailPublisherService
+  override lazy val sendMailPublisherService: SendMailPublisherService = new DefaultSendMailPublisherService
 
   class DefaultSendMailPublisherService extends SendMailPublisherService {
     override def publishWelcome(user: User, requestContext: RequestContext): Future[Unit] = {

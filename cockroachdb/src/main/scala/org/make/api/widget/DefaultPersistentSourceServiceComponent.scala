@@ -35,14 +35,14 @@ import scala.concurrent.Future
 trait DefaultPersistentSourceServiceComponent extends PersistentSourceServiceComponent {
   self: MakeDBExecutionContextComponent =>
 
-  override def persistentSourceService: PersistentSourceService = new PersistentSourceService with ShortenedNames {
+  override lazy val persistentSourceService: PersistentSourceService = new PersistentSourceService with ShortenedNames {
 
     private val sources = SQLSyntaxSupportFactory[Source]()
     private val s = sources.syntax
 
     private implicit val companion: PersistentCompanion[Source, Source] = new PersistentCompanion[Source, Source] {
-      override def alias: SyntaxProvider[Source] = s
-      override def defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.name)
+      override val alias: SyntaxProvider[Source] = s
+      override val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.name)
       override val columnNames: Seq[String] = Seq("source", "name")
     }
 
