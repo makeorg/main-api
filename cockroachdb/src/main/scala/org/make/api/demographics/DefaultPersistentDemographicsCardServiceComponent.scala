@@ -36,7 +36,7 @@ import scala.concurrent.Future
 trait DefaultPersistentDemographicsCardServiceComponent extends PersistentDemographicsCardServiceComponent {
   self: MakeDBExecutionContextComponent =>
 
-  override def persistentDemographicsCardService: PersistentDemographicsCardService =
+  override lazy val persistentDemographicsCardService: PersistentDemographicsCardService =
     new PersistentDemographicsCardService with ShortenedNames {
 
       private val demographicsCards = SQLSyntaxSupportFactory[DemographicsCard]()
@@ -44,8 +44,8 @@ trait DefaultPersistentDemographicsCardServiceComponent extends PersistentDemogr
 
       private implicit val companion: PersistentCompanion[DemographicsCard, DemographicsCard] =
         new PersistentCompanion[DemographicsCard, DemographicsCard] {
-          override def alias: SyntaxProvider[DemographicsCard] = dc
-          override def defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.name)
+          override val alias: SyntaxProvider[DemographicsCard] = dc
+          override val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.name)
           override val columnNames: Seq[String] =
             Seq("name", "layout", "dataType", "language", "title", "createdAt", "updatedAt")
         }

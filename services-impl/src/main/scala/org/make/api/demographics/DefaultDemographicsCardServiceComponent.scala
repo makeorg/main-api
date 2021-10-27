@@ -40,7 +40,7 @@ trait DefaultDemographicsCardServiceComponent extends DemographicsCardServiceCom
     with IdGeneratorComponent
     with PersistentDemographicsCardServiceComponent =>
 
-  override def demographicsCardService: DemographicsCardService = new DemographicsCardService {
+  override lazy val demographicsCardService: DemographicsCardService = new DemographicsCardService {
 
     override def get(id: DemographicsCardId): Future[Option[DemographicsCard]] =
       persistentDemographicsCardService.get(id)
