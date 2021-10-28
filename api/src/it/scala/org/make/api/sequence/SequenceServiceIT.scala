@@ -23,6 +23,7 @@ import akka.actor.{typed, ActorRef, ActorSystem, ExtendedActorSystem}
 import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.TestKit
+import cats.data.NonEmptyList
 import com.typesafe.config.{Config, ConfigFactory}
 import org.make.api.demographics.{DemographicsCardResponse, DemographicsCardService, DemographicsCardServiceComponent}
 import org.make.api.{ActorSystemComponent, ActorSystemTypedComponent, DatabaseTest, DefaultConfigComponent}
@@ -410,10 +411,13 @@ class SequenceServiceIT
     }
 
     Scenario(s"Consensus zone behaviour") {
-      whenReady(
-        sequenceService.startNewSequence(ConsensusParam(Some(0.2)), None, questionId, Nil, requestContext, None, None),
-        Timeout(60.seconds)
-      ) { result =>
+      val futureSequence = for {
+        thresholds <- elasticsearchProposalAPI.computeTop20ConsensusThreshold(NonEmptyList(questionId, Nil))
+        consensus = ConsensusParam(thresholds.get(questionId))
+        results <- sequenceService.startNewSequence(consensus, None, questionId, Nil, requestContext, None, None)
+      } yield results
+
+      whenReady(futureSequence, Timeout(60.seconds)) { result =>
         result.proposals.size should be > 0
         result.proposals.foreach { p =>
           val proposal = getProposal(p)
