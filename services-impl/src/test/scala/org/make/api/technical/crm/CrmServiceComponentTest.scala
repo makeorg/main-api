@@ -381,14 +381,7 @@ class CrmServiceComponentTest
       action = UserAction(
         date = zonedDateTimeInThePast,
         actionType = LogRegisterCitizenEvent.action,
-        arguments = UserRegistered(
-          email = "me@make.org",
-          dateOfBirth = Some(LocalDate.parse("1970-01-01")),
-          firstName = Some("me"),
-          lastName = Some("myself"),
-          profession = Some("doer"),
-          postalCode = Some("75011")
-        )
+        arguments = UserRegistered(firstName = Some("me"))
       )
     ),
     timestamp = DateHelper.now().toEpochSecond

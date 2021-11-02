@@ -24,13 +24,12 @@ import org.make.api.technical.ActorProtocol
 import org.make.api.user.Anonymization
 import org.make.core._
 import org.make.core.history.HistoryActions.VoteAndQualifications
-import org.make.core.profile.{Gender, SocioProfessionalCategory}
 import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
 import org.make.core.reference.Country
 import org.make.core.user.{User, UserId}
 
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.ZonedDateTime
 
 trait UserHistoryActorEventProtocol extends ActorProtocol
 
@@ -162,21 +161,14 @@ final case class UserRegisteredEvent(
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,
   override val requestContext: RequestContext,
-  email: String,
   firstName: Option[String],
-  lastName: Option[String],
-  profession: Option[String],
-  dateOfBirth: Option[LocalDate],
-  postalCode: Option[String],
-  gender: Option[Gender] = None,
-  socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
   @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
   isSocialLogin: Boolean = false,
   registerQuestionId: Option[QuestionId] = None,
   optInPartner: Option[Boolean] = None,
   eventId: Option[EventId] = None
 ) extends UserEvent {
-  override def version(): Int = MakeSerializable.V3
+  override def version(): Int = MakeSerializable.V4
 }
 
 @AvroSortPriority(12)
