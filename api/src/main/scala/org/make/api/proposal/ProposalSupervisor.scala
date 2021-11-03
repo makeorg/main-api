@@ -23,7 +23,7 @@ import akka.actor.typed
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import org.make.api.kafkaDispatcher
+import org.make.api.kafka.kafkaDispatcher
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{ActorSystemHelper, IdGeneratorComponent}
 import org.make.api.technical.crm.SendMailPublisherServiceComponent

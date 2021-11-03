@@ -19,14 +19,11 @@
 
 package org.make.api.technical.crm
 
-import com.sksamuel.avro4s
-import com.sksamuel.avro4s.SchemaFor
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 import org.make.api.technical.security.SecurityHelper
 import org.make.core.user.UserId
-import org.make.core.{AvroSerializers, Sharded}
 
 import scala.util.matching.Regex
 
@@ -59,17 +56,13 @@ final case class SendEmail(
   customCampaign: Option[String] = None,
   monitoringCategory: Option[String] = None,
   templateErrorReporting: Option[TemplateErrorReporting] = None
-) extends Sharded {
+) {
   override def toString =
     s"SendEmail: (id = $id, from = $from, subject = $subject, textPart = $textPart, htmlPart = $htmlPart, useTemplateLanguage = $useTemplateLanguage, templateId = $templateId, variables = $variables, recipients = ${recipients
       .map(_.toAnonymizedString)}, headers = $headers, emailId = $emailId, customCampaign = $customCampaign, monitoringCategory = $monitoringCategory)"
 }
 
-object SendEmail extends AvroSerializers {
-
-  lazy val schemaFor: SchemaFor[SendEmail] = SchemaFor.gen[SendEmail]
-  implicit lazy val avroDecoder: avro4s.Decoder[SendEmail] = avro4s.Decoder.gen[SendEmail]
-  implicit lazy val avroEncoder: avro4s.Encoder[SendEmail] = avro4s.Encoder.gen[SendEmail]
+object SendEmail {
 
   def create(
     from: Option[Recipient] = None,

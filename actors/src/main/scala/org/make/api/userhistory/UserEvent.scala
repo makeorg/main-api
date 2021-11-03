@@ -19,8 +19,7 @@
 
 package org.make.api.userhistory
 
-import com.sksamuel.avro4s
-import com.sksamuel.avro4s.{AvroDefault, AvroSortPriority, SchemaFor}
+import com.sksamuel.avro4s.{AvroDefault, AvroSortPriority}
 import org.make.api.technical.ActorProtocol
 import org.make.api.user.Anonymization
 import org.make.core._
@@ -64,22 +63,6 @@ object UserEvent {
   val defaultCountry: Country = Country("FR")
 
   val defaultDate: ZonedDateTime = ZonedDateTime.parse("2017-11-01T09:00:00Z")
-}
-
-final case class UserEventWrapper(
-  version: Int,
-  id: String,
-  date: ZonedDateTime,
-  eventType: String,
-  event: UserEvent,
-  eventId: Option[EventId] = None
-) extends EventWrapper[UserEvent]
-    with WithEventId
-
-object UserEventWrapper extends AvroSerializers {
-  implicit lazy val schemaFor: SchemaFor[UserEventWrapper] = SchemaFor.gen[UserEventWrapper]
-  implicit lazy val avroDecoder: avro4s.Decoder[UserEventWrapper] = avro4s.Decoder.gen[UserEventWrapper]
-  implicit lazy val avroEncoder: avro4s.Encoder[UserEventWrapper] = avro4s.Encoder.gen[UserEventWrapper]
 }
 
 sealed trait B2BRegisteredEvent extends UserEvent

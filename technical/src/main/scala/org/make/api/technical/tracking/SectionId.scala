@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2018 Make.org
+ *  Copyright (C) 2021 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -17,16 +17,18 @@
  *
  */
 
-package org.make.api.semantic
+package org.make.api.technical.tracking
 
-import org.make.core.proposal.ProposalId
-import org.make.core.tag.TagId
+import io.circe.{Decoder, Encoder, Json}
+import org.make.core.StringValue
 
-sealed trait PredictedTagsEvents
+final case class SectionId(value: String) extends StringValue
 
-final case class PredictedTagsEvent(
-  proposalId: ProposalId,
-  predictedTags: Seq[TagId],
-  selectedTags: Seq[TagId],
-  modelName: String
-) extends PredictedTagsEvents
+object SectionId {
+
+  implicit lazy val sectionIdEncoder: Encoder[SectionId] =
+    (a: SectionId) => Json.fromString(a.value)
+  implicit lazy val sectionIdDecoder: Decoder[SectionId] =
+    Decoder.decodeString.map(SectionId(_))
+
+}

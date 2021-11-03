@@ -24,6 +24,7 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, Props, SpawnProtocol}
 import org.make.api.idea.{IdeaConsumerBehavior, IdeaProducerBehavior}
+import org.make.api.kafka.kafkaDispatcher
 import org.make.api.proposal.ProposalSupervisor
 import org.make.api.semantic.{SemanticPredictionsProducerBehavior, SemanticProducerBehavior}
 import org.make.api.sequence.SequenceConfigurationActor

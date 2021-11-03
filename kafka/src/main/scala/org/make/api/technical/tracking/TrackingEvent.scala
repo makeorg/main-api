@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2018 Make.org
+ *  Copyright (C) 2021 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -17,16 +17,17 @@
  *
  */
 
-package org.make.api.semantic
+package org.make.api.technical.tracking
 
-import org.make.core.proposal.ProposalId
-import org.make.core.tag.TagId
+import org.make.core.RequestContext
 
-sealed trait PredictedTagsEvents
+import java.time.ZonedDateTime
 
-final case class PredictedTagsEvent(
-  proposalId: ProposalId,
-  predictedTags: Seq[TagId],
-  selectedTags: Seq[TagId],
-  modelName: String
-) extends PredictedTagsEvents
+final case class TrackingEvent(
+  eventProvider: String,
+  eventType: Option[String],
+  eventName: Option[String],
+  eventParameters: Option[Map[String, String]],
+  requestContext: RequestContext,
+  createdAt: ZonedDateTime
+)

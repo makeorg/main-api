@@ -108,6 +108,7 @@ lazy val phantom = module("phantom", ".")
     core,
     indexation,
     integrationTests,
+    kafka,
     persistence,
     search,
     services,
@@ -118,7 +119,8 @@ lazy val phantom = module("phantom", ".")
   )
 
 lazy val actors = module("actors")
-  .dependsOn(akka, core, tests % Test, integrationTests % IntegrationTest)
+  .dependsOn(akka, core, tests % Test)
+  .dependsOn("integration-tests", IntegrationTest)
 
 lazy val akka = module("akka")
   .dependsOn(technical, tests % Test)
@@ -128,7 +130,16 @@ lazy val api = module("api")
     val alias = dockerAlias.value
     s"${alias.registryHost.map(_ + "/").getOrElse("")}${alias.name}:${alias.tag.getOrElse("latest")}"
   })
-  .dependsOn(cockroachdb, core, indexation, servicesImpl, technical, tests % Test, integrationTests % IntegrationTest)
+  .dependsOn(
+    cockroachdb,
+    core,
+    indexation,
+    kafka,
+    servicesImpl,
+    technical,
+    tests            % Test,
+    integrationTests % IntegrationTest
+  )
 
 lazy val cockroachdb = module("cockroachdb")
   .dependsOn(persistence, technical, tests % Test)
@@ -142,13 +153,18 @@ lazy val indexation = module("indexation")
   .dependsOn(services, persistence, tests % Test)
 
 lazy val integrationTests = module("integration-tests")
-  .dependsOn(cockroachdb, core, tests)
+  .dependsOn(cockroachdb, core, kafka, tests)
+
+lazy val kafka = module("kafka")
+  .dependsOn(indexation, services, tests % Test)
+  .dependsOn("integration-tests", IntegrationTest)
 
 lazy val persistence = module("persistence")
   .dependsOn(core)
 
 lazy val search = module("search")
-  .dependsOn(core, technical, tests % Test, integrationTests % IntegrationTest)
+  .dependsOn(core, technical, tests % Test)
+  .dependsOn("integration-tests", IntegrationTest)
 
 lazy val services = module("services")
   .dependsOn(actors, core, persistence, search, tests % Test)

@@ -21,7 +21,7 @@ package org.make.api.user
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{Behavior, Props}
-import org.make.api.kafkaDispatcher
+import org.make.api.kafka.kafkaDispatcher
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.organisation.{
   OrganisationConsumerBehavior,

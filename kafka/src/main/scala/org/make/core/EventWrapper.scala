@@ -17,16 +17,21 @@
  *
  */
 
-package org.make.api.semantic
+package org.make.core
 
-import org.make.core.proposal.ProposalId
-import org.make.core.tag.TagId
+import java.time.ZonedDateTime
 
-sealed trait PredictedTagsEvents
+trait EventWrapper[T] extends Sharded {
+  def version: Int
+  def date: ZonedDateTime
+  def eventType: String
+  def event: T
+}
 
-final case class PredictedTagsEvent(
-  proposalId: ProposalId,
-  predictedTags: Seq[TagId],
-  selectedTags: Seq[TagId],
-  modelName: String
-) extends PredictedTagsEvents
+trait Sharded {
+  def id: String
+}
+
+trait WithEventId {
+  def eventId: Option[EventId]
+}
