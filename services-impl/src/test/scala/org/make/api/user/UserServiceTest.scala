@@ -19,10 +19,6 @@
 
 package org.make.api.user
 
-import java.io.File
-import java.text.SimpleDateFormat
-import java.time.{LocalDate, ZonedDateTime}
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentType, MediaTypes}
 import com.github.t3hnar.bcrypt._
@@ -41,23 +37,15 @@ import org.make.api.proposal.{
 }
 import org.make.api.question.AuthorRequest
 import org.make.api.technical._
-import org.make.api.technical.auth.TokenResponse
 import org.make.api.technical.auth._
-import org.make.api.technical.crm.{
-  CrmService,
-  CrmServiceComponent,
-  PersistentCrmUser,
-  PersistentCrmUserService,
-  PersistentCrmUserServiceComponent
-}
+import org.make.api.technical.crm._
 import org.make.api.technical.job.{JobCoordinatorService, JobCoordinatorServiceComponent}
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage.{StorageService, StorageServiceComponent}
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
-import org.make.api.user.Anonymization
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
-import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent, _}
+import org.make.api.userhistory._
 import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.core.auth.UserRights
 import org.make.core.profile.Gender.Female
@@ -72,6 +60,9 @@ import org.mockito.Mockito.clearInvocations
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
+import java.io.File
+import java.text.SimpleDateFormat
+import java.time.{LocalDate, ZonedDateTime}
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, DurationInt}
 
@@ -1352,14 +1343,8 @@ class UserServiceTest
       file.deleteOnExit()
       when(downloadService.downloadImage(eqTo(imageUrl), any[ContentType => File], any[Int]))
         .thenReturn(Future.successful((ContentType(MediaTypes.`image/jpeg`), file)))
-      when(
-        storageService.uploadUserAvatar(
-          eqTo(UserId("upload-avatar-image-url")),
-          eqTo("jpeg"),
-          eqTo(MediaTypes.`image/jpeg`.value),
-          any[FileContent]
-        )
-      ).thenReturn(Future.successful("path/to/upload-avatar-image-url/image"))
+      when(storageService.uploadUserAvatar(eqTo("jpeg"), eqTo(MediaTypes.`image/jpeg`.value), any[FileContent]))
+        .thenReturn(Future.successful("path/to/upload-avatar-image-url/image"))
       when(persistentUserService.get(UserId("upload-avatar-image-url")))
         .thenReturn(Future.successful(Some(fooUser.copy(userId = UserId("upload-avatar-image-url")))))
       when(

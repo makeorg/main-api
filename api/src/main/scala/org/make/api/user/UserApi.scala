@@ -1198,7 +1198,7 @@ trait DefaultUserApiComponent
             makeOAuth2 { user =>
               authorize(user.user.userId == userId || user.user.roles.contains(RoleAdmin)) {
                 def uploadFile(extension: String, contentType: String, fileContent: Content): Future[String] =
-                  storageService.uploadUserAvatar(userId, extension, contentType, fileContent)
+                  storageService.uploadUserAvatar(extension, contentType, fileContent)
                 uploadImageAsync("data", uploadFile, sizeLimit = Some(storageConfiguration.maxFileSize)) {
                   (path, file) =>
                     file.delete()
