@@ -26,9 +26,7 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import enumeratum.values.{StringEnum, StringEnumEntry}
-import kamon.Kamon
 import kamon.instrumentation.akka.http.TracingDirectives
-import kamon.tag.TagSet
 import org.make.api.MakeApi
 import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
@@ -36,7 +34,7 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent, TokenResponse}
 import org.make.api.technical.directives.{FutureDirectives, ValidationDirectives}
-import org.make.api.technical.monitoring.MonitoringMessageHelper
+import org.make.api.technical.monitoring.MonitoringUtils
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.technical.storage.Content
 import org.make.api.technical.storage.Content.FileContent
@@ -273,26 +271,6 @@ trait MakeDirectives
     }
   }
 
-  private def logRequest(operationName: String, context: RequestContext, origin: Option[String]): Unit = {
-    Kamon
-      .counter("api-requests")
-      .withTags(
-        TagSet.from(
-          Map(
-            "source" -> MonitoringMessageHelper.format(context.source.getOrElse("unknown")),
-            "operation" -> operationName,
-            "origin" -> MonitoringMessageHelper.format(origin.getOrElse("unknown")),
-            "application" -> MonitoringMessageHelper
-              .format(context.applicationName.map(_.value).getOrElse("unknown")),
-            "location" -> MonitoringMessageHelper.format(context.location.getOrElse("unknown")),
-            "question" -> MonitoringMessageHelper.format(context.questionId.map(_.value).getOrElse("unknown"))
-          )
-        )
-      )
-      .increment()
-    ()
-  }
-
   private def connectIfNecessary(
     sessionId: SessionId,
     maybeUserId: Option[UserId],
@@ -421,7 +399,7 @@ trait MakeDirectives
           )
           .getOrElse(Map.empty)
       )
-      logRequest(name, requestContext, origin)
+      MonitoringUtils.logRequest(name, requestContext, origin)
       connectIfNecessary(currentSessionId, maybeUser.map(_.user.userId), requestContext)
       requestContext
     }
@@ -430,7 +408,7 @@ trait MakeDirectives
   def makeConcertationContext(name: String, location: String, origin: Option[String]): RequestContext = {
     val context =
       RequestContext.empty.copy(applicationName = Some(Concertation), location = Some(location))
-    logRequest(name, context, origin)
+    MonitoringUtils.logRequest(name, context, origin)
     context
   }
 
