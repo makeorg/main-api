@@ -38,14 +38,15 @@ import scalikejdbc.{Binders, ParameterBinderFactory, TypeBinder}
 
 object ScalikeSupport {
 
-  def enumBinders[A <: EnumEntry](implicit enum: Enum[A]): Binders[A] = Binders.string.xmap(enum.withName, _.entryName)
+  def enumBinders[A <: EnumEntry](implicit basicEnum: Enum[A]): Binders[A] =
+    Binders.string.xmap(basicEnum.withName, _.entryName)
 
   implicit val crmTemplateKindBinders: Binders[CrmTemplateKind] = enumBinders
   implicit val demographicsCardLayoutBinders: Binders[DemographicsCard.Layout] = enumBinders
   implicit val widgetVersionBinders: Binders[Widget.Version] = enumBinders
 
-  implicit def stringEnumBinders[A <: StringEnumEntry](implicit enum: StringEnum[A]): Binders[A] =
-    Binders.string.xmap(enum.withValue, _.value)
+  implicit def stringEnumBinders[A <: StringEnumEntry](implicit stringEnum: StringEnum[A]): Binders[A] =
+    Binders.string.xmap(stringEnum.withValue, _.value)
 
   implicit def stringEnumEntryParameterBinderFactory[A <: StringEnumEntry, B <: A]: ParameterBinderFactory[B] =
     ParameterBinderFactory.stringParameterBinderFactory.contramap(_.value)
