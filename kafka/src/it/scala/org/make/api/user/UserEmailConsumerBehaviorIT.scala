@@ -166,12 +166,7 @@ class UserEmailConsumerBehaviorIT
         eventDate = dateNow,
         userId = user.userId,
         requestContext = RequestContext.empty,
-        email = "some@mail.com",
         firstName = None,
-        lastName = None,
-        profession = None,
-        dateOfBirth = None,
-        postalCode = None,
         country = country,
         eventId = Some(EventId("user register"))
       )

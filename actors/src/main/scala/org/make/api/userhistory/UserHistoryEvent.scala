@@ -19,8 +19,6 @@
 
 package org.make.api.userhistory
 
-import java.time.{LocalDate, ZonedDateTime}
-
 import org.make.api.proposal.PublishedProposalEvent.{
   ProposalAccepted,
   ProposalLocked,
@@ -39,6 +37,8 @@ import org.make.core.user._
 import org.make.core.{MakeSerializable, RequestContext}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
+
+import java.time.ZonedDateTime
 
 final case class UserAction[T](date: ZonedDateTime, actionType: String, arguments: T)
 
@@ -146,19 +146,11 @@ object StartSequenceParameters {
     DefaultJsonProtocol.jsonFormat4(StartSequenceParameters.apply)
 }
 
-final case class UserRegistered(
-  email: String,
-  dateOfBirth: Option[LocalDate],
-  firstName: Option[String],
-  lastName: Option[String],
-  profession: Option[String],
-  postalCode: Option[String],
-  country: Country = Country("FR")
-)
+final case class UserRegistered(firstName: Option[String], country: Country = Country("FR"))
 
 object UserRegistered {
   implicit val userRegisteredFormatted: RootJsonFormat[UserRegistered] =
-    DefaultJsonProtocol.jsonFormat7(UserRegistered.apply)
+    DefaultJsonProtocol.jsonFormat2(UserRegistered.apply)
 
 }
 

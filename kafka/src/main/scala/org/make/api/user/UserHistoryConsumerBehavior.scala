@@ -71,15 +71,7 @@ class UserHistoryConsumerBehavior(
         action = UserAction(
           date = event.eventDate,
           actionType = LogRegisterCitizenEvent.action,
-          arguments = UserRegistered(
-            email = event.email,
-            dateOfBirth = event.dateOfBirth,
-            firstName = event.firstName,
-            lastName = event.lastName,
-            profession = event.profession,
-            postalCode = event.postalCode,
-            country = event.country
-          )
+          arguments = UserRegistered(firstName = event.firstName, country = event.country)
         )
       )
     )

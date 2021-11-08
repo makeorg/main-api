@@ -46,7 +46,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import stamina.testkit.StaminaTestKit
 import stamina.{Persisters, V1, V2, V4}
 
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.ZonedDateTime
 
 class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
 
@@ -261,14 +261,7 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
       action = UserAction(
         date = eventDate,
         actionType = LogRegisterCitizenEvent.action,
-        arguments = UserRegistered(
-          email = "me@make.org",
-          dateOfBirth = Some(LocalDate.parse("1970-01-01")),
-          firstName = Some("me"),
-          lastName = Some("myself"),
-          profession = Some("doer"),
-          postalCode = Some("75011")
-        )
+        arguments = UserRegistered(firstName = Some("me"))
       )
     )
 
@@ -278,14 +271,7 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
       action = UserAction(
         date = recentDate,
         actionType = LogRegisterCitizenEvent.action,
-        arguments = UserRegistered(
-          email = "me@make.org",
-          dateOfBirth = Some(LocalDate.parse("1970-01-01")),
-          firstName = Some("me"),
-          lastName = Some("myself"),
-          profession = Some("doer"),
-          postalCode = Some("75011")
-        )
+        arguments = UserRegistered(firstName = Some("me"))
       )
     )
 
