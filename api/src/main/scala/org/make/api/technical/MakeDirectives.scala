@@ -427,7 +427,14 @@ trait MakeDirectives
     }
   }
 
-  def makeOperationForConcertation(name: String, location: String): Directive1[RequestContext] = {
+  def makeConcertationContext(name: String, location: String, origin: Option[String]): RequestContext = {
+    val context =
+      RequestContext.empty.copy(applicationName = Some(Concertation), location = Some(location))
+    logRequest(name, context, origin)
+    context
+  }
+
+  def makeOperationForConcertation(name: String): Directive1[Option[String]] = {
     val slugifiedName: String = SlugHelper(name)
     Tracing.entrypoint(slugifiedName)
 
@@ -438,11 +445,7 @@ trait MakeDirectives
       _         <- addCorsHeaders(origin)
       _         <- handleExceptions(MakeApi.exceptionHandler(slugifiedName, requestId))
       _         <- handleRejections(MakeApi.rejectionHandler)
-    } yield {
-      val requestContext = RequestContext.empty.copy(applicationName = Some(Concertation), location = Some(location))
-      logRequest(name, requestContext, origin)
-      requestContext
-    }
+    } yield origin
   }
 
   def getMakeHttpOrigin(mayBeOriginValue: Option[String]): Option[HttpOrigin] = {

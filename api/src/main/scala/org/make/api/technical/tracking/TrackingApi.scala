@@ -308,12 +308,14 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
     def trackConcertation: Route = {
       post {
         path("tracking" / "concertation") {
-          decodeRequest {
-            entity(as[ConcertationTrackingRequest]) { request =>
-              makeOperationForConcertation("ConcertationTracking", request.context.location) {
-                requestContext: RequestContext =>
-                  eventBusService.publish(request.toEvent(requestContext.applicationName))
-                  complete(StatusCodes.NoContent)
+          val trackingName = "ConcertationTracking"
+          makeOperationForConcertation(trackingName) { origin =>
+            decodeRequest {
+              entity(as[ConcertationTrackingRequest]) { request =>
+                val requestContext =
+                  makeConcertationContext(trackingName, request.context.location, origin)
+                eventBusService.publish(request.toEvent(requestContext.applicationName))
+                complete(StatusCodes.NoContent)
               }
             }
           }
