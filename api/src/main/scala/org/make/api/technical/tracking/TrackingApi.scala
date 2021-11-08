@@ -33,6 +33,7 @@ import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.monitoring.MonitoringServiceComponent
 import org.make.api.technical.{EndpointType, EventBusServiceComponent, MakeAuthenticationDirectives, MakeDirectives}
+import org.make.api.technical.monitoring.MonitoringUtils
 import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.demographics.{DemographicsCard, DemographicsCardId, LabelValue}
@@ -312,9 +313,13 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
           makeOperationForConcertation(trackingName) { origin =>
             decodeRequest {
               entity(as[ConcertationTrackingRequest]) { request =>
-                val requestContext =
-                  makeConcertationContext(trackingName, request.context.location, origin)
-                eventBusService.publish(request.toEvent(requestContext.applicationName))
+                val context =
+                  RequestContext.empty.copy(
+                    applicationName = Some(ApplicationName.Concertation),
+                    location = Some(request.context.location)
+                  )
+                MonitoringUtils.logRequest(trackingName, context, origin)
+                eventBusService.publish(request.toEvent(context.applicationName))
                 complete(StatusCodes.NoContent)
               }
             }

@@ -39,7 +39,6 @@ import org.make.api.technical.security.{SecurityConfigurationComponent, Security
 import org.make.api.technical.storage.Content
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.tracing.Tracing
-import org.make.core.ApplicationName.Concertation
 import org.make.core.Validation.validateField
 import org.make.core.auth.{Token, UserRights}
 import org.make.core.operation.OperationId
@@ -403,13 +402,6 @@ trait MakeDirectives
       connectIfNecessary(currentSessionId, maybeUser.map(_.user.userId), requestContext)
       requestContext
     }
-  }
-
-  def makeConcertationContext(name: String, location: String, origin: Option[String]): RequestContext = {
-    val context =
-      RequestContext.empty.copy(applicationName = Some(Concertation), location = Some(location))
-    MonitoringUtils.logRequest(name, context, origin)
-    context
   }
 
   def makeOperationForConcertation(name: String): Directive1[Option[String]] = {
