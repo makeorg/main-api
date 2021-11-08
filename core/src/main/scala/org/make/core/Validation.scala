@@ -274,8 +274,8 @@ object Validation extends Logging {
 
   def validateSort[T <: ElasticsearchFieldName](
     fieldName: String
-  )(sort: T)(implicit enum: StringEnum[T]): Requirement = {
-    val choices = enum.values.filter(_.sortable)
+  )(sort: T)(implicit stringEnum: StringEnum[T]): Requirement = {
+    val choices = stringEnum.values.filter(_.sortable)
     Validation.validChoices(
       fieldName = fieldName,
       message = Some(s"Invalid sort. Got $sort but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"),

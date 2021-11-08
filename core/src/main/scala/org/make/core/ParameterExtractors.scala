@@ -133,13 +133,13 @@ trait ParameterExtractors {
       DemographicsCardId(role)
     }
 
-  implicit def enumeratumEnumUnmarshaller[A <: EnumEntry](implicit enum: Enum[A]): Unmarshaller[String, A] =
-    Unmarshaller.strict(s => enum.withNameInsensitiveEither(s).fold(e => throw new Exception(e), identity))
+  implicit def enumeratumEnumUnmarshaller[A <: EnumEntry](implicit basicEnum: Enum[A]): Unmarshaller[String, A] =
+    Unmarshaller.strict(basicEnum.withNameInsensitiveEither(_).fold(e => throw new Exception(e), identity))
 
   implicit def enumeratumStringEnumUnmarshaller[A <: StringEnumEntry](
-    implicit enum: StringEnum[A]
+    implicit stringEnum: StringEnum[A]
   ): Unmarshaller[String, A] =
-    Unmarshaller.strict(s => enum.withValueEither(s).fold(e => throw new Exception(e), identity))
+    Unmarshaller.strict(s => stringEnum.withValueEither(s).fold(e => throw new Exception(e), identity))
 
   implicit val startFromIntUnmarshaller: Unmarshaller[String, Start] =
     Unmarshaller.intFromStringUnmarshaller.map(Start.apply)

@@ -614,8 +614,8 @@ trait MakeDirectives
     )
   }
 
-  implicit def stringEnumPathMatcher[A <: StringEnumEntry](enum: StringEnum[A]): PathMatcher1[A] =
-    Segment.flatMap(enum.withValueOpt)
+  implicit def stringEnumPathMatcher[A <: StringEnumEntry](stringEnum: StringEnum[A]): PathMatcher1[A] =
+    Segment.flatMap(stringEnum.withValueOpt)
 }
 
 object MakeDirectives {

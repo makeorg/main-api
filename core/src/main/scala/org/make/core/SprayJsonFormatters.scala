@@ -77,11 +77,12 @@ trait SprayJsonFormatters {
     }
   }
 
-  implicit def stringEnumFormatter[A <: StringEnumEntry](implicit enum: StringEnum[A]): JsonFormat[A] =
+  implicit def stringEnumFormatter[A <: StringEnumEntry](implicit stringEnum: StringEnum[A]): JsonFormat[A] =
     new JsonFormat[A] {
       override def read(json: JsValue): A = json match {
-        case JsString(s) => enum.withValueOpt(s).getOrElse(throw new IllegalArgumentException(s"Unable to convert $s"))
-        case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+        case JsString(s) =>
+          stringEnum.withValueOpt(s).getOrElse(throw new IllegalArgumentException(s"Unable to convert $s"))
+        case other => throw new IllegalArgumentException(s"Unable to convert $other")
       }
 
       override def write(a: A): JsValue = JsString(a.value)

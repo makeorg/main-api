@@ -100,11 +100,11 @@ trait AvroSerializers {
   implicit def stringEnumEncoder[A <: StringEnumEntry]: Encoder[A] = (a, _, _) => a.value
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
-  implicit def stringEnumDecoder[A <: StringEnumEntry](implicit enum: StringEnum[A]): Decoder[A] =
+  implicit def stringEnumDecoder[A <: StringEnumEntry](implicit stringEnum: StringEnum[A]): Decoder[A] =
     (value, _, _) =>
-      enum
+      stringEnum
         .withValueOpt(value.toString)
-        .getOrElse(throw new IllegalArgumentException(s"$value is not a ${enum.toString}"))
+        .getOrElse(throw new IllegalArgumentException(s"$value is not a ${stringEnum.toString}"))
 
   implicit val requestContextSchemaFor: SchemaFor[RequestContext] = SchemaFor.gen[RequestContext]
   implicit val requestContextAvroDecoder: Decoder[RequestContext] = Decoder.gen[RequestContext]
