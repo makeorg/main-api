@@ -37,6 +37,8 @@ import org.make.core.technical.Pagination._
 
 import scala.annotation.meta.field
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 @Api(value = "Admin Active Features")
 @Path(value = "/admin/active-features")
 trait AdminActiveFeatureApi extends Directives {
@@ -74,11 +76,7 @@ trait AdminActiveFeatureApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(
-        value = "body",
-        paramType = "body",
-        dataType = "org.make.api.feature.CreateActiveFeatureRequest"
-      )
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.feature.ActiveFeatureRequest")
     )
   )
   @ApiResponses(
@@ -132,8 +130,28 @@ trait AdminActiveFeatureApi extends Directives {
   @Path(value = "/{activeFeatureId}")
   def adminDeleteActiveFeature: Route
 
+  @ApiOperation(
+    value = "delete-active-feature-from-feature-id",
+    httpMethod = "DELETE",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.feature.ActiveFeatureRequest")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
+  @Path(value = "/")
+  def adminDeleteActiveFeatureFromFeatureId: Route
+
   def routes: Route =
-    adminGetActiveFeature ~ adminCreateActiveFeature ~ adminListActiveFeatures ~ adminDeleteActiveFeature
+    adminGetActiveFeature ~ adminCreateActiveFeature ~ adminListActiveFeatures ~ adminDeleteActiveFeature ~ adminDeleteActiveFeatureFromFeatureId
 }
 
 trait AdminActiveFeatureApiComponent {
@@ -174,7 +192,7 @@ trait DefaultAdminActiveFeatureApiComponent
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireAdminRole(userAuth.user) {
               decodeRequest {
-                entity(as[CreateActiveFeatureRequest]) { request: CreateActiveFeatureRequest =>
+                entity(as[ActiveFeatureRequest]) { request: ActiveFeatureRequest =>
                   provideAsync(
                     activeFeatureService
                       .createActiveFeature(featureId = request.featureId, maybeQuestionId = request.maybeQuestionId)
@@ -252,18 +270,47 @@ trait DefaultAdminActiveFeatureApiComponent
         }
       }
     }
+
+    override def adminDeleteActiveFeatureFromFeatureId: Route = delete {
+      path("admin" / "active-features") {
+        makeOperation("AdminDeleteActiveFeatureFromFeatureId") { _ =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireAdminRole(userAuth.user) {
+              decodeRequest {
+                entity(as[ActiveFeatureRequest]) { request: ActiveFeatureRequest =>
+                  val foundActiveFeature = activeFeatureService
+                    .find(
+                      maybeQuestionId = request.maybeQuestionId.map(questionId => Seq(questionId)),
+                      featureIds = Some(Seq(request.featureId))
+                    )
+                    .map {
+                      case Seq(head) => Some(head)
+                      case _         => None
+                    }
+                  provideAsyncOrNotFound(foundActiveFeature) { activeFeature =>
+                    provideAsync(activeFeatureService.deleteActiveFeature(activeFeature.activeFeatureId)) { _ =>
+                      complete(StatusCodes.NoContent)
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 
-final case class CreateActiveFeatureRequest(
+final case class ActiveFeatureRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "f403b357-a528-4657-b4e4-6dc07516f16a")
   featureId: FeatureId,
   @(ApiModelProperty @field)(dataType = "string", example = "afe70bf6-ae1b-4fd0-9051-0732958ca810")
   maybeQuestionId: Option[QuestionId]
 )
 
-object CreateActiveFeatureRequest {
-  implicit val decoder: Decoder[CreateActiveFeatureRequest] = deriveDecoder[CreateActiveFeatureRequest]
+object ActiveFeatureRequest {
+  implicit val decoder: Decoder[ActiveFeatureRequest] = deriveDecoder[ActiveFeatureRequest]
 }
 
 final case class ActiveFeatureResponse(
