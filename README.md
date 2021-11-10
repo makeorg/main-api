@@ -62,7 +62,19 @@ To start it, got to your project directory and type:
 make infra-up
 ```
 
-when infrastructure is up you can run your app
+In order to download custom defined libraries, add the nexus credentials to
+the file `$HOME/.sbt/1.0/credentials.sbt`.  
+With `USERNAME` and `PASSWORD` coming from Make.org password manager,
+this file should look like the following:
+
+```
+credentials ++= Seq(
+  //...
+  Credentials("Sonatype Nexus Repository Manager", "nexus.prod.makeorg.tech", USERNAME, PASSWORD)
+)
+```
+
+Once the infrastructure is up and `credentials.sbt` is set, you can run your app:
 
 ```
 make run
