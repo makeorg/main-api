@@ -25,7 +25,7 @@ addSbtPlugin("org.scalastyle"   %% "scalastyle-sbt-plugin" % "1.0.0")
 addSbtPlugin("org.scalameta"    % "sbt-scalafmt"           % "2.4.3")
 addSbtPlugin("org.scoverage"    % "sbt-scoverage"          % "1.9.2")
 addSbtPlugin("com.codacy"       % "sbt-codacy-coverage"    % "3.0.3")
-addSbtPlugin("org.make"         % "git-hooks-plugin"       % "1.0.6")
+addSbtPlugin("org.make"         % "git-hooks-plugin"       % "1.0.7")
 addSbtPlugin("org.make"         % "sbt-swift-plugin"       % "1.0.8")
 addSbtPlugin("org.wartremover"  %% "sbt-wartremover"       % "2.4.16")
 
