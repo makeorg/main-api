@@ -23,7 +23,7 @@ import akka.Done
 import akka.stream.scaladsl.{Sink, Source}
 import cats.data.{NonEmptyList, OptionT}
 import cats.implicits._
-import com.sksamuel.elastic4s.searches.sort.SortOrder
+import com.sksamuel.elastic4s.requests.searches.sort.SortOrder
 import grizzled.slf4j.Logging
 import kamon.Kamon
 import kamon.tag.TagSet

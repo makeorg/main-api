@@ -431,239 +431,237 @@
     }
   },
   "mappings": {
-    "organisation": {
-      "dynamic": "strict",
-      "properties": {
-        "organisationId": {
-          "type": "keyword",
-          "index": true
-        },
-        "organisationName": {
-          "type": "text",
-          "fields": {
-            "fr": {
-              "type": "text",
-              "analyzer": "french_std"
-            },
-            "stemmed-fr": {
-              "type": "text",
-              "analyzer": "french_full"
-            },
-            "en": {
-              "type": "text",
-              "analyzer": "english_std"
-            },
-            "stemmed-en": {
-              "type": "text",
-              "analyzer": "english_full"
-            },
-            "it": {
-              "type": "text",
-              "analyzer": "italian_std"
-            },
-            "stemmed-it": {
-              "type": "text",
-              "analyzer": "italian_full"
-            },
-            "de": {
-              "type": "text",
-              "analyzer": "german_std"
-            },
-            "stemmed-de": {
-              "type": "text",
-              "analyzer": "german_full"
-            },
-            "bg": {
-              "type": "text",
-              "analyzer": "bulgarian_std"
-            },
-            "stemmed-bg": {
-              "type": "text",
-              "analyzer": "bulgarian_full"
-            },
-            "cs": {
-              "type": "text",
-              "analyzer": "czech_std"
-            },
-            "stemmed-cs": {
-              "type": "text",
-              "analyzer": "czech_full"
-            },
-            "da": {
-              "type": "text",
-              "analyzer": "danish_std"
-            },
-            "stemmed-da": {
-              "type": "text",
-              "analyzer": "danish_full"
-            },
-            "nl": {
-              "type": "text",
-              "analyzer": "dutch_std"
-            },
-            "stemmed-nl": {
-              "type": "text",
-              "analyzer": "dutch_full"
-            },
-            "fi": {
-              "type": "text",
-              "analyzer": "finnish_std"
-            },
-            "stemmed-fi": {
-              "type": "text",
-              "analyzer": "finnish_full"
-            },
-            "el": {
-              "type": "text",
-              "analyzer": "greek_std"
-            },
-            "stemmed-el": {
-              "type": "text",
-              "analyzer": "greek_full"
-            },
-            "hu": {
-              "type": "text",
-              "analyzer": "hungarian_std"
-            },
-            "stemmed-hu": {
-              "type": "text",
-              "analyzer": "hungarian_full"
-            },
-            "lv": {
-              "type": "text",
-              "analyzer": "latvian_std"
-            },
-            "stemmed-lv": {
-              "type": "text",
-              "analyzer": "latvian_full"
-            },
-            "lt": {
-              "type": "text",
-              "analyzer": "lithuanian_std"
-            },
-            "stemmed-lt": {
-              "type": "text",
-              "analyzer": "lithuanian_full"
-            },
-            "pt": {
-              "type": "text",
-              "analyzer": "portuguese_std"
-            },
-            "stemmed-pt": {
-              "type": "text",
-              "analyzer": "portuguese_full"
-            },
-            "ro": {
-              "type": "text",
-              "analyzer": "romanian_std"
-            },
-            "stemmed-ro": {
-              "type": "text",
-              "analyzer": "romanian_full"
-            },
-            "es": {
-              "type": "text",
-              "analyzer": "spanish_std"
-            },
-            "stemmed-es": {
-              "type": "text",
-              "analyzer": "spanish_full"
-            },
-            "sv": {
-              "type": "text",
-              "analyzer": "swedish_std"
-            },
-            "stemmed-sv": {
-              "type": "text",
-              "analyzer": "swedish_full"
-            },
-            "pl": {
-              "type": "text",
-              "analyzer": "polish_std"
-            },
-            "stemmed-pl": {
-              "type": "text",
-              "analyzer": "polish"
-            },
-            "hr": {
-              "type": "text",
-              "analyzer": "croatian_std"
-            },
-            "et": {
-              "type": "text",
-              "analyzer": "estonian_std"
-            },
-            "mt": {
-              "type": "text",
-              "analyzer": "maltese_std"
-            },
-            "sk": {
-              "type": "text",
-              "analyzer": "slovak_std"
-            },
-            "sl": {
-              "type": "text",
-              "analyzer": "slovenian_std"
-            },
-            "keyword": {
-              "type": "keyword"
-            },
-            "general": {
-              "type": "text"
-            }
+    "dynamic": "strict",
+    "properties": {
+      "organisationId": {
+        "type": "keyword",
+        "index": true
+      },
+      "organisationName": {
+        "type": "text",
+        "fields": {
+          "fr": {
+            "type": "text",
+            "analyzer": "french_std"
+          },
+          "stemmed-fr": {
+            "type": "text",
+            "analyzer": "french_full"
+          },
+          "en": {
+            "type": "text",
+            "analyzer": "english_std"
+          },
+          "stemmed-en": {
+            "type": "text",
+            "analyzer": "english_full"
+          },
+          "it": {
+            "type": "text",
+            "analyzer": "italian_std"
+          },
+          "stemmed-it": {
+            "type": "text",
+            "analyzer": "italian_full"
+          },
+          "de": {
+            "type": "text",
+            "analyzer": "german_std"
+          },
+          "stemmed-de": {
+            "type": "text",
+            "analyzer": "german_full"
+          },
+          "bg": {
+            "type": "text",
+            "analyzer": "bulgarian_std"
+          },
+          "stemmed-bg": {
+            "type": "text",
+            "analyzer": "bulgarian_full"
+          },
+          "cs": {
+            "type": "text",
+            "analyzer": "czech_std"
+          },
+          "stemmed-cs": {
+            "type": "text",
+            "analyzer": "czech_full"
+          },
+          "da": {
+            "type": "text",
+            "analyzer": "danish_std"
+          },
+          "stemmed-da": {
+            "type": "text",
+            "analyzer": "danish_full"
+          },
+          "nl": {
+            "type": "text",
+            "analyzer": "dutch_std"
+          },
+          "stemmed-nl": {
+            "type": "text",
+            "analyzer": "dutch_full"
+          },
+          "fi": {
+            "type": "text",
+            "analyzer": "finnish_std"
+          },
+          "stemmed-fi": {
+            "type": "text",
+            "analyzer": "finnish_full"
+          },
+          "el": {
+            "type": "text",
+            "analyzer": "greek_std"
+          },
+          "stemmed-el": {
+            "type": "text",
+            "analyzer": "greek_full"
+          },
+          "hu": {
+            "type": "text",
+            "analyzer": "hungarian_std"
+          },
+          "stemmed-hu": {
+            "type": "text",
+            "analyzer": "hungarian_full"
+          },
+          "lv": {
+            "type": "text",
+            "analyzer": "latvian_std"
+          },
+          "stemmed-lv": {
+            "type": "text",
+            "analyzer": "latvian_full"
+          },
+          "lt": {
+            "type": "text",
+            "analyzer": "lithuanian_std"
+          },
+          "stemmed-lt": {
+            "type": "text",
+            "analyzer": "lithuanian_full"
+          },
+          "pt": {
+            "type": "text",
+            "analyzer": "portuguese_std"
+          },
+          "stemmed-pt": {
+            "type": "text",
+            "analyzer": "portuguese_full"
+          },
+          "ro": {
+            "type": "text",
+            "analyzer": "romanian_std"
+          },
+          "stemmed-ro": {
+            "type": "text",
+            "analyzer": "romanian_full"
+          },
+          "es": {
+            "type": "text",
+            "analyzer": "spanish_std"
+          },
+          "stemmed-es": {
+            "type": "text",
+            "analyzer": "spanish_full"
+          },
+          "sv": {
+            "type": "text",
+            "analyzer": "swedish_std"
+          },
+          "stemmed-sv": {
+            "type": "text",
+            "analyzer": "swedish_full"
+          },
+          "pl": {
+            "type": "text",
+            "analyzer": "polish_std"
+          },
+          "stemmed-pl": {
+            "type": "text",
+            "analyzer": "polish"
+          },
+          "hr": {
+            "type": "text",
+            "analyzer": "croatian_std"
+          },
+          "et": {
+            "type": "text",
+            "analyzer": "estonian_std"
+          },
+          "mt": {
+            "type": "text",
+            "analyzer": "maltese_std"
+          },
+          "sk": {
+            "type": "text",
+            "analyzer": "slovak_std"
+          },
+          "sl": {
+            "type": "text",
+            "analyzer": "slovenian_std"
+          },
+          "keyword": {
+            "type": "keyword"
+          },
+          "general": {
+            "type": "text"
           }
-        },
-        "slug": {
-          "type": "keyword",
-          "index": true
-        },
-        "avatarUrl": {
-          "type": "keyword",
-          "index": false
-        },
-        "description": {
-          "type": "keyword",
-          "index": true
-        },
-        "publicProfile": {
-          "type": "boolean",
-          "index": true
-        },
-        "proposalsCount": {
-          "type": "integer",
-          "index": true
-        },
-        "votesCount": {
-          "type": "integer",
-          "index": true
-        },
-        "language": {
-          "type": "keyword",
-          "index": true
-        },
-        "country": {
-          "type": "keyword",
-          "index": true
-        },
-        "website": {
-          "type": "text",
-          "index": false
-        },
-        "countsByQuestion": {
-          "type": "nested",
-          "properties": {
-            "questionId": {
-              "type": "keyword",
-              "index": true
-            },
-            "proposalsCount": {
-              "type": "integer",
-              "index": true
-            },
-            "votesCount": {
-              "type": "integer",
-              "index": true
-            }
+        }
+      },
+      "slug": {
+        "type": "keyword",
+        "index": true
+      },
+      "avatarUrl": {
+        "type": "keyword",
+        "index": false
+      },
+      "description": {
+        "type": "keyword",
+        "index": true
+      },
+      "publicProfile": {
+        "type": "boolean",
+        "index": true
+      },
+      "proposalsCount": {
+        "type": "integer",
+        "index": true
+      },
+      "votesCount": {
+        "type": "integer",
+        "index": true
+      },
+      "language": {
+        "type": "keyword",
+        "index": true
+      },
+      "country": {
+        "type": "keyword",
+        "index": true
+      },
+      "website": {
+        "type": "text",
+        "index": false
+      },
+      "countsByQuestion": {
+        "type": "nested",
+        "properties": {
+          "questionId": {
+            "type": "keyword",
+            "index": true
+          },
+          "proposalsCount": {
+            "type": "integer",
+            "index": true
+          },
+          "votesCount": {
+            "type": "integer",
+            "index": true
           }
         }
       }

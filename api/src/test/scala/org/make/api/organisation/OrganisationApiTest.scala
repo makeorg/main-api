@@ -24,7 +24,7 @@ import java.time.ZonedDateTime
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
-import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
+import com.sksamuel.elastic4s.requests.searches.sort.SortOrder.Desc
 import org.make.api.proposal._
 import org.make.api.user.UserResponse
 import org.make.api.{MakeApiTestBase, TestUtils}

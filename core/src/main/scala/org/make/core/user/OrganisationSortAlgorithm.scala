@@ -20,10 +20,10 @@
 package org.make.core.user
 
 import com.sksamuel.elastic4s.ElasticApi
-import com.sksamuel.elastic4s.script.Script
-import com.sksamuel.elastic4s.searches.SearchRequest
-import com.sksamuel.elastic4s.searches.queries.Query
-import com.sksamuel.elastic4s.searches.sort.{ScriptSort, ScriptSortType, SortOrder}
+import com.sksamuel.elastic4s.requests.script.Script
+import com.sksamuel.elastic4s.requests.searches.SearchRequest
+import com.sksamuel.elastic4s.requests.searches.queries.Query
+import com.sksamuel.elastic4s.requests.searches.sort.{ScriptSort, ScriptSortType, SortOrder}
 import org.make.core.question.QuestionId
 import org.make.core.user.indexed.OrganisationElasticsearchFieldNames
 

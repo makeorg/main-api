@@ -20,7 +20,7 @@
 package org.make.core
 package common.indexed
 
-import com.sksamuel.elastic4s.searches.sort.SortOrder
+import com.sksamuel.elastic4s.requests.searches.sort.SortOrder
 import org.make.core.SprayJsonFormatters._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}

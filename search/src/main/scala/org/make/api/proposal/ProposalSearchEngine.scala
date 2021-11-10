@@ -21,11 +21,13 @@ package org.make.api.proposal
 
 import cats.data.NonEmptyList
 import com.sksamuel.elastic4s.circe._
-import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.http.search.{SearchResponse, TermBucket}
-import com.sksamuel.elastic4s.script.Script
-import com.sksamuel.elastic4s.searches.aggs.pipeline.BucketSortPipelineAgg
-import com.sksamuel.elastic4s.searches.aggs.{
+import com.sksamuel.elastic4s.ElasticDsl._
+import com.sksamuel.elastic4s.requests.searches.SearchResponse
+import com.sksamuel.elastic4s.requests.searches.aggs.responses.bucket.TermBucket
+import com.sksamuel.elastic4s.requests.searches.term.TermQuery
+import com.sksamuel.elastic4s.requests.script.Script
+import com.sksamuel.elastic4s.requests.searches.aggs.pipeline.BucketSortPipelineAgg
+import com.sksamuel.elastic4s.requests.searches.aggs.{
   AbstractAggregation,
   FilterAggregation,
   GlobalAggregation,
@@ -34,11 +36,14 @@ import com.sksamuel.elastic4s.searches.aggs.{
   TermsAggregation,
   TopHitsAggregation
 }
-import com.sksamuel.elastic4s.searches.queries.term.TermQuery
-import com.sksamuel.elastic4s.searches.queries.{BoolQuery, ExistsQuery, Query}
-import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
-import com.sksamuel.elastic4s.searches.{IncludeExclude, SearchRequest => ElasticSearchRequest}
-import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
+import com.sksamuel.elastic4s.requests.searches.queries.{ExistsQuery, Query}
+import com.sksamuel.elastic4s.requests.searches.queries.compound.BoolQuery
+import com.sksamuel.elastic4s.requests.searches.sort.{FieldSort, SortOrder}
+import com.sksamuel.elastic4s.requests.searches.{SearchRequest => ElasticSearchRequest}
+import com.sksamuel.elastic4s.requests.searches.aggs.responses.bucket.Terms
+import com.sksamuel.elastic4s.requests.searches.aggs.responses.metrics.TopHits
+import com.sksamuel.elastic4s.Index
+import com.sksamuel.elastic4s.requests.common.RefreshPolicy
 import grizzled.slf4j.Logging
 import io.circe.{Json, Printer}
 import org.make.api.question.{AvatarsAndProposalsCount, PopularTagResponse}
@@ -87,15 +92,9 @@ trait ProposalSearchEngine {
 
   def proposalTrendingMode(proposal: IndexedProposal): Option[String]
 
-  def indexProposals(
-    records: Seq[IndexedProposal],
-    mayBeIndex: Option[IndexAndType] = None
-  ): Future[Seq[IndexedProposal]]
+  def indexProposals(records: Seq[IndexedProposal], mayBeIndex: Option[Index] = None): Future[Seq[IndexedProposal]]
 
-  def updateProposals(
-    records: Seq[IndexedProposal],
-    mayBeIndex: Option[IndexAndType] = None
-  ): Future[Seq[IndexedProposal]]
+  def updateProposals(records: Seq[IndexedProposal], mayBeIndex: Option[Index] = None): Future[Seq[IndexedProposal]]
 
   def getPopularTagsByProposal(questionId: QuestionId, size: Int): Future[Seq[PopularTagResponse]]
 
@@ -127,27 +126,27 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
     private lazy val client = elasticsearchClient.client
 
-    private val proposalAlias: IndexAndType =
-      elasticsearchConfiguration.proposalAliasName / ProposalSearchEngine.proposalIndexName
+    private val proposalAlias: Index =
+      elasticsearchConfiguration.proposalAliasName
 
     // TODO remove once elastic4s-circe upgrades to circe 0.14
     private implicit val printer: Json => String = Printer.noSpaces.print
 
     override def findProposalById(proposalId: ProposalId): Future[Option[IndexedProposal]] = {
-      client.executeAsFuture(get(id = proposalId.value).from(proposalAlias)).map(_.toOpt[IndexedProposal])
+      client.executeAsFuture(get(proposalAlias, proposalId.value)).map(_.toOpt[IndexedProposal])
     }
 
     override def searchProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult] =
-      search(searchQuery)
+      constructSearchQuery(searchQuery)
 
     override def getFeaturedProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult] =
-      search(searchQuery.copy(sortAlgorithm = Some(Featured)))
+      constructSearchQuery(searchQuery.copy(sortAlgorithm = Some(Featured)))
 
-    private def search(searchQuery: SearchQuery): Future[ProposalsSearchResult] = {
+    private def constructSearchQuery(searchQuery: SearchQuery): Future[ProposalsSearchResult] = {
       // parse json string to build search query
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
       val excludesFilters = SearchFilters.getExcludeFilters(searchQuery)
-      var request: ElasticSearchRequest = searchWithType(proposalAlias)
+      var request: ElasticSearchRequest = search(proposalAlias)
         .bool(BoolQuery(must = searchFilters, not = excludesFilters))
         .sortBy(SearchFilters.getSort(searchQuery).toList)
         .from(SearchFilters.getSkipSearch(searchQuery))
@@ -161,14 +160,13 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       client
         .executeAsFuture(request)
         .map(response => ProposalsSearchResult(total = response.totalHits, results = response.to[IndexedProposal]))
-
     }
 
     override def countProposals(searchQuery: SearchQuery): Future[Long] = {
       // parse json string to build search query
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
 
-      val request = searchWithType(proposalAlias)
+      val request = search(proposalAlias)
         .bool(BoolQuery(must = searchFilters))
         .limit(0)
 
@@ -198,7 +196,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       )
       )
       val searchFilters: Seq[Query] = SearchFilters.getSearchFilters(searchQuery)
-      val request: ElasticSearchRequest = searchWithType(proposalAlias).bool(BoolQuery(must = searchFilters))
+      val request: ElasticSearchRequest = search(proposalAlias).bool(BoolQuery(must = searchFilters))
       val questionAggrSize: Int = maybeQuestionIds.map(_.length + 1).getOrElse(10000)
 
       val finalRequest: ElasticSearchRequest = request
@@ -211,7 +209,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
       client.executeAsFuture(finalRequest).map { response =>
         response.aggregations
-          .terms("questions")
+          .result[Terms]("questions")
           .buckets
           .map(termBucket => QuestionId(termBucket.key) -> termBucket.docCount)
           .toMap
@@ -223,7 +221,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       // parse json string to build search query
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
 
-      val request = searchWithType(proposalAlias)
+      val request = search(proposalAlias)
         .bool(BoolQuery(must = searchFilters))
         .aggregations(sumAgg("total_votes", "votes.count"))
 
@@ -251,7 +249,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
     override def indexProposals(
       proposals: Seq[IndexedProposal],
-      mayBeIndex: Option[IndexAndType] = None
+      mayBeIndex: Option[Index] = None
     ): Future[Seq[IndexedProposal]] = {
       @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
       val records = proposals
@@ -271,7 +269,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
     override def updateProposals(
       proposals: Seq[IndexedProposal],
-      mayBeIndex: Option[IndexAndType] = None
+      mayBeIndex: Option[Index] = None
     ): Future[Seq[IndexedProposal]] = {
       @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
       val records = proposals
@@ -284,7 +282,9 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val index = mayBeIndex.getOrElse(proposalAlias)
       client
         .executeAsFuture(bulk(records.map { record =>
-          (update(id = record.id.value) in index).doc(record).refresh(RefreshPolicy.IMMEDIATE)
+          updateById(index, record.id.value)
+            .doc(record)
+            .refresh(RefreshPolicy.IMMEDIATE)
         }))
         .map(_ => records.toSeq)
     }
@@ -294,7 +294,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val searchQuery: SearchQuery =
         SearchQuery(filters = Some(SearchFilters(question = Some(QuestionSearchFilter(Seq(questionId))))))
       val searchFilters: Seq[Query] = SearchFilters.getSearchFilters(searchQuery)
-      val request: ElasticSearchRequest = searchWithType(proposalAlias).bool(BoolQuery(must = searchFilters))
+      val request: ElasticSearchRequest = search(proposalAlias).bool(BoolQuery(must = searchFilters))
 
       val finalRequest: ElasticSearchRequest = request
         .aggregations(
@@ -316,7 +316,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
       client.executeAsFuture(finalRequest).map { response =>
         response.aggregations
-          .terms("popularTags")
+          .result[Terms]("popularTags")
           .buckets
           .map(popularTagResponseFrombucket)
       }
@@ -335,7 +335,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val searchQuery: SearchQuery =
         SearchQuery(filters = Some(SearchFilters(question = Some(QuestionSearchFilter(Seq(questionId))))))
       val searchFilters: Seq[Query] = SearchFilters.getSearchFilters(searchQuery)
-      val request: ElasticSearchRequest = searchWithType(proposalAlias).bool(BoolQuery(must = searchFilters))
+      val request: ElasticSearchRequest = search(proposalAlias).bool(BoolQuery(must = searchFilters))
 
       // This aggregation create a field "maxTopScore" with the max value of indexedProposal.scores.topScore
       val maxAggregation: AbstractAggregation =
@@ -365,9 +365,9 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
       client.executeAsFuture(finalRequest).map { response =>
         response.aggregations
-          .terms(termsAggregationName)
+          .result[Terms](termsAggregationName)
           .buckets
-          .flatMap(_.tophits(topHitsAggregationName).hits.map(_.to[IndexedProposal]))
+          .flatMap(_.result[TopHits](topHitsAggregationName).hits.map(_.to[IndexedProposal]))
       }
     }
 
@@ -376,14 +376,14 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         SearchQuery(filters = Some(SearchFilters(idea = Some(IdeaSearchFilter(ideaIds)))))
       )
 
-      val request = searchWithType(proposalAlias)
+      val request = search(proposalAlias)
         .bool(BoolQuery(must = searchFilters))
         .aggregations(termsAgg("by_idea", ProposalElasticsearchFieldName.ideaId.field))
         .size(0)
 
       client.executeAsFuture(request).map { response =>
         response.aggregations
-          .terms("by_idea")
+          .result[Terms]("by_idea")
           .buckets
           .map(termBucket => IdeaId(termBucket.key) -> termBucket.docCount)
           .toMap
@@ -407,7 +407,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
             TermsAggregation(
               name = "by_idea_global",
               field = Some(ProposalElasticsearchFieldName.ideaId.field),
-              includeExclude = Some(IncludeExclude(include = ideaIds.map(_.value), exclude = Seq.empty)),
+              includeExactValues = ideaIds.map(_.value),
               size = Some(ideaIds.size)
             )
           )
@@ -420,13 +420,13 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
           size = Some(avatarsSize)
         )
 
-      var request = searchWithType(proposalAlias)
+      var request = search(proposalAlias)
         .bool(BoolQuery(must = Seq(ExistsQuery(field = ProposalElasticsearchFieldName.authorAvatarUrl.field))))
         .aggregations(
           TermsAggregation(
             name = "by_idea",
             field = Some(ProposalElasticsearchFieldName.ideaId.field),
-            includeExclude = Some(IncludeExclude(include = ideaIds.map(_.value), exclude = Seq.empty)),
+            includeExactValues = ideaIds.map(_.value),
             size = Some(ideaIds.size)
           ).subAggregations(topHitsAggregation),
           globalAggregation
@@ -450,17 +450,17 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val proposalsCountByIdea: Map[String, Long] = response.aggregations
         .global("all_proposals")
         .filter("filter_global")
-        .terms("by_idea_global")
+        .result[Terms]("by_idea_global")
         .buckets
         .map(bucket => bucket.key -> bucket.docCount)
         .toMap
       val avatarsByIdea: Map[String, Seq[String]] = response.aggregations
-        .terms("by_idea")
+        .result[Terms]("by_idea")
         .buckets
         .map(
           bucket =>
             bucket.key -> bucket
-              .tophits("top_proposals")
+              .result[TopHits]("top_proposals")
               .hits
               .map(_.to[IndexedProposal])
               .map(_.author.avatarUrl.getOrElse(""))
@@ -500,14 +500,14 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         size = Some(questionIds.size),
         subaggs = Seq(consensusOutlier)
       )
-      val request = searchWithType(proposalAlias)
+      val request = search(proposalAlias)
         .bool(BoolQuery(must = searchFilters))
         .aggregations(aggByQuestion)
         .limit(0)
 
       client.executeAsFuture(request).map { response =>
         response.aggregations
-          .terms(aggByQuestion.name)
+          .result[Terms](aggByQuestion.name)
           .buckets
           .flatMap { termBucket =>
             termBucket.percentiles(consensusOutlier.name).values.get("80.0").map(QuestionId(termBucket.key) -> _)

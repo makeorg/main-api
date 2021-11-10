@@ -440,6 +440,107 @@ class ProposalScorerTest extends BaseUnitTest with Logging {
         }
     }
   }
+
+  Feature("IndexedScores serialization") {
+
+    val votes = Seq(
+      Vote(
+        key = VoteKey.Agree,
+        count = 5,
+        countVerified = 2000,
+        countSequence = 1998,
+        countSegment = 1999,
+        qualifications = Seq(
+          Qualification(
+            key = QualificationKey.LikeIt,
+            count = 1875,
+            countVerified = 1874,
+            countSequence = 1873,
+            countSegment = 1872
+          ),
+          Qualification(
+            key = QualificationKey.Doable,
+            count = 1669,
+            countVerified = 659,
+            countSequence = 658,
+            countSegment = 641
+          ),
+          Qualification(
+            key = QualificationKey.PlatitudeAgree,
+            count = 869,
+            countVerified = 869,
+            countSequence = 30,
+            countSegment = 15
+          )
+        )
+      ),
+      Vote(
+        key = VoteKey.Disagree,
+        count = 1067,
+        countVerified = 1000,
+        countSequence = 488,
+        countSegment = 1,
+        qualifications = Seq(
+          Qualification(
+            key = QualificationKey.NoWay,
+            count = 227,
+            countVerified = 77,
+            countSequence = 0,
+            countSegment = 0
+          ),
+          Qualification(
+            key = QualificationKey.Impossible,
+            count = 643,
+            countVerified = 21,
+            countSequence = 15,
+            countSegment = 10
+          ),
+          Qualification(
+            key = QualificationKey.PlatitudeDisagree,
+            count = 404,
+            countVerified = 56,
+            countSequence = 1,
+            countSegment = 0
+          )
+        )
+      ),
+      Vote(
+        key = VoteKey.Neutral,
+        count = 1414,
+        countVerified = 1414,
+        countSequence = 1128,
+        countSegment = 126,
+        qualifications = Seq(
+          Qualification(
+            key = QualificationKey.DoNotUnderstand,
+            count = 457,
+            countVerified = 450,
+            countSequence = 430,
+            countSegment = 429
+          ),
+          Qualification(
+            key = QualificationKey.NoOpinion,
+            count = 1389,
+            countVerified = 1389,
+            countSequence = 1072,
+            countSegment = 500
+          ),
+          Qualification(
+            key = QualificationKey.DoNotCare,
+            count = 1834,
+            countVerified = 1790,
+            countSequence = 267,
+            countSegment = 143
+          )
+        )
+      )
+    )
+    Scenario("confidence should not be NaN, even when voting data is consistent") {
+
+      val scorer = ProposalScorer(votes, VotesCounter.SequenceVotesCounter, 0.5d)
+      scorer.engagement.confidence.isNaN should be(false)
+    }
+  }
 }
 
 object ProposalScorerTest {

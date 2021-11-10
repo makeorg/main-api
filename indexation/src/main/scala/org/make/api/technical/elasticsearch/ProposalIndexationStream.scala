@@ -25,17 +25,12 @@ import akka.stream.{FlowShape, Materializer}
 import akka.{Done, NotUsed}
 import cats.data.OptionT
 import cats.implicits._
-import com.sksamuel.elastic4s.IndexAndType
+import com.sksamuel.elastic4s.Index
 import grizzled.slf4j.Logging
 import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
 import org.make.api.organisation.OrganisationServiceComponent
 import org.make.api.proposal.ProposalScorer.VotesCounter
-import org.make.api.proposal.{
-  ProposalCoordinatorServiceComponent,
-  ProposalScorer,
-  ProposalSearchEngine,
-  ProposalSearchEngineComponent
-}
+import org.make.api.proposal.{ProposalCoordinatorServiceComponent, ProposalScorer, ProposalSearchEngineComponent}
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.segment.SegmentServiceComponent
 import org.make.api.sequence.SequenceConfigurationComponent
@@ -331,7 +326,7 @@ trait ProposalIndexationStream
 
   private def executeIndexProposals(proposals: Seq[IndexedProposal], indexName: String): Future[Done] = {
     elasticsearchProposalAPI
-      .indexProposals(proposals, Some(IndexAndType(indexName, ProposalSearchEngine.proposalIndexName)))
+      .indexProposals(proposals, Some(Index(indexName)))
       .map(_ => Done)
       .recoverWith {
         case e =>

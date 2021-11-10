@@ -59,8 +59,12 @@ final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, nonSeque
     maybeVoteOrQualification.map(countingFunction).getOrElse(0)
   }
 
+  /** In some instances, the voting data will be malformed (e.g. due to a human
+    * intervention on some counters). To guard from this, here we apply the `min`
+    * function to ensure a proposition's individual score cannot be greater than 1.
+    */
   private def individualScore(key: Key, countingFunction: VotesCounter = counter): Double = {
-    (count(key, countingFunction) + findSmoothing(key)) / (1 + countVotes(countingFunction))
+    Math.min((count(key, countingFunction) + findSmoothing(key)) / (1 + countVotes(countingFunction)), 1)
   }
 
   def score(key: Key): Double = {

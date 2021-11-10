@@ -3,50 +3,48 @@
     "number_of_shards": 5
   },
   "mappings": {
-    "post": {
-      "dynamic": "strict",
-      "properties": {
-        "postId": {
-          "type": "keyword",
-          "index": true
-        },
-        "name": {
-          "type": "text",
-          "index": false
-        },
-        "slug": {
-          "type": "keyword",
-          "index": false
-        },
-        "country": {
-          "type": "keyword",
-          "index": true
-        },
-        "displayHome": {
-          "type": "boolean",
-          "index": true
-        },
-        "postDate": {
-          "type": "date",
-          "format": "date_time",
-          "index": true
-        },
-        "thumbnailUrl": {
-          "type": "text",
-          "index": false
-        },
-        "thumbnailAlt": {
-          "type": "text",
-          "index": false
-        },
-        "sourceUrl": {
-          "type": "text",
-          "index": false
-        },
-        "summary": {
-          "type": "text",
-          "index": false
-        }
+    "dynamic": "strict",
+    "properties": {
+      "postId": {
+        "type": "keyword",
+        "index": true
+      },
+      "name": {
+        "type": "text",
+        "index": false
+      },
+      "slug": {
+        "type": "keyword",
+        "index": false
+      },
+      "country": {
+        "type": "keyword",
+        "index": true
+      },
+      "displayHome": {
+        "type": "boolean",
+        "index": true
+      },
+      "postDate": {
+        "type": "date",
+        "format": "date_time",
+        "index": true
+      },
+      "thumbnailUrl": {
+        "type": "text",
+        "index": false
+      },
+      "thumbnailAlt": {
+        "type": "text",
+        "index": false
+      },
+      "sourceUrl": {
+        "type": "text",
+        "index": false
+      },
+      "summary": {
+        "type": "text",
+        "index": false
       }
     }
   }
