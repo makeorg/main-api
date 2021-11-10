@@ -19,9 +19,12 @@
 
 package org.make.api.technical.healthcheck
 
+import com.sksamuel.avro4s.{Encoder, SchemaFor}
 import com.typesafe.config.{Config, ConfigFactory}
+import org.apache.kafka.common.serialization.Serializer
 import org.make.api.KafkaTest
 import org.make.api.extensions.KafkaConfiguration
+import org.make.api.technical.MakeKafkaAvroSerializer
 import org.make.api.technical.healthcheck.HealthCheck.Status
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -34,6 +37,9 @@ class KafkaHealthCheckIT extends KafkaTest {
   implicit val ctx: ExecutionContext = global
 
   val kafkaConfiguration: KafkaConfiguration = new KafkaConfiguration(KafkaHealthCheckIT.configuration)
+
+  override final def createSerializer[T: SchemaFor: Encoder](registryUrl: String): Serializer[T] =
+    new MakeKafkaAvroSerializer[T](registryUrl)
 
   Feature("Check Kafka status") {
     Scenario("Kafka cluster is available") {

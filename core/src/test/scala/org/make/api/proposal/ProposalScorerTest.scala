@@ -19,7 +19,8 @@
 
 package org.make.api.proposal
 
-import org.make.api.MakeUnitTest
+import grizzled.slf4j.Logging
+import org.make.core.BaseUnitTest
 import org.make.api.proposal.ProposalScorer.{Score, VotesCounter}
 import org.make.api.proposal.ProposalScorerTest.ExpectedScores
 import org.make.api.technical.MakeRandom
@@ -38,14 +39,14 @@ import org.make.core.proposal.QualificationKey.{
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.Zone.{Limbo, Rejection}
-import org.make.core.proposal.indexed.{IndexedProposal, IndexedQualification, IndexedVote, SequencePool, Zone}
+import org.make.core.proposal.indexed.{IndexedQualification, IndexedVote, SequencePool, Zone}
 import org.make.core.question.QuestionId
 import org.make.core.sequence.{SequenceConfiguration, SequenceId}
 
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.immutable.Seq
 
-class ProposalScorerTest extends MakeUnitTest {
+class ProposalScorerTest extends BaseUnitTest with Logging {
 
   def createVotes(
     nbVoteAgree: Int = 0,
@@ -155,36 +156,11 @@ class ProposalScorerTest extends MakeUnitTest {
     )
   }
 
-  val proposalWithoutvote: Proposal = proposal(ProposalId("proposalWithoutvote"))
-  val proposalWithVote: Proposal =
-    proposal(
-      ProposalId("proposalWithVote"),
-      votes = createVotes(nbVoteAgree = 100, nbVoteNeutral = 20, nbVoteDisagree = 42)
-    )
-  val proposalWithVoteandQualification: Proposal =
-    proposal(
-      id = ProposalId("proposalWithVoteandQualification"),
-      votes = createVotes(
-        nbVoteAgree = 100,
-        nbVoteDisagree = 42,
-        nbVoteNeutral = 20,
-        nbQualificationLikeIt = 10,
-        nbQualificationDoable = 20,
-        nbQualificationPlatitudeAgree = 30,
-        nbQualificationNoWay = 30,
-        nbQualificationImpossible = 10,
-        nbQualificationPlatitudeDisagree = 12,
-        nbQualificationDoNotUnderstand = 5,
-        nbQualificationNoOpinion = 7,
-        nbQualificationDoNotCare = 4
-      )
-    )
-
   Feature("proposal pool") {
     Scenario("news proposal") {
       val configuration = SequenceConfiguration.default.copy(SequenceId("fake"), QuestionId("fake-too"))
 
-      ProposalScorer(proposalWithoutvote.votes, VotesCounter.SequenceVotesCounter, configuration.nonSequenceVotesWeight)
+      ProposalScorer(Seq.empty, VotesCounter.SequenceVotesCounter, configuration.nonSequenceVotesWeight)
         .pool(configuration, Accepted) should be(SequencePool.New)
     }
 
@@ -339,7 +315,7 @@ class ProposalScorerTest extends MakeUnitTest {
         ("adhesion", _.adhesion)
       )
 
-      val proposals: Seq[IndexedProposal] = (1 to 1000).map { i =>
+      val proposals: Seq[Seq[IndexedVote]] = (1 to 1000).map { i =>
         val agree = MakeRandom.nextInt(100) + 100
         val disagree = MakeRandom.nextInt(100) + 100
         val neutral = MakeRandom.nextInt(10) + 1
@@ -417,16 +393,16 @@ class ProposalScorerTest extends MakeUnitTest {
               )
             )
           )
-        indexedProposal(id = ProposalId(s"tested$i"), votes = votes, sequencePool = SequencePool.Tested)
+        votes
       }
 
       scores.foreach {
         case (name, scoreFunction) =>
           logger.debug(s"Validatin algorithm $name")
-          proposals.foreach { proposal =>
-            val score = scoreFunction(ProposalScorer(proposal.votes, VotesCounter.SequenceVotesCounter, 0.5))
+          proposals.foreach { votes =>
+            val score = scoreFunction(ProposalScorer(votes, VotesCounter.SequenceVotesCounter, 0.5))
             val average = (1 to 100).map { _ =>
-              scoreFunction(ProposalScorer(proposal.votes, VotesCounter.SequenceVotesCounter, 0.5)).cachedSample
+              scoreFunction(ProposalScorer(votes, VotesCounter.SequenceVotesCounter, 0.5)).cachedSample
             }.sum / 100
             average should be(score.score +- score.confidence)
           }

@@ -24,7 +24,7 @@ import akka.actor.typed.eventstream.EventStream.Publish
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorSystem, Scheduler}
 import com.typesafe.config.ConfigFactory
-import org.make.api.{KafkaTest, KafkaTestConsumerBehavior}
+import org.make.api.{KafkaTestConsumerBehavior, MakeKafkaTest}
 import org.make.core.AvroSerializers
 
 import java.time.ZonedDateTime
@@ -33,7 +33,7 @@ import scala.concurrent.duration.DurationInt
 
 class MailJetEventProducerBehaviorIT
     extends ScalaTestWithActorTestKit(MailJetEventProducerBehaviorIT.actorSystem)
-    with KafkaTest
+    with MakeKafkaTest
     with AvroSerializers {
 
   implicit val scheduler: Scheduler = testKit.system.scheduler

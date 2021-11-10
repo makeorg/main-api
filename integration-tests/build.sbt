@@ -19,4 +19,12 @@
 
 name := "integration-tests"
 
-libraryDependencies ++= Seq(Dependencies.dockerClient, Dependencies.dockerScalatest)
+libraryDependencies ++= Seq(
+  Dependencies.dockerClient,
+  Dependencies.dockerScalatest,
+  Dependencies.flywaydb,
+  Dependencies.kafkaClients,
+  Dependencies.nettyAll,
+  Dependencies.scalaBcrypt,
+  Dependencies.scalike
+)

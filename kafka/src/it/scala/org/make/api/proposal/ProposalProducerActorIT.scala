@@ -20,12 +20,12 @@
 package org.make.api.proposal
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.typed.{ActorSystem, Scheduler}
 import akka.actor.typed.eventstream.EventStream.Publish
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorSystem, Scheduler}
 import com.typesafe.config.ConfigFactory
 import org.make.api.proposal.PublishedProposalEvent.{ProposalAuthorInfo, ProposalProposed}
-import org.make.api.{KafkaTest, KafkaTestConsumerBehavior}
+import org.make.api.{KafkaTestConsumerBehavior, MakeKafkaTest}
 import org.make.core.proposal.ProposalId
 import org.make.core.user.UserId
 import org.make.core.{AvroSerializers, DateHelper, RequestContext}
@@ -35,7 +35,7 @@ import scala.concurrent.duration.DurationInt
 
 class ProposalProducerActorIT
     extends ScalaTestWithActorTestKit(ProposalProducerActorIT.actorSystem)
-    with KafkaTest
+    with MakeKafkaTest
     with AvroSerializers {
 
   implicit val scheduler: Scheduler = testKit.system.scheduler

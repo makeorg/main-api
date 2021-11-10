@@ -19,10 +19,10 @@
 
 package org.make.api.technical.security
 
-import org.make.api.MakeUnitTest
+import org.make.core.BaseUnitTest
 import org.make.api.technical.security.SecurityHelper.{base64Encode, HASH_SEPARATOR}
 
-class SecurityHelperTest extends MakeUnitTest {
+class SecurityHelperTest extends BaseUnitTest {
 
   Feature("sha512") {
     Scenario("hash with sha512") {
