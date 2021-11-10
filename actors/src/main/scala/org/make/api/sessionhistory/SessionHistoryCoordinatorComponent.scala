@@ -19,36 +19,41 @@
 
 package org.make.api.sessionhistory
 
-import akka.actor.ActorRef
-import akka.pattern.ask
+import akka.actor.typed.ActorRef
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.Timeout
-import org.make.api.ActorSystemComponent
+import org.make.api.ActorSystemTypedComponent
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryActor.{CurrentSessionId, SessionHistory}
+import org.make.api.sessionhistory.SessionHistoryResponse.{Error, LockResponse}
+import org.make.api.sessionhistory.SessionHistoryResponse.Error.ExpiredSession
+import org.make.api.technical.BetterLoggingActors.BetterLoggingTypedActorRef
 import org.make.api.technical.Futures._
 import org.make.api.technical.{StreamUtils, TimeSettings}
-import org.make.api.userhistory.{VotedProposals, VotesValues}
-import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.{ProposalId, QualificationKey}
 import org.make.core.session.SessionId
 import org.make.core.user.UserId
+import org.make.core.RequestContext
 
-import scala.concurrent.ExecutionContext.Implicits._
-import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.global
+import scala.concurrent.{ExecutionContext, Future}
 
 trait SessionHistoryCoordinatorComponent {
-  def sessionHistoryCoordinator: ActorRef
+  def sessionHistoryCoordinator: ActorRef[SessionHistoryCommand]
 }
 
 trait SessionHistoryCoordinatorService {
-  def sessionHistory(sessionId: SessionId): Future[SessionHistory]
   def getCurrentSessionId(sessionId: SessionId, newSessionId: SessionId): Future[SessionId]
-  def logTransactionalHistory(command: TransactionalSessionHistoryEvent[_]): Future[Unit]
+  def logTransactionalHistory[T <: LoggableHistoryEvent[_]](command: T): Future[Unit]
   def convertSession(sessionId: SessionId, userId: UserId, requestContext: RequestContext): Future[Unit]
-  def retrieveVoteAndQualifications(request: RequestSessionVoteValues): Future[Map[ProposalId, VoteAndQualifications]]
-  def retrieveVotedProposals(request: RequestSessionVotedProposals): Future[Seq[ProposalId]]
+  def retrieveVoteAndQualifications(
+    sessionId: SessionId,
+    proposalIds: Seq[ProposalId]
+  ): Future[Map[ProposalId, VoteAndQualifications]]
+  def retrieveVotedProposals(
+    sessionId: SessionId,
+    proposalsIds: Option[Seq[ProposalId]] = None
+  ): Future[Seq[ProposalId]]
   def lockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit]
   def lockSessionForQualification(sessionId: SessionId, proposalId: ProposalId, key: QualificationKey): Future[Unit]
   def unlockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit]
@@ -62,52 +67,42 @@ trait SessionHistoryCoordinatorServiceComponent {
 final case class ConcurrentModification(message: String) extends Exception(message)
 
 trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoordinatorServiceComponent {
-  self: SessionHistoryCoordinatorComponent with ActorSystemComponent with MakeSettingsComponent =>
+  self: SessionHistoryCoordinatorComponent with ActorSystemTypedComponent with MakeSettingsComponent =>
+
+  type Receiver[T] = ActorRef[SessionHistoryResponse[Error.Expired, T]]
+  type LockReceiver = ActorRef[SessionHistoryResponse[Error.LockError, LockResponse]]
 
   override lazy val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService =
     new DefaultSessionHistoryCoordinatorService
 
   class DefaultSessionHistoryCoordinatorService extends SessionHistoryCoordinatorService {
 
+    implicit val ctx: ExecutionContext = global
     private val proposalsPerPage: Int = makeSettings.maxHistoryProposalsPerPage
     implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
-    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
-    override def sessionHistory(sessionId: SessionId): Future[SessionHistory] = {
-      (sessionHistoryCoordinator ? GetSessionHistory(sessionId)).flatMap {
-        case SessionIsExpired(newSessionId) => sessionHistory(newSessionId)
-        case response                       => Future.successful(response).mapTo[SessionHistory]
-      }
-    }
-
     override def getCurrentSessionId(sessionId: SessionId, newSessionId: SessionId): Future[SessionId] = {
-      (sessionHistoryCoordinator ? GetCurrentSession(sessionId, newSessionId)).mapTo[CurrentSessionId].map(_.sessionId)
+      (sessionHistoryCoordinator ?? (GetCurrentSession(sessionId, newSessionId, _))).map(_.value)
     }
 
-    override def logTransactionalHistory(command: TransactionalSessionHistoryEvent[_]): Future[Unit] = {
-      (sessionHistoryCoordinator ? SessionHistoryEnvelope(command.sessionId, command)).flatMap {
-        case SessionIsExpired(newSessionId) =>
-          (sessionHistoryCoordinator ? SessionHistoryEnvelope(newSessionId, command)).toUnit
-        case _ => Future.unit
-      }
+    override def logTransactionalHistory[T <: LoggableHistoryEvent[_]](command: T): Future[Unit] = {
+      def log(id: SessionId)(replyTo: Receiver[LogResult]): EventEnvelope[T] = EventEnvelope(id, command, replyTo)
+      askExpired(sessionHistoryCoordinator, log)(command.sessionId).flatMap(shapeResponse).toUnit
     }
 
-    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     override def retrieveVoteAndQualifications(
-      request: RequestSessionVoteValues
+      sessionId: SessionId,
+      proposalIds: Seq[ProposalId]
     ): Future[Map[ProposalId, VoteAndQualifications]] = {
-      (sessionHistoryCoordinator ? request).flatMap {
-        case SessionIsExpired(newSessionId) => retrieveVoteAndQualifications(request.copy(sessionId = newSessionId))
-        case response                       => Future.successful(response).mapTo[VotesValues].map(_.votesValues)
-      }
+      def votesValues(id: SessionId)(replyTo: Receiver[Map[ProposalId, VoteAndQualifications]]) =
+        SessionVoteValuesCommand(id, proposalIds, replyTo)
+      askExpired(sessionHistoryCoordinator, votesValues)(sessionId).flatMap(shapeResponse)
     }
 
-    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     override def convertSession(sessionId: SessionId, userId: UserId, requestContext: RequestContext): Future[Unit] = {
-      (sessionHistoryCoordinator ? UserConnected(sessionId, userId, requestContext)).flatMap {
-        case SessionIsExpired(newSessionId) => convertSession(newSessionId, userId, requestContext)
-        case _                              => Future.unit
-      }
+      def userConnected(id: SessionId)(replyTo: Receiver[LogResult]) =
+        UserConnected(id, userId, requestContext, replyTo)
+      askExpired(sessionHistoryCoordinator, userConnected)(sessionId).flatMap(shapeResponse).toUnit
     }
 
     private def retrieveVotedProposalsPage(
@@ -135,70 +130,79 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       }
     }
 
-    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     private def doRequestVotedProposalsPage(request: RequestSessionVotedProposalsPaginate): Future[Seq[ProposalId]] = {
-      (sessionHistoryCoordinator ? request).flatMap {
-        case SessionIsExpired(newSessionId) => doRequestVotedProposalsPage(request.copy(sessionId = newSessionId))
-        case response: VotedProposals       => Future.successful(response.proposals)
-        case other =>
-          Future.failed(
-            new IllegalStateException(
-              s"Unknown response from session history actor: ${other.toString} of class ${other.getClass.getName}}"
-            )
-          )
-      }
+      def voted(id: SessionId)(replyTo: Receiver[Seq[ProposalId]]) =
+        SessionVotedProposalsPaginateCommand(id, request.proposalsIds, request.limit, request.skip, replyTo)
+      askExpired(sessionHistoryCoordinator, voted)(request.sessionId).flatMap(shapeResponse)
     }
 
-    override def retrieveVotedProposals(request: RequestSessionVotedProposals): Future[Seq[ProposalId]] = {
+    override def retrieveVotedProposals(
+      sessionId: SessionId,
+      proposalsIds: Option[Seq[ProposalId]] = None
+    ): Future[Seq[ProposalId]] = {
       StreamUtils
-        .asyncPageToPageSource(retrieveVotedProposalsPage(request, _))
+        .asyncPageToPageSource(retrieveVotedProposalsPage(RequestSessionVotedProposals(sessionId, proposalsIds), _))
         .mapConcat(identity)
         .runWith(Sink.seq)
     }
 
-    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     override def lockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit] = {
-      (sessionHistoryCoordinator ? LockProposalForVote(sessionId, proposalId)).flatMap {
-        case SessionIsExpired(newSessionId) => lockSessionForVote(newSessionId, proposalId)
-        case LockAcquired                   => Future.unit
-        case LockAlreadyAcquired =>
-          Future.failed(ConcurrentModification("A vote is already pending for this proposal"))
-      }
+      def lock(id: SessionId)(replyTo: LockReceiver) = LockProposalForVote(id, proposalId, replyTo)
+      askExpired(sessionHistoryCoordinator, lock)(sessionId).flatMap(shapeResponse).toUnit
     }
 
-    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     override def lockSessionForQualification(
       sessionId: SessionId,
       proposalId: ProposalId,
       key: QualificationKey
     ): Future[Unit] = {
-      (sessionHistoryCoordinator ? LockProposalForQualification(sessionId, proposalId, key)).flatMap {
-        case SessionIsExpired(newSessionId) => lockSessionForQualification(newSessionId, proposalId, key)
-        case LockAcquired                   => Future.unit
-        case LockAlreadyAcquired =>
-          Future.failed(ConcurrentModification("A qualification is already pending for this proposal"))
-      }
+      def lock(id: SessionId)(replyTo: LockReceiver) = LockProposalForQualification(id, proposalId, key, replyTo)
+      askExpired(sessionHistoryCoordinator, lock)(sessionId).flatMap(shapeResponse).toUnit
     }
 
-    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     override def unlockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit] = {
-      (sessionHistoryCoordinator ? ReleaseProposalForVote(sessionId, proposalId)).flatMap {
-        case SessionIsExpired(newSessionId) => unlockSessionForVote(newSessionId, proposalId)
-        case _                              => Future.unit
-      }
+      def release(id: SessionId)(replyTo: LockReceiver) = ReleaseProposalForVote(id, proposalId, replyTo)
+      askExpired(sessionHistoryCoordinator, release)(sessionId).flatMap(shapeResponse).toUnit
     }
 
-    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     override def unlockSessionForQualification(
       sessionId: SessionId,
       proposalId: ProposalId,
       key: QualificationKey
     ): Future[Unit] = {
-      (sessionHistoryCoordinator ? ReleaseProposalForQualification(sessionId, proposalId, key)).flatMap {
-        case SessionIsExpired(newSessionId) => unlockSessionForQualification(newSessionId, proposalId, key)
-        case _                              => Future.unit
+      def release(id: SessionId)(replyTo: LockReceiver) = ReleaseProposalForQualification(id, proposalId, key, replyTo)
+      askExpired(sessionHistoryCoordinator, release)(sessionId).flatMap(shapeResponse).toUnit
+    }
+
+    private def shapeResponse[E, T](response: SessionHistoryResponse[E, T]): Future[T] = response match {
+      case SessionHistoryResponse.Envelope(value)                    => Future.successful(value)
+      case l: SessionHistoryResponse.LockResponse                    => Future.successful(l)
+      case SessionHistoryResponse.Error.LockAlreadyAcquired(message) => Future.failed(ConcurrentModification(message))
+      case error: SessionHistoryResponse.Error[_] =>
+        Future.failed(
+          new IllegalStateException(
+            s"Unknown response from session history actor: ${error.toString} of class ${error.getClass.getName}}"
+          )
+        )
+    }
+
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+    private def askExpired[Req, Res](ref: ActorRef[Req], replyTo: SessionId => ActorRef[Res] => Req)(
+      id: SessionId
+    ): Future[Res] = {
+      (ref ?? replyTo(id)).flatMap {
+        case ExpiredSession(newSessionId) => askExpired(ref, replyTo)(newSessionId)
+        case other                        => Future.successful(other)
       }
     }
-  }
 
+  }
 }
+
+final case class RequestSessionVotedProposals(sessionId: SessionId, proposalsIds: Option[Seq[ProposalId]] = None)
+final case class RequestSessionVotedProposalsPaginate(
+  sessionId: SessionId,
+  proposalsIds: Option[Seq[ProposalId]] = None,
+  limit: Int,
+  skip: Int
+)

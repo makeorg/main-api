@@ -289,7 +289,7 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Logg
           case (orga, sample) =>
             val sessionId = SessionId(orga.userId.value)
             Source(sample.toSeq)
-              .mapAsync(16) { proposalId =>
+              .mapAsync(1) { proposalId =>
                 proposalService.voteProposal(
                   proposalId = proposalId,
                   maybeUserId = Some(orga.userId),

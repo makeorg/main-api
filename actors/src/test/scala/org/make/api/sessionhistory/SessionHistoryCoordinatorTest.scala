@@ -19,70 +19,62 @@
 
 package org.make.api.sessionhistory
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
-import akka.actor.{ActorRef, ActorSystem}
-import akka.pattern.{ask, AskTimeoutException}
+import akka.actor.testkit.typed.scaladsl.{ActorTestKit, ScalaTestWithActorTestKit}
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.stream.scaladsl.{Sink, Source}
-import akka.testkit.{ImplicitSender, TestKit}
-import akka.util
 import com.typesafe.config.{Config, ConfigFactory}
 import enumeratum.values.scalacheck._
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.technical.{DefaultIdGeneratorComponent, TimeSettings}
-import org.make.api.userhistory.UserHistoryActor
-import org.make.api.{ActorSystemComponent, ShardingActorTest, TestHelper}
+import org.make.api.sessionhistory.SessionHistoryCoordinatorTest.actorSystemSeed
+import org.make.api.technical.DefaultIdGeneratorComponent
+import org.make.api.userhistory.{UserHistoryActor, UserHistoryCommand}
+import org.make.api.{ActorSystemTypedComponent, MakeUnitTest, TestHelper}
 import org.make.core.history.HistoryActions
 import org.make.core.history.HistoryActions.VoteTrust
-import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.proposal.{ProposalId, VoteKey}
 import org.make.core.session.SessionId
 import org.make.core.{DateHelper, RequestContext}
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck.rng.Seed
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 class SessionHistoryCoordinatorTest
-    extends ShardingActorTest(SessionHistoryCoordinatorTest.actorSystem)
-    with ScalaFutures
+    extends ScalaTestWithActorTestKit(SessionHistoryCoordinatorTest.actorSystem)
+    with MakeUnitTest
     with ScalaCheckDrivenPropertyChecks
-    with ImplicitSender
     with DefaultSessionHistoryCoordinatorServiceComponent
     with MakeSettingsComponent
-    with ActorSystemComponent
+    with ActorSystemTypedComponent
     with SessionHistoryCoordinatorComponent
     with DefaultIdGeneratorComponent {
 
-  override def afterAll(): Unit = {
-    TestKit.shutdownActorSystem(system)
+  val userHistoryCoordinatorProbe: ActorRef[UserHistoryCommand] = testKit.spawn(UserHistoryActor())
+
+  override val makeSettings: MakeSettings = mock[MakeSettings]
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    SessionHistoryCoordinator(testKit.system, userHistoryCoordinatorProbe, idGenerator, makeSettings)
+  }
+
+  protected override def afterAll(): Unit = {
+    ActorTestKit.shutdown(actorSystemSeed)
     testKit.shutdownTestKit()
     super.afterAll()
   }
 
-  override val makeSettings: MakeSettings = mock[MakeSettings]
   when(makeSettings.maxHistoryProposalsPerPage).thenReturn(100)
+  when(makeSettings.maxUserHistoryEvents).thenReturn(10000)
 
-  val testKit = ActorTestKit(system.toTyped)
+  override implicit val actorSystemTyped: ActorSystem[Nothing] = testKit.system
 
-  val userHistoryCoordinatorProbe = testKit.spawn(UserHistoryActor())
-
-  override implicit val actorSystem: ActorSystem = system
-  actorSystem.actorOf(
-    SessionHistoryCoordinator.props(userHistoryCoordinatorProbe.ref, idGenerator, 10.milliseconds),
-    SessionHistoryCoordinator.name
-  )
-  override val sessionHistoryCoordinator: ActorRef =
-    SessionHistoryCoordinatorTest.actorSystemSeed
-      .actorOf(
-        SessionHistoryCoordinator.props(userHistoryCoordinatorProbe.ref, idGenerator, 10.milliseconds),
-        SessionHistoryCoordinator.name
-      )
+  override val sessionHistoryCoordinator: ActorRef[SessionHistoryCommand] =
+    SessionHistoryCoordinator(actorSystemSeed, userHistoryCoordinatorProbe, idGenerator, makeSettings)
 
   private implicit val arbVotes: Arbitrary[Seq[SessionVote]] = Arbitrary {
     val sessionVoteGen = for {
@@ -114,7 +106,8 @@ class SessionHistoryCoordinatorTest
         whenReady(futureHasVoted, Timeout(3.seconds))(_ => ())
 
         val allVotes: Future[Seq[ProposalId]] = sessionHistoryCoordinatorService.retrieveVotedProposals(
-          RequestSessionVotedProposals(sessionId = sessionId, proposalsIds = Some(sessionVotes.map(_.proposalId)))
+          sessionId = sessionId,
+          proposalsIds = Some(sessionVotes.map(_.proposalId))
         )
         whenReady(allVotes, Timeout(3.seconds)) { proposalsIds =>
           proposalsIds.toSet shouldBe sessionVotes.map(_.proposalId).toSet
@@ -122,61 +115,13 @@ class SessionHistoryCoordinatorTest
 
         val allVotesAndQualification: Future[Map[ProposalId, HistoryActions.VoteAndQualifications]] =
           sessionHistoryCoordinatorService.retrieveVoteAndQualifications(
-            RequestSessionVoteValues(sessionId = sessionId, proposalIds = sessionVotes.map(_.proposalId))
+            sessionId = sessionId,
+            proposalIds = sessionVotes.map(_.proposalId)
           )
         whenReady(allVotesAndQualification, Timeout(3.seconds)) { proposalsAndVotes =>
           proposalsAndVotes.keySet shouldBe sessionVotes.map(_.proposalId).toSet
         }
       }
-    }
-
-    Scenario("too large votes") {
-      val sessionVotes: Seq[SessionVote] = {
-        val sessionVoteGen = arbitrary[VoteKey].map(SessionVote(idGenerator.nextProposalId(), _, Trusted))
-        Gen.listOfN(3195, sessionVoteGen).pureApply(Gen.Parameters.default, Seed.random())
-      }
-      val sessionId: SessionId = SessionId(idGenerator.nextId())
-
-      val futureHasVoted = Source(sessionVotes)
-        .mapAsync(5) { sessionVote =>
-          sessionHistoryCoordinatorService.logTransactionalHistory(
-            LogSessionVoteEvent(
-              sessionId,
-              RequestContext.empty,
-              SessionAction[SessionVote](date = DateHelper.now(), actionType = "vote", arguments = sessionVote)
-            )
-          )
-        }
-        .runWith(Sink.ignore)
-      whenReady(futureHasVoted, Timeout(30.seconds))(_ => ())
-
-      def allVotes(id: SessionId, ids: Seq[ProposalId]): Future[Seq[ProposalId]] = {
-        sessionHistoryCoordinatorService.retrieveVotedProposals(
-          RequestSessionVotedProposals(sessionId = id, proposalsIds = Some(ids))
-        )
-      }
-      whenReady(allVotes(sessionId, sessionVotes.map(_.proposalId)), Timeout(30.seconds)) { proposalsIds =>
-        proposalsIds.toSet shouldBe sessionVotes.map(_.proposalId).toSet
-      }
-
-      val requestVotesNotPaginated =
-        RequestSessionVotedProposals(sessionId = sessionId, proposalsIds = Some(sessionVotes.map(_.proposalId)))
-      implicit val timeout: util.Timeout = TimeSettings.defaultTimeout
-      val failedAllVotes = (sessionHistoryCoordinator ? requestVotesNotPaginated).mapTo[Seq[ProposalId]]
-      whenReady(failedAllVotes.failed, Timeout(6.seconds)) { exception =>
-        logger.info("Previous thrown exception 'oversized payload' was expected.")
-        exception shouldBe a[AskTimeoutException]
-      }
-
-      val allVotesAndQualification: Future[Map[ProposalId, HistoryActions.VoteAndQualifications]] =
-        sessionHistoryCoordinatorService.retrieveVoteAndQualifications(
-          RequestSessionVoteValues(sessionId = sessionId, proposalIds = sessionVotes.map(_.proposalId))
-        )
-      whenReady(allVotesAndQualification.failed, Timeout(6.seconds)) { exception =>
-        logger.info("Previous thrown exception 'oversized payload' was expected.")
-        exception shouldBe a[AskTimeoutException]
-      }
-
     }
   }
 }
@@ -195,8 +140,6 @@ object SessionHistoryCoordinatorTest {
       .withFallback(TestHelper.fullConfiguration)
       .resolve()
 
-  val actorSystem: ActorSystem = TestHelper.defaultActorSystem(conf)
-
   val customSeedConfiguration: String =
     s"""
        |akka.cluster.roles = ["seed"]
@@ -209,5 +152,6 @@ object SessionHistoryCoordinatorTest {
       .withFallback(conf)
       .resolve()
 
-  val actorSystemSeed: ActorSystem = TestHelper.defaultActorSystem(configSeed)
+  def actorSystem: ActorSystem[Nothing] = ActorSystem[Nothing](Behaviors.empty, "test_system", conf)
+  val actorSystemSeed: ActorSystem[Nothing] = ActorSystem[Nothing](Behaviors.empty, "test_system", configSeed)
 }

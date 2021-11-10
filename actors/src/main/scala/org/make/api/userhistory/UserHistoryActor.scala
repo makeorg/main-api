@@ -19,19 +19,18 @@
 
 package org.make.api.userhistory
 
-import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-
-import java.time.ZonedDateTime
+import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, ReplyEffect, RetentionCriteria}
 import grizzled.slf4j.Logging
-import org.make.api.sessionhistory.SessionHistoryActor.{LogAcknowledged, SessionEventsInjected}
+import org.make.api.sessionhistory.Ack
 import org.make.api.technical.EffectBuilderHelper._
-import org.make.api.userhistory.UserHistoryActorCompanion._
+import org.make.api.userhistory.UserHistoryResponse.SessionEventsInjected
 import org.make.core.history.HistoryActions._
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
-import org.make.core.user._
+
+import java.time.ZonedDateTime
 
 object UserHistoryActor extends Logging {
 
@@ -54,10 +53,6 @@ object UserHistoryActor extends Logging {
     }
   }
 
-}
-
-object UserHistoryActorCompanion {
-
   def getVotesValues(
     userHistory: UserVotesAndQualifications,
     proposalIds: Seq[ProposalId]
@@ -79,9 +74,9 @@ object UserHistoryActorCompanion {
       case (proposalId, votesAndQualifications) =>
         proposalIds.forall(_.contains(proposalId)) &&
           filterVotes.forall(_.contains(votesAndQualifications.voteKey)) &&
-          (filterQualifications.forall { qualifications =>
+          filterQualifications.forall { qualifications =>
             votesAndQualifications.qualificationKeys.exists { case (value, _) => qualifications.contains(value) }
-          }) && votesAndQualifications.trust.isTrusted
+          } && votesAndQualifications.trust.isTrusted
     }.toSeq.sortBy { case (_, votesAndQualifications) => votesAndQualifications.date }.map {
       case (proposalId, _) => proposalId
     }.slice(skip, limit)
@@ -106,13 +101,13 @@ object UserHistoryActorCompanion {
       Effect
         .persist[UserHistoryEvent[_], UserVotesAndQualifications](event)
         .thenPublish(event)
-        .thenReply(replyTo)(_ => UserHistoryResponse(LogAcknowledged))
+        .thenReply(replyTo)(_ => UserHistoryResponse(Ack))
     case (_, UserHistoryEnvelope(_, event: UserHistoryEvent[_])) =>
       Effect
         .persist[UserHistoryEvent[_], UserVotesAndQualifications](event)
         .thenPublish(event)
         .thenNoReply()
-    case (_, Stop(_, replyTo)) => Effect.stop().thenReply(replyTo)(_ => UserHistoryResponse(LogAcknowledged))
+    case (_, Stop(_, replyTo)) => Effect.stop().thenReply(replyTo)(_ => UserHistoryResponse(Ack))
   }
 
   def eventHandler: (UserVotesAndQualifications, UserHistoryEvent[_]) => UserVotesAndQualifications = {
@@ -218,11 +213,4 @@ object UserHistoryActorCompanion {
       state
     }
   }
-
-  final case class RequestUserVotedProposals(
-    userId: UserId,
-    filterVotes: Option[Seq[VoteKey]] = None,
-    filterQualifications: Option[Seq[QualificationKey]] = None,
-    proposalsIds: Option[Seq[ProposalId]] = None
-  )
 }

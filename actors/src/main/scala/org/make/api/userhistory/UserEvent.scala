@@ -20,7 +20,6 @@
 package org.make.api.userhistory
 
 import com.sksamuel.avro4s.{AvroDefault, AvroSortPriority}
-import org.make.api.technical.ActorProtocol
 import org.make.api.user.Anonymization
 import org.make.core._
 import org.make.core.history.HistoryActions.VoteAndQualifications
@@ -31,17 +30,11 @@ import org.make.core.user.{User, UserId}
 
 import java.time.ZonedDateTime
 
-trait UserHistoryActorEventProtocol extends ActorProtocol
-
 trait VotedProposals {
   val proposals: Seq[ProposalId]
 }
 trait VotesValues {
   val votesValues: Map[ProposalId, VoteAndQualifications]
-}
-
-trait UserRelatedEventEvent extends UserHistoryActorEventProtocol {
-  def userId: UserId
 }
 
 trait UserPersistentEvent {
@@ -247,8 +240,6 @@ final case class OrganisationInitializationEvent(
 ) extends UserEvent {
   override def version(): Int = MakeSerializable.V1
 }
-
-final case class SnapshotUserEvent(override val userId: UserId) extends UserRelatedEventEvent
 
 @AvroSortPriority(6)
 final case class UserUpdatedOptInNewsletterEvent(

@@ -19,42 +19,35 @@
 
 package org.make.api.sessionhistory
 
-import akka.actor.typed.{ActorRef => TypedRef}
-import akka.actor.{Actor, ActorRef, Props}
-import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
+import akka.actor.typed.receptionist.ServiceKey
+import akka.actor.typed.{ActorRef, ActorSystem}
+import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityTypeKey}
+import org.make.api.extensions.MakeSettings
+import org.make.api.technical.ShardingNoEnvelopeMessageExtractor
 import org.make.api.userhistory.UserHistoryCommand
 import org.make.core.technical.IdGenerator
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class SessionHistoryCoordinator(
-  userHistoryCoordinator: TypedRef[UserHistoryCommand],
-  lockDuration: FiniteDuration,
-  idGenerator: IdGenerator
-) extends Actor {
-  ClusterSharding(context.system).start(
-    ShardedSessionHistory.shardName,
-    ShardedSessionHistory.props(userHistoryCoordinator, lockDuration, idGenerator),
-    ClusterShardingSettings(context.system),
-    ShardedSessionHistory.extractEntityId,
-    ShardedSessionHistory.extractShardId
-  )
-
-  def shardedSessionHistory: ActorRef = {
-    ClusterSharding(context.system).shardRegion(ShardedSessionHistory.shardName)
-  }
-
-  override def receive: Receive = {
-    case cmd: SessionRelatedEvent => shardedSessionHistory.forward(cmd)
-  }
-}
-
 object SessionHistoryCoordinator {
-  def props(
-    userHistoryCoordinator: TypedRef[UserHistoryCommand],
-    idGenerator: IdGenerator,
-    lockDuration: FiniteDuration = 7.seconds
-  ): Props =
-    Props(new SessionHistoryCoordinator(userHistoryCoordinator, lockDuration, idGenerator))
+
   val name: String = "session-history-coordinator"
+
+  val TypeKey: EntityTypeKey[SessionHistoryCommand] =
+    EntityTypeKey[SessionHistoryCommand]("session-history")
+
+  val Key: ServiceKey[SessionHistoryCommand] = ServiceKey(name)
+
+  def apply(
+    system: ActorSystem[_],
+    userHistoryCoordinator: ActorRef[UserHistoryCommand],
+    idGenerator: IdGenerator,
+    settings: MakeSettings,
+    lockDuration: FiniteDuration = 7.seconds
+  ): ActorRef[SessionHistoryCommand] = {
+    ClusterSharding(system).init(
+      Entity(TypeKey)(_ => SessionHistoryActor(userHistoryCoordinator, lockDuration, idGenerator, settings))
+        .withMessageExtractor(ShardingNoEnvelopeMessageExtractor[SessionHistoryCommand](numberOfShards = 128))
+    )
+  }
 }

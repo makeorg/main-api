@@ -19,8 +19,6 @@
 
 package org.make.api.extensions
 
-import akka.actor.Actor
-import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.actor.typed.{ActorSystem, Extension, ExtensionId}
 import com.typesafe.config.Config
 import org.make.api.ActorSystemTypedComponent
@@ -30,10 +28,6 @@ class MakeSettingsExtension(config: Config) extends MakeSettings(config) with Ex
 object MakeSettingsExtension extends ExtensionId[MakeSettingsExtension] {
   override def createExtension(system: ActorSystem[_]): MakeSettingsExtension =
     new MakeSettingsExtension(system.settings.config.getConfig("make-api"))
-}
-
-trait ActorMakeSettingsComponent { self: Actor =>
-  val settings: MakeSettings = MakeSettingsExtension(context.system.toTyped)
 }
 
 trait DefaultMakeSettingsComponent extends MakeSettingsComponent {

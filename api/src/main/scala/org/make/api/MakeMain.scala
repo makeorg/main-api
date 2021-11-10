@@ -33,7 +33,6 @@ import kamon.Kamon
 import org.make.api.MakeGuardian.Initialize
 import org.make.api.extensions.ThreadPoolMonitoringActor.MonitorThreadPool
 import org.make.api.extensions.{DatabaseConfigurationExtension, MakeSettingsExtension, ThreadPoolMonitoringActor}
-import org.make.api.technical.MakePersistentActor.StartShard
 import org.make.api.technical.{ClusterShardingMonitor, MemoryMonitoringActor}
 
 import java.net.InetAddress
@@ -98,7 +97,7 @@ object MakeMain extends App with Logging with MakeApi {
 
   Await.result(swiftClient.init(), 10.seconds)
 
-  Await.result(actorSystemTyped ? (Initialize(_)), atMost = 5.seconds)
+  Await.result(actorSystemTyped ? Initialize, atMost = 5.seconds)
 
   actorSystemTyped.systemActorOf(ClusterShardingMonitor(), ClusterShardingMonitor.name)
   actorSystemTyped.systemActorOf(MemoryMonitoringActor(), MemoryMonitoringActor.name)
@@ -106,11 +105,6 @@ object MakeMain extends App with Logging with MakeApi {
     actorSystemTyped.systemActorOf(ThreadPoolMonitoringActor(), ThreadPoolMonitoringActor.name)
   threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.readExecutor, "db-read-pool")
   threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.writeExecutor, "db-write-pool")
-
-  // Start the shards
-  (0 until 100).foreach { i =>
-    sessionHistoryCoordinator ! StartShard(i.toString)
-  }
 
   private val settings = MakeSettingsExtension(actorSystemTyped)
 

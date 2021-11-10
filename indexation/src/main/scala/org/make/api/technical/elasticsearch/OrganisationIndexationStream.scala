@@ -27,14 +27,13 @@ import grizzled.slf4j.Logging
 import org.make.api.organisation.{OrganisationSearchEngine, OrganisationSearchEngineComponent}
 import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.user.PersistentUserServiceComponent
-import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
-import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
+import org.make.api.userhistory.{RequestUserVotedProposals, UserHistoryCoordinatorServiceComponent}
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
 import org.make.core.question.QuestionId
-import org.make.core.user.{User, UserId}
 import org.make.core.user.indexed.{IndexedOrganisation, ProposalsAndVotesCountsByQuestion}
+import org.make.core.user.{User, UserId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

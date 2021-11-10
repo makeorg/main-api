@@ -21,7 +21,6 @@ package org.make.api
 
 import akka.actor.typed.scaladsl.AskPattern.schedulerFromActorSystem
 import akka.actor.typed.{SpawnProtocol, ActorRef => TypedActorRef}
-import akka.actor.ActorRef
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import akka.util.Timeout
@@ -62,6 +61,7 @@ import org.make.api.sequence._
 import org.make.api.sessionhistory.{
   ConcurrentModification,
   DefaultSessionHistoryCoordinatorServiceComponent,
+  SessionHistoryCommand,
   SessionHistoryCoordinator,
   SessionHistoryCoordinatorComponent
 }
@@ -303,12 +303,8 @@ trait MakeApi
   override lazy val userHistoryCoordinator: TypedActorRef[UserHistoryCommand] =
     Await.result(actorSystemTyped.findRefByKey(UserHistoryCoordinator.Key), atMost = 10.seconds)
 
-  override lazy val sessionHistoryCoordinator: ActorRef = Await.result(
-    actorSystem
-      .actorSelection(actorSystem / SessionHistoryCoordinator.name)
-      .resolveOne()(Timeout(10.seconds)),
-    atMost = 10.seconds
-  )
+  override lazy val sessionHistoryCoordinator: TypedActorRef[SessionHistoryCommand] =
+    Await.result(actorSystemTyped.findRefByKey(SessionHistoryCoordinator.Key), atMost = 10.seconds)
 
   override lazy val jobCoordinator: TypedActorRef[JobActor.Protocol.Command] = Await.result({
     actorSystemTyped.findRefByKey(JobCoordinator.Key)

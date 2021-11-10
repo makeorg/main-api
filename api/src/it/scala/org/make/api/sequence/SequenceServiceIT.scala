@@ -19,10 +19,12 @@
 
 package org.make.api.sequence
 
-import akka.actor.{typed, ActorRef, ActorSystem, ExtendedActorSystem}
+import akka.actor.{ActorSystem => ClassicActorSystem}
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.scaladsl.adapter._
-import akka.testkit.TestKit
+import akka.actor.typed.scaladsl.Behaviors
 import cats.data.NonEmptyList
 import com.typesafe.config.{Config, ConfigFactory}
 import org.make.api.demographics.{DemographicsCardResponse, DemographicsCardService, DemographicsCardServiceComponent}
@@ -73,6 +75,7 @@ import org.make.api.semantic.{SemanticComponent, SemanticService}
 import org.make.api.sequence.SequenceBehaviour.ConsensusParam
 import org.make.api.sessionhistory.{
   DefaultSessionHistoryCoordinatorServiceComponent,
+  SessionHistoryCommand,
   SessionHistoryCoordinator,
   SessionHistoryCoordinatorComponent
 }
@@ -155,7 +158,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
 class SequenceServiceIT
-    extends TestKit(SequenceServiceIT.actorSystem)
+    extends ScalaTestWithActorTestKit(SequenceServiceIT.actorSystem)
     with DatabaseTest
     with DockerCassandraService
     with DockerElasticsearchService
@@ -237,26 +240,24 @@ class SequenceServiceIT
   override val cockroachExposedPort: Int = 40024
   override val elasticsearchExposedPort: Int = 30007
 
-  override implicit val actorSystem: ExtendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
-  override val actorSystemTyped: typed.ActorSystem[Nothing] = actorSystem.toTyped
-
-  override val jobCoordinator: typed.ActorRef[JobActor.Protocol.Command] = JobCoordinator(actorSystemTyped, 1.second)
-  override lazy val proposalCoordinator: typed.ActorRef[ProposalCommand] =
-    ProposalCoordinator(actorSystemTyped, sessionHistoryCoordinatorService, 1.second, idGenerator)
-  override lazy val sessionHistoryCoordinator: ActorRef =
-    actorSystem.actorOf(SessionHistoryCoordinator.props(userHistoryCoordinator, idGenerator))
-  override val spawnActorRef: typed.ActorRef[SpawnProtocol.Command] =
-    actorSystemTyped.systemActorOf(SpawnProtocol(), "spawner")
-  override lazy val userHistoryCoordinator: typed.ActorRef[UserHistoryCommand] = UserHistoryCoordinator(
-    actorSystemTyped
-  )
-
   override val makeSettings: MakeSettings = mock[MakeSettings]
   when(makeSettings.defaultAdmin).thenReturn(DefaultAdmin("firstName", "admin@make.org", "password"))
   when(makeSettings.maxHistoryProposalsPerPage).thenReturn(10)
   when(makeSettings.resetTokenExpiresIn).thenReturn(1.day)
   when(makeSettings.resetTokenB2BExpiresIn).thenReturn(1.day)
   when(makeSettings.validationTokenExpiresIn).thenReturn(1.day)
+
+  override implicit val actorSystem: ClassicActorSystem = system.toClassic
+  override implicit def actorSystemTyped: ActorSystem[Nothing] = system
+
+  override val jobCoordinator: ActorRef[JobActor.Protocol.Command] = JobCoordinator(actorSystemTyped, 1.second)
+  override lazy val proposalCoordinator: ActorRef[ProposalCommand] =
+    ProposalCoordinator(actorSystemTyped, sessionHistoryCoordinatorService, 1.second, idGenerator)
+  override lazy val sessionHistoryCoordinator: ActorRef[SessionHistoryCommand] =
+    SessionHistoryCoordinator(actorSystemTyped, userHistoryCoordinator, idGenerator, makeSettings)
+  override val spawnActorRef: ActorRef[SpawnProtocol.Command] =
+    actorSystemTyped.systemActorOf(SpawnProtocol(), "spawner")
+  override lazy val userHistoryCoordinator: ActorRef[UserHistoryCommand] = UserHistoryCoordinator(actorSystemTyped)
 
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
 
@@ -531,5 +532,7 @@ object SequenceServiceIT {
       .withFallback(ConfigFactory.load("default-application.conf"))
       .resolve()
 
-  val actorSystem: ActorSystem = ActorSystem("SequenceServiceIT", fullConfiguration)
+  val actorSystem: ActorSystem[Nothing] =
+    ActorSystem[Nothing](Behaviors.empty, "SequenceServiceIT", fullConfiguration)
+
 }

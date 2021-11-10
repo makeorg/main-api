@@ -22,7 +22,6 @@ package org.make.api.sessionhistory
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
-import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
 import org.make.api.technical.security.SecurityConfigurationExtension
 import org.make.api.userhistory.StartSequenceParameters
 import org.make.core.RequestContext
@@ -40,10 +39,10 @@ import java.time.ZonedDateTime
 
 class SessionHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
 
-  val sessionId = SessionId("session-id")
-  val conf = SecurityConfigurationExtension(SessionHistorySerializersTest.system)
-  val persisters = Persisters(SessionHistorySerializers(conf).serializers.toList)
-  val userId = UserId("my-user-id")
+  val sessionId: SessionId = SessionId("session-id")
+  val conf: SecurityConfigurationExtension = SecurityConfigurationExtension(SessionHistorySerializersTest.system)
+  val persisters: Persisters = Persisters(SessionHistorySerializers(conf).serializers.toList)
+  val userId: UserId = UserId("my-user-id")
   val requestContext: RequestContext = RequestContext.empty
   val eventDate: ZonedDateTime = ZonedDateTime.parse("2018-03-01T16:09:30.441Z")
 
@@ -141,6 +140,15 @@ class SessionHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
 
     val sessionHistory2 = sessionHistory.copy(events = sessionHistory.events ++ Seq(sessionStartSequenceEvent))
 
+    val activeSession = Active(sessionHistory = sessionHistory, lastEventDate = Some(eventDate))
+
+    val closedSession = Closed(userId = userId, lastEventDate = Some(eventDate))
+
+    val transformingSession =
+      Transforming(sessionHistory = sessionHistory, requestContext = requestContext, lastEventDate = Some(eventDate))
+
+    val expiredSession = Expired(newSessionId = sessionId, lastEventDate = Some(eventDate))
+
     persisters.generateTestsFor(
       sample(sessionSearchEvent),
       sample(sessionVoteEvent),
@@ -150,7 +158,11 @@ class SessionHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
       sample(sessionTransformedEvent),
       sample(sessionStartSequenceEvent),
       sample(sessionHistory),
-      sample("sessionHistory2", sessionHistory2)
+      sample("sessionHistory2", sessionHistory2),
+      sample(activeSession),
+      sample(closedSession),
+      sample(transformingSession),
+      sample(expiredSession)
     )
   }
 }

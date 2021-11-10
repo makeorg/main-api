@@ -20,7 +20,6 @@
 package org.make.api
 
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
-import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, Props, SpawnProtocol}
 import org.make.api.idea.{IdeaConsumerBehavior, IdeaProducerBehavior}
@@ -101,12 +100,15 @@ object MakeGuardian {
     context.watch(userHistoryCoordinator)
     context.system.receptionist ! Receptionist.Register(UserHistoryCoordinator.Key, userHistoryCoordinator)
 
-    context.watch(
-      context.actorOf(
-        SessionHistoryCoordinator.props(userHistoryCoordinator, dependencies.idGenerator),
-        SessionHistoryCoordinator.name
+    val sessionHistoryCoordinator =
+      SessionHistoryCoordinator(
+        context.system,
+        userHistoryCoordinator,
+        dependencies.idGenerator,
+        dependencies.makeSettings
       )
-    )
+    context.watch(sessionHistoryCoordinator)
+    context.system.receptionist ! Receptionist.Register(SessionHistoryCoordinator.Key, sessionHistoryCoordinator)
 
     context.watch(
       context.spawn[Nothing](
@@ -118,6 +120,7 @@ object MakeGuardian {
     context.watch(context.spawn[Nothing](UserSupervisor(dependencies), UserSupervisor.name))
 
     val jobCoordinatorRef = JobCoordinator(context.system, Job.defaultHeartRate)
+
     context.watch(jobCoordinatorRef)
     context.system.receptionist ! Receptionist.Register(JobCoordinator.Key, jobCoordinatorRef)
   }

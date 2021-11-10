@@ -24,14 +24,13 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.util.Timeout
 import org.make.api.ActorSystemTypedComponent
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryActor.LogAcknowledged
+import org.make.api.sessionhistory.Ack
 import org.make.api.technical.BetterLoggingActors._
 import org.make.api.technical.{MakePersistentActor, StreamUtils, TimeSettings}
-import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
-import org.make.core.{ValidationError, ValidationFailedError}
 import org.make.core.history.HistoryActions.VoteAndQualifications
-import org.make.core.proposal.ProposalId
+import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.user._
+import org.make.core.{ValidationError, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -71,7 +70,7 @@ trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinat
     }
 
     override def logTransactionalHistory(event: TransactionalUserHistoryEvent[_]): Future[Unit] = {
-      (userHistoryCoordinator ?? { replyTo: ActorRef[UserHistoryResponse[LogAcknowledged.type]] =>
+      (userHistoryCoordinator ?? { replyTo: ActorRef[UserHistoryResponse[Ack.type]] =>
         UserHistoryTransactionalEnvelope(event.userId, event, replyTo)
       }).flatMap(_ => Future.unit)
     }
@@ -133,3 +132,10 @@ trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinat
     }
   }
 }
+
+final case class RequestUserVotedProposals(
+  userId: UserId,
+  filterVotes: Option[Seq[VoteKey]] = None,
+  filterQualifications: Option[Seq[QualificationKey]] = None,
+  proposalsIds: Option[Seq[ProposalId]] = None
+)

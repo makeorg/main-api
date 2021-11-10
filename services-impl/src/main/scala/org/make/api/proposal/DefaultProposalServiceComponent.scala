@@ -41,7 +41,6 @@ import org.make.api.technical.crm.QuestionResolver
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeRandom, ReadJournalComponent}
 import org.make.api.user.UserServiceComponent
-import org.make.api.userhistory.UserHistoryActorCompanion.RequestUserVotedProposals
 import org.make.api.userhistory._
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.VoteTrust._
@@ -241,9 +240,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           userHistoryCoordinatorService.retrieveVoteAndQualifications(userId = userId, searchResult.results.map(_.id))
         }.getOrElse {
           sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(
-              RequestSessionVoteValues(sessionId = requestContext.sessionId, searchResult.results.map(_.id))
-            )
+            .retrieveVoteAndQualifications(sessionId = requestContext.sessionId, searchResult.results.map(_.id))
         }.map { votes =>
           val proposals = searchResult.results.map { indexedProposal =>
             val proposalKey =
@@ -511,9 +508,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           userHistoryCoordinatorService.retrieveVoteAndQualifications(userId, Seq(proposalId))
         case None =>
           sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(
-              RequestSessionVoteValues(sessionId = sessionId, proposalIds = Seq(proposalId))
-            )
+            .retrieveVoteAndQualifications(sessionId = sessionId, proposalIds = Seq(proposalId))
       }
       votesHistory
     }
