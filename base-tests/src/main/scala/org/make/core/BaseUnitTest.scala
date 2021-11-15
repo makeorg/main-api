@@ -20,8 +20,16 @@
 package org.make.core
 
 import org.mockito.scalatest.MockitoSugar
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.featurespec.AnyFeatureSpecLike
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.GivenWhenThen
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, GivenWhenThen}
 
-trait MakeUnitTest extends AnyFeatureSpecLike with GivenWhenThen with Matchers with MockitoSugar
+trait BaseUnitTest
+  extends AnyFeatureSpecLike
+    with GivenWhenThen
+    with MockitoSugar
+    with Matchers
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with ScalaFutures

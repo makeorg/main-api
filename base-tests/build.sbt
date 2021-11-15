@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2018 Make.org
+ *  Copyright (C) 2021 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -17,10 +17,11 @@
  *
  */
 
-package org.make.api
+name := "base-tests"
 
-import grizzled.slf4j.Logging
-import org.make.core.BaseUnitTest
-
-// toDo: this trait must be shared between test and it
-trait ItMakeTest extends BaseUnitTest with Logging with TestUtilsIT
+libraryDependencies ++= Seq(
+  Dependencies.mockito,
+  Dependencies.mockitoScalatest,
+  Dependencies.scalaTest,
+  Dependencies.scalaTestScalaCheck
+)

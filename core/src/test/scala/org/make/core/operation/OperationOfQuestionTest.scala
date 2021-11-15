@@ -22,13 +22,13 @@ package org.make.core.operation
 import eu.timepit.refined.auto._
 import eu.timepit.refined.scalacheck.numeric._
 import eu.timepit.refined.types.numeric.PosShort
-import org.make.core.{DateHelper, MakeUnitTest}
+import org.make.core.{BaseUnitTest, DateHelper}
 import org.make.core.operation.OperationOfQuestion.Status._
 import org.make.core.technical.generator.EntitiesGen
 import org.scalacheck.Arbitrary
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-class OperationOfQuestionTest extends MakeUnitTest with EntitiesGen with ScalaCheckDrivenPropertyChecks {
+class OperationOfQuestionTest extends BaseUnitTest with EntitiesGen with ScalaCheckDrivenPropertyChecks {
 
   private implicit val arbOperationOfQuestion: Arbitrary[OperationOfQuestion] = Arbitrary(genOperationOfQuestion)
 

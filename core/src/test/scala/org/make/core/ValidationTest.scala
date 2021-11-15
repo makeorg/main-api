@@ -20,7 +20,7 @@
 package org.make.core
 import java.time.LocalDate
 
-class ValidationTest extends MakeUnitTest {
+class ValidationTest extends BaseUnitTest {
   Feature("email validation") {
     val fieldName = "email"
 

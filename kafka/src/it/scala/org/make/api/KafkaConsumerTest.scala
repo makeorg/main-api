@@ -24,7 +24,7 @@ import org.make.core.AvroSerializers
 
 import java.util.concurrent.Future
 
-trait KafkaConsumerTest[T] extends KafkaTest with AvroSerializers {
+trait KafkaConsumerTest[T] extends MakeKafkaTest with AvroSerializers {
 
   def topic: String
   val producer: KafkaProducer[String, T]

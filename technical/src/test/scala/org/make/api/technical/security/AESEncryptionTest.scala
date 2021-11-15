@@ -19,10 +19,16 @@
 
 package org.make.api.technical.security
 
-import org.make.api.MakeUnitTest
+import grizzled.slf4j.Logging
+import org.make.core.BaseUnitTest
+
 import scala.util.Success
 
-class AESEncryptionTest extends MakeUnitTest with DefaultAESEncryptionComponent with SecurityConfigurationComponent {
+class AESEncryptionTest
+    extends BaseUnitTest
+    with DefaultAESEncryptionComponent
+    with SecurityConfigurationComponent
+    with Logging {
 
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
 

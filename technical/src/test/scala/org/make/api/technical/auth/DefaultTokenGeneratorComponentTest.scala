@@ -19,11 +19,11 @@
 
 package org.make.api.technical.auth
 
-import org.make.api.MakeUnitTest
+import org.make.core.BaseUnitTest
 import org.scalatest.time.{Seconds, Span}
 import scala.concurrent.Future
 
-class DefaultTokenGeneratorComponentTest extends MakeUnitTest with DefaultTokenGeneratorComponent {
+class DefaultTokenGeneratorComponentTest extends BaseUnitTest with DefaultTokenGeneratorComponent {
   Feature("Generate a hash from a token") {
     info("As a programmer")
     info("I want to be able to generate a hash from a Token")

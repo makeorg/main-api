@@ -20,20 +20,7 @@
 package org.make.api
 
 import grizzled.slf4j.Logging
-import org.scalatest._
-import org.scalatest.concurrent.ScalaFutures
-import org.mockito.scalatest.MockitoSugar
-import org.scalatest.featurespec.AnyFeatureSpecLike
-import org.scalatest.matchers.should.Matchers
+import org.make.core.BaseUnitTest
 
 // toDo: this trait must be shared between test and it
-trait MakeUnitTest
-    extends AnyFeatureSpecLike
-    with GivenWhenThen
-    with MockitoSugar
-    with Matchers
-    with Logging
-    with BeforeAndAfterAll
-    with BeforeAndAfterEach
-    with ScalaFutures
-    with TestUtils
+trait MakeUnitTest extends BaseUnitTest with Logging with TestUtils

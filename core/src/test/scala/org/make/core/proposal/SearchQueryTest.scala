@@ -25,14 +25,14 @@ import com.sksamuel.elastic4s.searches.queries.funcscorer.WeightScore
 import com.sksamuel.elastic4s.searches.queries.matches.MatchQuery
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import org.make.core.common.indexed.{Sort => IndexedSort}
-import org.make.core.MakeUnitTest
+import org.make.core.BaseUnitTest
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldName
 import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 
-class SearchQueryTest extends MakeUnitTest with ElasticDsl {
+class SearchQueryTest extends BaseUnitTest with ElasticDsl {
   val initialProposalFilter = InitialProposalFilter(true)
   val tagValue = "Tag1"
   val tagsFilter = TagsSearchFilter(Seq(TagId(tagValue)))

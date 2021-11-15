@@ -19,8 +19,11 @@
 
 package org.make.api
 
-import grizzled.slf4j.Logging
-import org.make.core.BaseUnitTest
+import com.sksamuel.avro4s.{Encoder, SchemaFor}
+import org.apache.kafka.common.serialization.Serializer
+import org.make.api.technical.MakeKafkaAvroSerializer
 
-// toDo: this trait must be shared between test and it
-trait ItMakeTest extends BaseUnitTest with Logging with TestUtilsIT
+trait MakeKafkaTest extends KafkaTest {
+  override final def createSerializer[T: SchemaFor: Encoder](registryUrl: String): Serializer[T] =
+    new MakeKafkaAvroSerializer[T](registryUrl)
+}

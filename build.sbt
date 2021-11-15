@@ -19,7 +19,6 @@
 
 import java.time.LocalDate
 
-import Syntax._
 import Tasks._
 import org.make.GitHooks
 import sbt.Keys.scalacOptions
@@ -119,8 +118,7 @@ lazy val phantom = module("phantom", ".")
   )
 
 lazy val actors = module("actors")
-  .dependsOn(akka, core, tests % Test)
-  .dependsOn("integration-tests", IntegrationTest)
+  .dependsOn(akka, core, tests % Test, integrationTests % IntegrationTest)
 
 lazy val akka = module("akka")
   .dependsOn(technical, tests % Test)
@@ -141,30 +139,29 @@ lazy val api = module("api")
     integrationTests % IntegrationTest
   )
 
+lazy val baseTests = module("base-tests")
+
 lazy val cockroachdb = module("cockroachdb")
-  .dependsOn(persistence, technical, tests % Test)
-  .dependsOn("integration-tests", IntegrationTest)
+  .dependsOn(persistence, technical, tests % Test, integrationTests % IntegrationTest)
 
 lazy val core = module("core")
   .dependsOn(technical)
-  .dependsOn("tests", Test)
+  .dependsOn(baseTests % Test)
 
 lazy val indexation = module("indexation")
   .dependsOn(services, persistence, tests % Test)
 
 lazy val integrationTests = module("integration-tests")
-  .dependsOn(cockroachdb, core, kafka, tests)
+  .dependsOn(core, tests)
 
 lazy val kafka = module("kafka")
-  .dependsOn(indexation, services, tests % Test)
-  .dependsOn("integration-tests", IntegrationTest)
+  .dependsOn(indexation, services, tests % Test, integrationTests % IntegrationTest)
 
 lazy val persistence = module("persistence")
   .dependsOn(core)
 
 lazy val search = module("search")
-  .dependsOn(core, technical, tests % Test)
-  .dependsOn("integration-tests", IntegrationTest)
+  .dependsOn(core, technical, tests % Test, integrationTests % IntegrationTest, persistence % IntegrationTest)
 
 lazy val services = module("services")
   .dependsOn(actors, core, persistence, search, tests % Test)
@@ -173,9 +170,10 @@ lazy val servicesImpl = module("services-impl")
   .dependsOn(services, technical, webflow, tests % Test)
 
 lazy val technical = module("technical")
-  .dependsOn("tests", Test)
+  .dependsOn(baseTests % Test)
 
 lazy val tests = module("tests")
+  .dependsOn(baseTests)
   .dependsOn(core)
 
 lazy val webflow = module("webflow")

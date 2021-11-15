@@ -21,7 +21,7 @@ package org.make.core.user
 
 import java.time.ZonedDateTime
 
-import org.make.core.MakeUnitTest
+import org.make.core.BaseUnitTest
 import org.make.core.reference.Country
 import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator, RolePolitical, RoleSuperAdmin}
 import org.make.core.profile.Profile
@@ -29,7 +29,7 @@ import org.make.core.question.QuestionId
 import org.make.core.user.UserType.UserTypeOrganisation
 import org.make.core.user.UserType.UserTypePersonality
 
-class UserTest extends MakeUnitTest {
+class UserTest extends BaseUnitTest {
   val before: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]"))
   val johnDoe = User(
     userId = UserId("1"),
