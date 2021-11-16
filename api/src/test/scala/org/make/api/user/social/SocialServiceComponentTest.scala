@@ -77,14 +77,16 @@ class SocialServiceComponentTest
           PeopleInfo(
             resourceName = s"people/$googleId",
             etag = "",
-            names = Seq(
-              PeopleName(
-                metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
-                displayName = "user",
-                familyName = Some("with"),
-                givenName = "birth",
-                displayNameLastFirst = "date",
-                unstructuredName = "user with a birth date"
+            names = Some(
+              Seq(
+                PeopleName(
+                  metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
+                  displayName = "user",
+                  familyName = Some("with"),
+                  givenName = "birth",
+                  displayNameLastFirst = "date",
+                  unstructuredName = "user with a birth date"
+                )
               )
             ),
             photos = Seq(
@@ -150,14 +152,16 @@ class SocialServiceComponentTest
           PeopleInfo(
             resourceName = s"people/$googleId",
             etag = "",
-            names = Seq(
-              PeopleName(
-                metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
-                displayName = "user",
-                familyName = Some("without"),
-                givenName = "birth",
-                displayNameLastFirst = "date year",
-                unstructuredName = "user without a birth date year"
+            names = Some(
+              Seq(
+                PeopleName(
+                  metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
+                  displayName = "user",
+                  familyName = Some("without"),
+                  givenName = "birth",
+                  displayNameLastFirst = "date year",
+                  unstructuredName = "user without a birth date year"
+                )
               )
             ),
             photos = Seq(
@@ -223,14 +227,16 @@ class SocialServiceComponentTest
           PeopleInfo(
             resourceName = s"people/$googleId",
             etag = "",
-            names = Seq(
-              PeopleName(
-                metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
-                displayName = "user",
-                familyName = Some("with multiple"),
-                givenName = "birth",
-                displayNameLastFirst = "dates",
-                unstructuredName = "user with a birth date"
+            names = Some(
+              Seq(
+                PeopleName(
+                  metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
+                  displayName = "user",
+                  familyName = Some("with multiple"),
+                  givenName = "birth",
+                  displayNameLastFirst = "dates",
+                  unstructuredName = "user with a birth date"
+                )
               )
             ),
             photos = Seq(

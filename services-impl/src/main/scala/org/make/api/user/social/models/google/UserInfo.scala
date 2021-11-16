@@ -85,7 +85,7 @@ object Birthday {
 final case class PeopleInfo(
   resourceName: String,
   etag: String,
-  names: Seq[PeopleName],
+  names: Option[Seq[PeopleName]],
   photos: Seq[PeoplePhoto],
   emailAddresses: Seq[PeopleEmailAddress],
   birthdays: Option[Seq[Birthday]] // make it optional until all the fronts use the right scopes
@@ -94,7 +94,7 @@ final case class PeopleInfo(
     val maybeEmail = emailAddresses.find(_.metadata.isPrimary).map(_.value)
     models.UserInfo(
       email = maybeEmail,
-      firstName = names.find(_.metadata.isPrimary).map(_.givenName),
+      firstName = names.flatMap(_.find(_.metadata.isPrimary).map(_.givenName)),
       gender = None,
       googleId = Some(resourceName.split("/").last),
       facebookId = None,
