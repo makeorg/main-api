@@ -38,7 +38,6 @@ import org.make.api.proposal.{
 }
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.segment.SegmentServiceComponent
-import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.SequenceConfigurationComponent
 import org.make.core.sequence.SequenceConfiguration
 import org.make.api.tag.TagServiceComponent
@@ -82,7 +81,6 @@ trait ProposalIndexationStream
     with TagTypeServiceComponent
     with ProposalSearchEngineComponent
     with SequenceConfigurationComponent
-    with SemanticComponent
     with Logging
     with SegmentServiceComponent {
 
@@ -113,11 +111,6 @@ trait ProposalIndexationStream
     val updateProposals: Flow[Seq[IndexedProposal], Seq[IndexedProposal], NotUsed] =
       Flow[Seq[IndexedProposal]].mapAsync(singleAsync) { proposals =>
         elasticsearchProposalAPI.updateProposals(proposals)
-      }
-
-    val semanticIndex: Flow[Seq[IndexedProposal], Done, NotUsed] =
-      Flow[Seq[IndexedProposal]].mapAsync(parallelism) { proposals =>
-        semanticService.indexProposals(proposals).map(_ => Done)
       }
 
     def flowIndexProposals(proposalIndexName: String)(implicit mat: Materializer): Flow[ProposalId, Done, NotUsed] =
@@ -339,12 +332,10 @@ trait ProposalIndexationStream
   private def executeIndexProposals(proposals: Seq[IndexedProposal], indexName: String): Future[Done] = {
     elasticsearchProposalAPI
       .indexProposals(proposals, Some(IndexAndType(indexName, ProposalSearchEngine.proposalIndexName)))
-      .flatMap { proposals =>
-        semanticService.indexProposals(proposals).map(_ => Done)
-      }
+      .map(_ => Done)
       .recoverWith {
         case e =>
-          logger.error("Indexing proposals in proposal index OR in semantic index failed", e)
+          logger.error("Indexing proposals in proposal index failed", e)
           Future.successful(Done)
       }
   }

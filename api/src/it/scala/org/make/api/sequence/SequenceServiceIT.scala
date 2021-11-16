@@ -71,7 +71,6 @@ import org.make.api.proposal._
 import org.make.api.proposal.ProposalScorer.VotesCounter
 import org.make.api.question.{DefaultPersistentQuestionServiceComponent, DefaultQuestionServiceComponent}
 import org.make.api.segment.DefaultSegmentServiceComponent
-import org.make.api.semantic.{SemanticComponent, SemanticService}
 import org.make.api.sequence.SequenceBehaviour.ConsensusParam
 import org.make.api.sessionhistory.{
   DefaultSessionHistoryCoordinatorServiceComponent,
@@ -225,7 +224,6 @@ class SequenceServiceIT
     with PersistentTopIdeaServiceComponent
     with PostServiceComponent
     with ProposalCoordinatorComponent
-    with SemanticComponent
     with SequenceConfigurationComponent
     with SessionHistoryCoordinatorComponent
     with SpawnActorRefComponent
@@ -260,9 +258,6 @@ class SequenceServiceIT
   override lazy val userHistoryCoordinator: ActorRef[UserHistoryCommand] = UserHistoryCoordinator(actorSystemTyped)
 
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
-
-  override val semanticService: SemanticService = mock[SemanticService]
-  when(semanticService.indexProposals(any)).thenReturn(Future.unit)
 
   override val persistentCrmUserService: PersistentCrmUserService = mock[PersistentCrmUserService]
   override val persistentSequenceConfigurationService: PersistentSequenceConfigurationService =

@@ -31,7 +31,6 @@ import org.make.api.ActorSystemComponent
 import org.make.api.idea.IdeaServiceComponent
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.question.QuestionServiceComponent
-import org.make.api.semantic.SimilarIdea
 import org.make.api.technical.{MakeAuthenticationDirectives, ReadJournalComponent}
 import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
@@ -304,25 +303,6 @@ trait ModerationProposalApi extends Directives {
   def lockMultiple: Route
 
   @ApiOperation(
-    value = "duplicates",
-    httpMethod = "GET",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SimilarIdea])))
-  @Path(value = "/{proposalId}/duplicates")
-  def getDuplicates: Route
-
-  @ApiOperation(
     value = "update-proposals-to-idea",
     httpMethod = "POST",
     code = HttpCodes.NoContent,
@@ -426,7 +406,6 @@ trait ModerationProposalApi extends Directives {
       postponeProposal ~
       lock ~
       lockMultiple ~
-      getDuplicates ~
       changeProposalsIdea ~
       getModerationProposal ~
       nextAuthorToModerate ~
@@ -634,9 +613,7 @@ trait DefaultModerationProposalApiComponent
                           updatedAt = DateHelper.now(),
                           question = question,
                           newContent = request.newContent,
-                          tags = request.tags,
-                          predictedTags = request.predictedTags,
-                          predictedTagsModelName = request.predictedTagsModelName
+                          tags = request.tags
                         )
                       ) { moderationProposalResponse: ModerationProposalResponse =>
                         complete(moderationProposalResponse)
@@ -704,9 +681,7 @@ trait DefaultModerationProposalApiComponent
                           question = question,
                           newContent = request.newContent,
                           sendNotificationEmail = request.sendNotificationEmail,
-                          tags = request.tags,
-                          predictedTags = request.predictedTags,
-                          predictedTagsModelName = request.predictedTagsModelName
+                          tags = request.tags
                         )
                       ) { moderationProposalResponse: ModerationProposalResponse =>
                         complete(moderationProposalResponse)
@@ -849,26 +824,6 @@ trait DefaultModerationProposalApiComponent
                           complete(StatusCodes.NoContent)
                         }
                       }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    override def getDuplicates: Route = {
-      get {
-        path("moderation" / "proposals" / moderationProposalId / "duplicates") { proposalId =>
-          makeOperation("Duplicates") { requestContext =>
-            makeOAuth2 { auth =>
-              requireModerationRole(auth.user) {
-                provideAsyncOrNotFound(proposalService.getProposalById(proposalId, requestContext)) { proposal =>
-                  requireRightsOnQuestion(auth.user, proposal.question.map(_.questionId)) {
-                    provideAsync(proposalService.getSimilar(auth.user.userId, proposal, requestContext)) { proposals =>
-                      complete(proposals)
                     }
                   }
                 }

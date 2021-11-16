@@ -29,8 +29,7 @@ import org.make.api.organisation.OrganisationService
 import org.make.api.proposal.{ProposalCoordinatorService, ProposalSearchEngine}
 import org.make.api.question.QuestionService
 import org.make.api.segment.SegmentService
-import org.make.api.semantic.SemanticService
-import org.make.api.sequence.{SequenceConfigurationService}
+import org.make.api.sequence.SequenceConfigurationService
 import org.make.api.tag.TagService
 import org.make.api.tagtype.TagTypeService
 import org.make.api.user.UserService
@@ -54,7 +53,6 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
   override val segmentService: SegmentService = mock[SegmentService]
   override val tagService: TagService = mock[TagService]
   override val tagTypeService: TagTypeService = mock[TagTypeService]
-  override val semanticService: SemanticService = mock[SemanticService]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val organisationService: OrganisationService = mock[OrganisationService]
   override val operationService: OperationService = mock[OperationService]

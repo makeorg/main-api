@@ -36,7 +36,6 @@ import org.make.api.proposal.{
 }
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.segment.{SegmentService, SegmentServiceComponent}
-import org.make.api.semantic.{SemanticComponent, SemanticService}
 import org.make.api.sequence._
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.tagtype.{TagTypeService, TagTypeServiceComponent}
@@ -67,7 +66,6 @@ class IndexationComponentTest
     with ProposalSearchEngineComponent
     with IdeaSearchEngineComponent
     with OperationOfQuestionIndexationStream
-    with SemanticComponent
     with UserHistoryCoordinatorServiceComponent
     with OperationServiceComponent
     with OperationOfQuestionServiceComponent
@@ -94,7 +92,6 @@ class IndexationComponentTest
   override val proposalJournal: CassandraReadJournal = mock[CassandraReadJournal]
   override val userJournal: CassandraReadJournal = mock[CassandraReadJournal]
   override val sessionJournal: CassandraReadJournal = mock[CassandraReadJournal]
-  override val semanticService: SemanticService = mock[SemanticService]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
