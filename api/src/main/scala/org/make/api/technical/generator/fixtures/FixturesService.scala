@@ -193,9 +193,7 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Logg
                   question = question,
                   newContent = None,
                   sendNotificationEmail = false,
-                  tags = proposal.tags,
-                  predictedTags = None,
-                  predictedTagsModelName = None
+                  tags = proposal.tags
                 )
                 .map(_ => proposal)
             case ProposalStatus.Refused =>

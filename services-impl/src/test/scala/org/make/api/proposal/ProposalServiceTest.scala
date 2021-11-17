@@ -29,7 +29,6 @@ import org.make.api.idea._
 import org.make.api.partner.{PartnerService, PartnerServiceComponent}
 import org.make.api.question.{AuthorRequest, QuestionService, QuestionServiceComponent}
 import org.make.api.segment.{SegmentService, SegmentServiceComponent}
-import org.make.api.semantic._
 import org.make.api.sessionhistory.{
   ConcurrentModification,
   SessionHistoryCoordinatorService,
@@ -104,7 +103,6 @@ class ProposalServiceTest
     with QuestionServiceComponent
     with ReadJournalComponent
     with SegmentServiceComponent
-    with SemanticComponent
     with TagServiceComponent
     with TagTypeServiceComponent
     with UserHistoryCoordinatorServiceComponent
@@ -116,7 +114,6 @@ class ProposalServiceTest
   override val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService =
     mock[SessionHistoryCoordinatorService]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
-  override val semanticService: SemanticService = mock[SemanticService]
   override val eventBusService: EventBusService = mock[EventBusService]
   override val proposalJournal: CassandraReadJournal = mock[CassandraReadJournal]
   override val userJournal: CassandraReadJournal = mock[CassandraReadJournal]
@@ -1215,15 +1212,6 @@ class ProposalServiceTest
     Scenario("proposal without tags") {
       when(tagService.findByQuestionId(any[QuestionId]))
         .thenReturn(Future.successful(Seq(tag("id-1"), tag("id-2"), tag("id-3"))))
-      when(semanticService.getPredictedTagsForProposal(any[Proposal]))
-        .thenReturn(
-          Future.successful(
-            GetPredictedTagsResponse(
-              tags = Seq(PredictedTag(TagId("id-3"), TagTypeId("tag-type"), "some-label", "tag-type-label", 0d)),
-              modelName = "auto"
-            )
-          )
-        )
 
       val result: Future[TagsForProposalResponse] =
         proposalService.getTagsForProposal(proposal(id = ProposalId("proposal-id")))
@@ -1240,11 +1228,11 @@ class ProposalServiceTest
 
         tag1.checked shouldBe false
         tag2.checked shouldBe false
-        tag3.checked shouldBe true
+        tag3.checked shouldBe false
 
         tag1.predicted shouldBe false
         tag2.predicted shouldBe false
-        tag3.predicted shouldBe true
+        tag3.predicted shouldBe false
       }
     }
     Scenario("proposal with tags") {
@@ -1285,43 +1273,11 @@ class ProposalServiceTest
     Scenario("proposal without tags in question") {
       when(tagService.findByQuestionId(any[QuestionId]))
         .thenReturn(Future.successful(Seq.empty))
-      when(semanticService.getPredictedTagsForProposal(any[Proposal]))
-        .thenReturn(Future.successful(GetPredictedTagsResponse.none))
 
       val result: Future[TagsForProposalResponse] =
         proposalService.getTagsForProposal(proposal(id = ProposalId("proposal-id"), tags = Seq(TagId("id-2"))))
       whenReady(result, Timeout(5.seconds)) { tagsForProposal =>
         tagsForProposal.tags.isEmpty shouldBe true
-      }
-    }
-    Scenario("semantic fails to return a result") {
-      when(tagService.findByQuestionId(any[QuestionId]))
-        .thenReturn(Future.successful(Seq(tag("id-1"), tag("id-2"), tag("id-3"))))
-      when(semanticService.getPredictedTagsForProposal(any[Proposal]))
-        .thenReturn(Future.failed(new RuntimeException("This is an expected exception.")))
-
-      val result: Future[TagsForProposalResponse] =
-        proposalService.getTagsForProposal(proposal(id = ProposalId("proposal-id")))
-      whenReady(result, Timeout(5.seconds)) { tagsWithModel =>
-        val tagsForProposal = tagsWithModel.tags
-        tagsForProposal.size should be(3)
-        tagsForProposal.exists(_.id == TagId("id-1")) shouldBe true
-        tagsForProposal.exists(_.id == TagId("id-2")) shouldBe true
-        tagsForProposal.exists(_.id == TagId("id-3")) shouldBe true
-
-        val tag1 = tagsForProposal.find(_.id == TagId("id-1")).get
-        val tag2 = tagsForProposal.find(_.id == TagId("id-2")).get
-        val tag3 = tagsForProposal.find(_.id == TagId("id-3")).get
-
-        tag1.checked shouldBe false
-        tag2.checked shouldBe false
-        tag3.checked shouldBe false
-
-        tag1.predicted shouldBe false
-        tag2.predicted shouldBe false
-        tag3.predicted shouldBe false
-
-        tagsWithModel.modelName should be("none")
       }
     }
   }
@@ -1365,9 +1321,7 @@ class ProposalServiceTest
           question = question,
           newContent = None,
           sendNotificationEmail = false,
-          tags = Seq.empty,
-          predictedTags = None,
-          predictedTagsModelName = None
+          tags = Seq.empty
         ),
         Timeout(3.seconds)
       ) { maybeProposal =>
@@ -1385,14 +1339,10 @@ class ProposalServiceTest
           question = question,
           newContent = None,
           sendNotificationEmail = false,
-          tags = Seq.empty,
-          predictedTags = Some(Seq(TagId("predicted-tag-id"))),
-          predictedTagsModelName = Some("auto")
+          tags = Seq.empty
         ),
         Timeout(3.seconds)
       ) { maybeProposal =>
-        verify(eventBusService, times(1))
-          .publish(eqTo(PredictedTagsEvent(proposalId, Seq(TagId("predicted-tag-id")), Seq.empty, "auto")))
         maybeProposal.isDefined should be(true)
         maybeProposal.map(_.proposalId) should be(Some(proposalId))
       }
@@ -1445,9 +1395,7 @@ class ProposalServiceTest
         ZonedDateTime.parse("2019-01-16T16:48:00Z"),
         newContent = None,
         question = question,
-        tags = tagIds,
-        predictedTags = None,
-        predictedTagsModelName = None
+        tags = tagIds
       )
 
       whenReady(update, Timeout(5.seconds)) { maybeProposal =>
@@ -1496,9 +1444,7 @@ class ProposalServiceTest
           updatedAt = now,
           newContent = None,
           question = question,
-          tags = Seq.empty,
-          predictedTags = None,
-          predictedTagsModelName = None
+          tags = Seq.empty
         ),
         Timeout(3.seconds)
       ) { maybeProposal =>
@@ -1516,14 +1462,10 @@ class ProposalServiceTest
           updatedAt = DateHelper.now(),
           newContent = None,
           question = question,
-          tags = Seq.empty,
-          predictedTags = Some(Seq(TagId("predicted-tag-id"))),
-          predictedTagsModelName = Some("auto")
+          tags = Seq.empty
         ),
         Timeout(3.seconds)
       ) { maybeProposal =>
-        verify(eventBusService, times(1))
-          .publish(eqTo(PredictedTagsEvent(proposalId, Seq(TagId("predicted-tag-id")), Seq.empty, "auto")))
         maybeProposal.isDefined should be(true)
         maybeProposal.map(_.proposalId) should be(Some(proposalId))
       }

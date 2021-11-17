@@ -25,7 +25,6 @@ import akka.actor.typed.{ActorRef, Behavior, Props, SpawnProtocol}
 import org.make.api.idea.{IdeaConsumerBehavior, IdeaProducerBehavior}
 import org.make.api.kafka.kafkaDispatcher
 import org.make.api.proposal.ProposalSupervisor
-import org.make.api.semantic.{SemanticPredictionsProducerBehavior, SemanticProducerBehavior}
 import org.make.api.sequence.SequenceConfigurationActor
 import org.make.api.sequence.SequenceConfigurationActor.SequenceConfigurationActorProtocol
 import org.make.api.sessionhistory.SessionHistoryCoordinator
@@ -140,8 +139,6 @@ object MakeGuardian {
       MailJetEventConsumerBehavior(dependencies.userService),
       MailJetEventConsumerBehavior.name
     )
-    spawnKafkaActorWithBackoff(SemanticProducerBehavior(), SemanticProducerBehavior.name)
-    spawnKafkaActorWithBackoff(SemanticPredictionsProducerBehavior(), SemanticPredictionsProducerBehavior.name)
     spawnKafkaActorWithBackoff(TrackingProducerBehavior(), TrackingProducerBehavior.name)
   }
 

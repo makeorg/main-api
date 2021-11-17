@@ -32,7 +32,6 @@ import org.make.api.idea.IdeaServiceComponent
 import org.make.api.partner.PartnerServiceComponent
 import org.make.api.question.{AuthorRequest, QuestionServiceComponent}
 import org.make.api.segment.SegmentServiceComponent
-import org.make.api.semantic.{GetPredictedTagsResponse, PredictedTagsEvent, SemanticComponent, SimilarIdea}
 import org.make.api.sessionhistory._
 import org.make.api.tag.TagServiceComponent
 import org.make.api.tagtype.TagTypeServiceComponent
@@ -77,7 +76,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     with ReadJournalComponent
     with SecurityConfigurationComponent
     with SegmentServiceComponent
-    with SemanticComponent
     with SessionHistoryCoordinatorServiceComponent
     with TagServiceComponent
     with TagTypeServiceComponent
@@ -122,9 +120,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           question = question,
           newContent = None,
           sendNotificationEmail = false,
-          tags = tags,
-          predictedTags = None,
-          predictedTagsModelName = None
+          tags = tags
         )
       } yield proposalId
     }
@@ -320,16 +316,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       updatedAt: ZonedDateTime,
       newContent: Option[String],
       question: Question,
-      tags: Seq[TagId],
-      predictedTags: Option[Seq[TagId]],
-      predictedTagsModelName: Option[String]
+      tags: Seq[TagId]
     ): Future[Option[ModerationProposalResponse]] = {
-
-      (predictedTags, predictedTagsModelName) match {
-        case (Some(pTags), Some(modelName)) =>
-          eventBusService.publish(PredictedTagsEvent(proposalId, pTags, tags, modelName))
-        case _ =>
-      }
       toModerationProposalResponse(
         proposalCoordinatorService.update(
           moderator = moderator,
@@ -426,16 +414,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       question: Question,
       newContent: Option[String],
       sendNotificationEmail: Boolean,
-      tags: Seq[TagId],
-      predictedTags: Option[Seq[TagId]],
-      predictedTagsModelName: Option[String]
+      tags: Seq[TagId]
     ): Future[Option[ModerationProposalResponse]] = {
-
-      (predictedTags, predictedTagsModelName) match {
-        case (Some(pTags), Some(modelName)) =>
-          eventBusService.publish(PredictedTagsEvent(proposalId, pTags, tags, modelName))
-        case _ =>
-      }
       toModerationProposalResponse(
         proposalCoordinatorService.accept(
           proposalId = proposalId,
@@ -476,26 +456,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         proposalCoordinatorService
           .postpone(proposalId = proposalId, moderator = moderator, requestContext = requestContext)
       )
-    }
-
-    override def getSimilar(
-      userId: UserId,
-      proposal: IndexedProposal,
-      requestContext: RequestContext
-    ): Future[Seq[SimilarIdea]] = {
-      userHistoryCoordinatorService.logHistory(
-        LogGetProposalDuplicatesEvent(
-          userId,
-          requestContext,
-          UserAction(DateHelper.now(), LogGetProposalDuplicatesEvent.action, proposal.id)
-        )
-      )
-      val similarIdeas = 10
-      semanticService.getSimilarIdeas(proposal, similarIdeas).recover {
-        case error: Exception =>
-          logger.error("", error)
-          Seq.empty
-      }
     }
 
     private def retrieveVoteHistory(
@@ -1000,30 +960,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def getTagsForProposal(proposal: Proposal): Future[TagsForProposalResponse] = {
       proposal.questionId.map { questionId =>
-        def futurePredictedTags: Future[GetPredictedTagsResponse] = {
-          if (proposal.tags.isEmpty) {
-            semanticService.getPredictedTagsForProposal(proposal).recover {
-              case error: Exception =>
-                logger.error("", error)
-                GetPredictedTagsResponse.none
-            }
-          } else {
-            Future.successful(GetPredictedTagsResponse.none)
+        val futureTags: Future[Seq[Tag]] = tagService.findByQuestionId(questionId)
+        futureTags.map { questionTags =>
+          val tags = questionTags.map { tag =>
+            val checked = proposal.tags.contains(tag.tagId)
+            TagForProposalResponse(tag = tag, checked = checked, predicted = false)
           }
-        }
-        val futureTags: Future[(Seq[Tag], GetPredictedTagsResponse)] = for {
-          questionTags  <- tagService.findByQuestionId(questionId)
-          predictedTags <- futurePredictedTags
-        } yield (questionTags, predictedTags)
-        futureTags.map {
-          case (questionTags, predictedTags) =>
-            val predictedSet = predictedTags.tags.map(_.tagId).toSet
-            val tags = questionTags.map { tag =>
-              val predicted = predictedSet.contains(tag.tagId)
-              val checked = proposal.tags.contains(tag.tagId) || (proposal.tags.isEmpty && predicted)
-              TagForProposalResponse(tag = tag, checked = checked, predicted = predicted)
-            }
-            TagsForProposalResponse(tags = tags, modelName = predictedTags.modelName)
+          TagsForProposalResponse(tags = tags, modelName = "none")
         }
       }.getOrElse(Future.successful(TagsForProposalResponse.empty))
     }

@@ -55,7 +55,6 @@ import org.make.api.post.{DefaultPostSearchEngineComponent, DefaultPostServiceCo
 import org.make.api.proposal._
 import org.make.api.question._
 import org.make.api.segment.DefaultSegmentServiceComponent
-import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
 import org.make.api.sequence.SequenceConfigurationActor.SequenceConfigurationActorProtocol
 import org.make.api.sequence._
 import org.make.api.sessionhistory.{
@@ -255,8 +254,6 @@ trait MakeApi
     with DefaultSecurityApiComponent
     with DefaultSecurityConfigurationComponent
     with DefaultSegmentServiceComponent
-    with DefaultSemanticComponent
-    with DefaultSemanticConfigurationComponent
     with DefaultSendMailPublisherServiceComponent
     with DefaultSequenceApiComponent
     with DefaultSequenceConfigurationComponent

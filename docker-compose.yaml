@@ -76,17 +76,6 @@ services:
       interval: 5s
       timeout: 2s
       retries: 3
-  semantic:
-    image: nexus.prod.makeorg.tech/make-semantic:preproduction-latest
-    ports:
-      - 9001:9001
-    environment:
-      ES_URL: "elasticsearch:9200"
-    depends_on:
-      - elasticsearch
-    networks:
-      - makeapi
-    restart: on-failure:5
   kafka-manager:
     image: sheepkiller/kafka-manager
     environment:

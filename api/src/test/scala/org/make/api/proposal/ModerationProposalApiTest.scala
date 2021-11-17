@@ -29,7 +29,6 @@ import io.circe.syntax._
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
-import org.make.api.semantic.SimilarIdea
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.idea.{Idea, IdeaId}
@@ -161,9 +160,7 @@ class ModerationProposalApiTest
         any[Question],
         any[Option[String]],
         any[Boolean],
-        any[Seq[TagId]],
-        any[Option[Seq[TagId]]],
-        any[Option[String]]
+        any[Seq[TagId]]
       )
   ).thenReturn(Future.successful(Some(proposalResponse(ProposalId("123456")))))
   when(
@@ -175,9 +172,7 @@ class ModerationProposalApiTest
         any[Question],
         any[Option[String]],
         any[Boolean],
-        any[Seq[TagId]],
-        any[Option[Seq[TagId]]],
-        any[Option[String]]
+        any[Seq[TagId]]
       )
   ).thenReturn(Future.successful(Some(proposalResponse(ProposalId("987654")))))
   when(
@@ -189,9 +184,7 @@ class ModerationProposalApiTest
         any[Question],
         any[Option[String]],
         any[Boolean],
-        any[Seq[TagId]],
-        any[Option[Seq[TagId]]],
-        any[Option[String]]
+        any[Seq[TagId]]
       )
   ).thenReturn(Future.failed(ValidationFailedError(Seq())))
   when(
@@ -481,16 +474,6 @@ class ModerationProposalApiTest
   when(proposalService.getProposalById(eqTo(ProposalId("123456")), any[RequestContext]))
     .thenReturn(Future.successful(Some(indexedProposal)))
 
-  when(proposalService.getSimilar(any[UserId], any[IndexedProposal], any[RequestContext]))
-    .thenReturn(
-      Future.successful(
-        Seq(
-          SimilarIdea(IdeaId("Idea 1"), "Idea One", ProposalId("Proposal 1"), "Proposal One", 1.23456),
-          SimilarIdea(IdeaId("Idea 2"), "Idea Two", ProposalId("Proposal 2"), "Proposal Two", 0.123456)
-        )
-      )
-    )
-
   when(
     proposalService
       .changeProposalsIdea(
@@ -749,28 +732,6 @@ class ModerationProposalApiTest
         .withEntity(HttpEntity(ContentTypes.`application/json`, entity(ids)))
         .withHeaders(Authorization(OAuth2BearerToken(tokenJohnCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
-      }
-    }
-  }
-
-  Feature("get duplicates") {
-    Scenario("moderator without right") {
-      Get("/moderation/proposals/123456/duplicates")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenNoRightModerator))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
-      }
-    }
-    Scenario("moderator can fetch duplicate ideas") {
-      Get("/moderation/proposals/123456/duplicates")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val results: Seq[DuplicateResponse] = entityAs[Seq[DuplicateResponse]]
-        results.length should be(2)
-        results.head.ideaId should be(IdeaId("Idea 1"))
-        results(1).ideaName should be("Idea Two")
-        results.head.score should be(1.23456)
-        results(1).proposalId should be(ProposalId("Proposal 2"))
-        results.head.proposalContent should be("Proposal One")
       }
     }
   }

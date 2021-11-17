@@ -21,7 +21,6 @@ package org.make.api.proposal
 
 import akka.Done
 import org.make.api.question.AuthorRequest
-import org.make.api.semantic.SimilarIdea
 import org.make.api.technical.crm.QuestionResolver
 import org.make.core.common.indexed.Sort
 import org.make.core.idea.IdeaId
@@ -50,8 +49,6 @@ trait ProposalService {
   def getModerationProposalById(proposalId: ProposalId): Future[Option[ModerationProposalResponse]]
 
   def getEventSourcingProposal(proposalId: ProposalId, requestContext: RequestContext): Future[Option[Proposal]]
-
-  def getSimilar(userId: UserId, proposal: IndexedProposal, requestContext: RequestContext): Future[Seq[SimilarIdea]]
 
   def search(userId: Option[UserId], query: SearchQuery, requestContext: RequestContext): Future[ProposalsSearchResult]
 
@@ -95,9 +92,7 @@ trait ProposalService {
     updatedAt: ZonedDateTime,
     newContent: Option[String],
     question: Question,
-    tags: Seq[TagId],
-    predictedTags: Option[Seq[TagId]],
-    predictedTagsModelName: Option[String]
+    tags: Seq[TagId]
   ): Future[Option[ModerationProposalResponse]]
 
   def updateVotes(
@@ -115,9 +110,7 @@ trait ProposalService {
     question: Question,
     newContent: Option[String],
     sendNotificationEmail: Boolean,
-    tags: Seq[TagId],
-    predictedTags: Option[Seq[TagId]],
-    predictedTagsModelName: Option[String]
+    tags: Seq[TagId]
   ): Future[Option[ModerationProposalResponse]]
 
   def refuseProposal(

@@ -57,10 +57,6 @@ trait DefaultProposalIndexerServiceComponent
           ProposalStream.indexOrUpdateFlow
         })
         .withAttributes(ActorAttributes.dispatcher(dispatcher))
-        .via(RestartFlow.withBackoff(backoff) { () =>
-          ProposalStream.semanticIndex
-        })
-        .withAttributes(ActorAttributes.dispatcher(dispatcher))
         .toMat(Sink.ignore)(Keep.left)
         .run()
 
