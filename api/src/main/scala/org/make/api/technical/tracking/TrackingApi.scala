@@ -21,19 +21,16 @@ package org.make.api.technical.tracking
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Route, RouteConcatenation}
-import cats.data.NonEmptyList
-import cats.data.Validated.{Invalid, Valid}
 import grizzled.slf4j.Logging
+import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.parser._
-import io.circe.Decoder
 import io.swagger.annotations._
 import org.make.api.demographics.{ActiveDemographicsCardServiceComponent, DemographicsCardServiceComponent}
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
-import org.make.api.technical.monitoring.MonitoringServiceComponent
+import org.make.api.technical.monitoring.{MonitoringServiceComponent, MonitoringUtils}
 import org.make.api.technical.{EndpointType, EventBusServiceComponent, MakeAuthenticationDirectives, MakeDirectives}
-import org.make.api.technical.monitoring.MonitoringUtils
 import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.demographics.{DemographicsCard, DemographicsCardId, LabelValue}
@@ -92,20 +89,6 @@ trait TrackingApi extends RouteConcatenation {
   @Path(value = "/backoffice/logs")
   def backofficeLogs: Route
 
-  @ApiOperation(value = "track-demographics", httpMethod = "POST", code = HttpCodes.NoContent)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        name = "body",
-        paramType = "body",
-        dataType = "org.make.api.technical.tracking.DemographicsTrackingRequest"
-      )
-    )
-  )
-  @Path(value = "/demographics")
-  def trackDemographics: Route
-
   @ApiOperation(value = "track-demographics-v2", httpMethod = "POST", code = HttpCodes.NoContent)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @ApiImplicitParams(
@@ -135,7 +118,7 @@ trait TrackingApi extends RouteConcatenation {
   def trackConcertation: Route
 
   final def routes: Route =
-    backofficeLogs ~ frontTracking ~ trackFrontPerformances ~ trackDemographics ~ trackDemographicsV2 ~ trackConcertation
+    backofficeLogs ~ frontTracking ~ trackFrontPerformances ~ trackDemographicsV2 ~ trackConcertation
 }
 
 trait TrackingApiComponent {
@@ -208,32 +191,6 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
           }
         }
       }
-
-    def trackDemographics: Route = {
-      post {
-        path("tracking" / "demographics") {
-          makeOperation("DemographicsTracking", EndpointType.Public) { requestContext: RequestContext =>
-            decodeRequest {
-              entity(as[DemographicsTrackingRequest]) { request =>
-                provideAsyncOrBadRequest(
-                  questionService.getQuestion(request.questionId),
-                  ValidationError(
-                    "questionId",
-                    "not_found",
-                    Some(s"Question ${request.questionId.value} doesn't exist")
-                  )
-                ) { _ =>
-                  validate(request, DemographicsTrackingRequest.validator) {
-                    eventBusService.publish(request.toEvent(requestContext.applicationName))
-                    complete(StatusCodes.NoContent)
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
 
     def trackDemographicsV2: Route = {
       post {
@@ -391,92 +348,6 @@ final case class FrontPerformanceTimings(
 )
 object FrontPerformanceTimings {
   implicit val decoder: Decoder[FrontPerformanceTimings] = deriveDecoder[FrontPerformanceTimings]
-}
-
-final case class DemographicsTrackingRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "age")
-  demographic: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "18-24")
-  value: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "4ee15013-b5a6-415c-8270-da8438766644")
-  questionId: QuestionId,
-  @(ApiModelProperty @field)(dataType = "string", example = "core")
-  source: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Country,
-  @(ApiModelProperty @field)(dataType = "map[string]")
-  parameters: Map[String, String],
-  @(ApiModelProperty @field)(dataType = "boolean", example = "false")
-  autoSubmit: Option[Boolean]
-) {
-  def toEvent(applicationName: Option[ApplicationName]): DemographicEvent =
-    DemographicEvent(
-      demographic = demographic,
-      value = value,
-      questionId = questionId,
-      source = source,
-      country = country,
-      applicationName = applicationName,
-      parameters = parameters,
-      autoSubmit = autoSubmit.contains(true)
-    )
-}
-
-object DemographicsTrackingRequest {
-  implicit val decoder: Decoder[DemographicsTrackingRequest] = deriveDecoder
-  val skipped: String = "SKIPPED"
-  val validValues: Map[String, Set[String]] = Map(
-    "age" -> Set("8-15", "16-24", "25-34", "35-44", "45-54", "55-64", "65+"),
-    "region" -> Set( // see iso 3166-2
-      "FR-ARA",
-      "FR-BFC",
-      "FR-BRE",
-      "FR-CVL",
-      "FR-COR",
-      "FR-GES",
-      "FR-HDF",
-      "FR-IDF",
-      "FR-NOR",
-      "FR-NAQ",
-      "FR-OCC",
-      "FR-PDL",
-      "FR-PAC",
-      "FR-GUA",
-      "FR-GUF",
-      "FR-MTQ",
-      "FR-LRE",
-      "FR-MAY"
-    ),
-    "gender" -> Set("M", "F", "O")
-  )
-
-  val validator: Validator[DemographicsTrackingRequest] = (e: DemographicsTrackingRequest) => {
-    validValues.get(e.demographic).map(_.contains(e.value) || e.value == skipped) match {
-      case Some(true) => Valid(e)
-      case Some(false) =>
-        Invalid(
-          NonEmptyList.one(
-            ValidationError(
-              "value",
-              "unknown",
-              Some(s"${e.value} is not valid for ${e.demographic}, expected one of ${validValues(e.demographic)
-                .mkString("'", "', '", "'")}")
-            )
-          )
-        )
-      case None =>
-        Invalid(
-          NonEmptyList.one(
-            ValidationError(
-              "demographic",
-              "unknown",
-              Some(s"${e.demographic} is not a known demographic, expected one of ${validValues.keys
-                .mkString("'", "', '", "'")}")
-            )
-          )
-        )
-    }
-  }
 }
 
 final case class ConcertationTrackingRequest(
