@@ -1735,7 +1735,7 @@ class UserApiTest
     }
 
     Scenario("storage unavailable") {
-      when(storageService.uploadUserAvatar(eqTo(fakeUser.userId), any[String], any[String], any[FileContent]))
+      when(storageService.uploadUserAvatar(any[String], any[String], any[FileContent]))
         .thenReturn(Future.failed(new Exception("swift client error")))
       val request: Multipart =
         Multipart.FormData(
@@ -1770,7 +1770,7 @@ class UserApiTest
     }
 
     Scenario("file successfully uploaded and returned by admin or related-user") {
-      when(storageService.uploadUserAvatar(eqTo(sylvain.userId), any[String], any[String], any[FileContent]))
+      when(storageService.uploadUserAvatar(any[String], any[String], any[FileContent]))
         .thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
 
       def entityOfSize(size: Int): Multipart = Multipart.FormData(

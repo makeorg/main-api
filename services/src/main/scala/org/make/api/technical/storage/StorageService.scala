@@ -26,7 +26,7 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.api.ConfigComponent
-import org.make.core.user.{UserId, UserType}
+import org.make.core.user.UserType
 
 import scala.annotation.meta.field
 import scala.concurrent.Future
@@ -34,7 +34,7 @@ import scala.concurrent.Future
 trait StorageService {
 
   def uploadFile(fileType: FileType, name: String, contentType: String, content: Content): Future[String]
-  def uploadUserAvatar(userId: UserId, name: String, contentType: String, content: Content): Future[String]
+  def uploadUserAvatar(name: String, contentType: String, content: Content): Future[String]
   def uploadAdminUserAvatar(
     extension: String,
     contentType: String,

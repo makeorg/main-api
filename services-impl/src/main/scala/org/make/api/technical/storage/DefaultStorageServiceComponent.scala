@@ -22,7 +22,7 @@ package org.make.api.technical.storage
 import kamon.annotation.api.Trace
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.DateHelper
-import org.make.core.user.{UserId, UserType}
+import org.make.core.user.UserType
 import org.make.swift.model.Bucket
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -46,14 +46,9 @@ trait DefaultStorageServiceComponent extends StorageServiceComponent {
     }
 
     @Trace(operationName = "client-uploadUserAvatar")
-    override def uploadUserAvatar(
-      userId: UserId,
-      extension: String,
-      contentType: String,
-      content: Content
-    ): Future[String] = {
+    override def uploadUserAvatar(extension: String, contentType: String, content: Content): Future[String] = {
       val date = DateHelper.now()
-      val name = s"${date.getYear}/${date.getMonthValue}/${userId.value}/${idGenerator.nextId()}.$extension"
+      val name = s"${date.getYear}/${date.getMonthValue}/${idGenerator.nextId()}.$extension"
       storageService.uploadFile(FileType.Avatar, name, contentType, content)
 
     }

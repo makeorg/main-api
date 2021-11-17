@@ -941,7 +941,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           case (contentType, tempFile) =>
             tempFile.deleteOnExit()
             storageService
-              .uploadUserAvatar(userId, extension(contentType), contentType.value, FileContent(tempFile))
+              .uploadUserAvatar(extension(contentType), contentType.value, FileContent(tempFile))
               .map(Option.apply)
         }
         .recover {
