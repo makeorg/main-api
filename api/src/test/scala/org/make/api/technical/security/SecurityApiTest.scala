@@ -19,22 +19,19 @@
 
 package org.make.api.technical.security
 
-import akka.actor.ActorSystem
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import com.typesafe.config.ConfigFactory
 import org.make.api.technical.MakeAuthenticationDirectives
-import org.make.api.{ActorSystemComponent, MakeApiTestBase}
+import org.make.api.MakeApiTestBase
 import org.make.core.user.UserId
 
-class SecurityApiTest
-    extends MakeApiTestBase
-    with MakeAuthenticationDirectives
-    with DefaultSecurityApiComponent
-    with ActorSystemComponent {
+class SecurityApiTest extends MakeApiTestBase with MakeAuthenticationDirectives with DefaultSecurityApiComponent {
 
-  override val actorSystem: ActorSystem = SecurityApiTest.system
+  override val actorSystem: ActorSystem[Nothing] = SecurityApiTest.system
 
   val citizenUserId: UserId = UserId("citizen")
   val moderatorUserId: UserId = UserId("moderator")
@@ -122,8 +119,8 @@ object SecurityApiTest {
        |}
      """.stripMargin
 
-  val system: ActorSystem = {
+  val system: ActorSystem[Nothing] = {
     val config = ConfigFactory.load(ConfigFactory.parseString(configuration))
-    ActorSystem(classOf[SecurityApiTest].getSimpleName, config)
+    ActorSystem[Nothing](Behaviors.empty, classOf[SecurityApiTest].getSimpleName, config)
   }
 }

@@ -19,16 +19,12 @@
 
 package org.make.api.sequence
 
-import akka.actor.{ActorSystem => ClassicActorSystem}
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.typed.{ActorRef, ActorSystem}
-import akka.actor.typed.SpawnProtocol
-import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, ActorSystem, SpawnProtocol}
 import cats.data.NonEmptyList
 import com.typesafe.config.{Config, ConfigFactory}
 import org.make.api.demographics.{DemographicsCardResponse, DemographicsCardService, DemographicsCardServiceComponent}
-import org.make.api.{ActorSystemComponent, ActorSystemTypedComponent, DatabaseTest, DefaultConfigComponent}
+import org.make.api.{ActorTest, DatabaseTest, DefaultConfigComponent}
 import org.make.api.docker.{DockerCassandraService, DockerElasticsearchService}
 import org.make.api.extensions.MakeSettings.DefaultAdmin
 import org.make.api.extensions.{
@@ -157,12 +153,10 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
 class SequenceServiceIT
-    extends ScalaTestWithActorTestKit(SequenceServiceIT.actorSystem)
+    extends ActorTest(SequenceServiceIT.actorSystem)
     with DatabaseTest
     with DockerCassandraService
     with DockerElasticsearchService
-    with ActorSystemComponent
-    with ActorSystemTypedComponent
     with CrmServiceComponent
     with DefaultActiveFeatureServiceComponent
     with DefaultConfigComponent
@@ -245,17 +239,14 @@ class SequenceServiceIT
   when(makeSettings.resetTokenB2BExpiresIn).thenReturn(1.day)
   when(makeSettings.validationTokenExpiresIn).thenReturn(1.day)
 
-  override implicit val actorSystem: ClassicActorSystem = system.toClassic
-  override implicit def actorSystemTyped: ActorSystem[Nothing] = system
-
-  override val jobCoordinator: ActorRef[JobActor.Protocol.Command] = JobCoordinator(actorSystemTyped, 1.second)
+  override val jobCoordinator: ActorRef[JobActor.Protocol.Command] = JobCoordinator(system, 1.second)
   override lazy val proposalCoordinator: ActorRef[ProposalCommand] =
-    ProposalCoordinator(actorSystemTyped, sessionHistoryCoordinatorService, 1.second, idGenerator)
+    ProposalCoordinator(system, sessionHistoryCoordinatorService, 1.second, idGenerator)
   override lazy val sessionHistoryCoordinator: ActorRef[SessionHistoryCommand] =
-    SessionHistoryCoordinator(actorSystemTyped, userHistoryCoordinator, idGenerator, makeSettings)
+    SessionHistoryCoordinator(system, userHistoryCoordinator, idGenerator, makeSettings)
   override val spawnActorRef: ActorRef[SpawnProtocol.Command] =
-    actorSystemTyped.systemActorOf(SpawnProtocol(), "spawner")
-  override lazy val userHistoryCoordinator: ActorRef[UserHistoryCommand] = UserHistoryCoordinator(actorSystemTyped)
+    system.systemActorOf(SpawnProtocol(), "spawner")
+  override lazy val userHistoryCoordinator: ActorRef[UserHistoryCommand] = UserHistoryCoordinator(system)
 
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
 
@@ -527,7 +518,5 @@ object SequenceServiceIT {
       .withFallback(ConfigFactory.load("default-application.conf"))
       .resolve()
 
-  val actorSystem: ActorSystem[Nothing] =
-    ActorSystem[Nothing](Behaviors.empty, "SequenceServiceIT", fullConfiguration)
-
+  val actorSystem: ActorSystem[Nothing] = ActorSystem[Nothing](Behaviors.empty, "SequenceServiceIT", fullConfiguration)
 }

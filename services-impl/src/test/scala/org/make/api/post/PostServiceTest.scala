@@ -22,12 +22,11 @@ package org.make.api.post
 import java.net.URL
 import java.time.ZonedDateTime
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import org.make.api.technical.webflow.WebflowClient._
 import org.make.api.technical.webflow.WebflowItem.{WebflowImageRef, WebflowPost}
 import org.make.api.technical.webflow._
-import org.make.api.{ActorSystemComponent, MakeUnitTest}
+import org.make.api.{EmptyActorSystemComponent, MakeUnitTest}
 import org.make.core.post.PostId
 import org.make.core.post.indexed.PostSearchQuery
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -40,10 +39,8 @@ class PostServiceTest
     with DefaultPostServiceComponent
     with PostSearchEngineComponent
     with WebflowClientComponent
-    with ActorSystemComponent
+    with EmptyActorSystemComponent
     with WebflowConfigurationComponent {
-
-  override val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   override val elasticsearchPostAPI: PostSearchEngine = mock[PostSearchEngine]
   override val webflowConfiguration: WebflowConfiguration = mock[WebflowConfiguration]

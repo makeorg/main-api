@@ -28,8 +28,7 @@ import akka.stream.scaladsl.Sink
 import cats.data.Validated.{Invalid, Valid}
 import grizzled.slf4j.Logging
 import eu.timepit.refined.auto._
-import org.make.api.ActorSystemComponent
-import org.make.api.technical.StreamUtils
+import org.make.api.technical.{ActorSystemComponent, StreamUtils}
 import org.make.api.technical.webflow.WebflowItem.WebflowPost
 import org.make.api.technical.webflow.{WebflowClientComponent, WebflowConfigurationComponent, WebflowItem}
 import org.make.core.post.indexed.{PostSearchQuery, PostSearchResult}

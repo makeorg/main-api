@@ -19,12 +19,11 @@
 
 package org.make.api.operation
 
-import akka.actor.ActorSystem
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.user.DefaultPersistentUserServiceComponent
-import org.make.api.{ActorSystemComponent, DatabaseTest, TestUtilsIT}
+import org.make.api.{DatabaseTest, EmptyActorSystemComponent, TestUtilsIT}
 import org.make.core.DateHelper
 import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation.OperationActionType._
@@ -49,9 +48,8 @@ class OperationServiceIT
     with DefaultIdGeneratorComponent
     with DefaultPersistentQuestionServiceComponent
     with OperationOfQuestionServiceComponent
-    with ActorSystemComponent {
+    with EmptyActorSystemComponent {
 
-  override val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
 
   when(operationOfQuestionService.indexById(any[QuestionId]))

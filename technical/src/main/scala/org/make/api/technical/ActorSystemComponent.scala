@@ -17,13 +17,10 @@
  *
  */
 
-name := "technical"
+package org.make.api.technical
 
-libraryDependencies ++= Seq(
-  Dependencies.akkaPersistence,
-  Dependencies.cats,
-  Dependencies.configuration,
-  Dependencies.kamonExecutors,
-  Dependencies.scalaOAuth,
-  Dependencies.swiftClient
-)
+import akka.actor.typed.ActorSystem
+
+trait ActorSystemComponent {
+  implicit def actorSystem: ActorSystem[Nothing]
+}

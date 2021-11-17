@@ -23,7 +23,7 @@ import java.time.ZonedDateTime
 import akka.actor.typed.ActorRef
 import cats.data.NonEmptyList
 import org.make.api.sessionhistory.{LoggableHistoryEvent, SessionHistoryCoordinatorService}
-import org.make.api.{ShardingTypedActorTest, TestUtils}
+import org.make.api.{ShardingActorTest, TestUtils}
 import org.make.api.proposal.ProposalActorResponse._
 import org.make.api.proposal.ProposalActorResponse.Error._
 import org.make.api.technical.DefaultIdGeneratorComponent
@@ -48,10 +48,7 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class ProposalActorTest
-    extends ShardingTypedActorTest
-    with ScalaCheckDrivenPropertyChecks
-    with DefaultIdGeneratorComponent {
+class ProposalActorTest extends ShardingActorTest with ScalaCheckDrivenPropertyChecks with DefaultIdGeneratorComponent {
 
   val questionOnNothingFr: Question = Question(
     questionId = QuestionId("my-question"),

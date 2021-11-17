@@ -19,8 +19,6 @@
 
 package org.make.api.technical.elasticsearch
 
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import grizzled.slf4j.Logging
 import org.make.api.idea.{PersistentIdeaService, PersistentIdeaServiceComponent}
@@ -43,7 +41,7 @@ import org.make.api.technical.ReadJournalComponent
 import org.make.api.technical.job.{JobCoordinatorService, JobCoordinatorServiceComponent}
 import org.make.api.user._
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
-import org.make.api.{ActorSystemTypedComponent, MakeUnitTest}
+import org.make.api.{EmptyActorSystemComponent, MakeUnitTest}
 import org.make.core.RequestContext
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -56,7 +54,7 @@ class IndexationComponentTest
     with ElasticsearchConfigurationComponent
     with ElasticsearchClientComponent
     with Logging
-    with ActorSystemTypedComponent
+    with EmptyActorSystemComponent
     with ProposalCoordinatorServiceComponent
     with ReadJournalComponent
     with UserServiceComponent
@@ -77,7 +75,6 @@ class IndexationComponentTest
     with PostServiceComponent
     with PostIndexationStream {
 
-  override lazy val actorSystemTyped: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "IndexationComponentTest")
   override val elasticsearchPostAPI: PostSearchEngine = mock[PostSearchEngine]
   override val elasticsearchIdeaAPI: IdeaSearchEngine = mock[IdeaSearchEngine]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]

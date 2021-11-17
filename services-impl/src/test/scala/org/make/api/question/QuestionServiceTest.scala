@@ -19,7 +19,6 @@
 
 package org.make.api.question
 
-import akka.actor.ActorSystem
 import org.make.api.idea.topIdeaComments.{PersistentTopIdeaCommentService, PersistentTopIdeaCommentServiceComponent}
 import org.make.api.idea.{
   PersistentTopIdeaService,
@@ -32,7 +31,7 @@ import org.make.api.personality.{QuestionPersonalityService, QuestionPersonality
 import org.make.api.proposal.{ProposalSearchEngine, ProposalSearchEngineComponent}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.user.{UserService, UserServiceComponent}
-import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
+import org.make.api.{EmptyActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRoleId}
 import org.make.core.question.QuestionId
@@ -51,7 +50,7 @@ class QuestionServiceTest
     extends MakeUnitTest
     with DefaultQuestionServiceComponent
     with PersistentQuestionServiceComponent
-    with ActorSystemComponent
+    with EmptyActorSystemComponent
     with IdGeneratorComponent
     with QuestionPersonalityServiceComponent
     with UserServiceComponent
@@ -61,7 +60,6 @@ class QuestionServiceTest
     with PersistentTopIdeaServiceComponent
     with PersistentTopIdeaCommentServiceComponent {
 
-  override val actorSystem: ActorSystem = ActorSystem()
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val questionPersonalityService: QuestionPersonalityService = mock[QuestionPersonalityService]
   override val userService: UserService = mock[UserService]

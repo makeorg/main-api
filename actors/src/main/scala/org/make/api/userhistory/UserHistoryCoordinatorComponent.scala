@@ -22,11 +22,10 @@ package org.make.api.userhistory
 import akka.actor.typed.ActorRef
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.Timeout
-import org.make.api.ActorSystemTypedComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.Ack
 import org.make.api.technical.BetterLoggingActors._
-import org.make.api.technical.{MakePersistentActor, StreamUtils, TimeSettings}
+import org.make.api.technical.{ActorSystemComponent, MakePersistentActor, StreamUtils, TimeSettings}
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.user._
@@ -55,7 +54,7 @@ trait UserHistoryCoordinatorServiceComponent {
 }
 
 trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinatorServiceComponent {
-  self: UserHistoryCoordinatorComponent with ActorSystemTypedComponent with MakeSettingsComponent =>
+  self: UserHistoryCoordinatorComponent with ActorSystemComponent with MakeSettingsComponent =>
 
   override lazy val userHistoryCoordinatorService: UserHistoryCoordinatorService =
     new DefaultUserHistoryCoordinatorService

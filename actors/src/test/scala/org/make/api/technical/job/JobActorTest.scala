@@ -22,7 +22,7 @@ package org.make.api.technical.job
 import akka.actor.testkit.typed.scaladsl.{FishingOutcomes, TestProbe}
 import eu.timepit.refined.auto._
 import eu.timepit.refined.scalacheck.numeric._
-import org.make.api.ShardingTypedActorTest
+import org.make.api.ShardingActorTest
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.technical.job.JobActor.Protocol.Command._
 import org.make.api.technical.job.JobActor.Protocol.Response._
@@ -33,7 +33,7 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.concurrent.duration.{Duration, DurationInt}
 
-class JobActorTest extends ShardingTypedActorTest with DefaultIdGeneratorComponent with ScalaCheckDrivenPropertyChecks {
+class JobActorTest extends ShardingActorTest with DefaultIdGeneratorComponent with ScalaCheckDrivenPropertyChecks {
 
   private val heartRate: Duration = 10.milliseconds
   private val coordinator = JobCoordinator(system, heartRate)

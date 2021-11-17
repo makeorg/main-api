@@ -19,15 +19,16 @@
 
 package org.make.api
 
-import java.util.concurrent.atomic.AtomicInteger
-
-import akka.actor.ActorSystem
-import akka.testkit.{ImplicitSender, TestKit}
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.{Config, ConfigFactory}
 
-class ShardingActorTest(actorSystem: ActorSystem = TestHelper.defaultActorSystem())
-    extends TestKit(actorSystem)
-    with ImplicitSender
+import java.util.concurrent.atomic.AtomicInteger
+
+class ShardingActorTest(
+  val actorTesKit: ActorTestKit = ActorTestKit(TestHelper.actorSystemName, TestHelper.fullConfiguration)
+) extends ActorTest(actorTesKit.system)
     with MakeUnitTest
 
 object TestHelper {
@@ -78,7 +79,7 @@ object TestHelper {
        |      snapshot = $${inmemory-snapshot-store}
        |    }
        |  }
-       |  
+       |
        |  kafka {
        |    connection-string = "nowhere:-1"
        |    schema-registry = "http://nowhere:-1"
@@ -97,8 +98,6 @@ object TestHelper {
       .withFallback(ConfigFactory.load("default-application.conf"))
       .resolve()
 
-  def defaultActorSystem(conf: Config = fullConfiguration): ActorSystem = {
-    ActorSystem(actorSystemName, conf)
-  }
-
+  def defaultActorSystem(conf: Config = fullConfiguration): ActorSystem[Nothing] =
+    ActorSystem[Nothing](Behaviors.empty, actorSystemName, conf)
 }

@@ -20,7 +20,6 @@
 package org.make.api.proposal
 
 import akka.Done
-import akka.actor.ActorSystem
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.stream.scaladsl.Source
 import cats.data.NonEmptyList
@@ -34,19 +33,18 @@ import org.make.api.sessionhistory.{
   SessionHistoryCoordinatorService,
   SessionHistoryCoordinatorServiceComponent
 }
-import org.make.core.proposal.Vote
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.tagtype.{TagTypeService, TagTypeServiceComponent}
 import org.make.api.technical._
-import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent}
 import org.make.api.technical.crm.QuestionResolver
+import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.userhistory.{
   RequestUserVotedProposals,
   UserHistoryCoordinatorService,
   UserHistoryCoordinatorServiceComponent
 }
-import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
+import org.make.api.{EmptyActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.VoteTrust._
 import org.make.core.history.HistoryActions._
@@ -69,7 +67,7 @@ import org.make.core.proposal.QualificationKey.{
 }
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal.indexed._
-import org.make.core.proposal.{Vote => _, _}
+import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
 import org.make.core.session.SessionId
@@ -93,7 +91,7 @@ class ProposalServiceTest
     with IdGeneratorComponent
     with SessionHistoryCoordinatorServiceComponent
     with SecurityConfigurationComponent
-    with ActorSystemComponent
+    with EmptyActorSystemComponent
     with EventBusServiceComponent
     with IdeaServiceComponent
     with PartnerServiceComponent
@@ -118,7 +116,6 @@ class ProposalServiceTest
   override val proposalJournal: CassandraReadJournal = mock[CassandraReadJournal]
   override val userJournal: CassandraReadJournal = mock[CassandraReadJournal]
   override val sessionJournal: CassandraReadJournal = mock[CassandraReadJournal]
-  override val actorSystem: ActorSystem = ActorSystem()
   override val userService: UserService = mock[UserService]
   override val ideaService: IdeaService = mock[IdeaService]
   override val questionService: QuestionService = mock[QuestionService]

@@ -23,10 +23,11 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
+import org.make.api.technical.ActorSystemComponent
 import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage._
-import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase, TestUtils}
+import org.make.api.{MakeApi, MakeApiTestBase, TestUtils}
 import org.make.core.job.Job.JobId
 import org.make.core.profile.Profile
 import org.make.core.reference.Country

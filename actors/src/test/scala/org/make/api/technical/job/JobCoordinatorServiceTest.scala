@@ -22,13 +22,18 @@ package org.make.api.technical.job
 import java.util.UUID
 
 import akka.actor.typed.scaladsl.AskPattern.schedulerFromActorSystem
-import akka.actor.typed.{ActorRef, ActorSystem, SpawnProtocol}
+import akka.actor.typed.{ActorRef, SpawnProtocol}
 import eu.timepit.refined.auto._
 import eu.timepit.refined.scalacheck.numeric._
 import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.api.technical.job.JobReportingActor.JobReportingActorFacade
-import org.make.api.technical.{DefaultIdGeneratorComponent, DefaultSpawnActorServiceComponent, SpawnActorRefComponent}
-import org.make.api.{ActorSystemTypedComponent, ShardingTypedActorTest}
+import org.make.api.technical.{
+  ActorSystemComponent,
+  DefaultIdGeneratorComponent,
+  DefaultSpawnActorServiceComponent,
+  SpawnActorRefComponent
+}
+import org.make.api.ShardingActorTest
 import org.make.core.job.Job.JobStatus._
 import org.make.core.job.Job.{JobId, Progress}
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
@@ -39,18 +44,17 @@ import scala.concurrent.{Future, Promise}
 import scala.util.Success
 
 class JobCoordinatorServiceTest
-    extends ShardingTypedActorTest
+    extends ShardingActorTest
     with DefaultJobCoordinatorServiceComponent
     with DefaultIdGeneratorComponent
     with JobCoordinatorComponent
-    with ActorSystemTypedComponent
+    with ActorSystemComponent
     with ScalaCheckDrivenPropertyChecks
     with DefaultSpawnActorServiceComponent
     with SpawnActorRefComponent {
 
   val heartRate: FiniteDuration = 10.milliseconds
 
-  override implicit val actorSystemTyped: ActorSystem[Nothing] = system
   override val spawnActorRef: ActorRef[SpawnProtocol.Command] =
     system.systemActorOf(SpawnProtocol(), "spawn-actor-test")
 

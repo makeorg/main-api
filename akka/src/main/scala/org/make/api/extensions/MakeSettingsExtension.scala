@@ -21,7 +21,7 @@ package org.make.api.extensions
 
 import akka.actor.typed.{ActorSystem, Extension, ExtensionId}
 import com.typesafe.config.Config
-import org.make.api.ActorSystemTypedComponent
+import org.make.api.technical.ActorSystemComponent
 
 class MakeSettingsExtension(config: Config) extends MakeSettings(config) with Extension
 
@@ -31,7 +31,7 @@ object MakeSettingsExtension extends ExtensionId[MakeSettingsExtension] {
 }
 
 trait DefaultMakeSettingsComponent extends MakeSettingsComponent {
-  self: ActorSystemTypedComponent =>
+  self: ActorSystemComponent =>
 
-  override lazy val makeSettings: MakeSettings = MakeSettingsExtension(actorSystemTyped)
+  override lazy val makeSettings: MakeSettings = MakeSettingsExtension(actorSystem)
 }

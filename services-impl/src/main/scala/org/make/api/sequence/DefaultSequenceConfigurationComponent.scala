@@ -22,25 +22,23 @@ package org.make.api.sequence
 import akka.actor.typed.Scheduler
 import akka.util.Timeout
 import grizzled.slf4j.Logging
-import org.make.api.ActorSystemTypedComponent
 import org.make.api.sequence.SequenceConfigurationActor._
 import org.make.api.technical.BetterLoggingActors._
-import org.make.api.technical.TimeSettings
+import org.make.api.technical.{ActorSystemComponent, TimeSettings}
 import org.make.core.question.QuestionId
 import org.make.core.sequence.{SequenceConfiguration, SequenceId}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 trait DefaultSequenceConfigurationComponent extends SequenceConfigurationComponent with Logging {
-  self: SequenceConfigurationActorComponent
-    with PersistentSequenceConfigurationComponent
-    with ActorSystemTypedComponent =>
+  self: SequenceConfigurationActorComponent with PersistentSequenceConfigurationComponent with ActorSystemComponent =>
 
   override lazy val sequenceConfigurationService: SequenceConfigurationService = new DefaultSequenceConfigurationService
 
   class DefaultSequenceConfigurationService extends SequenceConfigurationService {
     implicit val timeout: Timeout = TimeSettings.defaultTimeout
-    implicit val scheduler: Scheduler = actorSystemTyped.scheduler
+    implicit val scheduler: Scheduler = actorSystem.scheduler
 
     override def getSequenceConfigurationByQuestionId(questionId: QuestionId): Future[SequenceConfiguration] = {
       (sequenceConfigurationActor ?? (GetSequenceConfiguration(questionId, _)))

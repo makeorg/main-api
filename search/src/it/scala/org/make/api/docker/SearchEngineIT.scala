@@ -19,7 +19,6 @@
 
 package org.make.api.docker
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.Http
@@ -27,6 +26,7 @@ import akka.stream.scaladsl.{Flow, Source => AkkaSource}
 import grizzled.slf4j.Logging
 import io.circe.Encoder
 import io.circe.syntax._
+import org.make.api.EmptyActorSystemComponent
 import org.make.core.StringValue
 import org.scalatest.Suite
 
@@ -35,15 +35,16 @@ import scala.concurrent.duration.DurationInt
 import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
 
-trait SearchEngineIT[Id <: StringValue, T] extends DockerElasticsearchService with Logging { self: Suite =>
+trait SearchEngineIT[Id <: StringValue, T]
+    extends DockerElasticsearchService
+    with EmptyActorSystemComponent
+    with Logging { self: Suite =>
 
   def eSIndexName: String
   def eSDocType: String
   def docs: Seq[T]
 
   def initializeElasticsearch(id: T => Id)(implicit encoder: Encoder[T]): Unit = {
-    implicit val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
-
     val elasticsearchEndpoint = s"http://localhost:$elasticsearchExposedPort"
     val mapping =
       Source.fromResource(s"elasticsearch-mappings/$eSDocType.json")(Codec.UTF8).getLines().mkString("")

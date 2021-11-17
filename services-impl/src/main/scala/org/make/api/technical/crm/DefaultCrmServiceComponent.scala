@@ -38,7 +38,6 @@ import akka.{Done, NotUsed}
 import grizzled.slf4j.Logging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import eu.timepit.refined.auto._
-import org.make.api.ActorSystemTypedComponent
 import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.proposal.ProposalServiceComponent
@@ -49,7 +48,7 @@ import org.make.api.technical.crm.BasicCrmResponse.ManageManyContactsResponse
 import org.make.api.technical.crm.ManageContactAction.Remove
 import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.api.technical.job.JobCoordinatorServiceComponent
-import org.make.api.technical._
+import org.make.api.technical.{ActorSystemComponent, _}
 import org.make.api.technical.crm.CrmClient.{Account, Marketing, Transactional}
 import org.make.api.user.PersistentCrmSynchroUserService.CrmSynchroUser
 import org.make.api.user.{PersistentCrmSynchroUserServiceComponent, PersistentUserToAnonymizeServiceComponent}
@@ -72,7 +71,7 @@ import scala.util.{Failure, Success}
 
 trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with ErrorAccumulatingCirceSupport {
   self: MailJetConfigurationComponent
-    with ActorSystemTypedComponent
+    with ActorSystemComponent
     with PersistentCrmSynchroUserServiceComponent
     with OperationServiceComponent
     with QuestionServiceComponent
@@ -132,7 +131,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with Logging with E
           e match {
             case CrmClientException.RequestException.SendEmailException(StatusCodes.BadRequest, _) =>
             case _ =>
-              actorSystemTyped.scheduler
+              actorSystem.scheduler
                 .scheduleOnce(mailJetConfiguration.delayBeforeResend, () => eventBusService.publish(message))
           }
       }

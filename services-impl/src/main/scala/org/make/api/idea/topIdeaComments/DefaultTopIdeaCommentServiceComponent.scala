@@ -20,9 +20,8 @@
 package org.make.api.idea.topIdeaComments
 
 import akka.stream.scaladsl.{Sink, Source}
-import org.make.api.ActorSystemComponent
 import org.make.api.question.{QuestionTopIdeaCommentsPersonalityResponse, QuestionTopIdeaCommentsResponse}
-import org.make.api.technical.IdGeneratorComponent
+import org.make.api.technical.{ActorSystemComponent, IdGeneratorComponent}
 import org.make.core.idea.{CommentQualificationKey, CommentVoteKey, TopIdeaComment, TopIdeaCommentId, TopIdeaId}
 import org.make.api.user.UserServiceComponent
 import org.make.core.user.UserId

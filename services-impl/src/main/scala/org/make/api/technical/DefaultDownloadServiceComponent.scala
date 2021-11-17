@@ -28,7 +28,6 @@ import akka.http.scaladsl.model._
 import akka.stream.scaladsl.FileIO
 import grizzled.slf4j.Logging
 import kamon.annotation.api.Trace
-import org.make.api.ActorSystemComponent
 import org.make.api.technical.ExecutorServiceHelper._
 
 import scala.concurrent.duration.DurationInt

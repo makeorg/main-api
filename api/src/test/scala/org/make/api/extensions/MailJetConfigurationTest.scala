@@ -19,17 +19,40 @@
 
 package org.make.api.extensions
 
-import akka.actor.ActorSystem
-import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
-import akka.testkit.TestKit
-import com.typesafe.config.ConfigFactory
-import org.make.api.MakeUnitTest
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import com.typesafe.config.{Config, ConfigFactory}
+import org.make.api.{ActorTest, MakeUnitTest}
 
 class MailJetConfigurationTest
-    extends TestKit(
-      ActorSystem(
-        "MailJetConfigurationExtensionTest",
-        ConfigFactory.parseString("""
+    extends ActorTest(MailJetConfigurationTest.actorSystem)
+    with MakeUnitTest
+    with MailJetConfigurationComponent {
+
+  val mailJetConfiguration: MailJetConfiguration = MailJetConfigurationExtension(system)
+
+  Scenario("Register user and create proposal") {
+    mailJetConfiguration.apiKey shouldBe "apikey"
+    mailJetConfiguration.basicAuthLogin shouldBe "basicauthlogin"
+    mailJetConfiguration.basicAuthPassword shouldBe "basicauthpassword"
+    mailJetConfiguration.campaignApiKey shouldBe "campaignapikey"
+    mailJetConfiguration.campaignSecretKey shouldBe "campaignsecretkey"
+    mailJetConfiguration.secretKey shouldBe "secretkey"
+    mailJetConfiguration.optInListId shouldBe "optinlistid"
+    mailJetConfiguration.unsubscribeListId shouldBe "unsubscribelistid"
+    mailJetConfiguration.hardBounceListId shouldBe "hardbouncelistid"
+    mailJetConfiguration.url shouldBe "mailjeturl"
+    mailJetConfiguration.userListBatchSize shouldBe 100
+    mailJetConfiguration.httpBufferSize shouldBe 5
+    mailJetConfiguration.csvSize shouldBe 2097152
+    mailJetConfiguration.csvDirectory shouldBe "/tmp/make/crm"
+  }
+
+}
+
+object MailJetConfigurationTest {
+  val conf: Config =
+    ConfigFactory.parseString("""
       |make-api {
       |   mail-jet {
       |    url = "mailjeturl"
@@ -44,7 +67,7 @@ class MailJetConfigurationTest
       |      recipient = "emailing@make.org"
       |      recipient-name = "emailing"
       |    }
-      |    
+      |
       |    user-list {
       |      hard-bounce-list-id = "hardbouncelistid"
       |      unsubscribe-list-id = "unsubscribelistid"
@@ -55,33 +78,9 @@ class MailJetConfigurationTest
       |    }
       |  }
       |}
-      """.stripMargin)
-      )
-    )
-    with MakeUnitTest
-    with MailJetConfigurationComponent {
+    """.stripMargin)
 
-  override def afterAll(): Unit = {
-    TestKit.shutdownActorSystem(system)
-  }
-
-  val mailJetConfiguration: MailJetConfiguration = MailJetConfigurationExtension(system.toTyped)
-
-  Scenario("Register user and create proposal") {
-    mailJetConfiguration.apiKey shouldBe ("apikey")
-    mailJetConfiguration.basicAuthLogin shouldBe ("basicauthlogin")
-    mailJetConfiguration.basicAuthPassword shouldBe ("basicauthpassword")
-    mailJetConfiguration.campaignApiKey shouldBe ("campaignapikey")
-    mailJetConfiguration.campaignSecretKey shouldBe ("campaignsecretkey")
-    mailJetConfiguration.secretKey shouldBe ("secretkey")
-    mailJetConfiguration.optInListId shouldBe ("optinlistid")
-    mailJetConfiguration.unsubscribeListId shouldBe ("unsubscribelistid")
-    mailJetConfiguration.hardBounceListId shouldBe ("hardbouncelistid")
-    mailJetConfiguration.url shouldBe ("mailjeturl")
-    mailJetConfiguration.userListBatchSize shouldBe (100)
-    mailJetConfiguration.httpBufferSize shouldBe (5)
-    mailJetConfiguration.csvSize shouldBe (2097152)
-    mailJetConfiguration.csvDirectory shouldBe ("/tmp/make/crm")
-  }
+  val actorSystem: ActorSystem[Nothing] =
+    ActorSystem[Nothing](Behaviors.empty, "MailJetConfigurationExtensionTest", conf)
 
 }

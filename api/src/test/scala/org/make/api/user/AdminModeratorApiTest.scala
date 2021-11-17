@@ -22,8 +22,9 @@ package org.make.api.user
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
+import org.make.api.technical.ActorSystemComponent
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
-import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase}
+import org.make.api.{MakeApi, MakeApiTestBase}
 import org.make.core.reference.Country
 import org.make.core.technical.Pagination.Start
 import org.make.core.user.Role.{RoleCitizen, RoleModerator, RolePolitical}

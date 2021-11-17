@@ -19,16 +19,16 @@
 
 package org.make.api.userhistory
 
-import akka.actor.testkit.typed.scaladsl.{ActorTestKit, ScalaTestWithActorTestKit}
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.config.{Config, ConfigFactory}
 import enumeratum.values.scalacheck._
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.technical.DefaultIdGeneratorComponent
+import org.make.api.technical.{ActorSystemComponent, DefaultIdGeneratorComponent}
 import org.make.api.userhistory.UserHistoryCoordinatorTest.actorSystemSeed
-import org.make.api.{ActorSystemTypedComponent, MakeUnitTest, TestHelper}
+import org.make.api.{ActorTest, MakeUnitTest, TestHelper}
 import org.make.core.history.HistoryActions
 import org.make.core.history.HistoryActions.VoteTrust
 import org.make.core.proposal.{ProposalId, VoteKey}
@@ -43,12 +43,12 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.Future
 
 class UserHistoryCoordinatorTest
-    extends ScalaTestWithActorTestKit(UserHistoryCoordinatorTest.actorSystem)
+    extends ActorTest(UserHistoryCoordinatorTest.actorSystem)
     with MakeUnitTest
     with ScalaCheckDrivenPropertyChecks
     with DefaultUserHistoryCoordinatorServiceComponent
     with MakeSettingsComponent
-    with ActorSystemTypedComponent
+    with ActorSystemComponent
     with UserHistoryCoordinatorComponent
     with DefaultIdGeneratorComponent {
 
@@ -65,8 +65,6 @@ class UserHistoryCoordinatorTest
 
   override val makeSettings: MakeSettings = mock[MakeSettings]
   when(makeSettings.maxHistoryProposalsPerPage).thenReturn(100)
-
-  override implicit val actorSystemTyped: ActorSystem[Nothing] = testKit.system
 
   override val userHistoryCoordinator: ActorRef[UserHistoryCommand] = UserHistoryCoordinator(actorSystemSeed)
 

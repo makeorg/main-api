@@ -19,11 +19,9 @@
 
 package org.make.api.technical.security
 
-import akka.actor.Actor
-import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.actor.typed.{ActorSystem, Extension, ExtensionId}
 import com.typesafe.config.Config
-import org.make.api.ActorSystemTypedComponent
+import org.make.api.technical.ActorSystemComponent
 
 class SecurityConfigurationExtension(config: Config) extends SecurityConfiguration(config) with Extension
 
@@ -32,13 +30,7 @@ object SecurityConfigurationExtension extends ExtensionId[SecurityConfigurationE
     new SecurityConfigurationExtension(system.settings.config.getConfig("make-api.security"))
 }
 
-trait ActorSecurityConfigurationComponent extends SecurityConfigurationComponent { this: Actor =>
-  override val securityConfiguration: SecurityConfiguration = {
-    SecurityConfigurationExtension(context.system.toTyped)
-  }
-}
-
 trait DefaultSecurityConfigurationComponent extends SecurityConfigurationComponent {
-  this: ActorSystemTypedComponent =>
-  override lazy val securityConfiguration: SecurityConfiguration = SecurityConfigurationExtension(actorSystemTyped)
+  this: ActorSystemComponent =>
+  override lazy val securityConfiguration: SecurityConfiguration = SecurityConfigurationExtension(actorSystem)
 }

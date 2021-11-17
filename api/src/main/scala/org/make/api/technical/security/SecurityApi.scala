@@ -26,9 +26,8 @@ import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
 
 import javax.ws.rs.Path
-import org.make.api.ActorSystemComponent
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
-import org.make.api.technical.{EndpointType, MakeAuthenticationDirectives}
+import org.make.api.technical.{ActorSystemComponent, EndpointType, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
 import scalaoauth2.provider.AuthInfo

@@ -21,7 +21,7 @@ package org.make.api.extensions
 
 import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
 import akka.actor.typed.{ActorSystem, Extension, ExtensionId}
-import org.make.api.ActorSystemTypedComponent
+import org.make.api.technical.ActorSystemComponent
 import org.make.api.technical.storage.SwiftClientComponent
 import org.make.swift.SwiftClient
 
@@ -32,6 +32,6 @@ object SwiftClientExtension extends ExtensionId[SwiftClientExtension] {
     new SwiftClientExtension(SwiftClient.create(system.toClassic))
 }
 
-trait DefaultSwiftClientComponent extends SwiftClientComponent { this: ActorSystemTypedComponent =>
-  override lazy val swiftClient: SwiftClient = SwiftClientExtension(actorSystemTyped).swiftClient
+trait DefaultSwiftClientComponent extends SwiftClientComponent { this: ActorSystemComponent =>
+  override lazy val swiftClient: SwiftClient = SwiftClientExtension(actorSystem).swiftClient
 }

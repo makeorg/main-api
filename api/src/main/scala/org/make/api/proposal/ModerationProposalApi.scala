@@ -27,11 +27,10 @@ import grizzled.slf4j.Logging
 import io.swagger.annotations._
 
 import javax.ws.rs.Path
-import org.make.api.ActorSystemComponent
 import org.make.api.idea.IdeaServiceComponent
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.question.QuestionServiceComponent
-import org.make.api.technical.{MakeAuthenticationDirectives, ReadJournalComponent}
+import org.make.api.technical.{ActorSystemComponent, MakeAuthenticationDirectives, ReadJournalComponent}
 import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.user.UserServiceComponent

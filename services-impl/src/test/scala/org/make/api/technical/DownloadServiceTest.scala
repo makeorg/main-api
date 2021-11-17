@@ -21,15 +21,13 @@ package org.make.api.technical
 import java.io.File
 import java.nio.file.Files
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentType, IllegalUriException}
-import org.make.api.{ActorSystemComponent, MakeUnitTest}
+import org.make.api.{EmptyActorSystemComponent, MakeUnitTest}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
 
-class DownloadServiceTest extends MakeUnitTest with DefaultDownloadServiceComponent with ActorSystemComponent {
-  override val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
+class DownloadServiceTest extends MakeUnitTest with DefaultDownloadServiceComponent with EmptyActorSystemComponent {
 
   Feature("download image") {
     def destFn(contentType: ContentType): File =

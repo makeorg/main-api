@@ -78,7 +78,7 @@ class CrmServiceComponentTest
     with OperationServiceComponent
     with QuestionServiceComponent
     with MailJetConfigurationComponent
-    with ActorSystemTypedComponent
+    with ActorSystemComponent
     with UserHistoryCoordinatorServiceComponent
     with PersistentCrmSynchroUserServiceComponent
     with ReadJournalComponent
@@ -93,7 +93,7 @@ class CrmServiceComponentTest
     with DefaultSpawnActorServiceComponent
     with SpawnActorRefComponent {
 
-  override implicit val actorSystemTyped: ActorSystem[Nothing] =
+  override implicit val actorSystem: ActorSystem[Nothing] =
     ActorSystem[Nothing](Behaviors.empty[Nothing], "CrmServiceComponentTest", ConfigFactory.parseString(configuration))
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
   override val proposalJournal: CassandraReadJournal = mock[CassandraReadJournal]
@@ -111,7 +111,7 @@ class CrmServiceComponentTest
   override val proposalService: ProposalService = mock[ProposalService]
   override val jobCoordinatorService: JobCoordinatorService = mock[JobCoordinatorService]
   override val spawnActorRef: ActorRef[SpawnProtocol.Command] =
-    actorSystemTyped.systemActorOf(SpawnProtocol(), "spawner")
+    actorSystem.systemActorOf(SpawnProtocol(), "spawner")
   override val persistentCrmSynchroUserService: PersistentCrmSynchroUserService = mock[PersistentCrmSynchroUserService]
 
   when(mailJetConfiguration.userListBatchSize).thenReturn(1000)

@@ -24,10 +24,9 @@ import akka.http.scaladsl.server.{Directives, Route}
 import caliban.AkkaHttpAdapter.ContextWrapper
 import caliban.interop.circe.AkkaHttpCirceAdapter
 import caliban.{CalibanError, GraphQLInterpreter}
-import org.make.api.ActorSystemComponent
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
 import org.make.api.technical.graphql.GraphQLRuntimeComponent.{EnvType, RuntimeType}
-import org.make.api.technical.MakeDirectives
+import org.make.api.technical.{ActorSystemComponent, MakeDirectives}
 import org.make.core.RequestContext
 import zio.clock.Clock
 import zio.internal.Platform
