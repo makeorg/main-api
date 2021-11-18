@@ -48,7 +48,7 @@ you can now control the bloop server using `systemctl`:
 - `systemctl --user stop bloop` to stop the server
 - `systemctl --user status bloop` to get the server status
 
-If you want it to start automatically when you connect to your account, 
+If you want it to start automatically when you connect to your account,
 just use `systemctl --user enable bloop`
 
 
@@ -63,7 +63,7 @@ make infra-up
 ```
 
 In order to download custom defined libraries, add the nexus credentials to
-the file `$HOME/.sbt/1.0/credentials.sbt`.  
+the file `$HOME/.sbt/1.0/credentials.sbt`.
 With `USERNAME` and `PASSWORD` coming from Make.org password manager,
 this file should look like the following:
 
@@ -129,7 +129,7 @@ _Use with care, it will not be on the CI server, so everything must work even wi
 ## Secrets conf
 
 Some parts of the configuration contain sensitive pieces of information and are defined
-in the secrets of the API. The following explains how to define these informations locally.  
+in the secrets of the API. The following explains how to define these informations locally.
 
 In order to send mails via Mailjet, pull data from Webflow or use the google social connect, create
 the file `/etc/make/make-api.conf` with the following content:
@@ -167,7 +167,7 @@ make-api {
 
 replacing the different secrets with their real value.
 
-## package the application as a docker image locally
+## Package the application as a docker image locally
 
 in order to build locally the docker image, type from your base directory:
 
@@ -175,7 +175,7 @@ in order to build locally the docker image, type from your base directory:
 make package-docker-image
 ```
 
-## releasing the application
+## Release the application
 
 Releasing the application consists in packaging the docker image lacally,
 then tag and push (using `docker push`) the created image.
@@ -183,6 +183,7 @@ then tag and push (using `docker push`) the created image.
 ## Misc
 
 - The netty version has been forced, so when new dependencies are added, it may be a good idea to exclude netty if it includes it
+- [How to run JMH micro-benchmarks](benchmarks/README.md)
 
 ## Secure connection to cockroach
 

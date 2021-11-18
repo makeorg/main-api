@@ -159,6 +159,6 @@ object Dependencies {
   val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2"
   val staminaTestKit: ModuleID = "com.scalapenos"               %% "stamina-testkit"           % staminaVersion % "test"
 
-  val scalaCsv: ModuleID = "com.github.tototoshi"    %% "scala-csv"        % "1.3.8" % "test"
+  val scalaCsv: ModuleID = "com.github.tototoshi"    %% "scala-csv"        % "1.3.8"
   val scalacacheGuava: ModuleID = "com.github.cb372" %% "scalacache-guava" % "0.28.0"
 }

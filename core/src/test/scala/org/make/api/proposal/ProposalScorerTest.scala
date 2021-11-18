@@ -402,7 +402,7 @@ class ProposalScorerTest extends BaseUnitTest with Logging {
           proposals.foreach { votes =>
             val score = scoreFunction(ProposalScorer(votes, VotesCounter.SequenceVotesCounter, 0.5))
             val average = (1 to 100).map { _ =>
-              scoreFunction(ProposalScorer(votes, VotesCounter.SequenceVotesCounter, 0.5)).cachedSample
+              scoreFunction(ProposalScorer(votes, VotesCounter.SequenceVotesCounter, 0.5)).sample
             }.sum / 100
             average should be(score.score +- score.confidence)
           }
@@ -420,7 +420,7 @@ class ProposalScorerTest extends BaseUnitTest with Logging {
       val ignoredProposal = new AtomicInteger()
 
       (1 to 100_000).foreach { _ =>
-        val scorer = new ProposalScorer(votes, votesCounter, 0.5)
+        val scorer = ProposalScorer(votes, votesCounter, 0.5)
         if (scorer.zone != scorer.sampledZone) {
           changingProposals.incrementAndGet()
         }

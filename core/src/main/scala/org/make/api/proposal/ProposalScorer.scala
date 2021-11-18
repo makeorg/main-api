@@ -38,26 +38,36 @@ import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{SequencePool, Zone}
 import org.make.core.sequence.SequenceConfiguration
+import org.make.api.technical.types._
 
-final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, nonSequenceVotesWeight: Double) {
+final class ProposalScorer(votingOptions: VotingOptions, counter: VotesCounter, nonSequenceVotesWeight: Double) {
 
   private def tradeOff(generalScore: Double, specificScore: Double): Double = {
     nonSequenceVotesWeight * generalScore + (1 - nonSequenceVotesWeight) * specificScore
   }
 
-  private def countVotes(counter: VotesCounter): Int = {
-    votes.map(counter).sum
-  }
+  private def countVotes(counter: VotesCounter): Int =
+    counter(votingOptions.agreeVote.vote) +
+      counter(votingOptions.neutralVote.vote) +
+      counter(votingOptions.disagreeVote.vote)
 
-  private def count(key: Key, countingFunction: VotesCounter): Int = {
-    val maybeVoteOrQualification = key match {
-      case voteKey: VoteKey =>
-        votes.find(_.key == voteKey)
-      case qualificationKey: QualificationKey =>
-        votes.flatMap(_.qualifications).find(_.key == qualificationKey)
+  private def count(key: Key, countingFunction: VotesCounter): Int =
+    countingFunction {
+      key match {
+        case Agree             => votingOptions.agreeVote.vote
+        case Disagree          => votingOptions.disagreeVote.vote
+        case Neutral           => votingOptions.neutralVote.vote
+        case DoNotCare         => votingOptions.neutralVote.doNotCare
+        case DoNotUnderstand   => votingOptions.neutralVote.doNotUnderstand
+        case Doable            => votingOptions.agreeVote.doable
+        case Impossible        => votingOptions.disagreeVote.impossible
+        case LikeIt            => votingOptions.agreeVote.likeIt
+        case NoOpinion         => votingOptions.neutralVote.noOpinion
+        case NoWay             => votingOptions.disagreeVote.noWay
+        case PlatitudeAgree    => votingOptions.agreeVote.platitudeAgree
+        case PlatitudeDisagree => votingOptions.disagreeVote.platitudeDisagree
+      }
     }
-    maybeVoteOrQualification.map(countingFunction).getOrElse(0)
-  }
 
   private def individualScore(key: Key, countingFunction: VotesCounter = counter): Double = {
     (count(key, countingFunction) + findSmoothing(key)) / (1 + countVotes(countingFunction))
@@ -70,7 +80,6 @@ final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, nonSeque
   private def confidence(key: Key): Double = {
     val specificVotesCount = countVotes(counter)
     val specificVotes = individualScore(key)
-
     ProposalScorer.confidenceInterval(specificVotes, specificVotesCount)
   }
 
@@ -104,7 +113,7 @@ final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, nonSeque
   lazy val engagement: Score = greatness + realistic - platitude
 
   lazy val zone: Zone = zone(agree.score, disagree.score, neutral.score)
-  lazy val sampledZone: Zone = zone(agree.cachedSample, disagree.cachedSample, neutral.cachedSample)
+  lazy val sampledZone: Zone = zone(agree.sample, disagree.sample, neutral.sample)
 
   /* Taken from the dial:
   if (proposition['score_v2_adhesion'] >= .6) or \
@@ -163,18 +172,51 @@ final class ProposalScorer(votes: Seq[BaseVote], counter: VotesCounter, nonSeque
   * it defines the computations from the dial.
   */
 object ProposalScorer extends Logging {
+
+  private def findVoteOrFallback(votes: Seq[BaseVote], key: VoteKey): BaseVote =
+    votes.find(_.key == key).getOrElse(Vote(key, 0, 0, 0, 0, Seq.empty))
+
+  private def findQualificationOrFallback(
+    qualifications: Seq[BaseQualification],
+    key: QualificationKey
+  ): BaseQualification =
+    qualifications.find(_.key == key).getOrElse(Qualification(key, 0, 0, 0, 0))
+
   def apply(votes: Seq[BaseVote], counter: VotesCounter, nonSequenceVotesWeight: Double): ProposalScorer = {
-    new ProposalScorer(votes, counter, nonSequenceVotesWeight)
+    val agreeOption = findVoteOrFallback(votes, Agree)
+    val neutralOption = findVoteOrFallback(votes, Neutral)
+    val disagreeOption = findVoteOrFallback(votes, Disagree)
+    val votingOptions = VotingOptions(
+      AgreeWrapper(
+        vote = agreeOption,
+        likeIt = findQualificationOrFallback(agreeOption.qualifications, LikeIt),
+        platitudeAgree = findQualificationOrFallback(agreeOption.qualifications, PlatitudeAgree),
+        doable = findQualificationOrFallback(agreeOption.qualifications, Doable)
+      ),
+      NeutralWrapper(
+        vote = neutralOption,
+        noOpinion = findQualificationOrFallback(neutralOption.qualifications, NoOpinion),
+        doNotUnderstand = findQualificationOrFallback(neutralOption.qualifications, DoNotUnderstand),
+        doNotCare = findQualificationOrFallback(neutralOption.qualifications, DoNotCare)
+      ),
+      DisagreeWrapper(
+        vote = disagreeOption,
+        impossible = findQualificationOrFallback(disagreeOption.qualifications, Impossible),
+        noWay = findQualificationOrFallback(disagreeOption.qualifications, NoWay),
+        platitudeDisagree = findQualificationOrFallback(disagreeOption.qualifications, PlatitudeDisagree)
+      )
+    )
+    new ProposalScorer(votingOptions, counter, nonSequenceVotesWeight)
   }
 
-  val random: RandomGenerator = new MersenneTwister()
+  private val random: RandomGenerator = new MersenneTwister()
 
   def setSeed(seed: Int): Unit = {
     random.setSeed(seed)
   }
 
-  val votesSmoothing: Double = 0.33
-  val qualificationsSmoothing: Double = 0.01
+  private val votesSmoothing: Double = 0.33
+  private val qualificationsSmoothing: Double = 0.01
 
   def confidenceInterval(probability: Double, observations: Double): Double = {
     val smoothedObservations: Double = observations + 4
@@ -183,8 +225,7 @@ object ProposalScorer extends Logging {
     2 * standardDeviation
   }
 
-  final case class Score(score: Double, confidence: Double, sampleOnce: () => Double) {
-    lazy val cachedSample: Double = sampleOnce()
+  final case class Score(score: Double, confidence: Double, sample: Double) {
     val upperBound: Double = score + confidence
     val lowerBound: Double = score - confidence
 
@@ -192,7 +233,7 @@ object ProposalScorer extends Logging {
       Score(
         score = this.score + other.score,
         confidence = sumConfidenceIntervals(this.confidence, other.confidence),
-        sampleOnce = () => this.cachedSample + other.cachedSample
+        sample = this.sample + other.sample
       )
     }
 
@@ -200,7 +241,7 @@ object ProposalScorer extends Logging {
       Score(
         score = this.score - other.score,
         confidence = sumConfidenceIntervals(this.confidence, other.confidence),
-        sampleOnce = () => this.cachedSample - other.cachedSample
+        sample = this.sample - other.sample
       )
     }
   }
@@ -210,19 +251,16 @@ object ProposalScorer extends Logging {
       Score(
         score = Math.min(first.score, second.score),
         confidence = Math.max(first.confidence, second.confidence),
-        sampleOnce = () => Math.min(first.cachedSample, second.cachedSample)
+        sample = Math.min(first.sample, second.sample)
       )
     }
 
     def forKey(votes: ProposalScorer, key: Key, scorer: VotesCounter): Score = {
-      def sampleOnce(): Double = {
-        val successes = votes.count(key, scorer)
-        val trials: Int = votes.countVotes(scorer)
-        val smoothing = findSmoothing(key)
-        new BetaDistribution(random, successes + smoothing, trials - successes + 1).sample()
-      }
-
-      Score(score = votes.score(key), confidence = votes.confidence(key), sampleOnce = () => sampleOnce())
+      val successes = votes.count(key, scorer)
+      val trials = votes.countVotes(scorer)
+      val smoothing = findSmoothing(key)
+      val sample = new BetaDistribution(random, successes + smoothing, trials - successes + 1).sample()
+      Score(score = votes.score(key), confidence = votes.confidence(key), sample = sample)
     }
   }
 
@@ -233,9 +271,8 @@ object ProposalScorer extends Logging {
     }
   }
 
-  def sumConfidenceIntervals(confidences: Double*): Double = {
-    Math.sqrt(confidences.map(Math.pow(_, 2)).sum)
-  }
+  private def sumConfidenceIntervals(firstConfidence: Double, secondConfidence: Double): Double =
+    Math.sqrt(Math.pow(firstConfidence, 2) + Math.pow(secondConfidence, 2))
 
   type VotesCounter = BaseVoteOrQualification[_] => Int
 
