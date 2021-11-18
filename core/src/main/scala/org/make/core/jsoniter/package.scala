@@ -17,31 +17,25 @@
  *
  */
 
-package org.make.core
+package org.make.core.jsoniter
 
-import cats.instances.string._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.sksamuel.elastic4s.{AggReader, Hit, HitReader, Indexable}
 
-trait StringValue {
-  def value: String
-}
+import scala.annotation.implicitNotFound
+import scala.util.Try
 
-object StringValue {
+package object elastic4sJsoniter {
 
-  implicit def catsOrder[T <: StringValue]: cats.Order[T] = cats.Order.by(_.value)
-  implicit def ordering[T <: StringValue]: Ordering[T] = Ordering.by(_.value)
+  @implicitNotFound("No codec for type ${T} found.")
+  implicit def hitReaderWithJsoniter[T](implicit codec: JsonValueCodec[T]): HitReader[T] =
+    (hit: Hit) => Try(readFromByteBuffer[T](hit.sourceAsByteBuffer))
 
-  @SuppressWarnings(Array("org.wartremover.warts.Null", "org.wartremover.warts.Throw"))
-  def makeCodec[T <: StringValue](create: String => T): JsonValueCodec[T] =
-    new JsonValueCodec[T] {
+  @implicitNotFound("No codec for type ${T} found.")
+  implicit def indexableWithJsoniter[T](implicit codec: JsonValueCodec[T]): Indexable[T] =
+    writeToString(_: T)
 
-      def decodeValue(in: JsonReader, default: T): T =
-        create(in.readString(null))
-
-      def encodeValue(stringValue: T, out: JsonWriter): Unit =
-        out.writeVal(stringValue.value)
-
-      @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
-      def nullValue: T = null.asInstanceOf[T]
-    }
+  @implicitNotFound("No codec for type ${T} found.")
+  implicit def aggReaderWithJsoniter[T](implicit codec: JsonValueCodec[T]): AggReader[T] =
+    (json: String) => Try(readFromString[T](json))
 }

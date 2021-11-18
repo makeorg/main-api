@@ -31,7 +31,9 @@ import org.make.core.reference.Country
 import org.make.core.technical.enumeratum.FallbackingCirceEnum.FallbackingStringCirceEnum
 import org.make.core.user.UserType.{UserTypeAnonymous, UserTypeOrganisation, UserTypePersonality, UserTypeUser}
 import org.make.core.{DateHelper, MakeSerializable, SprayJsonFormatters, StringValue, Timestamped}
+import org.make.core.jsoniter.JsoniterEnum
 import spray.json.JsonFormat
+import com.github.plokhotnyuk.jsoniter_scala.core._
 
 import scala.annotation.meta.field
 
@@ -56,7 +58,7 @@ final case class CustomRole(override val value: String) extends Role(value)
 
 sealed abstract class UserType(val value: String) extends StringEnumEntry with Product with Serializable
 
-object UserType extends StringEnum[UserType] with FallbackingStringCirceEnum[UserType] {
+object UserType extends StringEnum[UserType] with FallbackingStringCirceEnum[UserType] with JsoniterEnum[UserType] {
 
   override def default(value: String): UserType = UserTypeUser
 
@@ -72,7 +74,6 @@ object UserType extends StringEnum[UserType] with FallbackingStringCirceEnum[Use
       Set(UserType.UserTypePersonality, UserType.UserTypeOrganisation).contains(h.userType(t))
     def isB2C(implicit h: HasUserType[T]): Boolean = h.userType(t) == UserType.UserTypeUser
   }
-
 }
 
 trait HasUserType[T] {
@@ -160,6 +161,9 @@ object UserId {
   implicit lazy val userIdEncoder: Encoder[UserId] = (a: UserId) => Json.fromString(a.value)
   implicit lazy val userIdDecoder: Decoder[UserId] =
     Decoder.decodeString.map(UserId(_))
+
+  implicit val userIdCodec: JsonValueCodec[UserId] =
+    StringValue.makeCodec(UserId.apply)
 
   implicit val userIdFormatter: JsonFormat[UserId] = SprayJsonFormatters.forStringValue(UserId.apply)
 

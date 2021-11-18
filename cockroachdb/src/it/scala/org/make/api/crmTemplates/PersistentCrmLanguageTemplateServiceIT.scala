@@ -36,7 +36,7 @@ class PersistentCrmLanguageTemplateServiceIT
       val crmLanguageTemplate = CrmLanguageTemplate(
         id = CrmLanguageTemplateId("id"),
         kind = CrmTemplateKind.Registration,
-        language = Language("FR"),
+        language = Language("ES"),
         template = TemplateId("1")
       )
       whenReady(persistentCrmLanguageTemplateService.persist(Seq(crmLanguageTemplate)), Timeout(2.seconds)) {
@@ -49,14 +49,14 @@ class PersistentCrmLanguageTemplateServiceIT
       val accepted = CrmLanguageTemplate(
         id = CrmLanguageTemplateId("toUpdate-1"),
         kind = CrmTemplateKind.ProposalAccepted,
-        language = Language("FR"),
+        language = Language("ES"),
         template = TemplateId("2")
       )
 
       val refused = CrmLanguageTemplate(
         id = CrmLanguageTemplateId("toUpdate-2"),
         kind = CrmTemplateKind.ProposalRefused,
-        language = Language("FR"),
+        language = Language("ES"),
         template = TemplateId("3")
       )
 
@@ -91,7 +91,7 @@ class PersistentCrmLanguageTemplateServiceIT
 
       val steps = for {
         _               <- persistentCrmLanguageTemplateService.persist(belgian)
-        frenchTemplates <- persistentCrmLanguageTemplateService.list(Language("FR"))
+        frenchTemplates <- persistentCrmLanguageTemplateService.list(Language("ES"))
       } yield frenchTemplates.size
 
       whenReady(steps, Timeout(2.seconds)) {
@@ -102,11 +102,9 @@ class PersistentCrmLanguageTemplateServiceIT
 
     Scenario("all") {
       whenReady(persistentCrmLanguageTemplateService.all(), Timeout(2.seconds)) { templates =>
-        templates.count(_.language == Language("FR")) shouldBe 3
+        templates.count(_.language == Language("ES")) shouldBe 3
         templates.count(_.language == Language("BE")) shouldBe CrmTemplateKind.values.size
       }
     }
-
   }
-
 }

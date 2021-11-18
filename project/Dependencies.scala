@@ -40,8 +40,9 @@ object Dependencies {
   private val calibanVersion = "0.9.1"
   private val zioVersion = "1.0.1"
   private val mockitoVersion = "1.16.37"
+  private val jsoniterVersion = "2.12.0"
 
-  val cats: ModuleID = "org.typelevel" %% "cats-core" % "2.6.1"
+  val cats: ModuleID = "org.typelevel" %% "cats-core" % "2.7.0"
 
   val grizzledSlf4j: ModuleID = "org.clapper"             %% "grizzled-slf4j"  % "1.3.4"
   val logger: ModuleID = "org.apache.logging.log4j"       % "log4j"            % log4jVersion
@@ -54,8 +55,11 @@ object Dependencies {
     ("io.netty" % "netty-transport-native-kqueue" % nettyVersion).classifier("osx-x86_64")
   val nettyAll: ModuleID = "io.netty" % "netty-all" % nettyVersion
 
-  val circeGeneric: ModuleID = "io.circe"                 %% "circe-generic"               % circeVersion
-  val circeParser = "io.circe"                            %% "circe-parser"                % circeVersion
+  val circeGeneric: ModuleID = "io.circe"                          %% "circe-generic"       % circeVersion
+  val circeParser = "io.circe"                                     %% "circe-parser"        % circeVersion
+  val jsoniter: ModuleID = "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % jsoniterVersion
+  val jsoniterMacros
+    : ModuleID = "com.github.plokhotnyuk.jsoniter-scala"  %% "jsoniter-scala-macros"       % jsoniterVersion % "compile-internal"
   val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"                   % akkaHttpVersion
   val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"             % "1.37.0"

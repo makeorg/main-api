@@ -17,27 +17,25 @@
  *
  */
 
-name := "make-core"
+package org.make.core
 
-libraryDependencies ++= Seq(
-  Dependencies.akkaPersistenceQuery,
-  Dependencies.akkaHttpSwagger, // TODO: import only swagger not akka-http
-  Dependencies.apacheMath,
-  Dependencies.elastic4s,
-  Dependencies.elastic4sHttp,
-  Dependencies.enumeratum,
-  Dependencies.enumeratumCirce,
-  Dependencies.enumeratumScalacheck,
-  Dependencies.avro4s,
-  Dependencies.circeGeneric,
-  Dependencies.circeParser,
-  Dependencies.refinedCirce,
-  Dependencies.refinedScala,
-  Dependencies.stamina,
-  Dependencies.slugify,
-  Dependencies.jsoup,
-  Dependencies.refinedScalaCheck,
-  Dependencies.scalaCheck,
-  Dependencies.jsoniter,
-  Dependencies.jsoniterMacros
-)
+import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
+import java.time.temporal.ChronoField._
+
+object DateFormatters {
+
+  val default: DateTimeFormatter =
+    new DateTimeFormatterBuilder()
+      .append(DateTimeFormatter.ISO_LOCAL_DATE)
+      .appendLiteral("T")
+      .appendValue(HOUR_OF_DAY, 2)
+      .appendLiteral(':')
+      .appendValue(MINUTE_OF_HOUR, 2)
+      .optionalStart
+      .appendLiteral(':')
+      .appendValue(SECOND_OF_MINUTE, 2)
+      .optionalStart
+      .appendFraction(NANO_OF_SECOND, 3, 3, true)
+      .appendOffsetId
+      .toFormatter
+}

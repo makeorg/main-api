@@ -31,7 +31,6 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
-import org.make.core.CirceFormatters
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable.Seq
@@ -39,7 +38,6 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class SortAlgorithmIT
     extends ItMakeTest
-    with CirceFormatters
     with SearchEngineIT[ProposalId, IndexedProposal]
     with DefaultProposalSearchEngineComponent
     with ElasticsearchConfigurationComponent

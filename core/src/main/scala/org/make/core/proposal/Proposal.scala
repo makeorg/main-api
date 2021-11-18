@@ -33,9 +33,12 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{LabelId, ThemeId}
 import org.make.core.tag.{TagId, TagType, TagTypeId}
 import org.make.core.user.UserId
+import org.make.core.jsoniter.JsoniterEnum
 import org.make.core.{MakeSerializable, RequestContext, SprayJsonFormatters, StringValue, Timestamped}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
+import com.github.plokhotnyuk.jsoniter_scala.macros._
+import com.github.plokhotnyuk.jsoniter_scala.core._
 
 import scala.annotation.meta.field
 
@@ -84,6 +87,9 @@ object ProposalId {
   implicit lazy val proposalIdDecoder: Decoder[ProposalId] =
     Decoder.decodeString.map(ProposalId(_))
 
+  implicit val proposalIdCodec: JsonValueCodec[ProposalId] =
+    StringValue.makeCodec(ProposalId.apply)
+
   implicit val proposalIdFormatter: JsonFormat[ProposalId] = SprayJsonFormatters.forStringValue(ProposalId.apply)
 }
 
@@ -125,7 +131,10 @@ object ProposalActionType extends StringEnum[ProposalActionType] {
 
 sealed abstract class QualificationKey(val value: String) extends StringEnumEntry with Key
 
-object QualificationKey extends StringEnum[QualificationKey] with StringCirceEnum[QualificationKey] {
+object QualificationKey
+    extends StringEnum[QualificationKey]
+    with StringCirceEnum[QualificationKey]
+    with JsoniterEnum[QualificationKey] {
 
   case object LikeIt extends QualificationKey("likeIt")
   case object Doable extends QualificationKey("doable")
@@ -138,7 +147,6 @@ object QualificationKey extends StringEnum[QualificationKey] with StringCirceEnu
   case object DoNotCare extends QualificationKey("doNotCare")
 
   override def values: IndexedSeq[QualificationKey] = findValues
-
 }
 
 trait BaseQualification extends BaseVoteOrQualification[QualificationKey]
@@ -208,19 +216,21 @@ sealed trait Key
 
 sealed abstract class VoteKey(val value: String) extends StringEnumEntry with Key with Product with Serializable
 
-object VoteKey extends StringEnum[VoteKey] with StringCirceEnum[VoteKey] {
+object VoteKey extends StringEnum[VoteKey] with StringCirceEnum[VoteKey] with JsoniterEnum[VoteKey] {
 
   case object Agree extends VoteKey("agree")
   case object Disagree extends VoteKey("disagree")
   case object Neutral extends VoteKey("neutral")
 
   override def values: IndexedSeq[VoteKey] = findValues
-
 }
 
 sealed abstract class ProposalStatus(val value: String) extends StringEnumEntry with Product with Serializable
 
-object ProposalStatus extends StringEnum[ProposalStatus] with StringCirceEnum[ProposalStatus] {
+object ProposalStatus
+    extends StringEnum[ProposalStatus]
+    with StringCirceEnum[ProposalStatus]
+    with JsoniterEnum[ProposalStatus] {
 
   @AvroSortPriority(5)
   case object Pending extends ProposalStatus("Pending")
@@ -238,7 +248,6 @@ object ProposalStatus extends StringEnum[ProposalStatus] with StringCirceEnum[Pr
   case object Archived extends ProposalStatus("Archived")
 
   override def values: IndexedSeq[ProposalStatus] = findValues
-
 }
 
 final case class ProposalKeyword(key: ProposalKeywordKey, label: String)
@@ -248,6 +257,9 @@ object ProposalKeyword {
 
   implicit val formatter: RootJsonFormat[ProposalKeyword] =
     DefaultJsonProtocol.jsonFormat2(ProposalKeyword.apply)
+
+  implicit val proposalKeywordCodec: JsonValueCodec[ProposalKeyword] =
+    JsonCodecMaker.makeWithRequiredCollectionFields
 }
 
 final case class ProposalKeywordKey(value: String) extends StringValue
@@ -259,4 +271,6 @@ object ProposalKeywordKey {
 
   implicit val formatter: JsonFormat[ProposalKeywordKey] = SprayJsonFormatters.forStringValue(ProposalKeywordKey.apply)
 
+  implicit val proposalKeywordKeycodec: JsonValueCodec[ProposalKeywordKey] =
+    StringValue.makeCodec(ProposalKeywordKey.apply)
 }

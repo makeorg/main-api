@@ -655,7 +655,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.zone match {
         case Some(ZoneSearchFilter(zone)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.zone.field, zone.entryName.toLowerCase()))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.zone.field, zone.value))
         case _ => None
       }
     }
@@ -665,7 +665,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.segmentZone match {
         case Some(ZoneSearchFilter(zone)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.segmentZone.field, zone.entryName.toLowerCase()))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.segmentZone.field, zone.value))
         case _ => None
       }
     }

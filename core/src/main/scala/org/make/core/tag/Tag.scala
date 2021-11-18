@@ -28,6 +28,7 @@ import org.make.core.question.QuestionId
 import org.make.core.technical.enumeratum.FallbackingCirceEnum.FallbackingStringCirceEnum
 import org.make.core.{MakeSerializable, SprayJsonFormatters, StringValue}
 import spray.json.JsonFormat
+import com.github.plokhotnyuk.jsoniter_scala.core._
 
 import scala.annotation.meta.field
 
@@ -41,6 +42,8 @@ object TagId {
 
   implicit val tagIdFormatter: JsonFormat[TagId] = SprayJsonFormatters.forStringValue(TagId.apply)
 
+  implicit val tagIdCodec: JsonValueCodec[TagId] =
+    StringValue.makeCodec(TagId.apply)
 }
 
 sealed abstract class TagDisplay(val value: String) extends StringEnumEntry with Product with Serializable

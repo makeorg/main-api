@@ -17,31 +17,29 @@
  *
  */
 
-package org.make.core
+package org.make.core.jsoniter
 
-import cats.instances.string._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import enumeratum.values.{StringEnum, StringEnumEntry}
 
-trait StringValue {
-  def value: String
-}
+import scala.collection.mutable.HashMap
 
-object StringValue {
+@SuppressWarnings(Array("org.wartremover.warts.LeakingSealed"))
+trait JsoniterEnum[T <: StringEnumEntry] extends StringEnum[T] {
 
-  implicit def catsOrder[T <: StringValue]: cats.Order[T] = cats.Order.by(_.value)
-  implicit def ordering[T <: StringValue]: Ordering[T] = Ordering.by(_.value)
+  @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
+  private val kvs: HashMap[String, T] = this.values.map(v => (v.value, v)).to(HashMap)
 
-  @SuppressWarnings(Array("org.wartremover.warts.Null", "org.wartremover.warts.Throw"))
-  def makeCodec[T <: StringValue](create: String => T): JsonValueCodec[T] =
+  @SuppressWarnings(Array("org.wartremover.warts.Null", "org.wartremover.warts.AsInstanceOf"))
+  implicit val codec: JsonValueCodec[T] =
     new JsonValueCodec[T] {
 
       def decodeValue(in: JsonReader, default: T): T =
-        create(in.readString(null))
+        kvs(in.readString(null))
 
-      def encodeValue(stringValue: T, out: JsonWriter): Unit =
-        out.writeVal(stringValue.value)
+      def encodeValue(wrapper: T, out: JsonWriter): Unit =
+        out.writeVal(wrapper.value)
 
-      @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
       def nullValue: T = null.asInstanceOf[T]
     }
 }
