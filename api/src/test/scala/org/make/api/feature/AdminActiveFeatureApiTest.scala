@@ -22,8 +22,10 @@ package org.make.api.feature
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
-import org.make.api.MakeApiTestBase
-import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId}
+import org.make.api.{MakeApiTestBase, TestUtils}
+import org.make.api.question.{QuestionService, QuestionServiceComponent}
+import org.make.core.ValidationError
+import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId, FeatureSlug, Feature => Feat}
 import org.make.core.question.QuestionId
 import org.make.core.technical.Pagination.Start
 
@@ -32,15 +34,47 @@ import scala.concurrent.Future
 class AdminActiveFeatureApiTest
     extends MakeApiTestBase
     with DefaultAdminActiveFeatureApiComponent
-    with ActiveFeatureServiceComponent {
+    with ActiveFeatureServiceComponent
+    with FeatureServiceComponent
+    with QuestionServiceComponent {
 
   override val activeFeatureService: ActiveFeatureService = mock[ActiveFeatureService]
+  override val questionService: QuestionService = mock[QuestionService]
+  override val featureService: FeatureService = mock[FeatureService]
 
   val routes: Route = sealRoute(adminActiveFeatureApi.routes)
 
   Feature("create an activeFeature") {
-    val validActiveFeature =
-      ActiveFeature(ActiveFeatureId("valid-active-feature"), FeatureId("feature"), Some(QuestionId("question")))
+    val f1 = Feat(FeatureId("feature-create"), "name", FeatureSlug("slug"))
+    val q1 = TestUtils.question(QuestionId("question-create"))
+    val validActiveFeature = ActiveFeature(ActiveFeatureId("valid-active-feature"), f1.featureId, Some(q1.questionId))
+
+    when(featureService.getFeature(eqTo(f1.featureId))).thenReturn(Future.successful(Some(f1)))
+    when(featureService.getFeature(eqTo(FeatureId("fake")))).thenReturn(Future.successful(None))
+    when(questionService.getQuestion(q1.questionId)).thenReturn(Future.successful(Some(q1)))
+    when(questionService.getQuestion(QuestionId("fake"))).thenReturn(Future.successful(None))
+    when(
+      activeFeatureService
+        .find(
+          eqTo(Start.zero),
+          eqTo(None),
+          eqTo(None),
+          eqTo(None),
+          eqTo(Some(Seq(q1.questionId))),
+          eqTo(Some(Seq(f1.featureId)))
+        )
+    ).thenReturn(Future.successful(Seq.empty))
+    when(
+      activeFeatureService
+        .find(
+          eqTo(Start.zero),
+          eqTo(None),
+          eqTo(None),
+          eqTo(None),
+          eqTo(Some(Seq(QuestionId("fake")))),
+          eqTo(Some(Seq(f1.featureId)))
+        )
+    ).thenReturn(Future.successful(Seq.empty))
 
     when(
       activeFeatureService
@@ -49,7 +83,10 @@ class AdminActiveFeatureApiTest
 
     Scenario("unauthorize unauthenticated") {
       Post("/admin/active-features").withEntity(
-        HttpEntity(ContentTypes.`application/json`, """{"featureId": "feature", "maybeQuestionId": "question"}""")
+        HttpEntity(
+          ContentTypes.`application/json`,
+          """{"featureId": "feature-create", "maybeQuestionId": "question-create"}"""
+        )
       ) ~>
         routes ~> check {
         status should be(StatusCodes.Unauthorized)
@@ -59,7 +96,10 @@ class AdminActiveFeatureApiTest
     Scenario("forbid authenticated citizen") {
       Post("/admin/active-features")
         .withEntity(
-          HttpEntity(ContentTypes.`application/json`, """{"featureId": "feature", "maybeQuestionId": "question"}""")
+          HttpEntity(
+            ContentTypes.`application/json`,
+            """{"featureId": "feature-create", "maybeQuestionId": "question-create"}"""
+          )
         )
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
@@ -69,7 +109,10 @@ class AdminActiveFeatureApiTest
     Scenario("forbid authenticated moderator") {
       Post("/admin/active-features")
         .withEntity(
-          HttpEntity(ContentTypes.`application/json`, """{"featureId": "feature", "maybeQuestionId": "question"}""")
+          HttpEntity(
+            ContentTypes.`application/json`,
+            """{"featureId": "feature-create", "maybeQuestionId": "question-create"}"""
+          )
         )
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
@@ -80,10 +123,85 @@ class AdminActiveFeatureApiTest
       for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
         Post("/admin/active-features")
           .withEntity(
-            HttpEntity(ContentTypes.`application/json`, """{"featureId": "feature", "maybeQuestionId": "question"}""")
+            HttpEntity(
+              ContentTypes.`application/json`,
+              """{"featureId": "feature-create", "maybeQuestionId": "question-create"}"""
+            )
           )
           .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
           status should be(StatusCodes.Created)
+        }
+      }
+    }
+
+    Scenario("feature does not exist") {
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/active-features")
+          .withEntity(
+            HttpEntity(
+              ContentTypes.`application/json`,
+              """{"featureId": "fake", "maybeQuestionId": "question-create"}"""
+            )
+          )
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size shouldBe 1
+          errors.map(_.field) should contain("featureId")
+        }
+      }
+    }
+
+    Scenario("question does not exist") {
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/active-features")
+          .withEntity(
+            HttpEntity(
+              ContentTypes.`application/json`,
+              """{"featureId": "feature-create", "maybeQuestionId": "fake"}"""
+            )
+          )
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size shouldBe 1
+          errors.map(_.field) should contain("questionId")
+        }
+      }
+    }
+
+    Scenario("active feature already exists") {
+      when(featureService.getFeature(eqTo(FeatureId("feature-pair")))).thenReturn(Future.successful(Some(f1)))
+      when(questionService.getQuestion(QuestionId("question-pair"))).thenReturn(Future.successful(Some(q1)))
+      when(
+        activeFeatureService
+          .find(
+            eqTo(Start.zero),
+            eqTo(None),
+            eqTo(None),
+            eqTo(None),
+            eqTo(Some(Seq(QuestionId("question-pair")))),
+            eqTo(Some(Seq(FeatureId("feature-pair"))))
+          )
+      ).thenReturn(
+        Future.successful(
+          Seq(ActiveFeature(ActiveFeatureId("active-1"), FeatureId("feature-pair"), Some(QuestionId("question-pair"))))
+        )
+      )
+
+      for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
+        Post("/admin/active-features")
+          .withEntity(
+            HttpEntity(
+              ContentTypes.`application/json`,
+              """{"featureId": "feature-pair", "maybeQuestionId": "question-pair"}"""
+            )
+          )
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+          val errors = entityAs[Seq[ValidationError]]
+          errors.size shouldBe 1
+          errors.map(_.key) should contain("non_empty")
         }
       }
     }

@@ -37,6 +37,13 @@ class PersistentActiveFeatureServiceIT
     with DefaultPersistentQuestionServiceComponent
     with DefaultIdGeneratorComponent {
 
+  val postalCode: ActiveFeature = newActiveFeature(FeatureId("postalCode"), None)
+  val noVotes: ActiveFeature = newActiveFeature(FeatureId("noVotes"), Some(QuestionId("question-1")))
+  val fieldHelp: ActiveFeature = newActiveFeature(FeatureId("fieldHelp"), Some(QuestionId("question-1")))
+  val stream: ActiveFeature = newActiveFeature(FeatureId("stream"), Some(QuestionId("question-1")))
+  val rust: ActiveFeature = newActiveFeature(FeatureId("rust"), Some(QuestionId("question-2")))
+  val deleted: ActiveFeature = newActiveFeature(FeatureId("feature-delete"), None)
+
   override def beforeAll(): Unit = {
     super.beforeAll()
     val futurePersistQuestions: Future[Unit] = for {
@@ -45,23 +52,39 @@ class PersistentActiveFeatureServiceIT
     } yield {}
     val futurePersistFeatures = for {
       _ <- persistentFeatureService.persist(
-        Feat(featureId = FeatureId("feature"), name = "Feature", slug = FeatureSlug("feature"))
+        Feat(featureId = FeatureId("postalCode"), name = "Postal code", slug = FeatureSlug("postal-code"))
       )
       _ <- persistentFeatureService.persist(
-        Feat(featureId = FeatureId("feature2"), name = "Feature2", slug = FeatureSlug("feature2"))
+        Feat(featureId = FeatureId("noVotes"), name = "No votes", slug = FeatureSlug("no-votes"))
       )
       _ <- persistentFeatureService.persist(
-        Feat(featureId = FeatureId("feature-search"), name = "Feature search", slug = FeatureSlug("feature-search"))
+        Feat(featureId = FeatureId("fieldHelp"), name = "Field help", slug = FeatureSlug("field-help"))
       )
       _ <- persistentFeatureService.persist(
-        Feat(featureId = FeatureId("feature-search2"), name = "Feature search 2", slug = FeatureSlug("feature-search2"))
+        Feat(featureId = FeatureId("stream"), name = "Stream", slug = FeatureSlug("stream"))
+      )
+      _ <- persistentFeatureService.persist(
+        Feat(featureId = FeatureId("rust"), name = "Rust", slug = FeatureSlug("rust"))
+      )
+      _ <- persistentFeatureService.persist(
+        Feat(featureId = FeatureId("feature-delete"), name = "To delete", slug = FeatureSlug("delete"))
       )
     } yield {}
-
     whenReady(futurePersistQuestions, Timeout(10.seconds)) { _ =>
       ()
     }
     whenReady(futurePersistFeatures, Timeout(10.seconds)) { _ =>
+      ()
+    }
+
+    val futurePersistActiveFeatures = for {
+      _ <- persistentActiveFeatureService.persist(noVotes)
+      _ <- persistentActiveFeatureService.persist(fieldHelp)
+      _ <- persistentActiveFeatureService.persist(stream)
+      _ <- persistentActiveFeatureService.persist(rust)
+    } yield {}
+
+    whenReady(futurePersistActiveFeatures, Timeout(10.seconds)) { _ =>
       ()
     }
   }
@@ -72,15 +95,6 @@ class PersistentActiveFeatureServiceIT
       featureId = featureId,
       maybeQuestionId = maybeQuestionId
     )
-
-  val postalCode: ActiveFeature = newActiveFeature(FeatureId("feature"), None)
-  val noVotes: ActiveFeature = newActiveFeature(FeatureId("feature"), None)
-  val fieldHelp: ActiveFeature = newActiveFeature(FeatureId("feature"), None)
-  val stream: ActiveFeature = newActiveFeature(FeatureId("feature"), None)
-  val rust: ActiveFeature = newActiveFeature(FeatureId("feature"), None)
-  val feature: ActiveFeature = newActiveFeature(FeatureId("feature"), None)
-  val deleted: ActiveFeature = newActiveFeature(FeatureId("feature"), None)
-  val question: ActiveFeature = newActiveFeature(FeatureId("feature"), None)
 
   Feature("One active feature can be persisted and retrieved") {
     Scenario("Get activeFeature by activeFeatureId") {
@@ -105,16 +119,8 @@ class PersistentActiveFeatureServiceIT
 
   Feature("A list of features can be retrieved") {
     Scenario("Get a list of all enabled features") {
-      val futurePersistedFeatureList: Future[Seq[ActiveFeature]] = for {
-        _                <- persistentActiveFeatureService.persist(noVotes)
-        featureLannister <- persistentActiveFeatureService.persist(fieldHelp)
-        featureBolton    <- persistentActiveFeatureService.persist(stream)
-        featureGreyjoy   <- persistentActiveFeatureService.persist(rust)
-      } yield Seq(featureLannister, featureBolton, featureGreyjoy)
-
-      val futureFeaturesLists: Future[(Seq[ActiveFeature], Seq[ActiveFeature])] = for {
-        persistedFeaturesList <- futurePersistedFeatureList
-        foundFeatures <- persistentActiveFeatureService.find(
+      val futureFeaturesLists: Future[Seq[ActiveFeature]] =
+        persistentActiveFeatureService.find(
           start = Start.zero,
           end = None,
           sort = None,
@@ -122,32 +128,18 @@ class PersistentActiveFeatureServiceIT
           maybeQuestionIds = None,
           featureIds = None
         )
-      } yield foundFeatures -> persistedFeaturesList
 
-      whenReady(futureFeaturesLists, Timeout(3.seconds)) {
-        case (expectedActiveFeatures, allFeaturesPersisted) =>
-          allFeaturesPersisted.foreach { activeFeature =>
-            expectedActiveFeatures should contain(activeFeature)
-          }
+      whenReady(futureFeaturesLists, Timeout(3.seconds)) { expectedActiveFeatures =>
+        Seq(fieldHelp, stream, rust).foreach { activeFeature =>
+          expectedActiveFeatures should contain(activeFeature)
+        }
       }
     }
 
     Scenario("Get a list of features by questionIds") {
 
-      val futureFeaturesLists: Future[Seq[ActiveFeature]] = for {
-        _ <- persistentActiveFeatureService.persist(
-          newActiveFeature(FeatureId("feature"), Some(QuestionId("question-1")))
-        )
-        _ <- persistentActiveFeatureService.persist(
-          newActiveFeature(FeatureId("feature"), Some(QuestionId("question-1")))
-        )
-        _ <- persistentActiveFeatureService.persist(
-          newActiveFeature(FeatureId("feature"), Some(QuestionId("question-1")))
-        )
-        _ <- persistentActiveFeatureService.persist(
-          newActiveFeature(FeatureId("feature"), Some(QuestionId("question-2")))
-        )
-        listFeatures <- persistentActiveFeatureService.find(
+      val futureFeaturesLists: Future[Seq[ActiveFeature]] =
+        persistentActiveFeatureService.find(
           start = Start.zero,
           end = None,
           sort = None,
@@ -155,7 +147,6 @@ class PersistentActiveFeatureServiceIT
           maybeQuestionIds = Some(Seq(QuestionId("question-1"), QuestionId("question-2"))),
           featureIds = None
         )
-      } yield listFeatures
 
       whenReady(futureFeaturesLists, Timeout(3.seconds)) { found =>
         found.size should be(4)
@@ -165,22 +156,14 @@ class PersistentActiveFeatureServiceIT
     Scenario("Get a list of features by featureIds") {
 
       val futureFeaturesLists: Future[Seq[ActiveFeature]] = for {
-        _ <- persistentActiveFeatureService.persist(
-          newActiveFeature(FeatureId("feature-search"), Some(QuestionId("question-1")))
-        )
-        _ <- persistentActiveFeatureService.persist(
-          newActiveFeature(FeatureId("feature-search2"), Some(QuestionId("question-1")))
-        )
-        _ <- persistentActiveFeatureService.persist(
-          newActiveFeature(FeatureId("feature-search2"), Some(QuestionId("question-2")))
-        )
+        _ <- persistentActiveFeatureService.persist(newActiveFeature(FeatureId("rust"), Some(QuestionId("question-1"))))
         listFeatures <- persistentActiveFeatureService.find(
           start = Start.zero,
           end = None,
           sort = None,
           order = None,
           maybeQuestionIds = None,
-          featureIds = Some(Seq(FeatureId("feature-search"), FeatureId("feature-search2")))
+          featureIds = Some(Seq(FeatureId("stream"), FeatureId("rust")))
         )
       } yield listFeatures
 
