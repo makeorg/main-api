@@ -80,6 +80,7 @@ trait AdminProposalApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
+      new ApiImplicitParam(name = "id", paramType = "query", dataType = "string", allowMultiple = true),
       new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string", allowMultiple = true),
       new ApiImplicitParam(
         name = "status",
@@ -336,6 +337,7 @@ trait DefaultAdminProposalApiComponent
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireAdminRole(userAuth.user) {
               parameters(
+                "id".csv[ProposalId],
                 "questionId".csv[QuestionId],
                 "content".?,
                 "status".csv[ProposalStatus],
@@ -348,6 +350,7 @@ trait DefaultAdminProposalApiComponent
                 "_order".as[Order].?
               ) {
                 (
+                  proposalIds: Option[Seq[ProposalId]],
                   questionIds: Option[Seq[QuestionId]],
                   content: Option[String],
                   status: Option[Seq[ProposalStatus]],
@@ -362,6 +365,7 @@ trait DefaultAdminProposalApiComponent
                   Validation.validate(sort.map(Validation.validateSort("_sort")).toList: _*)
 
                   val exhaustiveSearchRequest: ExhaustiveSearchRequest = ExhaustiveSearchRequest(
+                    proposalIds = proposalIds,
                     initialProposal = initialProposal,
                     tagsIds = tagIds,
                     questionIds = questionIds,
