@@ -81,27 +81,6 @@ trait ModerationProposalApi extends Directives {
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationProposalResponse]))
   )
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
-  @Path(value = "/legacy/{proposalId}")
-  def legacyGetModerationProposal: Route
-
-  @ApiOperation(
-    value = "get-moderation-proposal",
-    httpMethod = "GET",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationProposalResponse]))
-  )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
   @Path(value = "/{proposalId}")
   def getModerationProposal: Route
 
@@ -554,7 +533,6 @@ trait ModerationProposalApi extends Directives {
       lockMultiple ~
       changeProposalsIdea ~
       getModerationProposal ~
-      legacyGetModerationProposal ~
       nextAuthorToModerate ~
       nextProposalToModerate ~
       getTagsForProposal ~
@@ -590,9 +568,9 @@ trait DefaultModerationProposalApiComponent
 
     val moderationProposalId: PathMatcher1[ProposalId] = Segment.map(id => ProposalId(id))
 
-    def routeGetModerationProposal(routePath: PathMatcher[Tuple1[ProposalId]]): Route = {
+    override def getModerationProposal: Route = {
       get {
-        path(routePath) { proposalId =>
+        path("moderation" / "proposals" / moderationProposalId) { proposalId =>
           makeOperation("GetModerationProposal") { _ =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireModerationRole(auth.user) {

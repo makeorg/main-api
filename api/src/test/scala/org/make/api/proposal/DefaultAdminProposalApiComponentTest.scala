@@ -602,11 +602,11 @@ class DefaultAdminProposalApiComponentTest
   val deleteTag = BulkDeleteTagProposal(Seq(proposalIdBulk), tagId1).asJson
 
   for ((action, verb, entity) <- Seq(
-    ("accept", Post, acceptAll),
-    ("refuse-initials-proposals", Post, refuseAll),
-    ("tag", Post, tagAll),
-    ("tag", Delete, deleteTag)
-  )) {
+         ("accept", Post, acceptAll),
+         ("refuse-initials-proposals", Post, refuseAll),
+         ("tag", Post, tagAll),
+         ("tag", Delete, deleteTag)
+       )) {
     Feature(s"bulk ${verb.method.value} $action") {
       Scenario("unauthorized user") {
         verb(s"/admin/proposals/$action") ~> routes ~> check {

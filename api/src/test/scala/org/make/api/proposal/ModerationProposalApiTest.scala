@@ -626,34 +626,6 @@ class ModerationProposalApiTest
     Scenario("get validated proposal gives history with moderator") {}
   }
 
-  // Todo: implement this test suite. Test the behaviour of the service.
-  Feature("legacy get proposal for moderation") {
-    Scenario("moderator get proposal by id") {
-      Get("/moderation/proposals/legacy/sim-123")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        entityAs[ModerationProposalResponse]
-      }
-    }
-
-    Scenario("moderator get proposal by id without right") {
-      Get("/moderation/proposals/legacy/sim-123")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenNoRightModerator))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
-      }
-    }
-
-    Scenario("moderator get proposal as admin") {
-      Get("/moderation/proposals/legacy/sim-123")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenDaenerysAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-      }
-    }
-
-    Scenario("get new proposal without history") {}
-    Scenario("get validated proposal gives history with moderator") {}
-  }
-
   Feature("lock proposal") {
     Scenario("moderator can lock an unlocked proposal") {
       Post("/moderation/proposals/123456/lock")
