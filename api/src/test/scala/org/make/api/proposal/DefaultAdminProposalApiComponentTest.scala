@@ -602,11 +602,11 @@ class DefaultAdminProposalApiComponentTest
   val deleteTag = BulkDeleteTagProposal(Seq(proposalIdBulk), tagId1).asJson
 
   for ((action, verb, entity) <- Seq(
-         ("accept", Post, acceptAll),
-         ("refuse-initials-proposals", Post, refuseAll),
-         ("tag", Post, tagAll),
-         ("tag", Delete, deleteTag)
-       )) {
+    ("accept", Post, acceptAll),
+    ("refuse-initials-proposals", Post, refuseAll),
+    ("tag", Post, tagAll),
+    ("tag", Delete, deleteTag)
+  )) {
     Feature(s"bulk ${verb.method.value} $action") {
       Scenario("unauthorized user") {
         verb(s"/admin/proposals/$action") ~> routes ~> check {
@@ -675,35 +675,6 @@ class DefaultAdminProposalApiComponentTest
           status shouldBe StatusCodes.NotFound
         }
       }
-    }
-  }
-
-  Feature("bulk tag fails if a tag doesn't exist") {
-    Scenario("Add") {
-      val entity = BulkTagProposal(Seq(proposalIdBulk), Seq(tagId1, tagIdFake))
-      when(tagService.findByTagIds(eqTo(Seq(tagId1, tagIdFake)))).thenReturn(Future.successful(Seq(tag(tagId1))))
-      Post(s"/admin/proposals/tag")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, entity.asJson.toString()) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size shouldBe 1
-        errors.head.field shouldBe "tagId"
-      }
-    }
-
-    Scenario("Delete") {
-      val entity = BulkDeleteTagProposal(Seq(proposalIdBulk), tagIdFake).asJson
-      when(tagService.getTag(eqTo(tagIdFake))).thenReturn(Future.successful(None))
-      Delete(s"/admin/proposals/tag")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, entity.asJson.toString()) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size shouldBe 1
-        errors.head.field shouldBe "tagId"
-      }
-
     }
   }
 

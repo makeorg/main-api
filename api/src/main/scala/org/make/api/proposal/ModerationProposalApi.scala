@@ -19,51 +19,43 @@
 
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import grizzled.slf4j.Logging
+import io.circe.Codec
+import io.circe.generic.semiauto.deriveCodec
 import io.swagger.annotations._
-
-import javax.ws.rs.Path
 import org.make.api.idea.IdeaServiceComponent
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.question.QuestionServiceComponent
-import org.make.api.technical.{ActorSystemComponent, MakeAuthenticationDirectives, ReadJournalComponent}
+import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
+import org.make.api.technical.{
+  `X-Total-Count`,
+  ActorSystemComponent,
+  MakeAuthenticationDirectives,
+  ReadJournalComponent
+}
 import org.make.api.user.UserServiceComponent
-import org.make.core.Order
+import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
-import org.make.core.proposal.indexed.ProposalsSearchResult
-import org.make.core.proposal.{
-  ProposalId,
-  ProposalKeywordKey,
-  ProposalSearchFilter,
-  ProposalStatus,
-  SearchFilters,
-  SearchQuery,
-  StatusSearchFilter
-}
+import org.make.core.proposal._
+import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
+import org.make.core.technical.Pagination.{End, Start}
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.{UserId, UserType}
-import org.make.core.{
-  BusinessConfig,
-  DateHelper,
-  HttpCodes,
-  ParameterExtractors,
-  Validation,
-  ValidationError,
-  ValidationFailedError
-}
 import scalaoauth2.provider.AuthInfo
 
+import java.time.ZonedDateTime
+import javax.ws.rs.Path
+import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -174,7 +166,6 @@ trait ModerationProposalApi extends Directives {
   @Path(value = "/legacy")
   def legacySearchAllProposals: Route
 
-  //noinspection ScalaStyle
   @ApiOperation(
     value = "moderation-search-proposals",
     httpMethod = "GET",
@@ -190,22 +181,12 @@ trait ModerationProposalApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsSearchResult]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[ProposalListResponse]]))
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "proposalIds", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "createdBefore", paramType = "query", dataType = "date"),
-      new ApiImplicitParam(name = "initialProposal", paramType = "query", dataType = "boolean"),
-      new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "ideaId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "trending", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "content", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "source", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "location", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "question", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "id", paramType = "query", dataType = "string", allowMultiple = true),
+      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string", allowMultiple = true),
       new ApiImplicitParam(
         name = "status",
         paramType = "query",
@@ -213,26 +194,22 @@ trait ModerationProposalApi extends Directives {
         allowableValues = "Pending,Accepted,Refused,Postponed,Archived",
         allowMultiple = true
       ),
-      new ApiImplicitParam(name = "minVotesCount", paramType = "query", dataType = "integer"),
-      new ApiImplicitParam(name = "toEnrich", paramType = "query", dataType = "boolean"),
-      new ApiImplicitParam(name = "minScore", paramType = "query", dataType = "float"),
-      new ApiImplicitParam(name = "language", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
-      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer"),
-      new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "order", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "content", paramType = "query", dataType = "string"),
       new ApiImplicitParam(
-        name = "userTypes",
+        name = "userType",
         paramType = "query",
         dataType = "string",
         allowableValues = "USER,ORGANISATION,PERSONALITY",
         allowMultiple = true
       ),
-      new ApiImplicitParam(name = "keywords", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "initialProposal", paramType = "query", dataType = "boolean"),
+      new ApiImplicitParam(name = "tagId", paramType = "query", dataType = "string", allowMultiple = true),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string")
     )
   )
-  @Path(value = "/")
   def searchAllProposals: Route
 
   @ApiOperation(
@@ -461,7 +438,7 @@ trait ModerationProposalApi extends Directives {
   def nextProposalToModerate: Route
 
   @ApiOperation(
-    value = "get-predicted-tags-for-proposal",
+    value = "get-tags-for-proposal",
     httpMethod = "GET",
     code = HttpCodes.OK,
     authorizations = Array(
@@ -478,7 +455,93 @@ trait ModerationProposalApi extends Directives {
   @Path(value = "/{proposalId}/tags")
   def getTagsForProposal: Route
 
-  def getPredictedTagsForProposal: Route
+  @ApiOperation(
+    value = "bulk-accept-proposal",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.BulkAcceptProposal")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[BulkActionResponse]))
+  )
+  @Path(value = "/accept")
+  def bulkAcceptProposal: Route
+
+  @ApiOperation(
+    value = "bulk-refuse-proposal",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.BulkRefuseProposal")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[BulkActionResponse]))
+  )
+  @Path(value = "/refuse-initials-proposals")
+  def bulkRefuseInitialsProposals: Route
+
+  @ApiOperation(
+    value = "bulk-tag-proposal",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.BulkTagProposal")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[BulkActionResponse]))
+  )
+  @Path(value = "/tag")
+  def bulkTagProposal: Route
+
+  @ApiOperation(
+    value = "bulk-delete-tag-proposal",
+    httpMethod = "DELETE",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.BulkDeleteTagProposal")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[BulkActionResponse]))
+  )
+  @Path(value = "/tag")
+  def bulkDeleteTagProposal: Route
 
   def routes: Route =
     searchAllProposals ~
@@ -495,7 +558,10 @@ trait ModerationProposalApi extends Directives {
       nextAuthorToModerate ~
       nextProposalToModerate ~
       getTagsForProposal ~
-      getPredictedTagsForProposal
+      bulkAcceptProposal ~
+      bulkTagProposal ~
+      bulkDeleteTagProposal ~
+      bulkRefuseInitialsProposals
 }
 
 trait ModerationProposalApiComponent {
@@ -515,7 +581,8 @@ trait DefaultModerationProposalApiComponent
     with OperationServiceComponent
     with ProposalCoordinatorServiceComponent
     with ReadJournalComponent
-    with ActorSystemComponent =>
+    with ActorSystemComponent
+    with TagServiceComponent =>
 
   override lazy val moderationProposalApi: DefaultModerationProposalApi = new DefaultModerationProposalApi
 
@@ -543,16 +610,9 @@ trait DefaultModerationProposalApiComponent
       }
     }
 
-    override def getModerationProposal: Route = {
-      routeGetModerationProposal("moderation" / "proposals" / moderationProposalId)
-    }
-
-    override def legacyGetModerationProposal: Route =
-      routeGetModerationProposal("moderation" / "proposals" / "legacy" / moderationProposalId)
-
-    def routeSearchAllProposals(routePath: PathMatcher[Unit]): Route = {
+    override def legacySearchAllProposals: Route = {
       get {
-        path(routePath) {
+        path("moderation" / "proposals" / "legacy") {
           makeOperation("SearchAll") { requestContext =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireModerationRole(userAuth.user) {
@@ -687,9 +747,81 @@ trait DefaultModerationProposalApiComponent
       }
     }
 
-    override def searchAllProposals: Route = routeSearchAllProposals("moderation" / "proposals")
+    override def searchAllProposals: Route = get {
+      path("moderation" / "proposals") {
+        makeOperation("ModerationSearchAll") { requestContext =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireModerationRole(userAuth.user) {
+              parameters(
+                "id".csv[ProposalId],
+                "questionId".csv[QuestionId],
+                "content".?,
+                "status".csv[ProposalStatus],
+                "userType".csv[UserType],
+                "initialProposal".as[Boolean].?,
+                "tagId".csv[TagId],
+                "_start".as[Start].?,
+                "_end".as[End].?,
+                "_sort".as[ProposalElasticsearchFieldName].?,
+                "_order".as[Order].?
+              ) {
+                (
+                  proposalIds: Option[Seq[ProposalId]],
+                  questionIds: Option[Seq[QuestionId]],
+                  content: Option[String],
+                  status: Option[Seq[ProposalStatus]],
+                  userTypes: Option[Seq[UserType]],
+                  initialProposal: Option[Boolean],
+                  tagIds: Option[Seq[TagId]],
+                  start: Option[Start],
+                  end: Option[End],
+                  sort: Option[ProposalElasticsearchFieldName],
+                  order: Option[Order]
+                ) =>
+                  Validation.validateOptional(sort.map(Validation.validateSort("_sort")))
 
-    override def legacySearchAllProposals: Route = routeSearchAllProposals("moderation" / "proposals" / "legacy")
+                  val resolvedQuestions: Option[Seq[QuestionId]] = {
+                    if (userAuth.user.roles.contains(RoleAdmin)) {
+                      questionIds
+                    } else {
+                      questionIds.map { questions =>
+                        questions.filter(id => userAuth.user.availableQuestions.contains(id))
+                      }.orElse(Some(userAuth.user.availableQuestions))
+                    }
+                  }
+
+                  val exhaustiveSearchRequest: ExhaustiveSearchRequest = ExhaustiveSearchRequest(
+                    proposalIds = proposalIds,
+                    initialProposal = initialProposal,
+                    tagsIds = tagIds,
+                    questionIds = resolvedQuestions,
+                    content = content,
+                    status = status,
+                    sort = sort.map(_.field),
+                    order = order,
+                    limit = end.map(_.value),
+                    skip = start.map(_.value),
+                    userTypes = userTypes
+                  )
+                  val query: SearchQuery = exhaustiveSearchRequest.toSearchQuery(requestContext)
+                  provideAsync(
+                    proposalService
+                      .search(userId = Some(userAuth.user.userId), query = query, requestContext = requestContext)
+                  ) { proposals =>
+                    complete(
+                      (
+                        StatusCodes.OK,
+                        List(`X-Total-Count`(proposals.total.toString)),
+                        proposals.results.map(ProposalListResponse.apply)
+                      )
+                    )
+                  }
+              }
+            }
+          }
+        }
+      }
+    }
 
     override def updateProposal: Route = put {
       path("moderation" / "proposals" / moderationProposalId) { proposalId =>
@@ -1072,15 +1204,99 @@ trait DefaultModerationProposalApiComponent
       }
     }
 
-    override def getPredictedTagsForProposal: Route = get {
-      path("moderation" / "proposals" / moderationProposalId / "predicted-tags") { moderationProposalId =>
-        makeOperation("GetPredictedTagsForProposal") { _ =>
-          makeOAuth2 { user =>
-            requireModerationRole(user.user) {
-              provideAsyncOrNotFound(proposalCoordinatorService.getProposal(moderationProposalId)) { proposal =>
-                requireRightsOnQuestion(user.user, proposal.questionId) {
-                  provideAsync(proposalService.getTagsForProposal(proposal)) { tagsForProposalResponse =>
-                    complete(tagsForProposalResponse)
+    override def bulkAcceptProposal: Route = post {
+      path("moderation" / "proposals" / "accept") {
+        makeOperation("BulkAcceptProposal") { requestContext =>
+          makeOAuth2 { userAuth =>
+            requireModerationRole(userAuth.user) {
+              decodeRequest {
+                entity(as[BulkAcceptProposal]) { request =>
+                  provideAsync(proposalService.acceptAll(request.proposalIds, userAuth.user.userId, requestContext)) {
+                    response =>
+                      complete(response)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def bulkRefuseInitialsProposals: Route = post {
+      path("moderation" / "proposals" / "refuse-initials-proposals") {
+        makeOperation("BulkRefuseInitialsProposals") { requestContext =>
+          makeOAuth2 { userAuth =>
+            requireModerationRole(userAuth.user) {
+              decodeRequest {
+                entity(as[BulkRefuseProposal]) { request =>
+                  provideAsync(
+                    proposalService
+                      .refuseAll(request.proposalIds, userAuth.user.userId, requestContext)
+                  ) { response =>
+                    complete(response)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def bulkTagProposal: Route = post {
+      path("moderation" / "proposals" / "tag") {
+        makeOperation("BulkTagProposal") { requestContext =>
+          makeOAuth2 { userAuth =>
+            requireModerationRole(userAuth.user) {
+              decodeRequest {
+                entity(as[BulkTagProposal]) { request =>
+                  provideAsync(tagService.findByTagIds(request.tagIds)) { foundTags =>
+                    Validation.validate(request.tagIds.diff(foundTags.map(_.tagId)).map { tagId =>
+                      Validation.validateField(
+                        field = "tagId",
+                        key = "invalid_value",
+                        condition = false,
+                        message = s"Tag $tagId does not exist."
+                      )
+                    }: _*)
+                    provideAsync(
+                      proposalService
+                        .addTagsToAll(request.proposalIds, request.tagIds, userAuth.user.userId, requestContext)
+                    ) { response =>
+                      complete(response)
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def bulkDeleteTagProposal: Route = delete {
+      path("moderation" / "proposals" / "tag") {
+        makeOperation("BulkDeleteTagProposal") { requestContext =>
+          makeOAuth2 { userAuth =>
+            requireModerationRole(userAuth.user) {
+              decodeRequest {
+                entity(as[BulkDeleteTagProposal]) { request =>
+                  provideAsync(tagService.getTag(request.tagId)) { maybeTag =>
+                    Validation.validate(
+                      Validation.validateField(
+                        field = "tagId",
+                        key = "invalid_value",
+                        condition = maybeTag.isDefined,
+                        message = s"Tag ${request.tagId} does not exist."
+                      )
+                    )
+                    provideAsync(
+                      proposalService
+                        .deleteTagFromAll(request.proposalIds, request.tagId, userAuth.user.userId, requestContext)
+                    ) { response =>
+                      complete(response)
+                    }
                   }
                 }
               }
@@ -1090,4 +1306,98 @@ trait DefaultModerationProposalApiComponent
       }
     }
   }
+}
+
+final case class ProposalListResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b") id: ProposalId,
+  author: ProposalListResponse.Author,
+  content: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "Pending") status: ProposalStatus,
+  tags: Seq[IndexedTag] = Seq.empty,
+  createdAt: ZonedDateTime,
+  agreementRate: Double,
+  context: ProposalListResponse.Context,
+  votes: Seq[ProposalListResponse.Vote],
+  votesCount: Int
+)
+
+object ProposalListResponse extends CirceFormatters {
+
+  def apply(proposal: IndexedProposal): ProposalListResponse =
+    ProposalListResponse(
+      id = proposal.id,
+      author = Author(proposal),
+      content = proposal.content,
+      status = proposal.status,
+      tags = proposal.tags,
+      createdAt = proposal.createdAt,
+      agreementRate = proposal.agreementRate,
+      context = Context(proposal.context),
+      votes = proposal.votes.map(Vote.apply),
+      votesCount = proposal.votesCount
+    )
+
+  final case class Author(
+    @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e") id: UserId,
+    @(ApiModelProperty @field)(dataType = "string", example = "USER") userType: UserType,
+    displayName: Option[String],
+    @(ApiModelProperty @field)(dataType = "integer", example = "42") age: Option[Int]
+  )
+
+  object Author {
+    def apply(proposal: IndexedProposal): Author =
+      Author(
+        id = proposal.userId,
+        userType = proposal.author.userType,
+        displayName = proposal.author.displayName,
+        age = proposal.author.age
+      )
+    implicit val codec: Codec[Author] = deriveCodec
+  }
+
+  final case class Context(
+    source: Option[String],
+    question: Option[String],
+    @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
+    @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language]
+  )
+
+  object Context {
+    def apply(context: Option[IndexedContext]): Context =
+      Context(
+        source = context.flatMap(_.source),
+        question = context.flatMap(_.question),
+        country = context.flatMap(_.country),
+        language = context.flatMap(_.language)
+      )
+    implicit val codec: Codec[Context] = deriveCodec
+  }
+
+  final case class Vote(
+    @(ApiModelProperty @field)(dataType = "string", example = "agree")
+    key: VoteKey,
+    count: Int,
+    qualifications: Seq[Qualification]
+  )
+
+  object Vote {
+    def apply(vote: IndexedVote): Vote =
+      Vote(key = vote.key, count = vote.count, qualifications = vote.qualifications.map(Qualification.apply))
+    implicit val codec: Codec[Vote] = deriveCodec
+  }
+
+  final case class Qualification(
+    @(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
+    key: QualificationKey,
+    count: Int
+  )
+
+  object Qualification {
+    def apply(qualification: IndexedQualification): Qualification =
+      Qualification(key = qualification.key, count = qualification.count)
+    implicit val codec: Codec[Qualification] = deriveCodec
+  }
+
+  implicit val codec: Codec[ProposalListResponse] = deriveCodec
+
 }
