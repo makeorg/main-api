@@ -29,6 +29,7 @@ import com.github.t3hnar.bcrypt._
 import eu.timepit.refined.auto._
 import grizzled.slf4j.Logging
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
+import org.make.api.partner.PersistentPartnerServiceComponent
 import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.question.AuthorRequest
@@ -88,7 +89,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     with UserHistoryCoordinatorServiceComponent
     with JobCoordinatorServiceComponent
     with MailJetConfigurationComponent
-    with DateHelperComponent =>
+    with DateHelperComponent
+    with PersistentPartnerServiceComponent =>
 
   override lazy val userService: UserService = new DefaultUserService
 
@@ -741,10 +743,36 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         publicProfile = false
       )
 
+      def unlinkUser(user: User): Future[Unit] = {
+        val unlinkPartners = user.userType match {
+          case UserType.UserTypeOrganisation =>
+            persistentPartnerService
+              .find(
+                start = Start.zero,
+                end = None,
+                sort = None,
+                order = None,
+                questionId = None,
+                organisationId = Some(user.userId),
+                partnerKind = None
+              )
+              .flatMap { partners =>
+                Future.traverse(partners) { partner =>
+                  persistentPartnerService.modify(partner.copy(organisationId = None))
+                }
+              }
+          case _ => Future.unit
+        }
+        for {
+          _ <- unlinkPartners
+          _ <- persistentUserService.removeAnonymizedUserFromFollowedUserTable(user.userId)
+        } yield {}
+      }
+
       val futureDelete: Future[Unit] = for {
         _ <- persistentUserToAnonymizeService.create(user.email)
         _ <- persistentUserService.updateUser(anonymizedUser)
-        _ <- persistentUserService.removeAnonymizedUserFromFollowedUserTable(user.userId)
+        _ <- unlinkUser(user)
         _ <- userHistoryCoordinatorService.delete(user.userId)
         _ <- updateProposalsSubmitByUser(user, requestContext)
       } yield {}

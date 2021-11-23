@@ -42,6 +42,7 @@ import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
 import org.make.core.keyword.Keyword
 import org.make.core.operation._
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
+import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.post.indexed.IndexedPost
 import org.make.core.post.{Post, PostId}
 import org.make.core.profile.Profile
@@ -699,6 +700,26 @@ trait TestUtils {
       createdAt = createdAt,
       updatedAt = updatedAt
     )
+
+  def partner(
+    partnerId: PartnerId,
+    questionId: QuestionId,
+    name: String = "partner-name",
+    logo: Option[String] = None,
+    link: Option[String] = None,
+    organisationId: Option[UserId] = None,
+    partnerKind: PartnerKind = PartnerKind.Founder,
+    weight: Float = 0f
+  ): Partner = Partner(
+    partnerId = partnerId,
+    name = name,
+    logo = logo,
+    link = link,
+    organisationId = organisationId,
+    partnerKind = partnerKind,
+    questionId = questionId,
+    weight = weight
+  )
 }
 
 object TestUtils extends TestUtils
