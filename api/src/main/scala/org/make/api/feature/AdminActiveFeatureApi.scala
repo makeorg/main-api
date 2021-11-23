@@ -24,6 +24,7 @@ import akka.http.scaladsl.server._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
+import org.make.api.question.QuestionServiceComponent
 
 import javax.ws.rs.Path
 import org.make.api.technical.MakeDirectives.MakeDirectivesDependencies
@@ -31,13 +32,13 @@ import org.make.api.technical.{`X-Total-Count`, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId}
 import org.make.core.question.QuestionId
-import org.make.core.{HttpCodes, Order, ParameterExtractors}
+import org.make.core.{HttpCodes, Order, ParameterExtractors, Validation, ValidationError}
 import scalaoauth2.provider.AuthInfo
 import org.make.core.technical.Pagination._
 
 import scala.annotation.meta.field
-
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 @Api(value = "Admin Active Features")
 @Path(value = "/admin/active-features")
@@ -162,7 +163,10 @@ trait DefaultAdminActiveFeatureApiComponent
     extends AdminActiveFeatureApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors {
-  this: MakeDirectivesDependencies with ActiveFeatureServiceComponent =>
+  this: MakeDirectivesDependencies
+    with ActiveFeatureServiceComponent
+    with FeatureServiceComponent
+    with QuestionServiceComponent =>
 
   override lazy val adminActiveFeatureApi: AdminActiveFeatureApi = new DefaultAdminActiveFeatureApi
 
@@ -193,11 +197,52 @@ trait DefaultAdminActiveFeatureApiComponent
             requireAdminRole(userAuth.user) {
               decodeRequest {
                 entity(as[ActiveFeatureRequest]) { request: ActiveFeatureRequest =>
-                  provideAsync(
-                    activeFeatureService
-                      .createActiveFeature(featureId = request.featureId, maybeQuestionId = request.maybeQuestionId)
-                  ) { activeFeature =>
-                    complete(StatusCodes.Created -> ActiveFeatureResponse(activeFeature))
+                  val feature = featureService.getFeature(request.featureId)
+                  val question = request.maybeQuestionId match {
+                    case Some(questionId) => questionService.getQuestion(questionId)
+                    case None             => Future.successful(None)
+                  }
+                  provideAsyncOrBadRequest(
+                    feature,
+                    ValidationError("featureId", "not_found", Some(s"Feature ${request.featureId.value} doesn't exist"))
+                  ) { _ =>
+                    provideAsync(question) { foundQuestion =>
+                      Validation.validateOptional(request.maybeQuestionId.map { qId =>
+                        Validation.validateField(
+                          "questionId",
+                          "not_found",
+                          foundQuestion.isDefined,
+                          s"Question ${qId.value} doesn't exist"
+                        )
+                      })
+                      provideAsync(
+                        activeFeatureService
+                          .find(
+                            maybeQuestionId = request.maybeQuestionId.map(q => Seq(q)),
+                            featureIds = Some(Seq(request.featureId))
+                          )
+                      ) { actives =>
+                        Validation.validate(
+                          Validation
+                            .requireEmpty(
+                              "questionId",
+                              actives,
+                              Some(
+                                s"An active feature already exists for questionId ${request.maybeQuestionId} and featureId ${request.featureId}"
+                              )
+                            )
+                        )
+                        provideAsync(
+                          activeFeatureService
+                            .createActiveFeature(
+                              featureId = request.featureId,
+                              maybeQuestionId = request.maybeQuestionId
+                            )
+                        ) { activeFeature =>
+                          complete(StatusCodes.Created -> ActiveFeatureResponse(activeFeature))
+                        }
+                      }
+                    }
                   }
                 }
               }
