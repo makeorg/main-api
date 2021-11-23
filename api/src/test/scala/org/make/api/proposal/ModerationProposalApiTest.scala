@@ -622,6 +622,34 @@ class ModerationProposalApiTest
     Scenario("get validated proposal gives history with moderator") {}
   }
 
+  // Todo: implement this test suite. Test the behaviour of the service.
+  Feature("legacy get proposal for moderation") {
+    Scenario("moderator get proposal by id") {
+      Get("/moderation/proposals/legacy/sim-123")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        entityAs[ModerationProposalResponse]
+      }
+    }
+
+    Scenario("moderator get proposal by id without right") {
+      Get("/moderation/proposals/legacy/sim-123")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenNoRightModerator))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    Scenario("moderator get proposal as admin") {
+      Get("/moderation/proposals/legacy/sim-123")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenDaenerysAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+
+    Scenario("get new proposal without history") {}
+    Scenario("get validated proposal gives history with moderator") {}
+  }
+
   Feature("lock proposal") {
     Scenario("moderator can lock an unlocked proposal") {
       Post("/moderation/proposals/123456/lock")
@@ -1052,6 +1080,42 @@ class ModerationProposalApiTest
       ).thenReturn(Future.successful(ProposalsSearchResult(total = 42, results = Seq.empty)))
 
       Get(s"/moderation/proposals?createdBefore=$beforeDateString")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val results: ProposalsSearchResult = entityAs[ProposalsSearchResult]
+        results.total should be(42)
+      }
+
+    }
+  }
+
+  Feature("legacy get proposals") {
+    Scenario("get proposals by created at date") {
+      Given("an authenticated user with the moderator role")
+      When("the user search proposals using created before")
+      And("there is a proposal matching criterias")
+      Then("The return code should be 200")
+
+      val beforeDateString: String = "2017-06-04T01:01:01.123Z"
+      val beforeDate: ZonedDateTime = ZonedDateTime.from(dateFormatter.parse(beforeDateString))
+
+      when(
+        proposalService.search(
+          any[Option[UserId]],
+          eqTo(
+            SearchQuery(filters = Some(
+              SearchFilters(
+                createdAt = Some(CreatedAtSearchFilter(before = Some(beforeDate), after = None)),
+                question = Some(QuestionSearchFilter(tyrion.availableQuestions))
+              )
+            )
+            )
+          ),
+          any[RequestContext]
+        )
+      ).thenReturn(Future.successful(ProposalsSearchResult(total = 42, results = Seq.empty)))
+
+      Get(s"/moderation/proposals/legacy?createdBefore=$beforeDateString")
         .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val results: ProposalsSearchResult = entityAs[ProposalsSearchResult]

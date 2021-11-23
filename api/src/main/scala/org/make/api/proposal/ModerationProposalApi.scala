@@ -68,8 +68,29 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Api(value = "ModerationProposal")
-@Path(value = "/moderation/proposals")
+@Path("/moderation/proposals")
 trait ModerationProposalApi extends Directives {
+
+  @ApiOperation(
+    value = "get-moderation-proposal",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationProposalResponse]))
+  )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
+  @Path(value = "/legacy/{proposalId}")
+  def legacyGetModerationProposal: Route
 
   @ApiOperation(
     value = "get-moderation-proposal",
@@ -91,6 +112,67 @@ trait ModerationProposalApi extends Directives {
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
   @Path(value = "/{proposalId}")
   def getModerationProposal: Route
+
+  //noinspection ScalaStyle
+  @ApiOperation(
+    value = "legacy-moderation-search-proposals",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsSearchResult]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "proposalIds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "createdBefore", paramType = "query", dataType = "date"),
+      new ApiImplicitParam(name = "initialProposal", paramType = "query", dataType = "boolean"),
+      new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "ideaId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "trending", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "content", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "source", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "location", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "question", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(
+        name = "status",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "Pending,Accepted,Refused,Postponed,Archived",
+        allowMultiple = true
+      ),
+      new ApiImplicitParam(name = "minVotesCount", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "toEnrich", paramType = "query", dataType = "boolean"),
+      new ApiImplicitParam(name = "minScore", paramType = "query", dataType = "float"),
+      new ApiImplicitParam(name = "language", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "order", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(
+        name = "userTypes",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "USER,ORGANISATION,PERSONALITY",
+        allowMultiple = true
+      ),
+      new ApiImplicitParam(name = "keywords", paramType = "query", dataType = "string")
+    )
+  )
+  @Path(value = "/legacy")
+  def legacySearchAllProposals: Route
 
   //noinspection ScalaStyle
   @ApiOperation(
@@ -150,6 +232,7 @@ trait ModerationProposalApi extends Directives {
       new ApiImplicitParam(name = "keywords", paramType = "query", dataType = "string")
     )
   )
+  @Path(value = "/")
   def searchAllProposals: Route
 
   @ApiOperation(
@@ -399,6 +482,7 @@ trait ModerationProposalApi extends Directives {
 
   def routes: Route =
     searchAllProposals ~
+      legacySearchAllProposals ~
       updateProposal ~
       acceptProposal ~
       refuseProposal ~
@@ -407,6 +491,7 @@ trait ModerationProposalApi extends Directives {
       lockMultiple ~
       changeProposalsIdea ~
       getModerationProposal ~
+      legacyGetModerationProposal ~
       nextAuthorToModerate ~
       nextProposalToModerate ~
       getTagsForProposal ~
@@ -438,9 +523,9 @@ trait DefaultModerationProposalApiComponent
 
     val moderationProposalId: PathMatcher1[ProposalId] = Segment.map(id => ProposalId(id))
 
-    override def getModerationProposal: Route = {
+    def routeGetModerationProposal(routePath: PathMatcher[Tuple1[ProposalId]]): Route = {
       get {
-        path("moderation" / "proposals" / moderationProposalId) { proposalId =>
+        path(routePath) { proposalId =>
           makeOperation("GetModerationProposal") { _ =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireModerationRole(auth.user) {
@@ -458,9 +543,16 @@ trait DefaultModerationProposalApiComponent
       }
     }
 
-    override def searchAllProposals: Route = {
+    override def getModerationProposal: Route = {
+      routeGetModerationProposal("moderation" / "proposals" / moderationProposalId)
+    }
+
+    override def legacyGetModerationProposal: Route =
+      routeGetModerationProposal("moderation" / "proposals" / "legacy" / moderationProposalId)
+
+    def routeSearchAllProposals(routePath: PathMatcher[Unit]): Route = {
       get {
-        path("moderation" / "proposals") {
+        path(routePath) {
           makeOperation("SearchAll") { requestContext =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireModerationRole(userAuth.user) {
@@ -594,6 +686,10 @@ trait DefaultModerationProposalApiComponent
         }
       }
     }
+
+    override def searchAllProposals: Route = routeSearchAllProposals("moderation" / "proposals")
+
+    override def legacySearchAllProposals: Route = routeSearchAllProposals("moderation" / "proposals" / "legacy")
 
     override def updateProposal: Route = put {
       path("moderation" / "proposals" / moderationProposalId) { proposalId =>
