@@ -35,6 +35,8 @@ import org.make.core.{proposal, DateHelper, RequestContext}
 import eu.timepit.refined.auto._
 import org.make.api.demographics.DemographicsCardServiceComponent
 import org.make.core.demographics.DemographicsCardId
+import org.make.core.sequence.SequenceConfiguration
+import org.make.core.session.SessionId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -55,24 +57,27 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
 
   class DefaultSequenceService extends SequenceService {
 
-    def startNewSequence[T: SequenceBehaviourProvider](
+    override def startNewSequence[T: SequenceBehaviourProvider](
       behaviourParam: T,
       maybeUserId: Option[UserId],
       questionId: QuestionId,
       includedProposalsIds: Seq[ProposalId],
       requestContext: RequestContext,
       cardId: Option[DemographicsCardId],
-      token: Option[String]
+      token: Option[String],
+      configurationOverride: Option[SequenceConfiguration] = None
     ): Future[SequenceResult] = {
       val log = logStartSequenceUserHistory(questionId, maybeUserId, includedProposalsIds, requestContext)
       val votedProposals =
         sessionHistoryCoordinatorService.retrieveVotedProposals(requestContext.sessionId)
-      val behaviour = createBehaviour(behaviourParam, questionId, requestContext)
+      val resolveBehaviour = createBehaviour(behaviourParam, questionId, requestContext, configurationOverride)
+      def fullSequence(behaviour: SequenceBehaviour, proposalsToExclude: Seq[ProposalId]) =
+        simpleSequence(includedProposalsIds, behaviour, proposalsToExclude, Some(requestContext.sessionId))
       for {
         _                  <- log
         proposalsToExclude <- votedProposals
-        behaviour          <- behaviour
-        sequenceProposals  <- chooseSequenceProposals(includedProposalsIds, behaviour, proposalsToExclude)
+        behaviour          <- resolveBehaviour
+        sequenceProposals  <- fullSequence(behaviour, proposalsToExclude)
         sequenceVotes      <- votesForProposals(maybeUserId, requestContext, sequenceProposals.map(_.id))
         demographicsCard   <- demographicsCardService.getOrPickRandom(cardId, token, questionId)
       } yield SequenceResult(
@@ -91,23 +96,37 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       )
     }
 
-    def createBehaviour[T: SequenceBehaviourProvider](
+    override def simpleSequence(
+      includedProposalsIds: Seq[ProposalId],
+      behaviour: SequenceBehaviour,
+      proposalsToExclude: Seq[ProposalId],
+      sessionId: Option[SessionId]
+    ): Future[Seq[IndexedProposal]] = {
+      def logFallback(count: Int, questionId: QuestionId): Unit = sessionId match {
+        case Some(id) =>
+          logger.warn(
+            s"Sequence fallback missing $count proposals for sessionId ${id.value} and question ${questionId.value}"
+          )
+        case None => logger.warn(s"Sequence fallback missing $count proposals for question ${questionId.value}")
+      }
+      chooseSequenceProposals(includedProposalsIds, behaviour, proposalsToExclude, logFallback)
+    }
+
+    private def createBehaviour[T: SequenceBehaviourProvider](
       behaviourParam: T,
       questionId: QuestionId,
-      requestContext: RequestContext
+      requestContext: RequestContext,
+      overrideConfiguration: Option[SequenceConfiguration]
     ): Future[SequenceBehaviour] = {
       val futureMaybeSegment = segmentService.resolveSegment(requestContext)
-      val futureConfig = sequenceConfigurationService.getSequenceConfigurationByQuestionId(questionId)
+      val futureConfig = overrideConfiguration match {
+        case Some(config) => Future.successful(config)
+        case None         => sequenceConfigurationService.getSequenceConfigurationByQuestionId(questionId)
+      }
       for {
         maybeSegment <- futureMaybeSegment
         config       <- futureConfig
-      } yield SequenceBehaviourProvider[T].behaviour(
-        behaviourParam,
-        config,
-        questionId,
-        maybeSegment,
-        requestContext.sessionId
-      )
+      } yield SequenceBehaviourProvider[T].behaviour(behaviourParam, config, questionId, maybeSegment)
     }
 
     private def logStartSequenceUserHistory(
@@ -161,7 +180,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     private def chooseSequenceProposals(
       includedProposalsIds: Seq[ProposalId],
       behaviour: SequenceBehaviour,
-      proposalsToExclude: Seq[ProposalId]
+      proposalsToExclude: Seq[ProposalId],
+      logFallback: (Int, QuestionId) => Unit
     ): Future[Seq[IndexedProposal]] = {
 
       def futureFallbackProposals(
@@ -173,7 +193,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
           search = searchProposals(
             excluded ++ selectedProposals.map(_.id),
             behaviour.specificConfiguration.sequenceSize - selectedProposals.size
-          )
+          ),
+          logFallback
         )
       }
 

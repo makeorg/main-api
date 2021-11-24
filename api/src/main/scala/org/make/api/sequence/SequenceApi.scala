@@ -104,14 +104,24 @@ trait SequenceApi extends Directives {
   @Path(value = "/keyword/{questionId}/{keywordKey}")
   def startKeywordSequence: Route
 
+  @ApiOperation(value = "get-standard-first-proposal", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string")))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[FirstProposalResponse]))
+  )
+  @Path(value = "/standard/{questionId}/first-proposal")
+  def getStandardFirstProposal: Route
+
   def routes: Route =
-    startStandardSequence ~ startConsensusSequence ~ startControversySequence ~ startKeywordSequence
+    startStandardSequence ~ startConsensusSequence ~ startControversySequence ~ startKeywordSequence ~ getStandardFirstProposal
 }
 
 trait DefaultSequenceApiComponent extends SequenceApiComponent {
 
   this: MakeDirectivesDependencies
     with SequenceServiceComponent
+    with SequenceCacheManagerServiceComponent
+    with SequenceConfigurationComponent
     with OperationOfQuestionSearchEngineComponent
     with QuestionServiceComponent
     with KeywordServiceComponent =>
@@ -246,6 +256,20 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent {
                     }
                   }
                 }
+            }
+          }
+        }
+      }
+    }
+
+    override def getStandardFirstProposal: Route = get {
+      path("sequences" / "standard" / questionId / "first-proposal") { questionId =>
+        makeOperation("GetStandardFirstProposal") { requestContext =>
+          provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+            provideAsync(sequenceConfigurationService.getSequenceConfigurationByQuestionId(questionId)) { config =>
+              provideAsync(sequenceCacheManagerService.getProposal(questionId, requestContext)) { proposalResponse =>
+                complete(FirstProposalResponse(proposalResponse, config.mainSequence.sequenceSize))
+              }
             }
           }
         }

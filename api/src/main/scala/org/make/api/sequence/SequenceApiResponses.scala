@@ -164,3 +164,9 @@ final case class KeywordSequenceResult(
 object KeywordSequenceResult {
   implicit val encoder: Encoder[KeywordSequenceResult] = deriveEncoder[KeywordSequenceResult]
 }
+
+final case class FirstProposalResponse(proposal: ProposalResponse, sequenceSize: PosInt)
+
+object FirstProposalResponse {
+  implicit val encoder: Encoder[FirstProposalResponse] = deriveEncoder[FirstProposalResponse]
+}

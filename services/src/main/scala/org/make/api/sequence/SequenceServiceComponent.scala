@@ -28,6 +28,9 @@ import org.make.core.question.QuestionId
 import org.make.core.user._
 import org.make.core.RequestContext
 import org.make.core.demographics.DemographicsCardId
+import org.make.core.proposal.indexed.IndexedProposal
+import org.make.core.sequence.SequenceConfiguration
+import org.make.core.session.SessionId
 
 import scala.concurrent.Future
 
@@ -43,12 +46,22 @@ trait SequenceService {
     includedProposalsIds: Seq[ProposalId],
     requestContext: RequestContext,
     cardId: Option[DemographicsCardId],
-    token: Option[String]
+    token: Option[String],
+    configurationOverride: Option[SequenceConfiguration] = None
   ): Future[SequenceResult]
+
+  def simpleSequence(
+    includedProposalsIds: Seq[ProposalId],
+    behaviour: SequenceBehaviour,
+    proposalsToExclude: Seq[ProposalId],
+    sessionId: Option[SessionId]
+  ): Future[Seq[IndexedProposal]]
 }
 
 final case class SequenceResult(proposals: Seq[ProposalResponse], demographics: Option[DemographicsCardResponse])
 
 object SequenceResult {
   implicit val encoder: Encoder[SequenceResult] = deriveEncoder[SequenceResult]
+
+  val empty: SequenceResult = SequenceResult(proposals = Seq.empty, demographics = None)
 }

@@ -29,7 +29,6 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed.{IndexedProposal, SequencePool, Zone}
 import org.make.core.question.QuestionId
 import org.make.core.sequence._
-import org.make.core.session.SessionId
 
 import eu.timepit.refined.auto._
 
@@ -46,15 +45,20 @@ sealed trait SequenceBehaviour {
     SortAlgorithm
   ) => Future[Seq[IndexedProposal]]
 
+  type LogFunction = (Int, QuestionId) => Unit
+
   val configuration: SequenceConfiguration
   def specificConfiguration: Configuration
   val questionId: QuestionId
   val maybeSegment: Option[String]
-  val sessionId: SessionId
 
   def newProposals(search: SearchFunction): Future[Seq[IndexedProposal]] = Future.successful(Nil)
   def testedProposals(search: SearchFunction): Future[Seq[IndexedProposal]] = Future.successful(Nil)
-  def fallbackProposals(currentSequenceSize: Int, search: SearchFunction): Future[Seq[IndexedProposal]] =
+  def fallbackProposals(
+    currentSequenceSize: Int,
+    search: SearchFunction,
+    logFallback: LogFunction
+  ): Future[Seq[IndexedProposal]] =
     Future.successful(Nil)
   def selectProposals(
     includedProposals: Seq[IndexedProposal],
@@ -115,11 +119,13 @@ object SequenceBehaviour extends Logging {
       )
     }
 
-    override def fallbackProposals(currentSequenceSize: Int, search: SearchFunction): Future[Seq[IndexedProposal]] = {
+    override def fallbackProposals(
+      currentSequenceSize: Int,
+      search: SearchFunction,
+      logFallback: LogFunction
+    ): Future[Seq[IndexedProposal]] = {
       if (currentSequenceSize < specificConfiguration.sequenceSize) {
-        logger.warn(
-          s"Sequence fallback missing ${specificConfiguration.sequenceSize - currentSequenceSize} proposals for session ${sessionId.value} and question ${questionId.value}"
-        )
+        logFallback(specificConfiguration.sequenceSize - currentSequenceSize, questionId)
         def sortAlgorithm: SortAlgorithm =
           maybeSegment.fold[SortAlgorithm](CreationDateAlgorithm(SortOrder.Desc))(SegmentFirstAlgorithm.apply)
 
@@ -133,8 +139,7 @@ object SequenceBehaviour extends Logging {
   final case class Standard(
     override val configuration: SequenceConfiguration,
     questionId: QuestionId,
-    maybeSegment: Option[String],
-    sessionId: SessionId
+    maybeSegment: Option[String]
   ) extends SequenceBehaviour
       with ExplorationBehavior {
 
@@ -165,8 +170,7 @@ object SequenceBehaviour extends Logging {
     consensusParam: ConsensusParam,
     override val configuration: SequenceConfiguration,
     questionId: QuestionId,
-    maybeSegment: Option[String],
-    sessionId: SessionId
+    maybeSegment: Option[String]
   ) extends SequenceBehaviour
       with RoundRobinOrRandomBehavior {
     override val specificConfiguration: SpecificSequenceConfiguration = configuration.popular
@@ -191,8 +195,7 @@ object SequenceBehaviour extends Logging {
   final case class Controversy(
     override val configuration: SequenceConfiguration,
     questionId: QuestionId,
-    maybeSegment: Option[String],
-    sessionId: SessionId
+    maybeSegment: Option[String]
   ) extends SequenceBehaviour
       with RoundRobinOrRandomBehavior {
 
@@ -213,8 +216,7 @@ object SequenceBehaviour extends Logging {
     keyword: ProposalKeywordKey,
     override val configuration: SequenceConfiguration,
     questionId: QuestionId,
-    maybeSegment: Option[String],
-    sessionId: SessionId
+    maybeSegment: Option[String]
   ) extends SequenceBehaviour
       with RoundRobinOrRandomBehavior {
 
@@ -249,8 +251,7 @@ trait SequenceBehaviourProvider[T] {
     param: T,
     configuration: SequenceConfiguration,
     questionId: QuestionId,
-    maybeSegment: Option[String],
-    sessionId: SessionId
+    maybeSegment: Option[String]
   ): SequenceBehaviour
 }
 
@@ -258,36 +259,29 @@ object SequenceBehaviourProvider {
 
   def apply[T](implicit bp: SequenceBehaviourProvider[T]): SequenceBehaviourProvider[T] = bp
 
-  implicit val standard: SequenceBehaviourProvider[Unit] = (
-    _: Unit,
-    configuration: SequenceConfiguration,
-    questionId: QuestionId,
-    maybeSegment: Option[String],
-    sessionId: SessionId
-  ) => SequenceBehaviour.Standard(configuration, questionId, maybeSegment, sessionId)
+  implicit val standard: SequenceBehaviourProvider[Unit] =
+    (_: Unit, configuration: SequenceConfiguration, questionId: QuestionId, maybeSegment: Option[String]) =>
+      SequenceBehaviour.Standard(configuration, questionId, maybeSegment)
 
   implicit val consensus: SequenceBehaviourProvider[ConsensusParam] = (
     consensusParam: ConsensusParam,
     configuration: SequenceConfiguration,
     questionId: QuestionId,
-    maybeSegment: Option[String],
-    sessionId: SessionId
-  ) => SequenceBehaviour.Consensus(consensusParam, configuration, questionId, maybeSegment, sessionId)
+    maybeSegment: Option[String]
+  ) => SequenceBehaviour.Consensus(consensusParam, configuration, questionId, maybeSegment)
 
   implicit val controversy: SequenceBehaviourProvider[Zone.Controversy.type] =
     (
       _: Zone.Controversy.type,
       configuration: SequenceConfiguration,
       questionId: QuestionId,
-      maybeSegment: Option[String],
-      sessionId: SessionId
-    ) => SequenceBehaviour.Controversy(configuration, questionId, maybeSegment, sessionId)
+      maybeSegment: Option[String]
+    ) => SequenceBehaviour.Controversy(configuration, questionId, maybeSegment)
 
   implicit val keyword: SequenceBehaviourProvider[ProposalKeywordKey] = (
     keyword: ProposalKeywordKey,
     configuration: SequenceConfiguration,
     questionId: QuestionId,
-    maybeSegment: Option[String],
-    sessionId: SessionId
-  ) => SequenceBehaviour.Keyword(keyword, configuration, questionId, maybeSegment, sessionId)
+    maybeSegment: Option[String]
+  ) => SequenceBehaviour.Keyword(keyword, configuration, questionId, maybeSegment)
 }

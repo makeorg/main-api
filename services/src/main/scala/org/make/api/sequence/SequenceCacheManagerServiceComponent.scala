@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2021 Make.org
+ *  Copyright (C) 2018 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -17,14 +17,23 @@
  *
  */
 
-name := "technical"
+package org.make.api.sequence
 
-libraryDependencies ++= Seq(
-  Dependencies.akkaPersistence,
-  Dependencies.cats,
-  Dependencies.configuration,
-  Dependencies.kamonExecutors,
-  Dependencies.refinedScala,
-  Dependencies.scalaOAuth,
-  Dependencies.swiftClient
-)
+import akka.actor.typed.ActorRef
+import org.make.api.proposal.ProposalResponse
+import org.make.core.RequestContext
+import org.make.core.question.QuestionId
+
+import scala.concurrent.Future
+
+trait SequenceCacheManagerComponent {
+  def sequenceCacheManager: ActorRef[SequenceCacheManager.Protocol]
+}
+
+trait SequenceCacheManagerServiceComponent {
+  def sequenceCacheManagerService: SequenceCacheManagerService
+}
+
+trait SequenceCacheManagerService {
+  def getProposal(questionId: QuestionId, requestContext: RequestContext): Future[ProposalResponse]
+}
