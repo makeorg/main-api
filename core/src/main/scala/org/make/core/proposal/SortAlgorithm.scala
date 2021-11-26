@@ -20,13 +20,13 @@
 package org.make.core.proposal
 
 import com.sksamuel.elastic4s.ElasticApi._
-import com.sksamuel.elastic4s.ElasticDsl.{functionScoreQuery, scriptScore}
-import com.sksamuel.elastic4s.requests.script.Script
-import com.sksamuel.elastic4s.requests.searches.SearchRequest
-import com.sksamuel.elastic4s.requests.searches.collapse.CollapseRequest
-import com.sksamuel.elastic4s.requests.searches.queries.InnerHit
-import com.sksamuel.elastic4s.requests.searches.queries.funcscorer.{CombineFunction, WeightScore}
-import com.sksamuel.elastic4s.requests.searches.sort.{FieldSort, ScoreSort, SortOrder}
+import com.sksamuel.elastic4s.http.ElasticDsl.{functionScoreQuery, scriptScore}
+import com.sksamuel.elastic4s.script.Script
+import com.sksamuel.elastic4s.searches.SearchRequest
+import com.sksamuel.elastic4s.searches.collapse.CollapseRequest
+import com.sksamuel.elastic4s.searches.queries.InnerHit
+import com.sksamuel.elastic4s.searches.queries.funcscorer.{CombineFunction, WeightScore}
+import com.sksamuel.elastic4s.searches.sort.{FieldSort, ScoreSort, SortOrder}
 import enumeratum.values.{StringEnum, StringEnumEntry}
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldName
 import org.make.core.technical.enumeratum.EnumKeys.StringEnumKeys
@@ -142,15 +142,13 @@ final case class CreationDateAlgorithm(order: SortOrder) extends SortAlgorithm {
 
 final case class SegmentFirstAlgorithm(segment: String) extends SortAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
-    val segmentField = docField(ProposalElasticsearchFieldName.segment)
-    val pointsIfMatchesSegmentScript =
-      s"""$segmentField.size() > 0 && $segmentField.value == "$segment" ? 10 : 1"""
+    val script = s"""${docField(ProposalElasticsearchFieldName.segment)}.value == "$segment" ? 10 : 1"""
     request.query.map { query =>
       request.query(
         functionScoreQuery()
           .query(query)
           .functions(
-            scriptScore(Script(pointsIfMatchesSegmentScript)),
+            scriptScore(Script(script)),
             gaussianScore(ProposalElasticsearchFieldName.createdAt.field, "now", "7d")
               .decay(0.8d)
           )

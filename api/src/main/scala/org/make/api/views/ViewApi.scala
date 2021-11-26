@@ -20,7 +20,7 @@
 package org.make.api.views
 
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
-import com.sksamuel.elastic4s.requests.searches.suggestion.Fuzziness
+import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
 

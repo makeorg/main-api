@@ -23,11 +23,11 @@ package operation
 import java.time.{ZoneOffset, ZonedDateTime}
 import java.time.format.DateTimeFormatter
 import cats.data.NonEmptyList
-import com.sksamuel.elastic4s.{ElasticApi, ElasticDsl}
-import com.sksamuel.elastic4s.requests.common.Operator
-import com.sksamuel.elastic4s.requests.searches.queries.{Query, RangeQuery}
-import com.sksamuel.elastic4s.requests.searches.sort.{FieldSort, SortOrder}
-import com.sksamuel.elastic4s.requests.searches.suggestion.Fuzziness
+import com.sksamuel.elastic4s.{ElasticApi, Operator}
+import com.sksamuel.elastic4s.http.ElasticDsl
+import com.sksamuel.elastic4s.searches.queries.{Query, RangeQuery}
+import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
+import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.core.operation.indexed.OperationOfQuestionElasticsearchFieldName
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}

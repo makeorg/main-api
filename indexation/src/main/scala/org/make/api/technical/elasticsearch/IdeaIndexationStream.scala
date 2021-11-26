@@ -21,9 +21,9 @@ package org.make.api.technical.elasticsearch
 
 import akka.stream.scaladsl.Flow
 import akka.{Done, NotUsed}
-import com.sksamuel.elastic4s.Index
+import com.sksamuel.elastic4s.IndexAndType
 import grizzled.slf4j.Logging
-import org.make.api.idea.IdeaSearchEngineComponent
+import org.make.api.idea.{IdeaSearchEngine, IdeaSearchEngineComponent}
 import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.core.idea.indexed.IndexedIdea
 import org.make.core.idea.{Idea, IdeaId}
@@ -53,7 +53,7 @@ trait IdeaIndexationStream
         elasticsearchIdeaAPI
           .indexIdeas(
             ideas.map(idea => IndexedIdea.createFromIdea(idea, proposalsCount(idea.ideaId))),
-            Some(Index(ideaIndexName))
+            Some(IndexAndType(ideaIndexName, IdeaSearchEngine.ideaIndexName))
           )
       }
       .recoverWith {

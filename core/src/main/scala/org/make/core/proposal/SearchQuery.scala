@@ -22,12 +22,12 @@ package org.make.core.proposal
 import java.time.format.DateTimeFormatter
 import java.time.{ZoneOffset, ZonedDateTime}
 
-import com.sksamuel.elastic4s.{ElasticApi, ElasticDsl}
-import com.sksamuel.elastic4s.requests.common.Operator
-import com.sksamuel.elastic4s.requests.searches.queries.funcscorer.WeightScore
-import com.sksamuel.elastic4s.requests.searches.queries.matches.MatchQuery
-import com.sksamuel.elastic4s.requests.searches.queries.{Query, RangeQuery}
-import com.sksamuel.elastic4s.requests.searches.sort.{FieldSort, SortOrder}
+import com.sksamuel.elastic4s.{ElasticApi, Operator}
+import com.sksamuel.elastic4s.http.ElasticDsl
+import com.sksamuel.elastic4s.searches.queries.funcscorer.WeightScore
+import com.sksamuel.elastic4s.searches.queries.matches.MatchQuery
+import com.sksamuel.elastic4s.searches.queries.{Query, RangeQuery}
+import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import org.make.core.Validation.{validate, validateField}
 import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.idea.IdeaId

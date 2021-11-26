@@ -36,7 +36,6 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import org.make.api.technical.ActorSystemComponent
 
 class SortAlgorithmIT
     extends ItMakeTest
@@ -44,7 +43,6 @@ class SortAlgorithmIT
     with SearchEngineIT[ProposalId, IndexedProposal]
     with DefaultProposalSearchEngineComponent
     with ElasticsearchConfigurationComponent
-    with ActorSystemComponent
     with DefaultElasticsearchClientComponent {
 
   override val StartContainersTimeout: FiniteDuration = 5.minutes
@@ -167,7 +165,7 @@ class SortAlgorithmIT
         operationId = Some(OperationId("ope-popular"))
       ),
     indexedProposal(ProposalId("popular-new"))
-      .copy(sequencePool = SequencePool.New, scores = IndexedScores.empty.copy(topScore = IndexedScore(0, 1.3, 0))),
+      .copy(sequencePool = SequencePool.New, scores = IndexedScores.empty.copy(topScore = IndexedScore(0, 1.4, 0))),
     newEmptyOrganisationProposal("b2b-1"),
     newEmptyOrganisationProposal("b2b-2"),
     newEmptyPersonalityProposal("b2b-3")

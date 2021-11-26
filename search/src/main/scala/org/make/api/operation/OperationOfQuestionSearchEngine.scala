@@ -19,13 +19,12 @@
 
 package org.make.api.operation
 
-import com.sksamuel.elastic4s.Index
-import com.sksamuel.elastic4s.ElasticDsl._
 import com.sksamuel.elastic4s.circe._
-import com.sksamuel.elastic4s.requests.common.RefreshPolicy
-import com.sksamuel.elastic4s.requests.searches.SearchRequest
-import com.sksamuel.elastic4s.requests.searches.sort.{FieldSort, SortOrder}
-import com.sksamuel.elastic4s.requests.searches.queries.compound.BoolQuery
+import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.searches.SearchRequest
+import com.sksamuel.elastic4s.searches.queries.BoolQuery
+import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
+import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import grizzled.slf4j.Logging
 import io.circe.{Json, Printer}
 import org.make.api.technical.elasticsearch.{ElasticsearchClientComponent, ElasticsearchConfigurationComponent, _}
@@ -51,10 +50,13 @@ trait OperationOfQuestionSearchEngine {
   def findOperationOfQuestionById(questionId: QuestionId): Future[Option[IndexedOperationOfQuestion]]
   def count(query: OperationOfQuestionSearchQuery): Future[Long]
   def searchOperationOfQuestions(query: OperationOfQuestionSearchQuery): Future[OperationOfQuestionSearchResult]
-  def indexOperationOfQuestion(record: IndexedOperationOfQuestion, maybeIndex: Option[Index]): Future[IndexationStatus]
+  def indexOperationOfQuestion(
+    record: IndexedOperationOfQuestion,
+    maybeIndex: Option[IndexAndType]
+  ): Future[IndexationStatus]
   def indexOperationOfQuestions(
     records: Seq[IndexedOperationOfQuestion],
-    maybeIndex: Option[Index]
+    maybeIndex: Option[IndexAndType]
   ): Future[IndexationStatus]
   def highlights(): Future[Highlights]
 }
@@ -76,20 +78,20 @@ trait DefaultOperationOfQuestionSearchEngineComponent
 
     private lazy val client = elasticsearchClient.client
 
-    private val operationOfQuestionAlias: Index =
-      elasticsearchConfiguration.operationOfQuestionAliasName
+    private val operationOfQuestionAlias: IndexAndType =
+      elasticsearchConfiguration.operationOfQuestionAliasName / OperationOfQuestionSearchEngine.operationOfQuestionIndexName
 
     // TODO remove once elastic4s-circe upgrades to circe 0.14
     private implicit val printer: Json => String = Printer.noSpaces.print
 
     override def findOperationOfQuestionById(questionId: QuestionId): Future[Option[IndexedOperationOfQuestion]] = {
       client
-        .executeAsFuture(get(operationOfQuestionAlias, questionId.value))
+        .executeAsFuture(get(id = questionId.value).from(operationOfQuestionAlias))
         .map(_.toOpt[IndexedOperationOfQuestion])
     }
 
     override def count(query: OperationOfQuestionSearchQuery): Future[Long] = {
-      val request = search(operationOfQuestionAlias)
+      val request = searchWithType(operationOfQuestionAlias)
         .bool(BoolQuery(must = OperationOfQuestionSearchFilters.getOperationOfQuestionSearchFilters(query)))
         .limit(0)
 
@@ -102,7 +104,7 @@ trait DefaultOperationOfQuestionSearchEngineComponent
       query: OperationOfQuestionSearchQuery
     ): Future[OperationOfQuestionSearchResult] = {
       val searchFilters = OperationOfQuestionSearchFilters.getOperationOfQuestionSearchFilters(query)
-      val request: SearchRequest = search(operationOfQuestionAlias)
+      val request: SearchRequest = searchWithType(operationOfQuestionAlias)
         .bool(BoolQuery(must = searchFilters))
         .sortBy(
           Seq(
@@ -128,7 +130,7 @@ trait DefaultOperationOfQuestionSearchEngineComponent
 
     override def indexOperationOfQuestion(
       record: IndexedOperationOfQuestion,
-      maybeIndex: Option[Index]
+      maybeIndex: Option[IndexAndType]
     ): Future[IndexationStatus] = {
       val index = maybeIndex.getOrElse(operationOfQuestionAlias)
       client
@@ -143,11 +145,11 @@ trait DefaultOperationOfQuestionSearchEngineComponent
 
     override def indexOperationOfQuestions(
       records: Seq[IndexedOperationOfQuestion],
-      maybeIndex: Option[Index]
+      maybeIndex: Option[IndexAndType]
     ): Future[IndexationStatus] = {
       val index = maybeIndex.getOrElse(operationOfQuestionAlias)
       client
-        .execute(bulk(records.map { record =>
+        .executeAsFuture(bulk(records.map { record =>
           indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.questionId.value)
         }))
         .map { _ =>
@@ -163,7 +165,7 @@ trait DefaultOperationOfQuestionSearchEngineComponent
     override def highlights(): Future[Highlights] = {
       client
         .executeAsFuture(
-          search(operationOfQuestionAlias)
+          searchWithType(operationOfQuestionAlias)
             .aggregations(
               sumAgg(
                 OperationOfQuestionElasticsearchFieldName.participantsCount.field,

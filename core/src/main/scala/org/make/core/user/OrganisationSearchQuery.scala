@@ -20,10 +20,10 @@
 package org.make.core
 package user
 
-import com.sksamuel.elastic4s.{ElasticApi, ElasticDsl}
-import com.sksamuel.elastic4s.requests.common.Operator
-import com.sksamuel.elastic4s.requests.searches.queries.Query
-import com.sksamuel.elastic4s.requests.searches.sort.{FieldSort, SortOrder}
+import com.sksamuel.elastic4s.{ElasticApi, Operator}
+import com.sksamuel.elastic4s.http.ElasticDsl
+import com.sksamuel.elastic4s.searches.queries.Query
+import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.indexed.OrganisationElasticsearchFieldNames
 
