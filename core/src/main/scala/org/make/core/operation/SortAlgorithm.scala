@@ -19,8 +19,8 @@
 
 package org.make.core.operation
 
-import com.sksamuel.elastic4s.searches.SearchRequest
-import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
+import com.sksamuel.elastic4s.requests.searches.SearchRequest
+import com.sksamuel.elastic4s.requests.searches.sort.{FieldSort, SortOrder}
 import enumeratum.{Enum, EnumEntry}
 import org.make.core.operation.indexed.OperationOfQuestionElasticsearchFieldName._
 

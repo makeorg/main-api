@@ -22,7 +22,7 @@ package org.make.core
 import java.time.{LocalDate, ZonedDateTime}
 import java.util.UUID
 
-import com.sksamuel.elastic4s.searches.sort.SortOrder
+import com.sksamuel.elastic4s.requests.searches.sort.SortOrder
 import enumeratum.values.{StringEnum, StringEnumEntry}
 import spray.json._
 

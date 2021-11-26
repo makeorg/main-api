@@ -22,9 +22,9 @@ package org.make.api.technical.elasticsearch
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
-import com.sksamuel.elastic4s.IndexAndType
+import com.sksamuel.elastic4s.Index
 import grizzled.slf4j.Logging
-import org.make.api.organisation.{OrganisationSearchEngine, OrganisationSearchEngineComponent}
+import org.make.api.organisation.OrganisationSearchEngineComponent
 import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.api.userhistory.{RequestUserVotedProposals, UserHistoryCoordinatorServiceComponent}
@@ -123,10 +123,7 @@ trait OrganisationIndexationStream
       .groupedWithin(20, 500.milliseconds)
       .mapAsync(singleAsync) { organisations =>
         elasticsearchOrganisationAPI
-          .indexOrganisations(
-            organisations,
-            Some(IndexAndType(organisationIndexName, OrganisationSearchEngine.organisationIndexName))
-          )
+          .indexOrganisations(organisations, Some(Index(organisationIndexName)))
           .recoverWith {
             case e =>
               logger.error("Indexing of one organisation chunk failed", e)
