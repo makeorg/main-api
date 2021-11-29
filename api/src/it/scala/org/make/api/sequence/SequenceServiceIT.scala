@@ -308,7 +308,7 @@ class SequenceServiceIT
     def reindex(): Unit = {
       indexationService.reindexData(false, false, true, false)
       while (!Await
-               .result(jobCoordinatorService.get(JobId.Reindex), 1.minute)
+               .result(jobCoordinatorService.get(JobId.Reindex), 1.second)
                .get
                .status
                .isInstanceOf[Job.JobStatus.Finished]) {

@@ -37,7 +37,7 @@ trait DockerElasticsearchService extends DockerBaseTest {
   val defaultElasticsearchProposalDocType = "proposal"
 
   private def elasticSearchContainer =
-    DockerContainer("makeorg/make-elasticsearch:7.15.2", name = Some(s"${getClass.getSimpleName}-elasticsearch"))
+    DockerContainer("makeorg/make-elasticsearch:6.8.2", name = Some(s"${getClass.getSimpleName}-elasticsearch"))
       .withPorts(defaultElasticsearchHttpPort -> Some(elasticsearchExposedPort))
       .withEnv(
         "xpack.security.enabled=false",

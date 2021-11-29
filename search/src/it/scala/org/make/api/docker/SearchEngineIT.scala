@@ -72,7 +72,7 @@ trait SearchEngineIT[Id <: StringValue, T]
       )
 
     val insertFutures = AkkaSource[T](docs).map { value =>
-      val indexAndDocTypeEndpoint = s"$eSIndexName/_doc"
+      val indexAndDocTypeEndpoint = s"$eSIndexName/$eSDocType"
       (
         HttpRequest(
           uri = s"$elasticsearchEndpoint/$indexAndDocTypeEndpoint/${id(value).value}",

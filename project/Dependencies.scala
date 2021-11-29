@@ -21,12 +21,12 @@ import sbt._
 
 object Dependencies {
 
-  private val akkaVersion = "2.6.17"
-  private val akkaHttpVersion = "10.2.6"
+  private val akkaVersion = "2.6.15"
+  private val akkaHttpVersion = "10.2.5"
   private val alpakkaVersion = "1.1.2"
   private val nettyVersion = "4.1.66.Final"
   private val kafkaVersion = "1.1.0"
-  private val elastic4sVersion = "7.15.1"
+  private val elastic4sVersion = "6.7.8"
   private val enumeratumVersion = "1.7.0"
   private val jerseyVersion = "2.32"
   private val kamonVersion = "2.2.3"
@@ -58,8 +58,7 @@ object Dependencies {
   val circeParser = "io.circe"                            %% "circe-parser"                % circeVersion
   val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"                   % akkaHttpVersion
-  val akkaHttpTestKit: ModuleID = "com.typesafe.akka"     %% "akka-http-testkit"           % akkaHttpVersion
-  val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"             % "1.38.2"
+  val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"             % "1.37.0"
   val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "1.2.0")
     .exclude("javax.ws.rs", "jsr311-api")
   val akkaPersistence: ModuleID = "com.typesafe.akka"      %% "akka-persistence-typed" % akkaVersion
@@ -108,8 +107,6 @@ object Dependencies {
 
   val jsoup: ModuleID = "org.jsoup" % "jsoup" % "1.14.1"
 
-  val jodaTime = "joda-time" % "joda-time" % "2.10.13"
-
   // Kafka + AVRO
   val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
   val avro4s: ModuleID = "com.sksamuel.avro4s"    %% "avro4s-core"  % "3.0.5.make2"
@@ -120,9 +117,9 @@ object Dependencies {
 
   val configuration: ModuleID = "com.typesafe" % "config" % "1.4.0"
 
-  val elastic4s: ModuleID = "com.sksamuel.elastic4s"      %% "elastic4s-core"        % elastic4sVersion
-  val elastic4sHttp: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-client-akka" % elastic4sVersion
-  val elastic4sCirce: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-json-circe"  % elastic4sVersion
+  val elastic4s: ModuleID = "com.sksamuel.elastic4s"      %% "elastic4s-core"  % elastic4sVersion
+  val elastic4sHttp: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-http"  % elastic4sVersion
+  val elastic4sCirce: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-circe" % elastic4sVersion
 
   val stamina: ModuleID = "com.scalapenos"    %% "stamina-json" % staminaVersion
   val jsonLenses = "net.virtual-void"         %% "json-lenses"  % "0.6.2"

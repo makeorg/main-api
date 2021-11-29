@@ -19,30 +19,23 @@
 
 package org.make.api.idea
 
-import akka.actor.typed.scaladsl.adapter._
-import com.sksamuel.elastic4s.Index
-import com.sksamuel.elastic4s.ElasticDsl._
-import com.sksamuel.elastic4s.ElasticClient
-import com.sksamuel.elastic4s.akka.{AkkaHttpClient, AkkaHttpClientSettings}
+import com.sksamuel.elastic4s.IndexAndType
+import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.http.{ElasticClient, ElasticProperties}
 import org.make.api.MakeUnitTest
 import org.make.core.idea.{IdeaSearchFilters, IdeaSearchQuery}
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.Behaviors
 
 class IdeaSearchEngineTest extends MakeUnitTest {
 
-  private implicit val actorSystem: ActorSystem[Nothing] =
-    ActorSystem(Behaviors.empty, "IdeaSearchEngineTest")
-
-  private val ideaAlias: Index = "idea-index"
-  private val client = ElasticClient(AkkaHttpClient(AkkaHttpClientSettings(List("fake:3232")))(actorSystem.toClassic))
+  private val ideaAlias: IndexAndType = "idea-index" / "idea-type"
+  private val client = ElasticClient(ElasticProperties("http://fake:3232"))
 
   Feature("ordering in idea elastic search query") {
     ignore("any default sort is implemented") {
       Given("an IdeaSearchQuery with None order and None sort")
       val ideaSearchQuery: IdeaSearchQuery = IdeaSearchQuery(sort = None, order = None)
       When("I get raw elastic query")
-      val request = search(ideaAlias).sortBy(IdeaSearchFilters.getSort(ideaSearchQuery))
+      val request = searchWithType(ideaAlias).sortBy(IdeaSearchFilters.getSort(ideaSearchQuery))
       Then("sort is not present")
       client.show(request) shouldBe """{"version":true}"""
     }

@@ -25,7 +25,7 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import cats.data.NonEmptyList
-import com.sksamuel.elastic4s.requests.searches.suggestion.Fuzziness
+import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.api.MakeApiTestBase
 import org.make.api.operation.{OperationOfQuestionService, OperationOfQuestionServiceComponent}
 import org.make.api.organisation.{OrganisationService, OrganisationServiceComponent, OrganisationsSearchResultResponse}

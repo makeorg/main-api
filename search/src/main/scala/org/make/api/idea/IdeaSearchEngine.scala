@@ -20,12 +20,11 @@
 package org.make.api.idea
 
 import akka.Done
-import com.sksamuel.elastic4s.Index
 import com.sksamuel.elastic4s.circe._
-import com.sksamuel.elastic4s.ElasticDsl._
-import com.sksamuel.elastic4s.requests.common.RefreshPolicy
-import com.sksamuel.elastic4s.requests.searches.SearchRequest
-import com.sksamuel.elastic4s.requests.searches.queries.compound.BoolQuery
+import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.searches.SearchRequest
+import com.sksamuel.elastic4s.searches.queries.BoolQuery
+import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import grizzled.slf4j.Logging
 import io.circe.{Json, Printer}
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
@@ -43,9 +42,9 @@ trait IdeaSearchEngineComponent {
 trait IdeaSearchEngine {
   def findIdeaById(ideaId: IdeaId): Future[Option[IndexedIdea]]
   def searchIdeas(query: IdeaSearchQuery): Future[IdeaSearchResult]
-  def indexIdea(record: IndexedIdea, mayBeIndex: Option[Index] = None): Future[Done]
-  def indexIdeas(records: Seq[IndexedIdea], mayBeIndex: Option[Index] = None): Future[Done]
-  def updateIdea(record: IndexedIdea, mayBeIndex: Option[Index] = None): Future[Done]
+  def indexIdea(record: IndexedIdea, mayBeIndex: Option[IndexAndType] = None): Future[Done]
+  def indexIdeas(records: Seq[IndexedIdea], mayBeIndex: Option[IndexAndType] = None): Future[Done]
+  def updateIdea(record: IndexedIdea, mayBeIndex: Option[IndexAndType] = None): Future[Done]
 }
 
 object IdeaSearchEngine {
@@ -61,21 +60,21 @@ trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with Ci
 
     private lazy val client = elasticsearchClient.client
 
-    private val ideaAlias: Index = elasticsearchConfiguration.ideaAliasName
+    private val ideaAlias: IndexAndType = elasticsearchConfiguration.ideaAliasName / IdeaSearchEngine.ideaIndexName
 
     // TODO remove once elastic4s-circe upgrades to circe 0.14
     private implicit val printer: Json => String = Printer.noSpaces.print
 
     override def findIdeaById(ideaId: IdeaId): Future[Option[IndexedIdea]] = {
       client
-        .executeAsFuture(get(ideaAlias, ideaId.value))
+        .executeAsFuture(get(id = ideaId.value).from(ideaAlias))
         .map(_.toOpt[IndexedIdea])
     }
 
     override def searchIdeas(ideaSearchQuery: IdeaSearchQuery): Future[IdeaSearchResult] = {
       // parse json string to build search query
       val searchFilters = IdeaSearchFilters.getIdeaSearchFilters(ideaSearchQuery)
-      val request: SearchRequest = search(ideaAlias)
+      val request: SearchRequest = searchWithType(ideaAlias)
         .bool(BoolQuery(must = searchFilters))
         .sortBy(IdeaSearchFilters.getSort(ideaSearchQuery).toList)
         .size(IdeaSearchFilters.getLimitSearch(ideaSearchQuery))
@@ -86,7 +85,7 @@ trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with Ci
         .map(response => IdeaSearchResult(total = response.totalHits, results = response.to[IndexedIdea]))
     }
 
-    override def indexIdea(record: IndexedIdea, maybeIndex: Option[Index] = None): Future[Done] = {
+    override def indexIdea(record: IndexedIdea, maybeIndex: Option[IndexAndType] = None): Future[Done] = {
       val index = maybeIndex.getOrElse(ideaAlias)
       client
         .executeAsFuture(indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.ideaId.value))
@@ -95,7 +94,7 @@ trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with Ci
         }
     }
 
-    override def indexIdeas(records: Seq[IndexedIdea], maybeIndex: Option[Index] = None): Future[Done] = {
+    override def indexIdeas(records: Seq[IndexedIdea], maybeIndex: Option[IndexAndType] = None): Future[Done] = {
       val index = maybeIndex.getOrElse(ideaAlias)
       client
         .executeAsFuture(bulk(records.map { record =>
@@ -106,14 +105,10 @@ trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with Ci
         }
     }
 
-    override def updateIdea(record: IndexedIdea, maybeIndex: Option[Index] = None): Future[Done] = {
+    override def updateIdea(record: IndexedIdea, maybeIndex: Option[IndexAndType] = None): Future[Done] = {
       val index = maybeIndex.getOrElse(ideaAlias)
       client
-        .executeAsFuture(
-          updateById(index, record.ideaId.value)
-            .doc(record)
-            .refresh(RefreshPolicy.IMMEDIATE)
-        )
+        .executeAsFuture((update(id = record.ideaId.value) in index).doc(record).refresh(RefreshPolicy.IMMEDIATE))
         .map(_ => Done)
     }
   }

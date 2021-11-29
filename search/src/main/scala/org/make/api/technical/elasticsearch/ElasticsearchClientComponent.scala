@@ -18,18 +18,14 @@
  */
 
 package org.make.api.technical.elasticsearch
-
 import java.time.format.DateTimeFormatter
-import com.sksamuel.elastic4s.ElasticClient
-import com.sksamuel.elastic4s.akka.{AkkaHttpClient, AkkaHttpClientSettings}
-import com.sksamuel.elastic4s.ElasticDsl.{addAlias, aliasExists, aliases, createIndex, getAliases, _}
-import com.sksamuel.elastic4s.requests.indexes.admin.AliasExistsResponse
+import com.sksamuel.elastic4s.http.ElasticDsl.{addAlias, aliasExists, aliases, createIndex, getAliases, _}
+import com.sksamuel.elastic4s.http.index.admin.AliasExistsResponse
+import com.sksamuel.elastic4s.http.{ElasticClient, ElasticProperties}
 import grizzled.slf4j.Logging
 import org.make.api.technical.Futures._
 import org.make.api.technical.security.SecurityHelper
-import org.make.api.technical.ActorSystemComponent
 import org.make.core.DateHelper
-import akka.actor.typed.scaladsl.adapter._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -50,7 +46,7 @@ trait ElasticsearchClientComponent {
 }
 
 trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent with Logging {
-  self: ElasticsearchConfigurationComponent with ActorSystemComponent =>
+  self: ElasticsearchConfigurationComponent =>
 
   override lazy val elasticsearchClient: ElasticsearchClient = new DefaultElasticsearchClient
 
@@ -78,7 +74,7 @@ trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent w
       Source.fromResource("elasticsearch-mappings/post.json")(Codec.UTF8).getLines().mkString("")
 
     override lazy val client: ElasticClient = ElasticClient(
-      AkkaHttpClient(AkkaHttpClientSettings(List(elasticsearchConfiguration.connectionString)))(actorSystem.toClassic)
+      ElasticProperties(s"http://${elasticsearchConfiguration.connectionString}")
     )
 
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
@@ -128,7 +124,7 @@ trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent w
         .flatMap { _ =>
           logger.info(s"Elasticsearch index $newIndexName created")
           client
-            .executeAsFuture(aliases(addAlias(aliasName, newIndexName)))
+            .executeAsFuture(aliases(addAlias(aliasName).on(newIndexName)))
             .map { _ =>
               logger.info(s"Elasticsearch alias $aliasName created")
             }

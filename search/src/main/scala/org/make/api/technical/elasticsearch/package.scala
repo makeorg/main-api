@@ -19,7 +19,7 @@
 
 package org.make.api.technical
 
-import com.sksamuel.elastic4s.{ElasticClient, Handler}
+import com.sksamuel.elastic4s.http.{ElasticClient, Handler}
 import grizzled.slf4j.Logging
 
 import scala.concurrent.{ExecutionContext, Future}

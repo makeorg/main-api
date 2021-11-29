@@ -21,8 +21,7 @@ package org.make.core.technical
 package generator
 
 import _root_.enumeratum.values.scalacheck._
-import cats.data.{NonEmptyList => Nel}
-import cats.implicits._
+import cats.data.NonEmptyList
 import eu.timepit.refined.{refineV, W}
 import eu.timepit.refined.api.RefType
 import eu.timepit.refined.auto._
@@ -80,7 +79,7 @@ trait EntitiesGen extends DateGenerators {
     } yield Question(
       questionId = IdGenerator.uuidGenerator.nextQuestionId(),
       slug = slug,
-      countries = Nel.of(country),
+      countries = NonEmptyList.of(country),
       language = language,
       question = question,
       shortTitle = Some(shortTitle),
@@ -169,133 +168,121 @@ trait EntitiesGen extends DateGenerators {
     Gen.listOfN(3, roles).map(_.distinct)
   }
 
-  private val SumCounterUpperBound = 600
-  private val SimpleCountUpperBound = SumCounterUpperBound / 3
-  private def getMaxCount(getter: Counts => Int, countsNel: Nel[Counts]): Int =
-    getter(countsNel.maximumBy(getter))
-
-  private def genSimpleCounts: Gen[Counts] =
+  private def genCounts: Gen[Counts] =
     for {
-      count         <- Gen.chooseNum(0, SimpleCountUpperBound)
-      countVerified <- Gen.chooseNum(0, count)
-      countSequence <- Gen.chooseNum(0, countVerified)
-      countSegment  <- Gen.chooseNum(0, countSequence)
+      count         <- Gen.posNum[Int]
+      countVerified <- Gen.chooseNum[Int](0, count)
+      countSequence <- Gen.chooseNum[Int](0, count)
+      countSegment  <- Gen.chooseNum[Int](0, count)
     } yield Counts(count, countVerified, countSequence, countSegment)
 
-  private def genSumCounts(counters: Nel[Counts]): Gen[Counts] =
+  def genProposalVotes: Gen[Seq[Vote]] = {
     for {
-      count         <- Gen.chooseNum(getMaxCount(_.count, counters), SumCounterUpperBound)
-      countVerified <- Gen.chooseNum(getMaxCount(_.verified, counters), count)
-      countSequence <- Gen.chooseNum(getMaxCount(_.sequence, counters), countVerified)
-      countSegment  <- Gen.chooseNum(getMaxCount(_.segment, counters), countSequence)
-    } yield Counts(count, countVerified, countSequence, countSegment)
-
-  def genProposalVotes: Gen[Seq[Vote]] =
-    for {
-      likeItCounts            <- genSimpleCounts
-      doableCounts            <- genSimpleCounts
-      platitudeAgreeCounts    <- genSimpleCounts
-      agreeCounts             <- genSumCounts(Nel.of(likeItCounts, doableCounts, platitudeAgreeCounts))
-      doNotUnderstandCounts   <- genSimpleCounts
-      doNotCareCounts         <- genSimpleCounts
-      noOpinionCounts         <- genSimpleCounts
-      neutralCounts           <- genSumCounts(Nel.of(doNotUnderstandCounts, doNotCareCounts, noOpinionCounts))
-      noWayCounts             <- genSimpleCounts
-      impossibleCount         <- genSimpleCounts
-      platitudeDisagreeCounts <- genSimpleCounts
-      disagreeCounts          <- genSumCounts(Nel.of(noWayCounts, impossibleCount, platitudeDisagreeCounts))
+      countsAgree                   <- genCounts
+      countsQualifLikeIt            <- genCounts
+      countsQualifDoable            <- genCounts
+      countsQualifPlatitudeAgree    <- genCounts
+      countsNeutral                 <- genCounts
+      countsQualifDoNotUnderstand   <- genCounts
+      countsQualifDoNotCare         <- genCounts
+      countsQualifNoOpinion         <- genCounts
+      countsDisagree                <- genCounts
+      countsQualifNoWay             <- genCounts
+      countsQualifImpossible        <- genCounts
+      countsQualifPlatitudeDisagree <- genCounts
     } yield Seq(
       Vote(
         key = VoteKey.Agree,
-        count = agreeCounts.count,
-        countVerified = agreeCounts.verified,
-        countSequence = agreeCounts.sequence,
-        countSegment = agreeCounts.segment,
+        count = countsAgree.count,
+        countVerified = countsAgree.verified,
+        countSequence = countsAgree.sequence,
+        countSegment = countsAgree.segment,
         qualifications = Seq(
           Qualification(
             QualificationKey.LikeIt,
-            likeItCounts.count,
-            likeItCounts.verified,
-            likeItCounts.sequence,
-            likeItCounts.segment
+            countsQualifLikeIt.count,
+            countsQualifLikeIt.verified,
+            countsQualifLikeIt.sequence,
+            countsQualifLikeIt.segment
           ),
           Qualification(
             QualificationKey.Doable,
-            doableCounts.count,
-            doableCounts.verified,
-            doableCounts.sequence,
-            doableCounts.segment
+            countsQualifDoable.count,
+            countsQualifDoable.verified,
+            countsQualifDoable.sequence,
+            countsQualifDoable.segment
           ),
           Qualification(
             QualificationKey.PlatitudeAgree,
-            platitudeAgreeCounts.count,
-            platitudeAgreeCounts.verified,
-            platitudeAgreeCounts.sequence,
-            platitudeAgreeCounts.segment
+            countsQualifPlatitudeAgree.count,
+            countsQualifPlatitudeAgree.verified,
+            countsQualifPlatitudeAgree.sequence,
+            countsQualifPlatitudeAgree.segment
           )
         )
       ),
       Vote(
         key = VoteKey.Neutral,
-        count = neutralCounts.count,
-        countVerified = neutralCounts.verified,
-        countSequence = neutralCounts.sequence,
-        countSegment = neutralCounts.segment,
+        count = countsNeutral.count,
+        countVerified = countsNeutral.verified,
+        countSequence = countsNeutral.sequence,
+        countSegment = countsNeutral.segment,
         qualifications = Seq(
           Qualification(
             QualificationKey.DoNotUnderstand,
-            doNotUnderstandCounts.count,
-            doNotUnderstandCounts.verified,
-            doNotUnderstandCounts.sequence,
-            doNotUnderstandCounts.segment
+            countsQualifDoNotUnderstand.count,
+            countsQualifDoNotUnderstand.verified,
+            countsQualifDoNotUnderstand.sequence,
+            countsQualifDoNotUnderstand.segment
           ),
           Qualification(
             QualificationKey.DoNotCare,
-            doNotCareCounts.count,
-            doNotCareCounts.verified,
-            doNotCareCounts.sequence,
-            doNotCareCounts.segment
+            countsQualifDoNotCare.count,
+            countsQualifDoNotCare.verified,
+            countsQualifDoNotCare.sequence,
+            countsQualifDoNotCare.segment
           ),
           Qualification(
             QualificationKey.NoOpinion,
-            noOpinionCounts.count,
-            noOpinionCounts.verified,
-            noOpinionCounts.sequence,
-            noOpinionCounts.segment
+            countsQualifNoOpinion.count,
+            countsQualifNoOpinion.verified,
+            countsQualifNoOpinion.sequence,
+            countsQualifNoOpinion.segment
           )
         )
       ),
       Vote(
         key = VoteKey.Disagree,
-        count = disagreeCounts.count,
-        countVerified = disagreeCounts.verified,
-        countSequence = disagreeCounts.sequence,
-        countSegment = disagreeCounts.segment,
+        count = countsDisagree.count,
+        countVerified = countsDisagree.verified,
+        countSequence = countsDisagree.sequence,
+        countSegment = countsDisagree.segment,
         qualifications = Seq(
           Qualification(
             QualificationKey.NoWay,
-            noWayCounts.count,
-            noWayCounts.verified,
-            noWayCounts.sequence,
-            noWayCounts.segment
+            countsQualifNoWay.count,
+            countsQualifNoWay.verified,
+            countsQualifNoWay.sequence,
+            countsQualifNoWay.segment
           ),
           Qualification(
             QualificationKey.Impossible,
-            impossibleCount.count,
-            impossibleCount.verified,
-            impossibleCount.sequence,
-            impossibleCount.segment
+            countsQualifImpossible.count,
+            countsQualifImpossible.verified,
+            countsQualifImpossible.sequence,
+            countsQualifImpossible.segment
           ),
           Qualification(
             QualificationKey.PlatitudeDisagree,
-            disagreeCounts.count,
-            disagreeCounts.verified,
-            disagreeCounts.sequence,
-            disagreeCounts.segment
+            countsQualifPlatitudeDisagree.count,
+            countsQualifPlatitudeDisagree.verified,
+            countsQualifPlatitudeDisagree.sequence,
+            countsQualifPlatitudeDisagree.segment
           )
         )
       )
     )
+  }
 
   implicit val arbProposalStatus: Arbitrary[ProposalStatus] = Arbitrary(
     Gen.frequency(

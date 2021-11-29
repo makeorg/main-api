@@ -19,12 +19,11 @@
 
 package org.make.api.post
 
-import com.sksamuel.elastic4s.Index
 import com.sksamuel.elastic4s.circe._
-import com.sksamuel.elastic4s.ElasticDsl._
-import com.sksamuel.elastic4s.requests.common.RefreshPolicy
-import com.sksamuel.elastic4s.requests.searches.SearchRequest
-import com.sksamuel.elastic4s.requests.searches.queries.compound.BoolQuery
+import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.searches.SearchRequest
+import com.sksamuel.elastic4s.searches.queries.BoolQuery
+import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import grizzled.slf4j.Logging
 import io.circe.{Json, Printer}
 import org.make.api.technical.elasticsearch.{ElasticsearchClientComponent, ElasticsearchConfigurationComponent, _}
@@ -43,7 +42,7 @@ trait PostSearchEngineComponent {
 trait PostSearchEngine {
   def findPostById(postId: PostId): Future[Option[IndexedPost]]
   def searchPosts(query: PostSearchQuery): Future[PostSearchResult]
-  def indexPosts(records: Seq[IndexedPost], maybeIndex: Option[Index]): Future[IndexationStatus]
+  def indexPosts(records: Seq[IndexedPost], maybeIndex: Option[IndexAndType]): Future[IndexationStatus]
 }
 
 object PostSearchEngine {
@@ -60,25 +59,25 @@ trait DefaultPostSearchEngineComponent extends PostSearchEngineComponent with Ci
 
     private lazy val client = elasticsearchClient.client
 
-    private val postAlias: Index = elasticsearchConfiguration.postAliasName
+    private val postAlias: IndexAndType =
+      elasticsearchConfiguration.postAliasName / PostSearchEngine.postIndexName
 
     // TODO remove once elastic4s-circe upgrades to circe 0.14
     private implicit val printer: Json => String = Printer.noSpaces.print
 
     override def findPostById(postId: PostId): Future[Option[IndexedPost]] = {
       client
-        .executeAsFuture(get(postAlias, postId.value))
+        .executeAsFuture(get(id = postId.value).from(postAlias))
         .map(_.toOpt[IndexedPost])
     }
 
     override def searchPosts(query: PostSearchQuery): Future[PostSearchResult] = {
       val searchFilters = PostSearchFilters.getPostSearchFilters(query)
-      val request: SearchRequest =
-        search(postAlias)
-          .bool(BoolQuery(must = searchFilters))
-          .sortBy(PostSearchFilters.getSort(query).toList)
-          .size(PostSearchFilters.getLimitSearch(query))
-          .from(PostSearchFilters.getSkipSearch(query))
+      val request: SearchRequest = searchWithType(postAlias)
+        .bool(BoolQuery(must = searchFilters))
+        .sortBy(PostSearchFilters.getSort(query).toList)
+        .size(PostSearchFilters.getLimitSearch(query))
+        .from(PostSearchFilters.getSkipSearch(query))
 
       client
         .executeAsFuture(request)
@@ -87,10 +86,10 @@ trait DefaultPostSearchEngineComponent extends PostSearchEngineComponent with Ci
         }
     }
 
-    override def indexPosts(records: Seq[IndexedPost], maybeIndex: Option[Index]): Future[IndexationStatus] = {
+    override def indexPosts(records: Seq[IndexedPost], maybeIndex: Option[IndexAndType]): Future[IndexationStatus] = {
       val index = maybeIndex.getOrElse(postAlias)
       client
-        .execute(bulk(records.map { record =>
+        .executeAsFuture(bulk(records.map { record =>
           indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.postId.value)
         }))
         .map(_ => IndexationStatus.Completed)

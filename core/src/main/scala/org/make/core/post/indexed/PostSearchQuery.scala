@@ -21,9 +21,10 @@ package org.make.core
 package post
 package indexed
 
-import com.sksamuel.elastic4s.{ElasticApi, ElasticDsl}
-import com.sksamuel.elastic4s.requests.searches.queries.Query
-import com.sksamuel.elastic4s.requests.searches.sort.{FieldSort, SortOrder}
+import com.sksamuel.elastic4s.ElasticApi
+import com.sksamuel.elastic4s.http.ElasticDsl
+import com.sksamuel.elastic4s.searches.queries.Query
+import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import org.make.core.reference.Country
 
 final case class PostSearchQuery(

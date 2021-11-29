@@ -23,7 +23,7 @@ import akka.Done
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.stream.scaladsl.Source
 import cats.data.NonEmptyList
-import com.sksamuel.elastic4s.requests.searches.sort.SortOrder
+import com.sksamuel.elastic4s.searches.sort.SortOrder
 import org.make.api.idea._
 import org.make.api.partner.{PartnerService, PartnerServiceComponent}
 import org.make.api.question.{AuthorRequest, QuestionService, QuestionServiceComponent}

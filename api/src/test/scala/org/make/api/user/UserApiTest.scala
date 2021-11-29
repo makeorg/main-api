@@ -35,7 +35,7 @@ import akka.http.scaladsl.model.headers.{
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
 import cats.data.NonEmptyList
-import com.sksamuel.elastic4s.requests.searches.sort.SortOrder.Desc
+import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import org.make.api.proposal.{
   ProposalResponse,
   ProposalService,

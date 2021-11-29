@@ -19,8 +19,9 @@
 
 package org.make.api.technical.healthcheck
 
-import com.sksamuel.elastic4s.Index
-import com.sksamuel.elastic4s.ElasticDsl._
+import com.sksamuel.elastic4s.IndexAndType
+import com.sksamuel.elastic4s.http.ElasticDsl.{searchWithType, _}
+import org.make.api.proposal.ProposalSearchEngine
 import org.make.api.technical.elasticsearch._
 import org.make.api.technical.healthcheck.HealthCheck.Status
 
@@ -33,12 +34,12 @@ class ElasticsearchHealthCheck(
 
   override val techno: String = "elasticsearch"
 
-  private val proposalAlias: Index =
-    elasticsearchConfiguration.proposalAliasName
+  private val proposalAlias: IndexAndType =
+    elasticsearchConfiguration.proposalAliasName / ProposalSearchEngine.proposalIndexName
 
   override def healthCheck()(implicit ctx: ExecutionContext): Future[Status] = {
     elasticsearchClient.client
-      .executeAsFuture(search(proposalAlias).bool(must(matchAllQuery())).limit(1))
+      .executeAsFuture(searchWithType(proposalAlias).bool(must(matchAllQuery())).limit(1))
       .map { response =>
         if (response.totalHits > 0) {
           Status.OK

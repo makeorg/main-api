@@ -35,7 +35,6 @@ import org.make.core.reference.Country
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import org.make.api.technical.ActorSystemComponent
 
 class PostSearchEngineIT
     extends ItMakeTest
@@ -43,7 +42,6 @@ class PostSearchEngineIT
     with CirceFormatters
     with SearchEngineIT[PostId, IndexedPost]
     with ElasticsearchConfigurationComponent
-    with ActorSystemComponent
     with DefaultElasticsearchClientComponent {
 
   override val StartContainersTimeout: FiniteDuration = 5.minutes

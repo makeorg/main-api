@@ -20,12 +20,11 @@
 package org.make.api.organisation
 
 import akka.Done
-import com.sksamuel.elastic4s.Index
 import com.sksamuel.elastic4s.circe._
-import com.sksamuel.elastic4s.ElasticDsl._
-import com.sksamuel.elastic4s.requests.common.RefreshPolicy
-import com.sksamuel.elastic4s.requests.searches.SearchRequest
-import com.sksamuel.elastic4s.requests.searches.queries.compound.BoolQuery
+import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.searches.SearchRequest
+import com.sksamuel.elastic4s.searches.queries.BoolQuery
+import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import grizzled.slf4j.Logging
 import io.circe.{Json, Printer}
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
@@ -44,9 +43,9 @@ trait OrganisationSearchEngine {
   def findOrganisationById(organisationId: UserId): Future[Option[IndexedOrganisation]]
   def findOrganisationBySlug(slug: String): Future[Option[IndexedOrganisation]]
   def searchOrganisations(query: OrganisationSearchQuery): Future[OrganisationSearchResult]
-  def indexOrganisation(record: IndexedOrganisation, mayBeIndex: Option[Index] = None): Future[Done]
-  def indexOrganisations(records: Seq[IndexedOrganisation], mayBeIndex: Option[Index] = None): Future[Done]
-  def updateOrganisation(record: IndexedOrganisation, mayBeIndex: Option[Index] = None): Future[Done]
+  def indexOrganisation(record: IndexedOrganisation, mayBeIndex: Option[IndexAndType] = None): Future[Done]
+  def indexOrganisations(records: Seq[IndexedOrganisation], mayBeIndex: Option[IndexAndType] = None): Future[Done]
+  def updateOrganisation(record: IndexedOrganisation, mayBeIndex: Option[IndexAndType] = None): Future[Done]
 }
 
 object OrganisationSearchEngine {
@@ -62,16 +61,14 @@ trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineC
 
     private lazy val client = elasticsearchClient.client
 
-    private val organisationAlias: Index =
-      elasticsearchConfiguration.organisationAliasName
+    private val organisationAlias: IndexAndType =
+      elasticsearchConfiguration.organisationAliasName / OrganisationSearchEngine.organisationIndexName
 
     // TODO remove once elastic4s-circe upgrades to circe 0.14
     private implicit val printer: Json => String = Printer.noSpaces.print
 
     override def findOrganisationById(organisationId: UserId): Future[Option[IndexedOrganisation]] = {
-      client
-        .executeAsFuture(get(organisationAlias, organisationId.value))
-        .map(_.toOpt[IndexedOrganisation])
+      client.executeAsFuture(get(id = organisationId.value).from(organisationAlias)).map(_.toOpt[IndexedOrganisation])
     }
 
     override def findOrganisationBySlug(slug: String): Future[Option[IndexedOrganisation]] = {
@@ -80,7 +77,7 @@ trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineC
         limit = Some(1)
       )
       val searchFilters = OrganisationSearchFilters.getOrganisationSearchFilters(query)
-      val request = search(organisationAlias)
+      val request = searchWithType(organisationAlias)
         .bool(BoolQuery(must = searchFilters))
         .from(0)
         .size(1)
@@ -92,7 +89,7 @@ trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineC
 
     override def searchOrganisations(query: OrganisationSearchQuery): Future[OrganisationSearchResult] = {
       val searchFilters = OrganisationSearchFilters.getOrganisationSearchFilters(query)
-      val request: SearchRequest = search(organisationAlias)
+      val request: SearchRequest = searchWithType(organisationAlias)
         .bool(BoolQuery(must = searchFilters))
         .sortBy(OrganisationSearchFilters.getSort(query).toList)
         .size(OrganisationSearchFilters.getLimitSearch(query))
@@ -110,7 +107,7 @@ trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineC
         }
     }
 
-    override def indexOrganisation(record: IndexedOrganisation, mayBeIndex: Option[Index]): Future[Done] = {
+    override def indexOrganisation(record: IndexedOrganisation, mayBeIndex: Option[IndexAndType]): Future[Done] = {
       val index = mayBeIndex.getOrElse(organisationAlias)
       client
         .executeAsFuture(indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.organisationId.value))
@@ -119,7 +116,10 @@ trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineC
         }
     }
 
-    override def indexOrganisations(records: Seq[IndexedOrganisation], mayBeIndex: Option[Index]): Future[Done] = {
+    override def indexOrganisations(
+      records: Seq[IndexedOrganisation],
+      mayBeIndex: Option[IndexAndType]
+    ): Future[Done] = {
       val index = mayBeIndex.getOrElse(organisationAlias)
       client
         .executeAsFuture(bulk(records.map { record =>
@@ -130,13 +130,11 @@ trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineC
         }
     }
 
-    override def updateOrganisation(record: IndexedOrganisation, mayBeIndex: Option[Index]): Future[Done] = {
+    override def updateOrganisation(record: IndexedOrganisation, mayBeIndex: Option[IndexAndType]): Future[Done] = {
       val index = mayBeIndex.getOrElse(organisationAlias)
       client
         .executeAsFuture(
-          updateById(index, record.organisationId.value)
-            .doc(record)
-            .refresh(RefreshPolicy.IMMEDIATE)
+          (update(id = record.organisationId.value) in index).doc(record).refresh(RefreshPolicy.IMMEDIATE)
         )
         .map(_ => Done)
     }

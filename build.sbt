@@ -45,13 +45,8 @@ lazy val commonSettings = Seq(
       Nil
     }
   },
-  kanelaVersion := Dependencies.kanelaVersion,
-  libraryDependencies ++= Seq(
-    Dependencies.logger,
-    Dependencies.loggerBridge,
-    Dependencies.grizzledSlf4j,
-    Dependencies.jodaTime
-  ),
+  kanelaVersion       := Dependencies.kanelaVersion,
+  libraryDependencies ++= Seq(Dependencies.logger, Dependencies.loggerBridge, Dependencies.grizzledSlf4j),
   publishTo := {
     if (isSnapshot.value) {
       Some("Sonatype Snapshots Nexus".at("https://nexus.prod.makeorg.tech/repository/maven-snapshots/"))
