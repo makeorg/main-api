@@ -59,7 +59,7 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
       }
       val hash = SecurityHelper.createSecureHash(url, securityConfiguration.secureHashSalt)
       val script =
-        s"""<iframe frameborder="0" scrolling="no" width="100%" height="550" style="min-height: 550px" src="${config
+        s"""<iframe frameborder="0" scrolling="no" referrerpolicy="no-referrer-when-downgrade" width="100%" height="550" style="min-height: 550px" src="${config
           .getString("make-api.urls.widget")}/$url&hash=$hash"></iframe>"""
       persistentWidgetService.persist(
         Widget(
@@ -68,7 +68,7 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
           questionId = question.questionId,
           country = country,
           author = author,
-          version = Widget.Version.V2,
+          version = Widget.Version.V3,
           script = script,
           createdAt = dateHelper.now()
         )
