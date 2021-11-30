@@ -21,6 +21,7 @@ package org.make.api.sequence
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer}
+import cats.data.{NonEmptyList => Nel}
 import eu.timepit.refined.auto.autoUnwrap
 import org.make.api.sequence.SequenceCacheActor._
 import org.make.api.technical.ActorProtocol
@@ -36,14 +37,25 @@ object SequenceCacheActor {
 
   def apply(
     questionId: QuestionId,
-    reloadProposals: QuestionId => Future[Seq[IndexedProposal]],
+    reloadProposals: QuestionId => Future[Nel[IndexedProposal]],
     config: SequenceCacheConfiguration
   ): Behavior[Protocol] = {
     Behaviors.withStash(1000) { buffer =>
       Behaviors.setup { context =>
-        new SequenceCacheActor(context, questionId, buffer, config, reloadProposals)
-          .cache(0, Seq.empty, Iterator.empty, Deadline.now + config.inactivityTimeout)
+        fetchProposals(questionId, reloadProposals, context)()
+        new SequenceCacheActor(context, buffer, config, fetchProposals(questionId, reloadProposals, context)).init()
       }
+    }
+  }
+
+  def fetchProposals(
+    questionId: QuestionId,
+    reloadProposals: QuestionId => Future[Nel[IndexedProposal]],
+    context: ActorContext[Protocol]
+  ): () => Unit = () => {
+    context.pipeToSelf(reloadProposals(questionId)) {
+      case Success(proposals) => SetProposalsPoolSuccess(proposals)
+      case Failure(e)         => SetProposalsPoolFailure(e)
     }
   }
 
@@ -53,8 +65,7 @@ object SequenceCacheActor {
   sealed trait Response extends Protocol
 
   final case class GetProposal(replyTo: ActorRef[IndexedProposal]) extends Command
-  final case class SetProposalsPoolSuccess(proposalsPool: Seq[IndexedProposal], replyTo: ActorRef[IndexedProposal])
-      extends Command
+  final case class SetProposalsPoolSuccess(proposalsPool: Nel[IndexedProposal]) extends Command
   final case class SetProposalsPoolFailure(error: Throwable) extends Command
   case object Expire extends Command
 
@@ -63,32 +74,41 @@ object SequenceCacheActor {
 
 class SequenceCacheActor private (
   context: ActorContext[Protocol],
-  questionId: QuestionId,
   buffer: StashBuffer[Protocol],
   config: SequenceCacheConfiguration,
-  reloadProposals: QuestionId => Future[Seq[IndexedProposal]]
+  fetchProposals: () => Unit
 ) {
 
   private val untilRefresh: Int = config.proposalsPoolSize * config.cacheRefreshCycles
 
   private def newDeadline: Deadline = Deadline.now + config.inactivityTimeout
 
+  def init(): Behavior[Protocol] = {
+    Behaviors.receiveMessage {
+      case SetProposalsPoolSuccess(proposalsPool) =>
+        buffer.unstashAll(cache(untilRefresh, proposalsPool, proposalsPool.iterator, newDeadline))
+      case SetProposalsPoolFailure(e) =>
+        context.log.error("Refreshing cache failed", e)
+        Behaviors.stopped
+      case cmd =>
+        buffer.stash(cmd)
+        Behaviors.same
+    }
+  }
+
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def cache(
     counter: Int,
-    proposalsPool: Iterable[IndexedProposal],
+    proposalsPool: Nel[IndexedProposal],
     iterator: Iterator[IndexedProposal],
     deadline: Deadline
   ): Behavior[Protocol] = {
     Behaviors.receiveMessage {
       case GetProposal(replyTo) =>
-        if (counter <= 0 || proposalsPool.isEmpty) {
-          context.pipeToSelf(reloadProposals(questionId)) {
-            case Success(proposals) => SetProposalsPoolSuccess(proposals, replyTo)
-            case Failure(e)         => SetProposalsPoolFailure(e)
-          }
-          block()
-        } else if (iterator.hasNext) {
+        if (counter == 0) {
+          fetchProposals()
+        }
+        if (iterator.hasNext) {
           replyTo ! iterator.next()
           cache(counter - 1, proposalsPool, iterator, newDeadline)
         } else {
@@ -102,29 +122,11 @@ class SequenceCacheActor private (
         } else {
           Behaviors.same
         }
-      case SetProposalsPoolFailure(_)    => Behaviors.unhandled
-      case SetProposalsPoolSuccess(_, _) => Behaviors.unhandled
-    }
-  }
-
-  def block(): Behavior[Protocol] = {
-    Behaviors.receiveMessage {
-      case SetProposalsPoolSuccess(proposalsPool, replyTo) =>
-        if (proposalsPool.isEmpty) {
-          context.log.warn("Cache received an empty proposal pool")
-          cache(0, Seq.empty, Iterator.empty, newDeadline)
-        } else {
-          val it = proposalsPool.iterator
-          replyTo ! it.next()
-          buffer.unstashAll(cache(untilRefresh - 1, proposalsPool, it, newDeadline))
-        }
+      case SetProposalsPoolSuccess(proposalsPool) =>
+        cache(untilRefresh, proposalsPool, proposalsPool.iterator, newDeadline)
       case SetProposalsPoolFailure(e) =>
         context.log.error("Refreshing cache failed", e)
-        cache(0, Seq.empty, Iterator.empty, newDeadline)
-      case cmd =>
-        buffer.stash(cmd)
-        Behaviors.same
+        Behaviors.stopped
     }
-
   }
 }

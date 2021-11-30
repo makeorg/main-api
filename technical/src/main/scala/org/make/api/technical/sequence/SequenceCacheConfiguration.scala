@@ -29,9 +29,9 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 
 class SequenceCacheConfiguration(config: Config) {
   val inactivityTimeout: FiniteDuration =
-    FiniteDuration(Duration(config.getString("inactivity-timeout")).toSeconds, TimeUnit.SECONDS)
+    FiniteDuration(Duration(config.getString("inactivity-timeout")).toMillis, TimeUnit.MILLISECONDS)
   val checkInactivityTimer: FiniteDuration =
-    FiniteDuration(Duration(config.getString("check-inactivity-timer")).toSeconds, TimeUnit.SECONDS)
+    FiniteDuration(Duration(config.getString("check-inactivity-timer")).toMillis, TimeUnit.MILLISECONDS)
   val proposalsPoolSize: PosInt = refineV[Positive].unsafeFrom(config.getInt("proposals-pool-size"))
   val cacheRefreshCycles: Int = config.getInt("cache-refresh-cycles")
 }

@@ -22,6 +22,7 @@ package org.make.api.sequence
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
+import cats.data.{NonEmptyList => Nel}
 import org.make.api.technical.ActorProtocol
 import org.make.api.technical.sequence.SequenceCacheConfiguration
 import org.make.core.proposal.indexed.IndexedProposal
@@ -48,18 +49,35 @@ object SequenceCacheManager {
     sequenceCacheConfiguration: SequenceCacheConfiguration,
     sequenceService: SequenceService,
     sequenceConfigurationService: SequenceConfigurationService
-  )(questionId: QuestionId): Future[Seq[IndexedProposal]] = {
+  )(questionId: QuestionId): Future[Nel[IndexedProposal]] = {
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+    def simpleSequence(behaviour: SequenceBehaviour, retries: Int = 3): Future[Nel[IndexedProposal]] = {
+      sequenceService.simpleSequence(Seq.empty, behaviour, Seq.empty, None).flatMap {
+        case Seq() =>
+          if (retries > 0) {
+            simpleSequence(behaviour, retries - 1)
+          } else {
+            Future.failed(
+              new IllegalStateException(
+                s"Question ${questionId.value} might not have any proposals eligible for sequence."
+              )
+            )
+          }
+        case head +: tail => Future.successful(Nel(head, tail.toList))
+      }
+    }
+
     sequenceConfigurationService.getSequenceConfigurationByQuestionId(questionId).flatMap { config =>
       val customConfig: SequenceConfiguration = config
         .copy(mainSequence = config.mainSequence.copy(sequenceSize = sequenceCacheConfiguration.proposalsPoolSize))
       val behaviour = SequenceBehaviourProvider[Unit].behaviour((), customConfig, questionId, None)
-      sequenceService.simpleSequence(Seq.empty, behaviour, Seq.empty, None)
+      simpleSequence(behaviour)
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def handleMessage(configCache: Map[QuestionId, ActorRef[SequenceCacheActor.Protocol]])(
-    implicit reloadProposals: QuestionId => Future[Seq[IndexedProposal]],
+    implicit reloadProposals: QuestionId => Future[Nel[IndexedProposal]],
     config: SequenceCacheConfiguration
   ): Behavior[Protocol] = {
     Behaviors.setup { context =>
