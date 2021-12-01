@@ -255,6 +255,8 @@ trait MakeApi
     with DefaultSegmentServiceComponent
     with DefaultSendMailPublisherServiceComponent
     with DefaultSequenceApiComponent
+    with DefaultSequenceCacheConfigurationComponent
+    with DefaultSequenceCacheManagerServiceComponent
     with DefaultSequenceConfigurationComponent
     with DefaultSequenceServiceComponent
     with DefaultSessionHistoryCoordinatorServiceComponent
@@ -285,6 +287,7 @@ trait MakeApi
     with MakeAuthentication
     with MakeDBExecutionContextComponent
     with ProposalCoordinatorComponent
+    with SequenceCacheManagerComponent
     with SequenceConfigurationActorComponent
     with SessionHistoryCoordinatorComponent
     with SpawnActorRefComponent
@@ -310,8 +313,12 @@ trait MakeApi
     actorSystem.findRefByKey(MakeGuardian.SpawnActorKey)
   }, atMost = 5.seconds)
 
+  override lazy val sequenceCacheManager: ActorRef[SequenceCacheManager.Protocol] = Await.result({
+    actorSystem.findRefByKey(SequenceCacheManager.SequenceCacheActorKey)
+  }, atMost = 5.seconds)
+
   override lazy val sequenceConfigurationActor: ActorRef[SequenceConfigurationActorProtocol] = Await.result({
-    actorSystem.findRefByKey(SequenceConfigurationActor.SequenceCacheActorKey)
+    actorSystem.findRefByKey(SequenceConfigurationActor.SequenceConfigurationCacheActorKey)
   }, atMost = 5.seconds)
 
   override lazy val readExecutionContext: EC = DatabaseConfigurationExtension(actorSystem).readThreadPool

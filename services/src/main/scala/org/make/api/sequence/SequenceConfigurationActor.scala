@@ -77,7 +77,7 @@ object SequenceConfigurationActor {
 
   final case class CachedSequenceConfiguration(sequenceConfiguration: SequenceConfiguration)
   val name: String = "sequence-configuration-cache"
-  val SequenceCacheActorKey: ServiceKey[SequenceConfigurationActorProtocol] = ServiceKey(name)
+  val SequenceConfigurationCacheActorKey: ServiceKey[SequenceConfigurationActorProtocol] = ServiceKey(name)
 
 }
 

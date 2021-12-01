@@ -25,7 +25,7 @@ import akka.actor.typed.{ActorRef, Behavior, Props, SpawnProtocol}
 import org.make.api.idea.{IdeaConsumerBehavior, IdeaProducerBehavior}
 import org.make.api.kafka.kafkaDispatcher
 import org.make.api.proposal.ProposalSupervisor
-import org.make.api.sequence.SequenceConfigurationActor
+import org.make.api.sequence.{SequenceCacheManager, SequenceConfigurationActor}
 import org.make.api.sequence.SequenceConfigurationActor.SequenceConfigurationActorProtocol
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.technical.crm._
@@ -81,16 +81,31 @@ object MakeGuardian {
     context.watch(spawnActorRef)
     context.system.receptionist ! Receptionist.Register(MakeGuardian.SpawnActorKey, spawnActorRef)
 
-    val sequenceCacheActor: ActorRef[SequenceConfigurationActorProtocol] = context.spawn(
+    val sequenceConfigurationCacheActor: ActorRef[SequenceConfigurationActorProtocol] = context.spawn(
       ActorSystemHelper.superviseWithBackoff(
         SequenceConfigurationActor(dependencies.persistentSequenceConfigurationService)
       ),
       SequenceConfigurationActor.name
     )
-    context.watch(sequenceCacheActor)
+    context.watch(sequenceConfigurationCacheActor)
     context.system.receptionist ! Receptionist.Register(
-      SequenceConfigurationActor.SequenceCacheActorKey,
-      sequenceCacheActor
+      SequenceConfigurationActor.SequenceConfigurationCacheActorKey,
+      sequenceConfigurationCacheActor
+    )
+    val sequenceCacheManager: ActorRef[SequenceCacheManager.Protocol] = context.spawn(
+      ActorSystemHelper.superviseWithBackoff(
+        SequenceCacheManager(
+          dependencies.sequenceCacheConfiguration,
+          dependencies.sequenceService,
+          dependencies.sequenceConfigurationService
+        )
+      ),
+      SequenceCacheManager.name
+    )
+    context.watch(sequenceCacheManager)
+    context.system.receptionist ! Receptionist.Register(
+      SequenceCacheManager.SequenceCacheActorKey,
+      sequenceCacheManager
     )
   }
 

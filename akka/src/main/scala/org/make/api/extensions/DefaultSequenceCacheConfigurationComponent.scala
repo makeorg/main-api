@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2021 Make.org
+ *  Copyright (C) 2018 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -17,14 +17,13 @@
  *
  */
 
-name := "technical"
+package org.make.api.extensions
 
-libraryDependencies ++= Seq(
-  Dependencies.akkaPersistence,
-  Dependencies.cats,
-  Dependencies.configuration,
-  Dependencies.kamonExecutors,
-  Dependencies.refinedScala,
-  Dependencies.scalaOAuth,
-  Dependencies.swiftClient
-)
+import org.make.api.ConfigComponent
+import org.make.api.technical.sequence.{SequenceCacheConfiguration, SequenceCacheConfigurationComponent}
+
+trait DefaultSequenceCacheConfigurationComponent extends SequenceCacheConfigurationComponent {
+  this: ConfigComponent =>
+  override lazy val sequenceCacheConfiguration: SequenceCacheConfiguration =
+    new SequenceCacheConfiguration(config.getConfig("make-api.sequence-cache"))
+}
