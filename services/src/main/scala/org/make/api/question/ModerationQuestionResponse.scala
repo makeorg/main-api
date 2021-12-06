@@ -221,7 +221,8 @@ final case class QuestionDetailsResponse(
   timeline: OperationOfQuestionTimeline,
   controversyCount: Long,
   topProposalCount: Long,
-  activeFeatureData: ActiveFeatureData
+  activeFeatureData: ActiveFeatureData,
+  hasDemographics: Boolean
 )
 
 object QuestionDetailsResponse extends CirceFormatters {
@@ -234,7 +235,8 @@ object QuestionDetailsResponse extends CirceFormatters {
     activeFeatures: Seq[FeatureSlug],
     controversyCount: Long,
     topProposalCount: Long,
-    activeFeatureData: ActiveFeatureData
+    activeFeatureData: ActiveFeatureData,
+    hasDemographics: Boolean
   ): QuestionDetailsResponse = QuestionDetailsResponse(
     questionId = question.questionId,
     operationId = operation.operationId,
@@ -275,7 +277,8 @@ object QuestionDetailsResponse extends CirceFormatters {
     timeline = operationOfQuestion.timeline,
     controversyCount = controversyCount,
     topProposalCount = topProposalCount,
-    activeFeatureData = activeFeatureData
+    activeFeatureData = activeFeatureData,
+    hasDemographics = hasDemographics
   )
 
   implicit val codec: Codec[QuestionDetailsResponse] = deriveCodec[QuestionDetailsResponse]
