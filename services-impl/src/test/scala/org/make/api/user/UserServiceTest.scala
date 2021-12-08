@@ -27,6 +27,7 @@ import org.make.api.extensions.{
   MakeSettings,
   MakeSettingsComponent
 }
+import org.make.api.partner.{PersistentPartnerService, PersistentPartnerServiceComponent}
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.proposal.{
   ProposalResponse,
@@ -47,12 +48,14 @@ import org.make.api.user.validation.{UserRegistrationValidator, UserRegistration
 import org.make.api.userhistory._
 import org.make.api.{EmptyActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.core.auth.UserRights
+import org.make.core.partner.PartnerId
 import org.make.core.profile.Gender.Female
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal.{ProposalId, SearchQuery}
 import org.make.core.question.QuestionId
 import org.make.core.reference.Country
 import org.make.core.technical.IdGenerator
+import org.make.core.technical.Pagination.Start
 import org.make.core.user._
 import org.make.core.{DateHelper, DateHelperComponent, RequestContext}
 import org.mockito.Mockito.clearInvocations
@@ -76,6 +79,7 @@ class UserServiceTest
     with PersistentUserServiceComponent
     with PersistentUserToAnonymizeServiceComponent
     with PersistentCrmUserServiceComponent
+    with PersistentPartnerServiceComponent
     with ProposalServiceComponent
     with CrmServiceComponent
     with TokenGeneratorComponent
@@ -106,6 +110,7 @@ class UserServiceTest
   override val downloadService: DownloadService = mock[DownloadService]
   override val jobCoordinatorService: JobCoordinatorService = mock[JobCoordinatorService]
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
+  override val persistentPartnerService: PersistentPartnerService = mock[PersistentPartnerService]
 
   val currentDate: ZonedDateTime = DateHelper.now()
 
@@ -196,6 +201,13 @@ class UserServiceTest
     verificationToken = Some("Token"),
     verificationTokenExpiresAt = Some(DateHelper.now()),
     profile = johnDoeProfile
+  )
+
+  val johnDoeCorp: User = TestUtils.user(
+    id = UserId("organisation-id"),
+    email = "johndoe-corp@example.com",
+    organisationName = Some("john-doe-corp"),
+    userType = UserType.UserTypeOrganisation
   )
 
   val returnedPersonality: User = TestUtils.user(
@@ -1032,14 +1044,15 @@ class UserServiceTest
   }
 
   Feature("anonymize user") {
+    when(persistentUserService.removeAnonymizedUserFromFollowedUserTable(any[UserId]))
+      .thenReturn(Future.unit)
+    when(proposalService.searchForUser(any, any, any))
+      .thenReturn(Future.successful(ProposalsResultSeededResponse.empty))
+
     Scenario("anonymize user") {
       clearInvocations(eventBusService)
 
-      when(persistentUserService.removeAnonymizedUserFromFollowedUserTable(any[UserId]))
-        .thenReturn(Future.unit)
       when(userHistoryCoordinatorService.delete(johnDoeUser.userId)).thenReturn(Future.unit)
-      when(proposalService.searchForUser(any, any, any))
-        .thenReturn(Future.successful(ProposalsResultSeededResponse.empty))
 
       Given("a user")
       When("I anonymize this user")
@@ -1052,6 +1065,46 @@ class UserServiceTest
         verify(eventBusService, times(1))
           .publish(argThat[UserAnonymizedEvent] { event =>
             event.userId == johnDoeUser.userId && event.adminId == adminId
+          })
+      }
+    }
+
+    Scenario("anonymize organisation") {
+      clearInvocations(eventBusService)
+
+      when(userHistoryCoordinatorService.delete(johnDoeCorp.userId)).thenReturn(Future.unit)
+
+      val p1 = TestUtils.partner(
+        partnerId = PartnerId("partner-id"),
+        questionId = QuestionId("question-id"),
+        organisationId = Some(johnDoeCorp.userId)
+      )
+
+      when(
+        persistentPartnerService.find(
+          start = Start.zero,
+          end = None,
+          sort = None,
+          order = None,
+          questionId = None,
+          organisationId = Some(johnDoeCorp.userId),
+          partnerKind = None
+        )
+      ).thenReturn(Future.successful(Seq(p1)))
+      when(persistentPartnerService.modify(eqTo(p1.copy(organisationId = None))))
+        .thenReturn(Future.successful(p1.copy(organisationId = None)))
+
+      Given("a user")
+      When("I anonymize this user")
+      val adminId = UserId("admin")
+      val futureAnonymizeUser =
+        userService.anonymize(johnDoeCorp, adminId, RequestContext.empty, Anonymization.Explicit)
+
+      Then("an event is sent")
+      whenReady(futureAnonymizeUser, Timeout(3.seconds)) { _ =>
+        verify(eventBusService, times(1))
+          .publish(argThat[UserAnonymizedEvent] { event =>
+            event.userId == johnDoeCorp.userId && event.adminId == adminId
           })
       }
     }
