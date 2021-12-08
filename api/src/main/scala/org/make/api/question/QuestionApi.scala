@@ -24,6 +24,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
+import org.make.api.demographics.ActiveDemographicsCardServiceComponent
 import org.make.api.feature.{ActiveFeatureServiceComponent, FeatureServiceComponent}
 import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
 import org.make.api.keyword.KeywordServiceComponent
@@ -307,19 +308,20 @@ trait DefaultQuestionApiComponent
     with ParameterExtractors {
 
   this: MakeDirectivesDependencies
-    with QuestionServiceComponent
-    with OperationServiceComponent
+    with ActiveDemographicsCardServiceComponent
+    with ActiveFeatureServiceComponent
+    with FeatureServiceComponent
+    with KeywordServiceComponent
     with OperationOfQuestionSearchEngineComponent
     with OperationOfQuestionServiceComponent
+    with OperationServiceComponent
     with PartnerServiceComponent
-    with FeatureServiceComponent
-    with ActiveFeatureServiceComponent
-    with ProposalSearchEngineComponent
-    with TagServiceComponent
-    with ProposalServiceComponent
-    with TopIdeaCommentServiceComponent
     with PersonalityRoleServiceComponent
-    with KeywordServiceComponent =>
+    with ProposalSearchEngineComponent
+    with ProposalServiceComponent
+    with QuestionServiceComponent
+    with TagServiceComponent
+    with TopIdeaCommentServiceComponent =>
 
   override lazy val questionApi: QuestionApi = new DefaultQuestionApi
 
@@ -336,26 +338,33 @@ trait DefaultQuestionApiComponent
           provideAsyncOrNotFound {
             questionService.getQuestionByQuestionIdValueOrSlug(questionSlugOrQuestionId)
           } { question =>
-            provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(question.questionId)) {
-              operationOfQuestion =>
-                provideAsyncOrNotFound(
-                  elasticsearchOperationOfQuestionAPI.findOperationOfQuestionById(question.questionId)
-                ) { indexedOOQ =>
-                  provideAsyncOrNotFound(operationService.findOne(operationOfQuestion.operationId)) { operation =>
-                    provideAsync(
-                      partnerService.find(
-                        questionId = Some(question.questionId),
-                        organisationId = None,
-                        start = Start.zero,
-                        end = None,
-                        sort = Some("weight"),
-                        order = Some(Order.desc),
-                        partnerKind = None
-                      )
-                    ) { partners =>
-                      provideAsync(findQuestionsOfOperation(operationOfQuestion.operationId)) { questions =>
-                        provideAsync(findActiveFeatureSlugsByQuestionId(question.questionId)) { activeFeatureSlugs =>
-                          provideAsync(findActiveFeatureData(question, activeFeatureSlugs)) { activeFeaturesData =>
+            val findOoq = operationOfQuestionService.findByQuestionId(question.questionId)
+            val findIndexedOoq = elasticsearchOperationOfQuestionAPI.findOperationOfQuestionById(question.questionId)
+            val findPartners = partnerService.find(
+              questionId = Some(question.questionId),
+              organisationId = None,
+              start = Start.zero,
+              end = None,
+              sort = Some("weight"),
+              order = Some(Order.desc),
+              partnerKind = None
+            )
+            val findActiveFeatureSlugs = findActiveFeatureSlugsByQuestionId(question.questionId)
+            val countActiveDemographics =
+              activeDemographicsCardService.count(questionId = Some(question.questionId), cardId = None)
+
+            provideAsyncOrNotFound(findOoq) { operationOfQuestion =>
+              provideAsyncOrNotFound(findIndexedOoq) { indexedOOQ =>
+                provideAsync(findPartners) { partners =>
+                  provideAsync(findActiveFeatureSlugs) { activeFeatureSlugs =>
+                    provideAsync(countActiveDemographics) { activeDemographicsCount =>
+                      val hasDemographics = activeDemographicsCount > 0
+                      val findOperation = operationService.findOne(operationOfQuestion.operationId)
+                      val findQuestions = findQuestionsOfOperation(operationOfQuestion.operationId)
+                      val futureFindActiveFeatureData = findActiveFeatureData(question, activeFeatureSlugs)
+                      provideAsyncOrNotFound(findOperation) { operation =>
+                        provideAsync(findQuestions) { questions =>
+                          provideAsync(futureFindActiveFeatureData) { activeFeaturesData =>
                             def zoneCount(zone: Zone) = elasticsearchProposalAPI.countProposals(
                               SearchQuery(filters = Some(
                                 SearchFilters(
@@ -385,7 +394,8 @@ trait DefaultQuestionApiComponent
                                     activeFeatureSlugs,
                                     controversyCount,
                                     consensusCount,
-                                    activeFeaturesData
+                                    activeFeaturesData,
+                                    hasDemographics
                                   )
                                 )
                               }
@@ -396,6 +406,7 @@ trait DefaultQuestionApiComponent
                     }
                   }
                 }
+              }
             }
           }
         }

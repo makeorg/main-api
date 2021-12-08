@@ -24,6 +24,7 @@ import akka.http.scaladsl.server.Route
 import cats.data.NonEmptyList
 import eu.timepit.refined.auto._
 import org.make.api.MakeApiTestBase
+import org.make.api.demographics.{ActiveDemographicsCardService, ActiveDemographicsCardServiceComponent}
 import org.make.api.feature.{
   ActiveFeatureService,
   ActiveFeatureServiceComponent,
@@ -64,19 +65,20 @@ import scala.concurrent.Future
 class QuestionApiTest
     extends MakeApiTestBase
     with DefaultQuestionApiComponent
-    with QuestionServiceComponent
-    with OperationServiceComponent
+    with ActiveDemographicsCardServiceComponent
+    with ActiveFeatureServiceComponent
+    with FeatureServiceComponent
+    with KeywordServiceComponent
     with OperationOfQuestionSearchEngineComponent
     with OperationOfQuestionServiceComponent
+    with OperationServiceComponent
     with PartnerServiceComponent
-    with FeatureServiceComponent
-    with ActiveFeatureServiceComponent
-    with ProposalSearchEngineComponent
-    with TagServiceComponent
-    with ProposalServiceComponent
-    with TopIdeaCommentServiceComponent
     with PersonalityRoleServiceComponent
-    with KeywordServiceComponent {
+    with ProposalSearchEngineComponent
+    with ProposalServiceComponent
+    with QuestionServiceComponent
+    with TagServiceComponent
+    with TopIdeaCommentServiceComponent {
 
   override val questionService: QuestionService = mock[QuestionService]
   override val sequenceService: SequenceService = mock[SequenceService]
@@ -93,6 +95,7 @@ class QuestionApiTest
   override val topIdeaCommentService: TopIdeaCommentService = mock[TopIdeaCommentService]
   override val personalityRoleService: PersonalityRoleService = mock[PersonalityRoleService]
   override val keywordService: KeywordService = mock[KeywordService]
+  override val activeDemographicsCardService: ActiveDemographicsCardService = mock[ActiveDemographicsCardService]
 
   val routes: Route = sealRoute(questionApi.routes)
 
@@ -246,6 +249,7 @@ class QuestionApiTest
 
       when(activeFeatureService.find(maybeQuestionId = Some(Seq(baseQuestion.questionId))))
         .thenReturn(Future.successful(Seq(activeFeature1)))
+      when(activeDemographicsCardService.count(any[Option[QuestionId]], eqTo(None))).thenReturn(Future.successful(1))
 
       Get("/questions/questionid/details") ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -266,7 +270,7 @@ class QuestionApiTest
         questionDetailsResponse.activeFeatureData.topProposal should be(empty)
         questionDetailsResponse.controversyCount shouldBe 24
         questionDetailsResponse.topProposalCount shouldBe 48
-
+        questionDetailsResponse.hasDemographics shouldBe true
       }
     }
 
@@ -285,9 +289,10 @@ class QuestionApiTest
       }
     }
 
-    Scenario("with widget intro card activated") {
+    Scenario("with widget intro card activated and no demographics") {
       when(activeFeatureService.find(maybeQuestionId = Some(Seq(baseQuestion.questionId))))
         .thenReturn(Future.successful(Seq(activeFeature2)))
+      when(activeDemographicsCardService.count(any[Option[QuestionId]], eqTo(None))).thenReturn(Future.successful(0))
 
       val searchRequest = SearchQuery(
         limit = Some(1),
@@ -304,6 +309,7 @@ class QuestionApiTest
         val questionDetailsResponse: QuestionDetailsResponse = entityAs[QuestionDetailsResponse]
         questionDetailsResponse.questionId should be(baseQuestion.questionId)
         questionDetailsResponse.activeFeatureData.topProposal.map(_.id) should contain(proposalId)
+        questionDetailsResponse.hasDemographics shouldBe false
       }
     }
   }
