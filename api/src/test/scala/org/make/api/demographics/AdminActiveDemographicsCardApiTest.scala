@@ -48,7 +48,7 @@ class AdminActiveDemographicsCardApiTest
   }
   when(activeDemographicsCardService.get(eqTo(ActiveDemographicsCardId("fake"))))
     .thenReturn(Future.successful(None))
-  when(questionService.getQuestion(QuestionId("question")))
+  when(questionService.getCachedQuestion(QuestionId("question")))
     .thenReturn(Future.successful(Some(question(QuestionId("question")))))
 
   Feature("create an activeDemographicsCard") {
@@ -94,7 +94,7 @@ class AdminActiveDemographicsCardApiTest
       when(demographicsCardService.get(DemographicsCardId("card-id")))
         .thenReturn(Future.successful(Some(demographicsCard(DemographicsCardId("card-id")))))
       when(demographicsCardService.get(DemographicsCardId("fake"))).thenReturn(Future.successful(None))
-      when(questionService.getQuestion(QuestionId("fake"))).thenReturn(Future.successful(None))
+      when(questionService.getCachedQuestion(QuestionId("fake"))).thenReturn(Future.successful(None))
       when(activeDemographicsCardService.list(eqTo(None), eqTo(None), eqTo(None), eqTo(None), any, any))
         .thenReturn(Future.successful(Seq.empty))
       when(

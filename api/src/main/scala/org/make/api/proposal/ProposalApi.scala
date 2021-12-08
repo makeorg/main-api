@@ -42,15 +42,7 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.UserType
-import org.make.core.{
-  BusinessConfig,
-  DateHelper,
-  HttpCodes,
-  ParameterExtractors,
-  Validation,
-  ValidationError,
-  ValidationFailedError
-}
+import org.make.core.{BusinessConfig, DateHelper, HttpCodes, ParameterExtractors, Validation, ValidationError}
 import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -409,21 +401,10 @@ trait DefaultProposalApiComponent
               decodeRequest {
                 entity(as[ProposeProposalRequest]) { request: ProposeProposalRequest =>
                   provideAsyncOrNotFound(userService.getUser(auth.user.userId)) { user =>
-                    provideAsync(questionService.getQuestion(request.questionId).flatMap {
-                      case Some(question) => Future.successful(question)
-                      case _ =>
-                        Future.failed(
-                          ValidationFailedError(
-                            Seq(
-                              ValidationError(
-                                "question",
-                                "mandatory",
-                                Some("This proposal refers to no known question")
-                              )
-                            )
-                          )
-                        )
-                    }) { question =>
+                    provideAsyncOrBadRequest(
+                      questionService.getQuestion(request.questionId),
+                      ValidationError("question", "mandatory", Some("This proposal refers to no known question"))
+                    ) { question =>
                       onSuccess(
                         proposalService
                           .propose(

@@ -548,7 +548,7 @@ trait DefaultQuestionApiComponent
       path("questions" / questionId / "popular-tags") { questionId =>
         makeOperation("GetQuestionPopularTags") { _ =>
           parameters("limit".as[Int].?, "skip".as[Int].?) { (limit: Option[Int], skip: Option[Int]) =>
-            provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+            provideAsyncOrNotFound(questionService.getCachedQuestion(questionId)) { _ =>
               val offset = skip.getOrElse(0)
               val size = limit.map(_ + offset).getOrElse(Int.MaxValue)
 
@@ -568,7 +568,7 @@ trait DefaultQuestionApiComponent
           parameters("limit".as[Int].?, "mode".as[TopProposalsMode].?) {
             (limit: Option[Int], mode: Option[TopProposalsMode]) =>
               optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-                provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+                provideAsyncOrNotFound(questionService.getCachedQuestion(questionId)) { _ =>
                   provideAsync(
                     proposalService.getTopProposals(
                       maybeUserId = userAuth.map(_.user.userId),
@@ -592,7 +592,7 @@ trait DefaultQuestionApiComponent
         makeOperation("GetQuestionPartners") { _ =>
           parameters("sortAlgorithm".as[String].?, "partnerKind".as[PartnerKind].?, "limit".as[Int].?, "skip".as[Int].?) {
             (sortAlgorithm: Option[String], partnerKind: Option[PartnerKind], limit: Option[Int], skip: Option[Int]) =>
-              provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+              provideAsyncOrNotFound(questionService.getCachedQuestion(questionId)) { _ =>
                 Validation.validate(Seq(sortAlgorithm.map { sortAlgo =>
                   Validation.validChoices(
                     fieldName = "sortAlgorithm",
@@ -799,7 +799,7 @@ trait DefaultQuestionApiComponent
                 validateField("limit", "invalid_value", limit > 0, "limit should be strictly positive")
               )
               optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-                provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+                provideAsyncOrNotFound(questionService.getCachedQuestion(questionId)) { _ =>
                   provideAsync(
                     proposalService.questionFeaturedProposals(
                       questionId = questionId,
@@ -823,7 +823,7 @@ trait DefaultQuestionApiComponent
       path("questions" / questionId / "keywords") { questionId =>
         makeOperation("GetKeywords") { _ =>
           parameters("limit".as[Int]) { (limit: Int) =>
-            provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+            provideAsyncOrNotFound(questionService.getCachedQuestion(questionId)) { _ =>
               provideAsync(keywordService.findTop(questionId, limit)) { keywords =>
                 complete(keywords)
               }

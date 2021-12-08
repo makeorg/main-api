@@ -351,7 +351,7 @@ class QuestionApiTest
 
   Feature("popular tags") {
     Scenario("fake question") {
-      when(questionService.getQuestion(eqTo(QuestionId("fake")))).thenReturn(Future.successful(None))
+      when(questionService.getCachedQuestion(eqTo(QuestionId("fake")))).thenReturn(Future.successful(None))
       Get("/questions/fake/popular-tags") ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
@@ -364,7 +364,7 @@ class QuestionApiTest
     val tag2 = newTag("tag2")
     val tag3 = newTag("tag3")
 
-    when(questionService.getQuestion(eqTo(QuestionId("question-id"))))
+    when(questionService.getCachedQuestion(eqTo(QuestionId("question-id"))))
       .thenReturn(Future.successful(Some(baseQuestion)))
 
     Scenario("all tags") {
@@ -421,14 +421,14 @@ class QuestionApiTest
 
   Feature("get top proposals") {
     Scenario("fake question") {
-      when(questionService.getQuestion(eqTo(QuestionId("fake")))).thenReturn(Future.successful(None))
+      when(questionService.getCachedQuestion(eqTo(QuestionId("fake")))).thenReturn(Future.successful(None))
       Get("/questions/fake/top-proposals") ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
 
     Scenario("get top proposals") {
-      when(questionService.getQuestion(eqTo(QuestionId("question-id"))))
+      when(questionService.getCachedQuestion(eqTo(QuestionId("question-id"))))
         .thenReturn(Future.successful(Some(baseQuestion)))
 
       when(
@@ -451,7 +451,7 @@ class QuestionApiTest
 
   Feature("get partners") {
     Scenario("fake question") {
-      when(questionService.getQuestion(eqTo(QuestionId("fake")))).thenReturn(Future.successful(None))
+      when(questionService.getCachedQuestion(eqTo(QuestionId("fake")))).thenReturn(Future.successful(None))
       Get("/questions/fake/partners") ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
@@ -687,14 +687,14 @@ class QuestionApiTest
 
   Feature("featured-proposals") {
     Scenario("fake question") {
-      when(questionService.getQuestion(eqTo(QuestionId("fake")))).thenReturn(Future.successful(None))
+      when(questionService.getCachedQuestion(eqTo(QuestionId("fake")))).thenReturn(Future.successful(None))
       Get("/questions/fake/featured-proposals") ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
 
     Scenario("get featured proposals") {
-      when(questionService.getQuestion(eqTo(QuestionId("question-id"))))
+      when(questionService.getCachedQuestion(eqTo(QuestionId("question-id"))))
         .thenReturn(Future.successful(Some(baseQuestion)))
 
       when(
@@ -726,7 +726,7 @@ class QuestionApiTest
 
   Feature("keywords") {
     Scenario("fake question") {
-      when(questionService.getQuestion(eqTo(QuestionId("fake")))).thenReturn(Future.successful(None))
+      when(questionService.getCachedQuestion(eqTo(QuestionId("fake")))).thenReturn(Future.successful(None))
       Get("/questions/fake/keywords") ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
@@ -734,7 +734,7 @@ class QuestionApiTest
 
     Scenario("get keywords") {
       val qId = QuestionId("question-id")
-      when(questionService.getQuestion(eqTo(qId)))
+      when(questionService.getCachedQuestion(eqTo(qId)))
         .thenReturn(Future.successful(Some(baseQuestion)))
 
       when(keywordService.findTop(eqTo(qId), eqTo(5)))

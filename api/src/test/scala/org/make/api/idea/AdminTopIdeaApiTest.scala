@@ -65,7 +65,7 @@ class AdminTopIdeaApiTest
     }
 
     Scenario("question doesn't exists") {
-      when(questionService.getQuestion(QuestionId("not-found"))).thenReturn(Future.successful(None))
+      when(questionService.getCachedQuestion(QuestionId("not-found"))).thenReturn(Future.successful(None))
       when(ideaService.fetchOne(IdeaId("idea-id")))
         .thenReturn(
           Future.successful(Some(Idea(ideaId = IdeaId("idea-id"), name = "idea", createdAt = None, updatedAt = None)))
@@ -97,7 +97,7 @@ class AdminTopIdeaApiTest
     }
 
     Scenario("idea doesn't exists") {
-      when(questionService.getQuestion(QuestionId("question-id")))
+      when(questionService.getCachedQuestion(QuestionId("question-id")))
         .thenReturn(
           Future.successful(
             Some(
@@ -143,7 +143,7 @@ class AdminTopIdeaApiTest
 
     Scenario("access granted for admin") {
 
-      when(questionService.getQuestion(QuestionId("question-id")))
+      when(questionService.getCachedQuestion(QuestionId("question-id")))
         .thenReturn(
           Future.successful(
             Some(
@@ -253,7 +253,7 @@ class AdminTopIdeaApiTest
           )
         )
       )
-      when(questionService.getQuestion(QuestionId("not-found"))).thenReturn(Future.successful(None))
+      when(questionService.getCachedQuestion(QuestionId("not-found"))).thenReturn(Future.successful(None))
       when(ideaService.fetchOne(IdeaId("idea-id")))
         .thenReturn(
           Future.successful(Some(Idea(ideaId = IdeaId("idea-id"), name = "idea", createdAt = None, updatedAt = None)))
@@ -301,7 +301,7 @@ class AdminTopIdeaApiTest
         )
       )
 
-      when(questionService.getQuestion(QuestionId("question-id")))
+      when(questionService.getCachedQuestion(QuestionId("question-id")))
         .thenReturn(
           Future.successful(
             Some(

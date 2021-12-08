@@ -139,7 +139,7 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent {
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             parameters("include".csv[ProposalId], "demographicsCardId".as[DemographicsCardId].?, "token".?) {
               (includes: Option[Seq[ProposalId]], cardId: Option[DemographicsCardId], token: Option[String]) =>
-                provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+                provideAsyncOrNotFound(questionService.getCachedQuestion(questionId)) { _ =>
                   provideAsync(
                     sequenceService
                       .startNewSequence(
@@ -171,7 +171,7 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent {
                   elasticsearchOperationOfQuestionAPI
                     .findOperationOfQuestionById(questionId)
                     .map(_.flatMap(_.top20ConsensusThreshold))
-                provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+                provideAsyncOrNotFound(questionService.getCachedQuestion(questionId)) { _ =>
                   provideAsync(futureTop20ConsensusThreshold) { threshold =>
                     provideAsync(
                       sequenceService
@@ -201,7 +201,7 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent {
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             parameters("include".csv[ProposalId], "demographicsCardId".as[DemographicsCardId].?, "token".?) {
               (includes: Option[Seq[ProposalId]], cardId: Option[DemographicsCardId], token: Option[String]) =>
-                val futureQuestion = questionService.getQuestion(questionId)
+                val futureQuestion = questionService.getCachedQuestion(questionId)
                 val futureSequence = sequenceService
                   .startNewSequence(
                     behaviourParam = Zone.Controversy,
@@ -229,7 +229,7 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent {
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             parameters("include".csv[ProposalId], "demographicsCardId".as[DemographicsCardId].?, "token".?) {
               (includes: Option[Seq[ProposalId]], cardId: Option[DemographicsCardId], token: Option[String]) =>
-                val futureQuestion = questionService.getQuestion(questionId)
+                val futureQuestion = questionService.getCachedQuestion(questionId)
                 val futureKeyword = keywordService.get(keywordKey.value, questionId)
                 provideAsyncOrNotFound(futureQuestion) { _ =>
                   provideAsyncOrNotFound(futureKeyword) { keyword =>
@@ -265,7 +265,7 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent {
     override def getStandardFirstProposal: Route = get {
       path("sequences" / "standard" / questionId / "first-proposal") { questionId =>
         makeOperation("GetStandardFirstProposal") { requestContext =>
-          provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+          provideAsyncOrNotFound(questionService.getCachedQuestion(questionId)) { _ =>
             provideAsync(sequenceConfigurationService.getSequenceConfigurationByQuestionId(questionId)) { config =>
               provideAsync(sequenceCacheManagerService.getProposal(questionId, requestContext)) { proposalResponse =>
                 complete(FirstProposalResponse(proposalResponse, config.mainSequence.sequenceSize))

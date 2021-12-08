@@ -30,7 +30,7 @@ import org.make.api.technical.{`X-Total-Count`, IdResponse, MakeAuthenticationDi
 import org.make.core.auth.UserRights
 import org.make.core.crmTemplate.{CrmQuestionTemplate, CrmQuestionTemplateId, CrmTemplateKind, TemplateId}
 import org.make.core.question.QuestionId
-import org.make.core.{HttpCodes, ParameterExtractors, Validation}
+import org.make.core.{HttpCodes, ParameterExtractors, Validation, ValidationError}
 import scalaoauth2.provider.AuthInfo
 
 import javax.ws.rs.Path
@@ -194,15 +194,12 @@ trait DefaultAdminCrmQuestionTemplatesApiComponent
             requireAdminRole(userAuth.user) {
               decodeRequest {
                 entity(as[CreateCrmQuestionTemplate]) { request: CreateCrmQuestionTemplate =>
-                  provideAsync(questionService.getQuestion(request.questionId)) { maybeQuestion =>
+                  provideAsyncOrBadRequest(
+                    questionService.getCachedQuestion(request.questionId),
+                    ValidationError("questionId", "not_found", Some(s"Question ${request.questionId} does not exist."))
+                  ) { _ =>
                     provideAsync(crmTemplatesService.list(request.questionId)) { allQuestionTemplates =>
                       Validation.validate(
-                        Validation.validateField(
-                          field = "questionId",
-                          key = "invalid_value",
-                          condition = maybeQuestion.isDefined,
-                          message = s"Question ${request.questionId} does not exist."
-                        ),
                         Validation.validateField(
                           field = "templateKind",
                           key = "invalid_value",
@@ -251,14 +248,15 @@ trait DefaultAdminCrmQuestionTemplatesApiComponent
                 entity(as[CrmQuestionTemplate]) { request: CrmQuestionTemplate =>
                   provideAsyncOrNotFound(crmTemplatesService.get(crmQuestionTemplateId)) { _ =>
                     provideAsync(crmTemplatesService.list(request.questionId)) { templates =>
-                      provideAsync(questionService.getQuestion(request.questionId)) { maybeQuestion =>
+                      provideAsyncOrBadRequest(
+                        questionService.getCachedQuestion(request.questionId),
+                        ValidationError(
+                          "questionId",
+                          "not_found",
+                          Some(s"Question ${request.questionId} does not exist.")
+                        )
+                      ) { _ =>
                         Validation.validate(
-                          Validation.validateField(
-                            field = "questionId",
-                            key = "invalid_value",
-                            condition = maybeQuestion.isDefined,
-                            message = s"Question ${request.questionId} does not exist."
-                          ),
                           Validation.validateField(
                             field = "kind",
                             key = "invalid_value",

@@ -233,44 +233,32 @@ trait DefaultAdminTopIdeaApiComponent
             requireAdminRole(auth.user) {
               decodeRequest {
                 entity(as[CreateTopIdeaRequest]) { request =>
-                  provideAsync(questionService.getQuestion(request.questionId)) {
-                    case None =>
-                      complete(
-                        StatusCodes.BadRequest -> Seq(
-                          ValidationError(
-                            "questionId",
-                            "not_found",
-                            Some(s"questionId ${request.questionId} doesn't exists")
+                  provideAsyncOrBadRequest(
+                    questionService.getCachedQuestion(request.questionId),
+                    ValidationError("questionId", "not_found", Some(s"questionId ${request.questionId} doesn't exists"))
+                  ) { _ =>
+                    provideAsyncOrBadRequest(
+                      ideaService.fetchOne(request.ideaId),
+                      ValidationError("ideaId", "not_found", Some(s"ideaId ${request.ideaId} doesn't exists"))
+                    ) { _ =>
+                      provideAsync(
+                        topIdeaService
+                          .create(
+                            request.ideaId,
+                            request.questionId,
+                            request.name,
+                            request.label,
+                            TopIdeaScores(
+                              request.scores.totalProposalsRatio,
+                              request.scores.agreementRatio,
+                              request.scores.likeItRatio
+                            ),
+                            request.weight
                           )
-                        )
-                      )
-                    case Some(_) =>
-                      provideAsync(ideaService.fetchOne(request.ideaId)) {
-                        case None =>
-                          complete(
-                            StatusCodes.BadRequest -> Seq(
-                              ValidationError("ideaId", "not_found", Some(s"ideaId ${request.ideaId} doesn't exists"))
-                            )
-                          )
-                        case Some(_) =>
-                          provideAsync(
-                            topIdeaService
-                              .create(
-                                request.ideaId,
-                                request.questionId,
-                                request.name,
-                                request.label,
-                                TopIdeaScores(
-                                  request.scores.totalProposalsRatio,
-                                  request.scores.agreementRatio,
-                                  request.scores.likeItRatio
-                                ),
-                                request.weight
-                              )
-                          ) { result =>
-                            complete(StatusCodes.Created -> TopIdeaResponse(result))
-                          }
+                      ) { result =>
+                        complete(StatusCodes.Created -> TopIdeaResponse(result))
                       }
+                    }
                   }
                 }
               }
@@ -288,45 +276,37 @@ trait DefaultAdminTopIdeaApiComponent
               decodeRequest {
                 entity(as[UpdateTopIdeaRequest]) { request =>
                   provideAsyncOrNotFound(topIdeaService.getById(topIdeaId)) { topIdea =>
-                    provideAsync(questionService.getQuestion(request.questionId)) {
-                      case None =>
-                        complete(
-                          StatusCodes.BadRequest -> Seq(
-                            ValidationError(
-                              "questionId",
-                              "not_found",
-                              Some(s"questionId ${request.questionId} doesn't exists")
+                    provideAsyncOrBadRequest(
+                      questionService.getCachedQuestion(request.questionId),
+                      ValidationError(
+                        "questionId",
+                        "not_found",
+                        Some(s"questionId ${request.questionId} doesn't exists")
+                      )
+                    ) { _ =>
+                      provideAsyncOrBadRequest(
+                        ideaService.fetchOne(request.ideaId),
+                        ValidationError("ideaId", "not_found", Some(s"ideaId ${request.ideaId} doesn't exists"))
+                      ) { _ =>
+                        provideAsync(
+                          topIdeaService.update(
+                            topIdea.copy(
+                              questionId = request.questionId,
+                              ideaId = request.ideaId,
+                              name = request.name,
+                              label = request.label,
+                              scores = TopIdeaScores(
+                                request.scores.totalProposalsRatio,
+                                request.scores.agreementRatio,
+                                request.scores.likeItRatio
+                              ),
+                              weight = request.weight
                             )
                           )
-                        )
-                      case Some(_) =>
-                        provideAsync(ideaService.fetchOne(request.ideaId)) {
-                          case None =>
-                            complete(
-                              StatusCodes.BadRequest -> Seq(
-                                ValidationError("ideaId", "not_found", Some(s"ideaId ${request.ideaId} doesn't exists"))
-                              )
-                            )
-                          case Some(_) =>
-                            provideAsync(
-                              topIdeaService.update(
-                                topIdea.copy(
-                                  questionId = request.questionId,
-                                  ideaId = request.ideaId,
-                                  name = request.name,
-                                  label = request.label,
-                                  scores = TopIdeaScores(
-                                    request.scores.totalProposalsRatio,
-                                    request.scores.agreementRatio,
-                                    request.scores.likeItRatio
-                                  ),
-                                  weight = request.weight
-                                )
-                              )
-                            ) { updateTopIdea =>
-                              complete(StatusCodes.OK -> TopIdeaResponse(updateTopIdea))
-                            }
+                        ) { updateTopIdea =>
+                          complete(StatusCodes.OK -> TopIdeaResponse(updateTopIdea))
                         }
+                      }
                     }
                   }
                 }

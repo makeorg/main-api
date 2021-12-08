@@ -150,14 +150,14 @@ class AdminCrmQuestionTemplatesApiTest
     val id = CrmQuestionTemplateId("id-create")
     when(idGenerator.nextCrmQuestionTemplateId()).thenReturn(id)
 
-    when(questionService.getQuestion(eqTo(fakeQuestionId))).thenReturn(Future.successful(None))
+    when(questionService.getCachedQuestion(eqTo(fakeQuestionId))).thenReturn(Future.successful(None))
     when(crmTemplatesService.list(eqTo(fakeQuestionId))).thenReturn(Future.successful(Seq()))
 
-    when(questionService.getQuestion(eqTo(questionId)))
+    when(questionService.getCachedQuestion(eqTo(questionId)))
       .thenReturn(Future.successful(Some(TestUtils.question(questionId))))
     when(crmTemplatesService.list(eqTo(questionId))).thenReturn(Future.successful(Seq()))
 
-    when(questionService.getQuestion(eqTo(alreadyExistsId)))
+    when(questionService.getCachedQuestion(eqTo(alreadyExistsId)))
       .thenReturn(Future.successful(Some(TestUtils.question(alreadyExistsId))))
     when(crmTemplatesService.list(eqTo(alreadyExistsId)))
       .thenReturn(Future.successful(Seq(template(alreadyExistsId, kind))))
@@ -236,11 +236,11 @@ class AdminCrmQuestionTemplatesApiTest
 
     when(crmTemplatesService.get(eqTo(CrmQuestionTemplateId("id-fake"))))
       .thenReturn(Future.successful(None))
-    when(questionService.getQuestion(eqTo(fakeQuestionId))).thenReturn(Future.successful(None))
+    when(questionService.getCachedQuestion(eqTo(fakeQuestionId))).thenReturn(Future.successful(None))
 
     when(crmTemplatesService.get(eqTo(CrmQuestionTemplateId(s"id-update"))))
       .thenReturn(Future.successful(Some(templateUpdate)))
-    when(questionService.getQuestion(eqTo(questionId)))
+    when(questionService.getCachedQuestion(eqTo(questionId)))
       .thenReturn(Future.successful(Some(TestUtils.question(questionId))))
     when(crmTemplatesService.list(eqTo(questionId)))
       .thenReturn(Future.successful(Seq(templateUpdate, templateNotToOverride)))
