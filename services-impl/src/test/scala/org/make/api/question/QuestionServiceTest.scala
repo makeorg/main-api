@@ -45,6 +45,7 @@ import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import org.make.core.technical.Pagination.Start
+import org.mockito.Mockito.clearInvocations
 
 class QuestionServiceTest
     extends MakeUnitTest
@@ -85,8 +86,30 @@ class QuestionServiceTest
     )
   )
 
-  val user1 = TestUtils.user(id = UserId("user-1"))
-  val user2 = TestUtils.user(id = UserId("user-2"))
+  val user1: User = TestUtils.user(id = UserId("user-1"))
+  val user2: User = TestUtils.user(id = UserId("user-2"))
+
+  Feature("get questions from cache") {
+    Scenario("init and refresh") {
+      val cacheQuestionId = QuestionId("cache-question")
+      when(persistentQuestionService.getById(cacheQuestionId))
+        .thenReturn(Future.successful(Some(TestUtils.question(cacheQuestionId))))
+      clearInvocations(persistentQuestionService)
+      whenReady(questionService.getCachedQuestion(cacheQuestionId), Timeout(3.seconds)) { _ =>
+        verify(persistentQuestionService).getById(cacheQuestionId)
+      }
+      clearInvocations(persistentQuestionService)
+      whenReady(questionService.getCachedQuestion(cacheQuestionId), Timeout(3.seconds)) { _ =>
+        verify(persistentQuestionService, never).getById(cacheQuestionId)
+      }
+      whenReady(questionService.getCachedQuestion(cacheQuestionId), Timeout(3.seconds)) { _ =>
+        verify(persistentQuestionService, never).getById(cacheQuestionId)
+      }
+      whenReady(questionService.getCachedQuestion(cacheQuestionId), Timeout(3.seconds)) { _ =>
+        verify(persistentQuestionService, never).getById(cacheQuestionId)
+      }
+    }
+  }
 
   Feature("Get question personalities") {
     Scenario("Get question personalities") {

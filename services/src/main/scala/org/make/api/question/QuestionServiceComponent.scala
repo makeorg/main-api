@@ -32,6 +32,7 @@ import scala.concurrent.Future
 import org.make.core.technical.Pagination._
 
 trait QuestionService {
+  def getCachedQuestion(questionId: QuestionId): Future[Option[Question]]
   def getQuestion(questionId: QuestionId): Future[Option[Question]]
   def getQuestions(questionIds: Seq[QuestionId]): Future[Seq[Question]]
   def getQuestionByQuestionIdValueOrSlug(questionIdValueOrSlug: String): Future[Option[Question]]

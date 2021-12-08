@@ -23,5 +23,6 @@ libraryDependencies ++= Seq(
   Dependencies.alpakka,
   Dependencies.kamonAnnotations,
   Dependencies.scalaBcrypt,
+  Dependencies.scalacacheGuava,
   Dependencies.scalaCsv
 )
