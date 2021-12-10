@@ -51,8 +51,8 @@ class AdminActiveFeatureApiTest
 
     when(featureService.getFeature(eqTo(f1.featureId))).thenReturn(Future.successful(Some(f1)))
     when(featureService.getFeature(eqTo(FeatureId("fake")))).thenReturn(Future.successful(None))
-    when(questionService.getQuestion(q1.questionId)).thenReturn(Future.successful(Some(q1)))
-    when(questionService.getQuestion(QuestionId("fake"))).thenReturn(Future.successful(None))
+    when(questionService.getCachedQuestion(q1.questionId)).thenReturn(Future.successful(Some(q1)))
+    when(questionService.getCachedQuestion(QuestionId("fake"))).thenReturn(Future.successful(None))
     when(
       activeFeatureService
         .find(
@@ -172,7 +172,7 @@ class AdminActiveFeatureApiTest
 
     Scenario("active feature already exists") {
       when(featureService.getFeature(eqTo(FeatureId("feature-pair")))).thenReturn(Future.successful(Some(f1)))
-      when(questionService.getQuestion(QuestionId("question-pair"))).thenReturn(Future.successful(Some(q1)))
+      when(questionService.getCachedQuestion(QuestionId("question-pair"))).thenReturn(Future.successful(Some(q1)))
       when(
         activeFeatureService
           .find(

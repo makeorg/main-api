@@ -36,10 +36,15 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.user._
 import org.make.core.user.indexed.OrganisationSearchResult
 import org.make.core.{ValidationError, ValidationFailedError}
+import scalacache._
+import scalacache.guava._
+import scalacache.modes.scalaFuture._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 import org.make.core.technical.Pagination._
+import scalacache.memoization.memoizeF
 
 trait DefaultQuestionServiceComponent extends QuestionServiceComponent {
   this: PersistentQuestionServiceComponent
@@ -57,6 +62,8 @@ trait DefaultQuestionServiceComponent extends QuestionServiceComponent {
 
   class DefaultQuestionService extends QuestionService {
 
+    implicit val guavaCache: Cache[Option[Question]] = GuavaCache[Option[Question]]
+
     override def getQuestions(questionIds: Seq[QuestionId]): Future[Seq[Question]] = {
       persistentQuestionService.getByIds(questionIds)
     }
@@ -67,6 +74,12 @@ trait DefaultQuestionServiceComponent extends QuestionServiceComponent {
 
     override def getQuestion(questionId: QuestionId): Future[Option[Question]] = {
       persistentQuestionService.getById(questionId)
+    }
+
+    override def getCachedQuestion(questionId: QuestionId): Future[Option[Question]] = {
+      memoizeF[Future, Option[Question]](Some(3.hours)) {
+        getQuestion(questionId)
+      }
     }
 
     override def findQuestion(

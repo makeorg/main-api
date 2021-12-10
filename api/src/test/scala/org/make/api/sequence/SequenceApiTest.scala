@@ -65,8 +65,8 @@ class SequenceApiTest
   val includedProposalsIds: Seq[ProposalId] = Seq(ProposalId("p-id-1"))
   val requestContext: RequestContext = RequestContext.empty
 
-  when(questionService.getQuestion(questionId)).thenReturn(Future.successful(Some(question(questionId))))
-  when(questionService.getQuestion(fakeQuestionId)).thenReturn(Future.successful(None))
+  when(questionService.getCachedQuestion(questionId)).thenReturn(Future.successful(Some(question(questionId))))
+  when(questionService.getCachedQuestion(fakeQuestionId)).thenReturn(Future.successful(None))
   when(questionService.getQuestionByQuestionIdValueOrSlug(questionId.value))
     .thenReturn(Future.successful(Some(question(questionId))))
   when(questionService.getQuestionByQuestionIdValueOrSlug(fakeQuestionId.value)).thenReturn(Future.successful(None))

@@ -178,7 +178,7 @@ trait DefaultAdminActiveDemographicsCardApiComponent
                 decodeRequest {
                   entity(as[CreateActiveDemographicsCardRequest]) { request =>
                     val card = demographicsCardService.get(request.demographicsCardId)
-                    val question = questionService.getQuestion(request.questionId)
+                    val question = questionService.getCachedQuestion(request.questionId)
                     provideAsyncOrBadRequest(
                       card,
                       ValidationError(

@@ -199,7 +199,7 @@ trait DefaultAdminActiveFeatureApiComponent
                 entity(as[ActiveFeatureRequest]) { request: ActiveFeatureRequest =>
                   val feature = featureService.getFeature(request.featureId)
                   val question = request.maybeQuestionId match {
-                    case Some(questionId) => questionService.getQuestion(questionId)
+                    case Some(questionId) => questionService.getCachedQuestion(questionId)
                     case None             => Future.successful(None)
                   }
                   provideAsyncOrBadRequest(
