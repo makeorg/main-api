@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2021 Make.org
+ *  Copyright (C) 2018 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -17,14 +17,22 @@
  *
  */
 
-name := "tests"
+package org.make.core.technical
 
-libraryDependencies ++= Seq(
-  Dependencies.akkaPersistenceInMemory,
-  Dependencies.akkaTest,
-  Dependencies.mockito,
-  Dependencies.mockitoScalatest,
-  Dependencies.scalaTest,
-  Dependencies.scalaTestScalaCheck,
-  Dependencies.scalaCsv
-)
+import scala.collection.mutable.{HashMap => MMap}
+
+object CollectionUtils {
+
+  implicit class ImprovedSeq[A](seq: Seq[A]) {
+
+    @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
+    def countOccurencesBy[B](fn: A => B): MMap[B, Int] = {
+      val mMap = MMap[B, Int]()
+      seq.foreach(item => {
+        val key = fn(item)
+        mMap.update(key, mMap.getOrElse(key, 0) + 1)
+      })
+      mMap
+    }
+  }
+}

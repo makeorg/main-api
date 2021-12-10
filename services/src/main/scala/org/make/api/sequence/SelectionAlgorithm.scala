@@ -37,6 +37,8 @@ import org.make.core.technical.RefinedTypes.Ratio
 
 import scala.Ordering.Double.IeeeOrdering
 import scala.annotation.tailrec
+import org.make.core.technical.CollectionUtils.ImprovedSeq
+import scala.collection.mutable.{HashSet => MSet}
 
 object SelectionAlgorithm {
 
@@ -116,18 +118,19 @@ object SelectionAlgorithm {
       )
     }
 
-    def resolveIgnoredKeywords(proposals: Seq[IndexedProposal], keywordsThreshold: Ratio): Set[ProposalKeywordKey] = {
+    @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
+    def resolveIgnoredKeywords(proposals: Seq[IndexedProposal], keywordsThreshold: Ratio): MSet[ProposalKeywordKey] = {
       if (proposals.isEmpty) {
-        Set.empty
+        MSet.empty
       } else {
         val maxOccurrences = Math.floor(keywordsThreshold * proposals.size).toInt
         proposals
-          .flatMap(_.keywords.map(_.key))
-          .groupBy(identity)
+          .flatMap(_.keywords)
+          .countOccurencesBy[ProposalKeywordKey](_.key)
           .collect {
-            case (key, values) if values.size >= maxOccurrences => key
+            case (key, occurences) if occurences >= maxOccurrences => key
           }
-          .toSet
+          .to(MSet)
       }
     }
 
@@ -135,17 +138,19 @@ object SelectionAlgorithm {
       testedProposals: Seq[IndexedProposal],
       configuration: TestedProposalsSelectionConfiguration
     ): Seq[IndexedProposal] = {
-      val (tops, controversies) = testedProposals.flatMap { proposal =>
-        val scorer = new ProposalScorer(proposal.votes, configuration.votesCounter, configuration.ratio)
-        scorer.sampledZone match {
-          case Consensus =>
-            Seq(ZonedProposal(proposal, Consensus, scorer.topScore.cachedSample))
-          case Controversy =>
-            Seq(ZonedProposal(proposal, Controversy, scorer.controversy.cachedSample))
-          case _ =>
-            Seq.empty
-        }
-      }.partition(_.zone == Consensus)
+      val (tops, controversies) =
+        testedProposals
+          .zip(
+            testedProposals
+              .map(proposal => ProposalScorer(proposal.votes, configuration.votesCounter, configuration.ratio))
+          )
+          .collect({
+            case (proposal, scorer) if scorer.sampledZone == Consensus =>
+              ZonedProposal(proposal, Consensus, scorer.topScore.sample)
+            case (proposal, scorer) if scorer.sampledZone == Controversy =>
+              ZonedProposal(proposal, Controversy, scorer.controversy.sample)
+          })
+          .partition(_.zone == Consensus)
 
       // Applying the different selection algorithms consists in sorting the proposals in some order,
       // and then take enough of them, using the same de-duplication + equalizer everytime.
@@ -171,11 +176,12 @@ object SelectionAlgorithm {
         )
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
     private def removeAuthorDuplication(
       chosenProposals: Seq[IndexedProposal],
       candidates: Seq[IndexedProposal]
     ): Seq[IndexedProposal] = {
-      val chosenAuthors = chosenProposals.map(_.userId).toSet
+      val chosenAuthors = chosenProposals.map(_.userId).to(MSet)
       candidates.filterNot(p => chosenAuthors.contains(p.userId))
     }
 
@@ -252,45 +258,51 @@ object SelectionAlgorithm {
       def choose(
         candidates: Seq[IndexedProposal],
         neededCount: Int,
-        ignoredKeywords: Set[ProposalKeywordKey],
+        ignoredKeywords: MSet[ProposalKeywordKey],
         candidatesPoolSize: Int
       ): Seq[IndexedProposal] = {
-        chooseRecursively(Seq.empty, candidates, neededCount, ignoredKeywords, candidatesPoolSize)
+        chooseRecursively(List.empty, candidates, neededCount, ignoredKeywords, candidatesPoolSize)
       }
 
       @tailrec
       private def chooseRecursively(
-        accumulator: Seq[IndexedProposal],
+        accumulator: List[IndexedProposal],
         candidates: Seq[IndexedProposal],
         neededCount: Int,
-        ignoredKeywords: Set[ProposalKeywordKey],
+        ignoredKeywords: MSet[ProposalKeywordKey],
         candidatesPoolSize: Int
       ): Seq[IndexedProposal] = {
         if (neededCount <= 0) {
           accumulator
         } else {
-          candidates.take(candidatesPoolSize).sortBy(_.votesSequenceCount).headOption match {
+          candidates.take(candidatesPoolSize).minByOption(_.votesSequenceCount) match {
             case None => accumulator
             case Some(chosen) =>
-              chooseRecursively(
-                accumulator = accumulator :+ chosen,
-                candidates = deduplicate(chosen, candidates, ignoredKeywords),
-                neededCount = neededCount - 1,
-                ignoredKeywords,
-                candidatesPoolSize
-              )
+              val newAccumulator = chosen :: accumulator
+              if (neededCount <= 1) {
+                newAccumulator
+              } else {
+                chooseRecursively(
+                  accumulator = newAccumulator,
+                  candidates = deduplicate(chosen, candidates, ignoredKeywords),
+                  neededCount = neededCount - 1,
+                  ignoredKeywords,
+                  candidatesPoolSize
+                )
+              }
           }
         }
       }
 
+      @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
       private def deduplicate(
         chosen: IndexedProposal,
         candidates: Seq[IndexedProposal],
-        ignoredKeywords: Set[ProposalKeywordKey]
+        ignoredKeywords: MSet[ProposalKeywordKey]
       ): Seq[IndexedProposal] = {
-        val forbiddenKeywords = chosen.keywords.filterNot(k => ignoredKeywords.contains(k.key))
+        val forbiddenKeywords = chosen.keywords.filterNot(k => ignoredKeywords.contains(k.key)).to(MSet)
         candidates.filter { proposal =>
-          proposal.keywords.intersect(forbiddenKeywords).isEmpty && chosen.userId != proposal.userId
+          !proposal.keywords.exists(forbiddenKeywords.contains) && chosen.userId != proposal.userId
         }
       }
     }

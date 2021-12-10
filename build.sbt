@@ -114,6 +114,7 @@ lazy val phantom = module("phantom", ".")
     servicesImpl,
     technical,
     tests,
+    benchmarks,
     webflow
   )
 
@@ -176,6 +177,10 @@ lazy val tests = module("tests")
   .dependsOn(baseTests)
   .dependsOn(core)
 
+lazy val benchmarks = module("benchmarks")
+  .dependsOn(api, services, tests)
+  .enablePlugins(JmhPlugin)
+
 lazy val webflow = module("webflow")
   .dependsOn(akka, tests % Test)
 
@@ -197,6 +202,7 @@ gitCommitMessageHook := Some(baseDirectory.value / "bin" / "commit-msg.hook")
 enablePlugins(GitHooks)
 enablePlugins(GitVersioning)
 enablePlugins(SbtSwift)
+enablePlugins(JmhPlugin)
 
 swiftContainerName     := "reports"
 swiftConfigurationPath := file("/var/run/secrets/main-api.conf")

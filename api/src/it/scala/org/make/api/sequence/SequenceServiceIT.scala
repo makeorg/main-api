@@ -239,7 +239,7 @@ class SequenceServiceIT
   when(makeSettings.resetTokenB2BExpiresIn).thenReturn(1.day)
   when(makeSettings.validationTokenExpiresIn).thenReturn(1.day)
 
-  override val jobCoordinator: ActorRef[JobActor.Protocol.Command] = JobCoordinator(system, 1.second)
+  override val jobCoordinator: ActorRef[JobActor.Protocol.Command] = JobCoordinator(system, 1.minute)
   override lazy val proposalCoordinator: ActorRef[ProposalCommand] =
     ProposalCoordinator(system, sessionHistoryCoordinatorService, 1.second, idGenerator)
   override lazy val sessionHistoryCoordinator: ActorRef[SessionHistoryCommand] =
