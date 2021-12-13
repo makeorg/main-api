@@ -30,7 +30,7 @@ object Dependencies {
   private val enumeratumVersion = "1.7.0"
   private val jerseyVersion = "2.32"
   private val kamonVersion = "2.2.3"
-  private val log4jVersion = "2.14.1"
+  private val log4jVersion = "2.15.0"
   private val circeVersion = "0.14.1"
   val kanelaVersion: String = "1.0.11"
   val swaggerUiVersion: String = "3.20.9"
