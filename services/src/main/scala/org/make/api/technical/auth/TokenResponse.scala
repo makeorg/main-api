@@ -19,7 +19,7 @@
 
 package org.make.api.technical.auth
 
-import io.circe.Encoder
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.api.technical.auth.MakeDataHandler.{CreatedAtParameter, RefreshTokenExpirationParameter}
 import scalaoauth2.provider.AccessToken
@@ -65,5 +65,16 @@ object TokenResponse {
           response.createdAt
         )
     }
+  }
+
+  implicit val decoder: Decoder[TokenResponse] = {
+    Decoder.forProduct6(
+      "token_type",
+      "access_token",
+      "expires_in",
+      "refresh_token",
+      "refresh_expires_in",
+      "created_at"
+    )(TokenResponse.apply)
   }
 }
