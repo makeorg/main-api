@@ -26,7 +26,7 @@ import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.technical.Futures._
 import org.make.api.user.DefaultPersistentUserServiceComponent
-import org.make.api.{DatabaseTest, TestUtilsIT}
+import org.make.api.{DatabaseTest, TestUtils}
 import org.make.core.{DateHelper, Order}
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
@@ -50,7 +50,7 @@ class PersistentOperationServiceIT
     with DefaultIdGeneratorComponent {
 
   val userId: UserId = idGenerator.nextUserId()
-  val johnDoe: User = TestUtilsIT.user(
+  val johnDoe: User = TestUtils.user(
     id = userId,
     email = "doe@example.com",
     firstName = Some("John"),

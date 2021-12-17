@@ -306,7 +306,7 @@ trait TestUtils {
     roles: Seq[Role] = Seq(RoleCitizen),
     country: Country = Country("FR"),
     profile: Option[Profile] = None,
-    createdAt: Option[ZonedDateTime] = None,
+    createdAt: Option[ZonedDateTime] = Some(DateHelper.now()),
     updatedAt: Option[ZonedDateTime] = None,
     lastMailingError: Option[MailingErrorLog] = None,
     organisationName: Option[String] = None,

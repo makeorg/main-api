@@ -24,7 +24,7 @@ import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.config.{Config, ConfigFactory}
 import enumeratum.values.scalacheck._
-import org.make.api.{ActorTest, ItMakeTest}
+import org.make.api.{ActorTest, MakeUnitTest}
 import org.make.api.docker.DockerCassandraService
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{ActorSystemComponent, DefaultIdGeneratorComponent}
@@ -40,7 +40,7 @@ import scala.concurrent.duration.DurationInt
 
 class UserHistoryCoordinatorIT
     extends ActorTest(UserHistoryCoordinatorIT.actorSystem)
-    with ItMakeTest
+    with MakeUnitTest
     with DefaultIdGeneratorComponent
     with DefaultUserHistoryCoordinatorServiceComponent
     with DockerCassandraService

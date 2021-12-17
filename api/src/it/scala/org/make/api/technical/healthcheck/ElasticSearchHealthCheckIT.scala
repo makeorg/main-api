@@ -32,7 +32,7 @@ import org.make.api.technical.elasticsearch.{
   RichHttpClient
 }
 import org.make.api.technical.healthcheck.HealthCheck.Status
-import org.make.api.{ConfigComponent, ItMakeTest, TestUtilsIT}
+import org.make.api.{ConfigComponent, MakeUnitTest}
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
@@ -48,13 +48,12 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
 
 class ElasticSearchHealthCheckIT
-    extends ItMakeTest
+    extends MakeUnitTest
     with CirceFormatters
     with DefaultElasticsearchConfigurationComponent
     with DefaultElasticsearchClientComponent
     with ConfigComponent
-    with DockerElasticsearchService
-    with TestUtilsIT {
+    with DockerElasticsearchService {
 
   override val config: Config = ElasticSearchHealthCheckIT.configuration
 

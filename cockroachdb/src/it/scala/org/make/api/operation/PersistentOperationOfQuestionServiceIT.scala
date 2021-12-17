@@ -23,7 +23,7 @@ import java.time.{LocalDate, ZonedDateTime}
 
 import cats.data.NonEmptyList
 import eu.timepit.refined.auto._
-import org.make.api.{DatabaseTest, TestUtilsIT}
+import org.make.api.{DatabaseTest, TestUtils}
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
@@ -96,7 +96,7 @@ class PersistentOperationOfQuestionServiceIT
         description = "workshop description"
       )
 
-      val baseOperationOfQuestion = TestUtilsIT.operationOfQuestion(
+      val baseOperationOfQuestion = TestUtils.operationOfQuestion(
         questionId,
         operationId,
         votesCount = 200_000_000,
@@ -118,13 +118,13 @@ class PersistentOperationOfQuestionServiceIT
         maybeOperationOfQuestion.foreach { operationOfQuestion =>
           operationOfQuestion.questionId shouldBe baseOperationOfQuestion.questionId
           operationOfQuestion.operationId shouldBe baseOperationOfQuestion.operationId
-          operationOfQuestion.canPropose shouldBe true
-          operationOfQuestion.sequenceCardsConfiguration.introCard.enabled shouldBe true
-          operationOfQuestion.sequenceCardsConfiguration.finalCard.sharingEnabled shouldBe false
-          operationOfQuestion.proposalsCount shouldBe 42
-          operationOfQuestion.participantsCount shouldBe 84
-          operationOfQuestion.featured shouldBe true
-          operationOfQuestion.votesCount should be(200_000_000)
+          operationOfQuestion.canPropose shouldBe baseOperationOfQuestion.canPropose
+          operationOfQuestion.sequenceCardsConfiguration.introCard.enabled shouldBe baseOperationOfQuestion.sequenceCardsConfiguration.introCard.enabled
+          operationOfQuestion.sequenceCardsConfiguration.finalCard.sharingEnabled shouldBe baseOperationOfQuestion.sequenceCardsConfiguration.introCard.enabled
+          operationOfQuestion.proposalsCount shouldBe baseOperationOfQuestion.proposalsCount
+          operationOfQuestion.participantsCount shouldBe baseOperationOfQuestion.participantsCount
+          operationOfQuestion.featured shouldBe baseOperationOfQuestion.featured
+          operationOfQuestion.votesCount should be(baseOperationOfQuestion.votesCount)
           operationOfQuestion.timeline.action.map(_.date) should contain(actionTimeline.date)
           operationOfQuestion.timeline.action.map(_.dateText) should contain(actionTimeline.dateText)
           operationOfQuestion.timeline.action.map(_.description) should contain(actionTimeline.description)
@@ -141,8 +141,8 @@ class PersistentOperationOfQuestionServiceIT
 
   Feature("search operation of question") {
     Scenario("no filter") {
-      val operationOfQuestion1 = TestUtilsIT.operationOfQuestion(questionId, operationId)
-      val operationOfQuestion2 = TestUtilsIT.operationOfQuestion(questionId, operationId)
+      val operationOfQuestion1 = TestUtils.operationOfQuestion(questionId, operationId)
+      val operationOfQuestion2 = TestUtils.operationOfQuestion(questionId, operationId)
 
       val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
         _ <- createOperationOfQuestion(operationOfQuestion1)
@@ -167,7 +167,7 @@ class PersistentOperationOfQuestionServiceIT
     }
 
     Scenario("questionIds filter") {
-      val operationOfQuestion3 = TestUtilsIT.operationOfQuestion(QuestionId("toBeFiltered"), operationId)
+      val operationOfQuestion3 = TestUtils.operationOfQuestion(QuestionId("toBeFiltered"), operationId)
 
       val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
         _ <- createOperationOfQuestion(operationOfQuestion3)
@@ -191,7 +191,7 @@ class PersistentOperationOfQuestionServiceIT
     }
 
     Scenario("operationIds filter") {
-      val ooq = TestUtilsIT.operationOfQuestion(QuestionId("operationIds-filter"), operationId)
+      val ooq = TestUtils.operationOfQuestion(QuestionId("operationIds-filter"), operationId)
 
       val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
         _ <- createOperationOfQuestion(ooq)
@@ -218,13 +218,13 @@ class PersistentOperationOfQuestionServiceIT
       val now = ZonedDateTime.now
       val yesterday = now.minusDays(1)
       val tomorrow = now.plusDays(1)
-      val openOOQ = TestUtilsIT.operationOfQuestion(
+      val openOOQ = TestUtils.operationOfQuestion(
         questionId = QuestionId("openAtTestCase1"),
         operationId = operationId,
         startDate = yesterday,
         endDate = tomorrow
       )
-      val closedOOQ = TestUtilsIT.operationOfQuestion(
+      val closedOOQ = TestUtils.operationOfQuestion(
         questionId = QuestionId("openAtTestCase2"),
         operationId = operationId,
         startDate = yesterday.minusDays(1),
@@ -257,19 +257,19 @@ class PersistentOperationOfQuestionServiceIT
       val now = ZonedDateTime.now
       val yesterday = now.minusDays(1)
       val tomorrow = now.plusDays(1)
-      val openOOQ = TestUtilsIT.operationOfQuestion(
+      val openOOQ = TestUtils.operationOfQuestion(
         questionId = QuestionId("endAfterTestCase1"),
         operationId = operationId,
         startDate = yesterday,
         endDate = tomorrow
       )
-      val closedOOQ = TestUtilsIT.operationOfQuestion(
+      val closedOOQ = TestUtils.operationOfQuestion(
         questionId = QuestionId("endAfterTestCase2"),
         operationId = operationId,
         startDate = yesterday.minusDays(1),
         endDate = yesterday
       )
-      val upcomingOOQ = TestUtilsIT.operationOfQuestion(
+      val upcomingOOQ = TestUtils.operationOfQuestion(
         questionId = QuestionId("endAfterTestCase3"),
         operationId = operationId,
         startDate = tomorrow,
@@ -323,7 +323,7 @@ class PersistentOperationOfQuestionServiceIT
 
   Feature("Find an operationOfQuestion by operation") {
     Scenario("Persist an operationOfQuestion and find it by its operationId") {
-      val baseOperationOfQuestion = TestUtilsIT.operationOfQuestion(questionId, operationId)
+      val baseOperationOfQuestion = TestUtils.operationOfQuestion(questionId, operationId)
 
       val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
         _      <- createOperationOfQuestion(baseOperationOfQuestion)
@@ -340,7 +340,7 @@ class PersistentOperationOfQuestionServiceIT
 
   Feature("Modify an operationOfQuestion") {
     Scenario("Persist an operationOfQuestion and modify it") {
-      val baseOperationOfQuestion = TestUtilsIT.operationOfQuestion(questionId, operationId)
+      val baseOperationOfQuestion = TestUtils.operationOfQuestion(questionId, operationId)
       val actionTimeline = TimelineElement(
         date = LocalDate.parse("2030-03-01"),
         dateText = "2030-03-03",

@@ -21,7 +21,7 @@ package org.make.api.widget
 
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.user.DefaultPersistentUserServiceComponent
-import org.make.api.{DatabaseTest, TestUtilsIT}
+import org.make.api.{DatabaseTest, TestUtils}
 import org.make.core.DateHelper
 import org.make.core.question.QuestionId
 import org.make.core.reference.Country
@@ -44,7 +44,7 @@ class PersistentWidgetServiceIT
     whenReady(persistentQuestionService.persist(question(QuestionId("question"))), Timeout(2.seconds)) { _ =>
       ()
     }
-    whenReady(persistentUserService.persist(TestUtilsIT.user(UserId("123"))), Timeout(2.seconds)) { _ =>
+    whenReady(persistentUserService.persist(TestUtils.user(UserId("123"))), Timeout(2.seconds)) { _ =>
       ()
     }
     whenReady(persistentSourceService.persist(source), Timeout(2.seconds)) { _ =>

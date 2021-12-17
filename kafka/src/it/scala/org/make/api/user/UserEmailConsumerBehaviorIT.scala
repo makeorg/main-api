@@ -27,7 +27,7 @@ import org.apache.kafka.clients.producer.KafkaProducer
 import org.make.api.technical.KafkaConsumerBehavior.Protocol
 import org.make.api.technical.crm.{SendMailPublisherService, SendMailPublisherServiceComponent}
 import org.make.api.userhistory._
-import org.make.api.{KafkaConsumerTest, KafkaTestConsumerBehavior, TestUtilsIT}
+import org.make.api.{KafkaConsumerTest, KafkaTestConsumerBehavior, TestUtils}
 import org.make.core.reference.Country
 import org.make.core.user.{User, UserId, UserType}
 import org.make.core.{DateHelper, EventId, MakeSerializable, RequestContext}
@@ -73,9 +73,9 @@ class UserEmailConsumerBehaviorIT
 
   val dateNow: ZonedDateTime = DateHelper.now()
 
-  val user: User = TestUtilsIT.user(UserId("user"), userType = UserType.UserTypeUser)
-  val organisation: User = TestUtilsIT.user(UserId("organisation"), userType = UserType.UserTypeOrganisation)
-  val personality1: User = TestUtilsIT.user(UserId("personality1"), userType = UserType.UserTypePersonality)
+  val user: User = TestUtils.user(UserId("user"), userType = UserType.UserTypeUser)
+  val organisation: User = TestUtils.user(UserId("organisation"), userType = UserType.UserTypeOrganisation)
+  val personality1: User = TestUtils.user(UserId("personality1"), userType = UserType.UserTypePersonality)
 
   when(userService.getUser(eqTo(UserId("user")))).thenReturn(Future.successful(Some(user)))
   when(userService.getUser(eqTo(UserId("organisation"))))

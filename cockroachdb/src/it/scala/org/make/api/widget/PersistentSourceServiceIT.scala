@@ -19,7 +19,7 @@
 
 package org.make.api.widget
 
-import org.make.api.{DatabaseTest, TestUtilsIT}
+import org.make.api.{DatabaseTest, TestUtils}
 import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.core.DateHelper
 import org.make.core.user.UserId
@@ -36,7 +36,7 @@ class PersistentSourceServiceIT
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    whenReady(persistentUserService.persist(TestUtilsIT.user(UserId("123"))), Timeout(2.seconds)) { _ =>
+    whenReady(persistentUserService.persist(TestUtils.user(UserId("123"))), Timeout(2.seconds)) { _ =>
       ()
     }
   }

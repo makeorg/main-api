@@ -22,5 +22,4 @@ package org.make.api
 import grizzled.slf4j.Logging
 import org.make.core.BaseUnitTest
 
-// toDo: this trait must be shared between test and it
 trait MakeUnitTest extends BaseUnitTest with Logging with TestUtils

@@ -21,7 +21,7 @@ package org.make.api.personality
 
 import cats.data.NonEmptyList
 import org.make.api.DatabaseTest
-import org.make.api.TestUtilsIT
+import org.make.api.TestUtils
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRole, PersonalityRoleId}
@@ -57,7 +57,7 @@ class PersistentQuestionPersonalityServiceIT
     operationId = None
   )
 
-  val user = TestUtilsIT.user(id = UserId("user-id"))
+  val user = TestUtils.user(id = UserId("user-id"))
 
   Feature("get personality by id") {
     Scenario("get existing personality") {
@@ -190,7 +190,7 @@ class PersistentQuestionPersonalityServiceIT
       val updatedPersonality =
         personality.copy(userId = UserId("updated-user"))
 
-      val updatedUser = TestUtilsIT.user(id = UserId("updated-user"), email = "update-user@make.org")
+      val updatedUser = TestUtils.user(id = UserId("updated-user"), email = "update-user@make.org")
 
       val futureUpdatedPersonality = for {
         _           <- persistentUserService.persist(updatedUser)

@@ -19,7 +19,7 @@
 
 package org.make.api.demographics
 
-import org.make.api.{DatabaseTest, TestUtilsIT}
+import org.make.api.{DatabaseTest, TestUtils}
 import org.make.core.DateHelper
 import org.make.core.demographics.DemographicsCard.Layout
 import org.make.core.demographics.{DemographicsCard, DemographicsCardId}
@@ -31,7 +31,7 @@ import scala.concurrent.duration.DurationInt
 
 class PersistentDemographicsCardServiceIT extends DatabaseTest with DefaultPersistentDemographicsCardServiceComponent {
 
-  private val card = TestUtilsIT.demographicsCard(DemographicsCardId("id"))
+  private val card = TestUtils.demographicsCard(DemographicsCardId("id"))
 
   Feature("CRUD demographicsCard") {
 

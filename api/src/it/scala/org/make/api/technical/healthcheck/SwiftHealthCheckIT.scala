@@ -24,7 +24,7 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util
 import com.typesafe.config.ConfigFactory
-import org.make.api.ItMakeTest
+import org.make.api.MakeUnitTest
 import org.make.api.docker.DockerSwiftAllInOne
 import org.make.api.extensions.SwiftClientExtension
 import org.make.api.technical.TimeSettings
@@ -37,7 +37,7 @@ import scala.concurrent.{Await, ExecutionContext}
 
 class SwiftHealthCheckIT
     extends ScalaTestWithActorTestKit(SwiftHealthCheckIT.actorSystem)
-    with ItMakeTest
+    with MakeUnitTest
     with DockerSwiftAllInOne {
 
   override val externalPort: Option[Int] = Some(SwiftHealthCheckIT.port)

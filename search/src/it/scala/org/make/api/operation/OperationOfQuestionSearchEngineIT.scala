@@ -20,7 +20,6 @@
 package org.make.api.operation
 
 import java.time.ZonedDateTime
-
 import cats.data.NonEmptyList
 import org.make.api.docker.SearchEngineIT
 import org.make.api.technical.elasticsearch.{
@@ -29,7 +28,7 @@ import org.make.api.technical.elasticsearch.{
   ElasticsearchConfigurationComponent
 }
 import org.make.api.views.Highlights
-import org.make.api.ItMakeTest
+import org.make.api.MakeUnitTest
 import org.make.core.{CirceFormatters, DateFormatters}
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.operation._
@@ -44,7 +43,7 @@ import scala.collection.immutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class OperationOfQuestionSearchEngineIT
-    extends ItMakeTest
+    extends MakeUnitTest
     with CirceFormatters
     with SearchEngineIT[QuestionId, IndexedOperationOfQuestion]
     with DefaultOperationOfQuestionSearchEngineComponent

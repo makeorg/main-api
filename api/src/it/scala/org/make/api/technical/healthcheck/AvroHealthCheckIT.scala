@@ -21,7 +21,7 @@ package org.make.api.technical.healthcheck
 
 import com.typesafe.config.{Config, ConfigFactory}
 import io.confluent.kafka.schemaregistry.client.rest.RestService
-import org.make.api.ItMakeTest
+import org.make.api.MakeUnitTest
 import org.make.api.docker.DockerKafkaService
 import org.make.api.extensions.KafkaConfiguration
 import org.make.api.technical.healthcheck.HealthCheck.Status
@@ -31,7 +31,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration.DurationInt
 
-class AvroHealthCheckIT extends ItMakeTest with DockerKafkaService {
+class AvroHealthCheckIT extends MakeUnitTest with DockerKafkaService {
 
   override val kafkaExposedPort: Int = 29592
   override val registryExposedPort: Int = 28581

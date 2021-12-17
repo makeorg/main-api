@@ -23,7 +23,7 @@ import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.user.DefaultPersistentUserServiceComponent
-import org.make.api.{DatabaseTest, EmptyActorSystemComponent, TestUtilsIT}
+import org.make.api.{DatabaseTest, EmptyActorSystemComponent, TestUtils}
 import org.make.core.DateHelper
 import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation.OperationActionType._
@@ -57,7 +57,7 @@ class OperationServiceIT
 
   val userId: UserId = UserId(UUID.randomUUID().toString)
 
-  val johnDoe: User = TestUtilsIT.user(
+  val johnDoe: User = TestUtils.user(
     id = userId,
     email = "doeOpeService@example.com",
     firstName = Some("John"),

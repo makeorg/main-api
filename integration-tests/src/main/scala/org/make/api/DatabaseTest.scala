@@ -33,7 +33,7 @@ import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration.DurationInt
 
-trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExecutionContextComponent {
+trait DatabaseTest extends MakeUnitTest with DockerCockroachService with MakeDBExecutionContextComponent {
 
   override val readExecutionContext: ExecutionContext = ExecutionContext.Implicits.global
   override val writeExecutionContext: ExecutionContext = ExecutionContext.Implicits.global

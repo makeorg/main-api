@@ -34,7 +34,7 @@ import org.make.api.technical.elasticsearch.{
   ElasticsearchConfiguration,
   ElasticsearchConfigurationComponent
 }
-import org.make.api.ItMakeTest
+import org.make.api.MakeUnitTest
 import org.make.core.common.indexed.Sort
 import org.make.core.idea.IdeaId
 import org.make.core.proposal._
@@ -55,7 +55,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.math.Ordering.Double.TotalOrdering
 
 class ProposalSearchEngineIT
-    extends ItMakeTest
+    extends MakeUnitTest
     with CirceFormatters
     with SearchEngineIT[ProposalId, IndexedProposal]
     with DefaultProposalSearchEngineComponent
