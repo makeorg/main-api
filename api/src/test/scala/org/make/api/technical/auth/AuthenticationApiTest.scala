@@ -19,28 +19,20 @@
 
 package org.make.api.technical.auth
 
-import java.time.Instant
-import java.util.{Date, UUID}
-import akka.http.scaladsl.model.{FormData, StatusCodes}
 import akka.http.scaladsl.model.headers.{`Set-Cookie`, Authorization, Cookie, OAuth2BearerToken}
+import akka.http.scaladsl.model.{FormData, StatusCodes}
 import akka.http.scaladsl.server.Route
-import org.make.api.MakeApiTestBase
 import org.make.api.technical._
 import org.make.api.user.{UserService, UserServiceComponent}
-import org.make.core.RequestContext
-import org.make.core.auth.UserRights
+import org.make.api.{MakeApiTestBase, TestUtils}
+import org.make.core.auth.{ClientId, Token, UserRights}
 import org.make.core.session.SessionId
 import org.make.core.user.{User, UserId}
-import scalaoauth2.provider.{
-  AccessToken,
-  AuthInfo,
-  AuthorizationHandler,
-  AuthorizationRequest,
-  GrantHandlerResult,
-  OAuthError,
-  TokenEndpoint
-}
+import org.make.core.{ApplicationName, DateHelper, RequestContext}
+import scalaoauth2.provider._
 
+import java.time.Instant
+import java.util.{Date, UUID}
 import scala.concurrent.{ExecutionContext, Future}
 
 class AuthenticationApiTest
@@ -170,6 +162,104 @@ class AuthenticationApiTest
         )
       ) ~> routes ~> check {
         status should be(StatusCodes.OK)
+      }
+    }
+  }
+
+  Feature("refresh access token") {
+    val authInfo: AuthInfo[UserRights] =
+      AuthInfo(
+        UserRights(
+          userId = UserId("ABCD-refresh"),
+          roles = Seq.empty,
+          availableQuestions = Seq.empty,
+          emailVerified = true
+        ),
+        None,
+        None,
+        None
+      )
+
+    Scenario("refresh token from app with cookies") {
+      val grantResult: GrantHandlerResult[UserRights] =
+        GrantHandlerResult[UserRights](
+          authInfo,
+          "Bearer",
+          "new-token-cookie",
+          Some(42L),
+          Some("refresh-token"),
+          None,
+          Map.empty
+        )
+      val result: Either[OAuthError, GrantHandlerResult[UserRights]] = Right(grantResult)
+
+      when(
+        tokenEndpoint
+          .handleRequest(any[AuthorizationRequest], any[AuthorizationHandler[UserRights]])(any[ExecutionContext])
+      ).thenReturn(Future.successful(result))
+
+      val client = TestUtils.client(ClientId("client-id"))
+      val token = Token("token-cookie", Some("refresh"), None, 42, 84, authInfo.user, client, None, None)
+      when(oauth2DataHandler.refreshIfTokenIsExpired(eqTo("token-cookie"))).thenReturn(Future.successful(Some(token)))
+
+      val accessToken =
+        AccessToken("token-cookie", Some("refresh"), None, None, Date.from(DateHelper.now().toInstant), Map.empty)
+      when(oauth2DataHandler.findAccessToken(eqTo("token-cookie")))
+        .thenReturn(Future.successful(Some(accessToken)))
+      when(oauth2DataHandler.findAuthInfoByAccessToken(eqTo(accessToken)))
+        .thenReturn(Future.successful(Some(authInfo)))
+
+      Post(
+        "/oauth/access_token",
+        FormData("username" -> "yopmail@make.org", "refresh_token" -> "refresh-token", "grant_type" -> "refresh_token")
+      ).withHeaders(
+        Cookie(makeSettings.SecureCookie.name, "token-cookie"),
+        `X-Session-Id`("session-id"),
+        Authorization(OAuth2BearerToken("token-header")),
+        `X-Make-App-Name`(ApplicationName.MainFrontend.value)
+      ) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val token = entityAs[TokenResponse]
+        token.accessToken shouldBe "new-token-cookie"
+        token.refreshToken should contain("refresh-token")
+      }
+    }
+
+    Scenario("refresh token from app with cookiesless") {
+      val grantResult: GrantHandlerResult[UserRights] =
+        GrantHandlerResult[UserRights](
+          authInfo,
+          "Bearer",
+          "new-token-header",
+          Some(42L),
+          Some("refresh-token"),
+          None,
+          Map.empty
+        )
+      val result: Either[OAuthError, GrantHandlerResult[UserRights]] = Right(grantResult)
+
+      when(
+        tokenEndpoint
+          .handleRequest(any[AuthorizationRequest], any[AuthorizationHandler[UserRights]])(any[ExecutionContext])
+      ).thenReturn(Future.successful(result))
+
+      val token =
+        AccessToken("token-header", Some("refresh"), None, None, Date.from(DateHelper.now().toInstant), Map.empty)
+      when(oauth2DataHandler.findAccessToken(eqTo("token-header"))).thenReturn(Future.successful(Some(token)))
+      when(oauth2DataHandler.findAuthInfoByAccessToken(eqTo(token))).thenReturn(Future.successful(Some(authInfo)))
+
+      Post(
+        "/oauth/access_token",
+        FormData("username" -> "yopmail@make.org", "refresh_token" -> "refresh-token", "grant_type" -> "refresh_token")
+      ).withHeaders(
+        Cookie(makeSettings.SecureCookie.name, "token-cookie"),
+        Authorization(OAuth2BearerToken("token-header")),
+        `X-Make-App-Name`(ApplicationName.Backoffice.value)
+      ) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val token = entityAs[TokenResponse]
+        token.accessToken shouldBe "new-token-header"
+        token.refreshToken should contain("refresh-token")
       }
     }
   }
