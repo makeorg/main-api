@@ -34,6 +34,8 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.sequence.SequenceId
 import org.make.core.technical.enumeratum.EnumKeys.StringEnumKeys
 import org.make.core.user.UserId
+import org.make.core.jsoniter.JsoniterEnum
+import com.github.plokhotnyuk.jsoniter_scala.core._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
 
@@ -63,6 +65,9 @@ object OperationId {
     Decoder.decodeString.map(OperationId(_))
 
   implicit val operationIdFormatter: JsonFormat[OperationId] = SprayJsonFormatters.forStringValue(OperationId.apply)
+
+  implicit val operationIdCodec: JsonValueCodec[OperationId] =
+    StringValue.makeCodec(OperationId.apply)
 }
 
 final case class IntroCard(
@@ -264,7 +269,8 @@ sealed abstract class OperationKind(val value: String) extends StringEnumEntry w
 object OperationKind
     extends StringEnum[OperationKind]
     with StringCirceEnum[OperationKind]
-    with StringEnumKeys[OperationKind] {
+    with StringEnumKeys[OperationKind]
+    with JsoniterEnum[OperationKind] {
 
   case object GreatCause extends OperationKind("GREAT_CAUSE")
   case object PrivateConsultation extends OperationKind("PRIVATE_CONSULTATION")
@@ -273,7 +279,6 @@ object OperationKind
   override def values: IndexedSeq[OperationKind] = findValues
 
   val publicKinds: Seq[OperationKind] = Seq(OperationKind.GreatCause, OperationKind.BusinessConsultation)
-
 }
 
 final case class OperationOfQuestionTimeline(

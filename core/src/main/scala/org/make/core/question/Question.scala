@@ -26,6 +26,7 @@ import org.make.core.{SprayJsonFormatters, StringValue}
 import org.make.core.operation.OperationId
 import org.make.core.reference.{Country, Language}
 import spray.json.JsonFormat
+import com.github.plokhotnyuk.jsoniter_scala.core._
 
 final case class Question(
   questionId: QuestionId,
@@ -44,6 +45,9 @@ object QuestionId {
     (a: QuestionId) => Json.fromString(a.value)
   implicit lazy val QuestionIdDecoder: Decoder[QuestionId] =
     Decoder.decodeString.map(QuestionId(_))
+
+  implicit val questionIdCodec: JsonValueCodec[QuestionId] =
+    StringValue.makeCodec(QuestionId.apply)
 
   implicit val QuestionIdFormatter: JsonFormat[QuestionId] = SprayJsonFormatters.forStringValue(QuestionId.apply)
 

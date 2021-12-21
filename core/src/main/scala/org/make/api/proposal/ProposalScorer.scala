@@ -69,9 +69,8 @@ final class ProposalScorer(votingOptions: VotingOptions, counter: VotesCounter, 
       }
     }
 
-  private def individualScore(key: Key, countingFunction: VotesCounter = counter): Double = {
-    (count(key, countingFunction) + findSmoothing(key)) / (1 + countVotes(countingFunction))
-  }
+  private def individualScore(key: Key, countingFunction: VotesCounter = counter): Double =
+    Math.min((count(key, countingFunction) + findSmoothing(key)) / (1 + countVotes(countingFunction)), 1)
 
   def score(key: Key): Double = {
     tradeOff(individualScore(key, _.countVerified), individualScore(key))

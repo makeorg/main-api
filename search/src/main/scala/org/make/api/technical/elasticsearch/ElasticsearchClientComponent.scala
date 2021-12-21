@@ -18,6 +18,7 @@
  */
 
 package org.make.api.technical.elasticsearch
+
 import java.time.format.DateTimeFormatter
 import com.sksamuel.elastic4s.http.ElasticDsl.{addAlias, aliasExists, aliases, createIndex, getAliases, _}
 import com.sksamuel.elastic4s.http.index.admin.AliasExistsResponse

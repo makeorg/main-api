@@ -21,10 +21,11 @@ package org.make.core.proposal.indexed
 
 import cats.data.NonEmptyList
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
-import enumeratum.{Circe, Enum, EnumEntry}
 import io.circe.generic.semiauto._
 import io.circe.{Codec, Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
+import com.github.plokhotnyuk.jsoniter_scala.macros._
+import com.github.plokhotnyuk.jsoniter_scala.core._
 import org.make.api.proposal.ProposalScorer
 import org.make.core.elasticsearch.ElasticsearchFieldName
 import org.make.core.idea.IdeaId
@@ -35,6 +36,7 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
 import org.make.core.{CirceFormatters, RequestContext}
+import org.make.core.jsoniter.{JsoniterCodecs, JsoniterEnum}
 
 import java.time.ZonedDateTime
 import scala.annotation.meta.field
@@ -212,7 +214,11 @@ final case class IndexedProposal(
   keywords: Seq[IndexedProposalKeyword]
 )
 
-object IndexedProposal extends CirceFormatters {
+object IndexedProposal extends CirceFormatters with JsoniterCodecs {
+
+  implicit val codec: JsonValueCodec[IndexedProposal] =
+    JsonCodecMaker.makeWithRequiredCollectionFields
+
   implicit val encoder: Encoder[IndexedProposal] = deriveEncoder[IndexedProposal]
   implicit val decoder: Decoder[IndexedProposal] = deriveDecoder[IndexedProposal]
 }
@@ -230,7 +236,11 @@ final case class IndexedProposalQuestion(
   isOpen: Boolean
 )
 
-object IndexedProposalQuestion extends CirceFormatters {
+object IndexedProposalQuestion extends CirceFormatters with JsoniterCodecs {
+
+  implicit val codec: JsonValueCodec[IndexedProposalQuestion] =
+    JsonCodecMaker.makeWithRequiredCollectionFields
+
   implicit val encoder: Encoder[IndexedProposalQuestion] = deriveEncoder[IndexedProposalQuestion]
   implicit val decoder: Decoder[IndexedProposalQuestion] = deriveDecoder[IndexedProposalQuestion]
 }
@@ -267,6 +277,9 @@ object IndexedContext {
         .getOrElse(Seq.empty)
     )
 
+  implicit val codec: JsonValueCodec[IndexedContext] =
+    JsonCodecMaker.makeWithRequiredCollectionFields
+
   implicit val encoder: Encoder[IndexedContext] = deriveEncoder[IndexedContext]
   implicit val decoder: Decoder[IndexedContext] = deriveDecoder[IndexedContext]
 }
@@ -274,6 +287,9 @@ object IndexedContext {
 final case class IndexedGetParameters(key: String, value: String)
 
 object IndexedGetParameters {
+  implicit val codec: JsonValueCodec[IndexedGetParameters] =
+    JsonCodecMaker.makeWithRequiredCollectionFields
+
   implicit val encoder: Encoder[IndexedGetParameters] = deriveEncoder[IndexedGetParameters]
   implicit val decoder: Decoder[IndexedGetParameters] = deriveDecoder[IndexedGetParameters]
 }
@@ -293,6 +309,9 @@ final case class IndexedAuthor(
 )
 
 object IndexedAuthor {
+  implicit val codec: JsonValueCodec[IndexedAuthor] =
+    JsonCodecMaker.makeWithRequiredCollectionFields
+
   implicit val encoder: Encoder[IndexedAuthor] = deriveEncoder[IndexedAuthor]
   implicit val decoder: Decoder[IndexedAuthor] = deriveDecoder[IndexedAuthor]
 }
@@ -306,6 +325,9 @@ final case class IndexedOrganisationInfo(
 )
 
 object IndexedOrganisationInfo {
+  implicit val codec: JsonValueCodec[IndexedOrganisationInfo] =
+    JsonCodecMaker.makeWithRequiredCollectionFields
+
   implicit val encoder: Encoder[IndexedOrganisationInfo] = deriveEncoder[IndexedOrganisationInfo]
   implicit val decoder: Decoder[IndexedOrganisationInfo] = deriveDecoder[IndexedOrganisationInfo]
 }
@@ -321,6 +343,9 @@ final case class IndexedVote(
 ) extends BaseVote
 
 object IndexedVote {
+  implicit val codec: JsonValueCodec[IndexedVote] =
+    JsonCodecMaker.makeWithRequiredCollectionFields
+
   implicit val encoder: Encoder[IndexedVote] = deriveEncoder[IndexedVote]
   implicit val decoder: Decoder[IndexedVote] = deriveDecoder[IndexedVote]
 
@@ -350,6 +375,9 @@ object IndexedQualification {
   implicit val encoder: Encoder[IndexedQualification] = deriveEncoder[IndexedQualification]
   implicit val decoder: Decoder[IndexedQualification] = deriveDecoder[IndexedQualification]
 
+  implicit val codec: JsonValueCodec[IndexedQualification] =
+    JsonCodecMaker.makeWithRequiredCollectionFields
+
   def apply(qualification: Qualification): IndexedQualification =
     IndexedQualification(
       key = qualification.key,
@@ -362,18 +390,16 @@ object IndexedQualification {
   def empty(key: QualificationKey): IndexedQualification = IndexedQualification(key, 0, 0, 0, 0)
 }
 
-sealed abstract class Zone extends EnumEntry
+sealed abstract class Zone(val value: String) extends StringEnumEntry
 
-object Zone extends Enum[Zone] {
-  case object Consensus extends Zone
-  case object Rejection extends Zone
-  case object Limbo extends Zone
-  case object Controversy extends Zone
+object Zone extends StringEnum[Zone] with StringCirceEnum[Zone] with JsoniterEnum[Zone] {
 
-  override val values: IndexedSeq[Zone] = findValues
+  case object Consensus extends Zone("consensus")
+  case object Rejection extends Zone("rejection")
+  case object Limbo extends Zone("limbo")
+  case object Controversy extends Zone("controversy")
 
-  implicit val decoder: Decoder[Zone] = Circe.decodeCaseInsensitive(this)
-  implicit val encoder: Encoder[Zone] = Circe.encoderLowercase(this)
+  override def values: IndexedSeq[Zone] = findValues
 }
 
 final case class IndexedScores(
@@ -389,6 +415,9 @@ final case class IndexedScores(
 )
 
 object IndexedScores {
+  implicit val codec: JsonValueCodec[IndexedScores] =
+    JsonCodecMaker.makeWithRequiredCollectionFields
+
   implicit val encoder: Encoder[IndexedScores] = deriveEncoder[IndexedScores]
   implicit val decoder: Decoder[IndexedScores] = deriveDecoder[IndexedScores]
 
@@ -423,6 +452,8 @@ object IndexedScores {
 final case class IndexedScore(score: Double, lowerBound: Double, upperBound: Double)
 
 object IndexedScore {
+  implicit val indexedScoreCodec: JsonValueCodec[IndexedScore] =
+    JsonCodecMaker.makeWithRequiredCollectionFields
   implicit val codec: Codec[IndexedScore] = deriveCodec
   val empty: IndexedScore = IndexedScore(0, 0, 0)
 
@@ -433,6 +464,9 @@ object IndexedScore {
 final case class ProposalsSearchResult(total: Long, results: Seq[IndexedProposal])
 
 object ProposalsSearchResult {
+  implicit val codec: JsonValueCodec[ProposalsSearchResult] =
+    JsonCodecMaker.makeWithRequiredCollectionFields
+
   implicit val encoder: Encoder[ProposalsSearchResult] = deriveEncoder[ProposalsSearchResult]
   implicit val decoder: Decoder[ProposalsSearchResult] = deriveDecoder[ProposalsSearchResult]
 
@@ -448,20 +482,25 @@ final case class IndexedTag(
 )
 
 object IndexedTag {
+  implicit val codec: JsonValueCodec[IndexedTag] =
+    JsonCodecMaker.makeWithRequiredCollectionFields
+
   implicit val encoder: Encoder[IndexedTag] = deriveEncoder[IndexedTag]
   implicit val decoder: Decoder[IndexedTag] = deriveDecoder[IndexedTag]
 }
 
 sealed abstract class SequencePool(val value: String) extends StringEnumEntry
 
-object SequencePool extends StringEnum[SequencePool] with StringCirceEnum[SequencePool] {
+object SequencePool
+    extends StringEnum[SequencePool]
+    with StringCirceEnum[SequencePool]
+    with JsoniterEnum[SequencePool] {
 
   case object New extends SequencePool("new")
   case object Tested extends SequencePool("tested")
   case object Excluded extends SequencePool("excluded")
 
   override def values: IndexedSeq[SequencePool] = findValues
-
 }
 
 final case class IndexedProposalKeyword(key: ProposalKeywordKey, label: String)

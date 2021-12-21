@@ -26,5 +26,6 @@ libraryDependencies ++= Seq(
   Dependencies.kamonExecutors,
   Dependencies.refinedScala,
   Dependencies.scalaOAuth,
-  Dependencies.swiftClient
+  Dependencies.swiftClient,
+  Dependencies.jsoniter
 )

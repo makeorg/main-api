@@ -42,6 +42,7 @@ import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
+import org.make.core.DateFormatters
 
 import scala.concurrent.Future
 
@@ -1061,7 +1062,7 @@ class ModerationProposalApiTest
       Then("The return code should be 200")
 
       val beforeDateString: String = "2017-06-04T01:01:01.123Z"
-      val beforeDate: ZonedDateTime = ZonedDateTime.from(dateFormatter.parse(beforeDateString))
+      val beforeDate: ZonedDateTime = ZonedDateTime.from(DateFormatters.default.parse(beforeDateString))
 
       when(
         proposalService.search(
@@ -1097,7 +1098,7 @@ class ModerationProposalApiTest
       Then("The return code should be 200")
 
       val beforeDateString: String = "2017-06-04T01:01:01.123Z"
-      val beforeDate: ZonedDateTime = ZonedDateTime.from(dateFormatter.parse(beforeDateString))
+      val beforeDate: ZonedDateTime = ZonedDateTime.from(DateFormatters.default.parse(beforeDateString))
 
       when(
         proposalService.search(

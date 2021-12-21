@@ -23,6 +23,7 @@ import io.circe.{Decoder, Encoder, Json}
 import org.make.core.StringValue
 import org.make.core.Validation.{maxLength, validate}
 import spray.json.{JsString, JsValue, JsonFormat}
+import com.github.plokhotnyuk.jsoniter_scala.core._
 
 final case class Country(value: String) extends StringValue {
   override def toString: String = value
@@ -31,23 +32,30 @@ final case class Country(value: String) extends StringValue {
 }
 
 object Country {
+
   // Make sure countries are always upper case
+  def apply(id: String): Country =
+    new Country(id.toUpperCase)
+
   implicit lazy val countryEncoder: Encoder[Country] =
-    (a: Country) => Json.fromString(a.value.toUpperCase())
+    (a: Country) => Json.fromString(a.value)
   implicit lazy val countryDecoder: Decoder[Country] =
-    Decoder.decodeString.map(country => Country(country.toUpperCase()))
+    Decoder.decodeString.map(Country.apply)
 
   implicit val CountryFormatter: JsonFormat[Country] = new JsonFormat[Country] {
     @SuppressWarnings(Array("org.wartremover.warts.Throw"))
     override def read(json: JsValue): Country = json match {
-      case JsString(s) => Country(s.toUpperCase())
+      case JsString(s) => Country(s)
       case other       => throw new IllegalArgumentException(s"Unable to convert $other")
     }
 
     override def write(obj: Country): JsValue = {
-      JsString(obj.value.toUpperCase())
+      JsString(obj.value)
     }
   }
+
+  implicit val countryCodec: JsonValueCodec[Country] =
+    StringValue.makeCodec(Country.apply)
 }
 
 final case class Language(value: String) extends StringValue {
@@ -57,21 +65,28 @@ final case class Language(value: String) extends StringValue {
 }
 
 object Language {
+
+  def apply(id: String): Language =
+    new Language(id.toLowerCase)
+
   // Make sure languages are always lower case
   implicit lazy val LanguageEncoder: Encoder[Language] =
-    (a: Language) => Json.fromString(a.value.toLowerCase())
+    (a: Language) => Json.fromString(a.value)
   implicit lazy val LanguageDecoder: Decoder[Language] =
-    Decoder.decodeString.map(language => Language(language.toLowerCase()))
+    Decoder.decodeString.map(this.apply)
 
   implicit val LanguageFormatter: JsonFormat[Language] = new JsonFormat[Language] {
     @SuppressWarnings(Array("org.wartremover.warts.Throw"))
     override def read(json: JsValue): Language = json match {
-      case JsString(s) => Language(s.toLowerCase())
+      case JsString(s) => Language(s)
       case other       => throw new IllegalArgumentException(s"Unable to convert $other")
     }
 
     override def write(obj: Language): JsValue = {
-      JsString(obj.value.toLowerCase())
+      JsString(obj.value)
     }
   }
+
+  implicit val languageCodec: JsonValueCodec[Language] =
+    StringValue.makeCodec(this.apply)
 }

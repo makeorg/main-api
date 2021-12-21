@@ -30,7 +30,7 @@ import org.make.api.technical.elasticsearch.{
 }
 import org.make.api.views.Highlights
 import org.make.api.ItMakeTest
-import org.make.core.CirceFormatters
+import org.make.core.{CirceFormatters, DateFormatters}
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.operation._
 import org.make.core.operation.OperationOfQuestion.Status._
@@ -70,7 +70,7 @@ class OperationOfQuestionSearchEngineIT
     initializeElasticsearch(_.questionId)
   }
 
-  val refDate = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))
+  val refDate = ZonedDateTime.from(DateFormatters.default.parse("2017-06-02T01:01:01.123Z"))
   val oldDate = refDate.minusYears(1)
   val recentDate = refDate.minusWeeks(1)
   val futureDate = refDate.plusYears(1)

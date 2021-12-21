@@ -38,7 +38,7 @@ import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
-import org.make.core.{CirceFormatters, RequestContext}
+import org.make.core.{CirceFormatters, DateFormatters, RequestContext}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import java.time.ZonedDateTime
@@ -68,8 +68,8 @@ class ElasticSearchHealthCheckIT
       id = ProposalId("f4b02e75-8670-4bd0-a1aa-6d91c4de968a"),
       userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content = "Il faut que mon/ma député(e) fasse la promotion de la permaculture",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      createdAt = ZonedDateTime.from(DateFormatters.default.parse("2017-06-02T01:01:01.123Z")),
+      updatedAt = Some(ZonedDateTime.from(DateFormatters.default.parse("2017-06-02T01:01:01.123Z"))),
       votes = Seq(
         IndexedVote
           .empty(key = VoteKey.Agree)
