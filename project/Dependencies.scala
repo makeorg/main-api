@@ -112,8 +112,6 @@ object Dependencies {
 
   val jsoup: ModuleID = "org.jsoup" % "jsoup" % "1.14.1"
 
-  val jodaTime = "joda-time" % "joda-time" % "2.10.13"
-
   // Kafka + AVRO
   val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
   val avro4s: ModuleID = "org.make"               %% "avro4s-core"  % "3.0.5-make3"
