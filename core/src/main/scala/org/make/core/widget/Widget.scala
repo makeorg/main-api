@@ -56,6 +56,7 @@ object Widget {
     case object V1 extends Version
     case object V2 extends Version
     case object V3 extends Version
+    case object V4 extends Version
     override def values: IndexedSeq[Version] = findValues
   }
 
