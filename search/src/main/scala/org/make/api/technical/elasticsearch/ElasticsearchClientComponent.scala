@@ -78,7 +78,9 @@ trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent w
       Source.fromResource("elasticsearch-mappings/post.json")(Codec.UTF8).getLines().mkString("")
 
     override lazy val client: ElasticClient = ElasticClient(
-      AkkaHttpClient(AkkaHttpClientSettings(List(elasticsearchConfiguration.connectionString)))(actorSystem.toClassic)
+      AkkaHttpClient(AkkaHttpClientSettings(elasticsearchConfiguration.connectionString.split(",").toSeq))(
+        actorSystem.toClassic
+      )
     )
 
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
