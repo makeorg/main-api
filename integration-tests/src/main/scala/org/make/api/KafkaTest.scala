@@ -26,7 +26,7 @@ import org.make.api.docker.DockerKafkaService
 
 import java.util.Properties
 
-trait KafkaTest extends ItMakeTest with DockerKafkaService {
+trait KafkaTest extends MakeUnitTest with DockerKafkaService {
   def createProducer[T: SchemaFor: Encoder]: KafkaProducer[String, T] = {
     val registryUrl = s"http://localhost:$registryExposedPort"
     val props = new Properties()

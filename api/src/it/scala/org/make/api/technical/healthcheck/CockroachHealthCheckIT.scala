@@ -20,14 +20,14 @@
 package org.make.api.technical.healthcheck
 
 import org.make.api.technical.healthcheck.HealthCheck.Status
-import org.make.api.{DatabaseTest, ItMakeTest}
+import org.make.api.{DatabaseTest, MakeUnitTest}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration.DurationInt
 
-class CockroachHealthCheckIT extends ItMakeTest with DatabaseTest {
+class CockroachHealthCheckIT extends MakeUnitTest with DatabaseTest {
 
   override protected val databaseName: String = CockroachHealthCheckIT.databaseName
   override val cockroachExposedPort: Int = CockroachHealthCheckIT.cockroachExposedPort

@@ -24,7 +24,7 @@ import java.time.ZonedDateTime
 
 import org.make.api.technical.auth.{DefaultPersistentClientServiceComponent, DefaultPersistentTokenServiceComponent}
 import org.make.api.user.DefaultPersistentUserServiceComponent
-import org.make.api.{DatabaseTest, TestUtilsIT}
+import org.make.api.{DatabaseTest, TestUtils}
 import org.make.core.DateHelper
 import org.make.core.auth.{Client, ClientId, Token, UserRights}
 import org.make.core.user.{Role, User, UserId}
@@ -42,7 +42,7 @@ class PersistentTokenServiceIT
   val before: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]"))
   val now: ZonedDateTime = DateHelper.now()
 
-  val user: User = TestUtilsIT.user(
+  val user: User = TestUtils.user(
     id = UserId("1"),
     email = "doe@example.com",
     firstName = Some("John"),

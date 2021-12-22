@@ -21,7 +21,6 @@ package org.make.api
 
 import scala.io.Source
 import com.github.tototoshi.csv.CSVReader
-import org.make.api.TestUtils
 import org.make.core.proposal.{ProposalId, ProposalKeywordKey, QualificationKey, VoteKey}
 import java.time.ZonedDateTime
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
@@ -110,7 +109,7 @@ object ProposalsUtils {
     CSVReader
       .open(Source.fromResource(csvName))
       .iteratorWithHeaders
-      .map(parseProposal(_))
+      .map(parseProposal)
       .toSeq
   }
 

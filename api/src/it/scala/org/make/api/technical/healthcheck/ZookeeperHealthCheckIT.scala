@@ -20,7 +20,7 @@
 package org.make.api.technical.healthcheck
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.make.api.ItMakeTest
+import org.make.api.MakeUnitTest
 import org.make.api.docker.DockerZookeeperService
 import org.make.api.technical.healthcheck.HealthCheck.Status
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -29,7 +29,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration.DurationInt
 
-class ZookeeperHealthCheckIT extends ItMakeTest with DockerZookeeperService {
+class ZookeeperHealthCheckIT extends MakeUnitTest with DockerZookeeperService {
 
   override val zookeeperExposedPort: Int = ZookeeperHealthCheckIT.zookeeperExposedPort
   override val zookeeperName: String = "zookeeper-health-check"

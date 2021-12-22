@@ -19,7 +19,7 @@
 
 package org.make.api.idea
 
-import org.make.api.ItMakeTest
+import org.make.api.MakeUnitTest
 import org.make.api.docker.SearchEngineIT
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
@@ -37,7 +37,7 @@ import scala.collection.immutable.Seq
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class IdeaSearchEngineIT
-    extends ItMakeTest
+    extends MakeUnitTest
     with CirceFormatters
     with SearchEngineIT[IdeaId, IndexedIdea]
     with DefaultIdeaSearchEngineComponent

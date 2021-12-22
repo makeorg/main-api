@@ -113,7 +113,7 @@ object Dependencies {
 
   // Kafka + AVRO
   val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
-  val avro4s: ModuleID = "com.sksamuel.avro4s"    %% "avro4s-core"  % "3.0.5.make2"
+  val avro4s: ModuleID = "org.make"               %% "avro4s-core"  % "3.0.5-make3"
   val avroSerializer: ModuleID =
     ("io.confluent" % "kafka-avro-serializer" % "3.2.2")
       .exclude("org.slf4j", "slf4j-log4j12")

@@ -20,14 +20,13 @@
 package org.make.api.post
 
 import java.time.ZonedDateTime
-
 import org.make.api.docker.SearchEngineIT
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
   ElasticsearchConfiguration,
   ElasticsearchConfigurationComponent
 }
-import org.make.api.ItMakeTest
+import org.make.api.MakeUnitTest
 import org.make.core.{CirceFormatters, Order}
 import org.make.core.post.PostId
 import org.make.core.post.indexed._
@@ -37,7 +36,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class PostSearchEngineIT
-    extends ItMakeTest
+    extends MakeUnitTest
     with DefaultPostSearchEngineComponent
     with CirceFormatters
     with SearchEngineIT[PostId, IndexedPost]

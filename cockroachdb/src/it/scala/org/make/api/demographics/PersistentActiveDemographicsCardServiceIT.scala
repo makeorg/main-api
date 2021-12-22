@@ -21,7 +21,7 @@ package org.make.api.demographics
 
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
-import org.make.api.{DatabaseTest, TestUtilsIT}
+import org.make.api.{DatabaseTest, TestUtils}
 import org.make.core.demographics.{ActiveDemographicsCard, ActiveDemographicsCardId, DemographicsCardId}
 import org.make.core.question.QuestionId
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -44,10 +44,10 @@ class PersistentActiveDemographicsCardServiceIT
       _ <- persistentQuestionService.persist(question(QuestionId("question-2"), slug = "question-2"))
     } yield {}
     val futurePersistDemographicsCards = for {
-      _ <- persistentDemographicsCardService.persist(TestUtilsIT.demographicsCard(id = DemographicsCardId("age")))
-      _ <- persistentDemographicsCardService.persist(TestUtilsIT.demographicsCard(id = DemographicsCardId("location")))
-      _ <- persistentDemographicsCardService.persist(TestUtilsIT.demographicsCard(id = DemographicsCardId("gender")))
-      _ <- persistentDemographicsCardService.persist(TestUtilsIT.demographicsCard(id = DemographicsCardId("pet")))
+      _ <- persistentDemographicsCardService.persist(TestUtils.demographicsCard(id = DemographicsCardId("age")))
+      _ <- persistentDemographicsCardService.persist(TestUtils.demographicsCard(id = DemographicsCardId("location")))
+      _ <- persistentDemographicsCardService.persist(TestUtils.demographicsCard(id = DemographicsCardId("gender")))
+      _ <- persistentDemographicsCardService.persist(TestUtils.demographicsCard(id = DemographicsCardId("pet")))
     } yield {}
 
     whenReady(futurePersistQuestions, Timeout(10.seconds)) { _ =>

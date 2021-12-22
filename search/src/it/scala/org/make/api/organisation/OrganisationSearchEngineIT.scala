@@ -19,7 +19,7 @@
 
 package org.make.api.organisation
 
-import org.make.api.ItMakeTest
+import org.make.api.MakeUnitTest
 import org.make.api.docker.SearchEngineIT
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
@@ -37,7 +37,7 @@ import scala.collection.immutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class OrganisationSearchEngineIT
-    extends ItMakeTest
+    extends MakeUnitTest
     with CirceFormatters
     with SearchEngineIT[UserId, IndexedOrganisation]
     with DefaultOrganisationSearchEngineComponent
@@ -50,7 +50,7 @@ class OrganisationSearchEngineIT
   override val eSDocType: String = "organisation"
   override def docs: Seq[IndexedOrganisation] = organisations
 
-  override val elasticsearchExposedPort: Int = 30003
+  override val elasticsearchExposedPort: Int = 30008
 
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     mock[ElasticsearchConfiguration]

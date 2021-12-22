@@ -25,7 +25,7 @@ import org.make.api.technical.elasticsearch.{
   ElasticsearchConfiguration,
   ElasticsearchConfigurationComponent
 }
-import org.make.api.ItMakeTest
+import org.make.api.MakeUnitTest
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
@@ -37,7 +37,7 @@ import scala.collection.immutable.Seq
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class SortAlgorithmIT
-    extends ItMakeTest
+    extends MakeUnitTest
     with SearchEngineIT[ProposalId, IndexedProposal]
     with DefaultProposalSearchEngineComponent
     with ElasticsearchConfigurationComponent

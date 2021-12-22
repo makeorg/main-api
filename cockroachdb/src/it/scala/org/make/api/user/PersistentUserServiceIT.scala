@@ -23,7 +23,7 @@ import java.time.{LocalDate, ZoneId, ZonedDateTime}
 
 import com.github.t3hnar.bcrypt._
 import org.make.api.user.PersistentUserService.UpdateFailed
-import org.make.api.{DatabaseTest, TestUtilsIT}
+import org.make.api.{DatabaseTest, TestUtils}
 import org.make.core.{DateHelper, Order}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
@@ -59,7 +59,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       optInPartner = Some(true)
     )
 
-  val johnDoe: User = TestUtilsIT.user(
+  val johnDoe: User = TestUtils.user(
     id = UserId("1"),
     email = "doe@example.com",
     firstName = Some("John"),
@@ -74,7 +74,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     anonymousParticipation = true
   )
 
-  val jennaDoo: User = TestUtilsIT.user(
+  val jennaDoo: User = TestUtils.user(
     id = UserId("2"),
     email = "jennaDoo@example.com",
     firstName = Some("Jenna"),
@@ -86,7 +86,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     verificationTokenExpiresAt = before
   )
 
-  val janeDee: User = TestUtilsIT.user(
+  val janeDee: User = TestUtils.user(
     id = UserId("3"),
     email = "janeDee@example.com",
     firstName = Some("Jane"),
@@ -99,7 +99,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     roles = Seq(Role.RoleAdmin, Role.RoleModerator)
   )
 
-  val passwordUser: User = TestUtilsIT.user(
+  val passwordUser: User = TestUtils.user(
     id = UserId("4"),
     email = "password@example.com",
     firstName = Some("user-with"),
@@ -112,7 +112,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     roles = Seq(Role.RoleAdmin, Role.RoleModerator)
   )
 
-  val socialUser: User = TestUtilsIT.user(
+  val socialUser: User = TestUtils.user(
     id = UserId("5"),
     email = "social@example.com",
     firstName = Some("Social"),
@@ -125,7 +125,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     profile = Profile.parseProfile(dateOfBirth = Some(LocalDate.parse("1970-01-01")))
   )
 
-  val userOrganisationDGSE: User = TestUtilsIT.user(
+  val userOrganisationDGSE: User = TestUtils.user(
     id = UserId("DGSE"),
     email = "dgse@secret-agency.com",
     firstName = None,
@@ -139,7 +139,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     userType = UserType.UserTypeOrganisation
   )
 
-  val userOrganisationCSIS: User = TestUtilsIT.user(
+  val userOrganisationCSIS: User = TestUtils.user(
     id = UserId("CSIS"),
     email = "csis@secret-agency.com",
     firstName = None,
@@ -153,7 +153,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     userType = UserType.UserTypeOrganisation
   )
 
-  val userOrganisationFSB: User = TestUtilsIT.user(
+  val userOrganisationFSB: User = TestUtils.user(
     id = UserId("FSB"),
     email = "fsb@secret-agency.com",
     firstName = None,
@@ -182,7 +182,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     profile = johnDoeProfile.map(_.copy(registerQuestionId = None))
   )
 
-  val userOrganisationCIA: User = TestUtilsIT.user(
+  val userOrganisationCIA: User = TestUtils.user(
     id = UserId("CIA"),
     email = "cia@secret-agency.com",
     firstName = None,
@@ -197,7 +197,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     userType = UserType.UserTypeOrganisation
   )
 
-  val userOrganisationFBI: User = TestUtilsIT.user(
+  val userOrganisationFBI: User = TestUtils.user(
     id = UserId("FBI"),
     email = "fbi@secret-agency.com",
     firstName = None,
@@ -212,7 +212,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     userType = UserType.UserTypeOrganisation
   )
 
-  val userOrganisationMI5: User = TestUtilsIT.user(
+  val userOrganisationMI5: User = TestUtils.user(
     id = UserId("MI5"),
     email = "mi5@secret-agency.com",
     firstName = None,
@@ -227,7 +227,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     userType = UserType.UserTypeOrganisation
   )
 
-  val updateUser: User = TestUtilsIT.user(
+  val updateUser: User = TestUtils.user(
     id = UserId("update-user-1"),
     email = "foo@example.com",
     firstName = Some("John"),
@@ -241,7 +241,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     profile = johnDoeProfile
   )
 
-  val personalityUser: User = TestUtilsIT.user(
+  val personalityUser: User = TestUtils.user(
     id = UserId("personality"),
     email = "personality@example.com",
     firstName = Some("perso"),

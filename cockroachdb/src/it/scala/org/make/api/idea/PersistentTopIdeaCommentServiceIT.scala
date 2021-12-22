@@ -20,7 +20,7 @@
 package org.make.api.idea
 
 import cats.data.NonEmptyList
-import org.make.api.{DatabaseTest, TestUtilsIT}
+import org.make.api.{DatabaseTest, TestUtils}
 import org.make.api.idea.topIdeaComments.DefaultPersistentTopIdeaCommentServiceComponent
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.user.DefaultPersistentUserServiceComponent
@@ -109,11 +109,11 @@ class PersistentTopIdeaCommentServiceIT
   )
 
   val personalities: Seq[User] = Seq(
-    TestUtilsIT.user(UserId("personality-0"), email = "personality-0@make.org"),
-    TestUtilsIT.user(UserId("personality-1"), email = "personality-1@make.org"),
-    TestUtilsIT.user(UserId("personality-2"), email = "personality-2@make.org"),
-    TestUtilsIT.user(UserId("personality-3"), email = "personality-3@make.org"),
-    TestUtilsIT.user(UserId("personality-4"), email = "personality-4@make.org")
+    TestUtils.user(UserId("personality-0"), email = "personality-0@make.org"),
+    TestUtils.user(UserId("personality-1"), email = "personality-1@make.org"),
+    TestUtils.user(UserId("personality-2"), email = "personality-2@make.org"),
+    TestUtils.user(UserId("personality-3"), email = "personality-3@make.org"),
+    TestUtils.user(UserId("personality-4"), email = "personality-4@make.org")
   )
 
   def initForTopIdeaComments: Future[Unit] = {

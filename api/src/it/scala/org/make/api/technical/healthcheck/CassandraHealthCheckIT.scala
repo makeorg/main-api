@@ -32,7 +32,7 @@ import org.make.api.proposal.{ProposalActorProtocol, ProposalCommand, ProposalCo
 import org.make.api.sessionhistory.SessionHistoryCoordinatorService
 import org.make.api.technical.healthcheck.HealthCheck.Status
 import org.make.api.technical.{DefaultIdGeneratorComponent, ReadJournal, TimeSettings}
-import org.make.api.{ItMakeTest, TestUtilsIT}
+import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -47,7 +47,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 class CassandraHealthCheckIT
     extends ScalaTestWithActorTestKit(CassandraHealthCheckIT.actorSystem)
     with DefaultIdGeneratorComponent
-    with ItMakeTest
+    with MakeUnitTest
     with DockerCassandraService {
 
   override def afterAll(): Unit = {
@@ -73,7 +73,7 @@ class CassandraHealthCheckIT
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
-        user = TestUtilsIT.user(id = UserId("fake-user"), email = "fake@user.com", firstName = None, lastName = None),
+        user = TestUtils.user(id = UserId("fake-user"), email = "fake@user.com", firstName = None, lastName = None),
         createdAt = DateHelper.now(),
         content = "This is a proposal",
         question = Question(
