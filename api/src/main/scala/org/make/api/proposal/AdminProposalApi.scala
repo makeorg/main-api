@@ -26,8 +26,6 @@ import grizzled.slf4j.Logging
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 import io.swagger.annotations._
-
-import javax.ws.rs.Path
 import org.make.api.idea.IdeaServiceComponent
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.question.QuestionServiceComponent
@@ -55,6 +53,7 @@ import org.make.core.{CirceFormatters, DateHelper, HttpCodes, Order, ParameterEx
 import scalaoauth2.provider.AuthInfo
 
 import java.time.ZonedDateTime
+import javax.ws.rs.Path
 import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -331,6 +330,7 @@ trait DefaultAdminProposalApiComponent
   class DefaultAdminProposalApi extends AdminProposalApi {
     val adminProposalId: PathMatcher1[ProposalId] = Segment.map(id => ProposalId(id))
 
+    @Deprecated
     override def search: Route = get {
       path("admin" / "proposals") {
         makeOperation("AdminSearchProposals") { requestContext =>
@@ -546,6 +546,7 @@ trait DefaultAdminProposalApiComponent
       }
     }
 
+    @Deprecated
     override def bulkAcceptProposal: Route = post {
       path("admin" / "proposals" / "accept") {
         makeOperation("BulkAcceptProposal") { requestContext =>
@@ -565,6 +566,7 @@ trait DefaultAdminProposalApiComponent
       }
     }
 
+    @Deprecated
     override def bulkRefuseInitialsProposals: Route = post {
       path("admin" / "proposals" / "refuse-initials-proposals") {
         makeOperation("BulkRefuseInitialsProposals") { requestContext =>
@@ -586,6 +588,7 @@ trait DefaultAdminProposalApiComponent
       }
     }
 
+    @Deprecated
     override def bulkTagProposal: Route = post {
       path("admin" / "proposals" / "tag") {
         makeOperation("BulkTagProposal") { requestContext =>
@@ -617,6 +620,7 @@ trait DefaultAdminProposalApiComponent
       }
     }
 
+    @Deprecated
     override def bulkDeleteTagProposal: Route = delete {
       path("admin" / "proposals" / "tag") {
         makeOperation("BulkDeleteTagProposal") { requestContext =>

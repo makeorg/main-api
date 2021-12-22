@@ -678,35 +678,6 @@ class DefaultAdminProposalApiComponentTest
     }
   }
 
-  Feature("bulk tag fails if a tag doesn't exist") {
-    Scenario("Add") {
-      val entity = BulkTagProposal(Seq(proposalIdBulk), Seq(tagId1, tagIdFake))
-      when(tagService.findByTagIds(eqTo(Seq(tagId1, tagIdFake)))).thenReturn(Future.successful(Seq(tag(tagId1))))
-      Post(s"/admin/proposals/tag")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, entity.asJson.toString()) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size shouldBe 1
-        errors.head.field shouldBe "tagId"
-      }
-    }
-
-    Scenario("Delete") {
-      val entity = BulkDeleteTagProposal(Seq(proposalIdBulk), tagIdFake).asJson
-      when(tagService.getTag(eqTo(tagIdFake))).thenReturn(Future.successful(None))
-      Delete(s"/admin/proposals/tag")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, entity.asJson.toString()) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size shouldBe 1
-        errors.head.field shouldBe "tagId"
-      }
-
-    }
-  }
-
   private def proposal(id: ProposalId): ModerationProposalResponse = {
     ModerationProposalResponse(
       id = id,

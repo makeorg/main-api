@@ -19,8 +19,6 @@
 
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
-
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
@@ -29,13 +27,15 @@ import io.circe.syntax._
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
+import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
+import org.make.core.common.indexed.Sort
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.Accepted
-import org.make.core.proposal.indexed.{IndexedContext, IndexedProposal, IndexedProposalQuestion, ProposalsSearchResult}
-import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
+import org.make.core.proposal._
+import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
 import org.make.core.tag.{TagId, TagTypeId}
@@ -44,6 +44,7 @@ import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import org.make.core.DateFormatters
 
+import java.time.ZonedDateTime
 import scala.concurrent.Future
 
 class ModerationProposalApiTest
@@ -54,7 +55,8 @@ class ModerationProposalApiTest
     with UserServiceComponent
     with OperationServiceComponent
     with QuestionServiceComponent
-    with ProposalCoordinatorServiceComponent {
+    with ProposalCoordinatorServiceComponent
+    with TagServiceComponent {
 
   override val proposalService: ProposalService = mock[ProposalService]
 
@@ -63,6 +65,7 @@ class ModerationProposalApiTest
   override val ideaService: IdeaService = mock[IdeaService]
   override val questionService: QuestionService = mock[QuestionService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
+  override val tagService: TagService = mock[TagService]
 
   when(proposalCoordinatorService.getProposal(any[ProposalId])).thenAnswer { id: ProposalId =>
     Future.successful(Some(proposal(id)))
@@ -623,34 +626,6 @@ class ModerationProposalApiTest
     Scenario("get validated proposal gives history with moderator") {}
   }
 
-  // Todo: implement this test suite. Test the behaviour of the service.
-  Feature("legacy get proposal for moderation") {
-    Scenario("moderator get proposal by id") {
-      Get("/moderation/proposals/legacy/sim-123")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        entityAs[ModerationProposalResponse]
-      }
-    }
-
-    Scenario("moderator get proposal by id without right") {
-      Get("/moderation/proposals/legacy/sim-123")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenNoRightModerator))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
-      }
-    }
-
-    Scenario("moderator get proposal as admin") {
-      Get("/moderation/proposals/legacy/sim-123")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenDaenerysAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-      }
-    }
-
-    Scenario("get new proposal without history") {}
-    Scenario("get validated proposal gives history with moderator") {}
-  }
-
   Feature("lock proposal") {
     Scenario("moderator can lock an unlocked proposal") {
       Post("/moderation/proposals/123456/lock")
@@ -1055,36 +1030,29 @@ class ModerationProposalApiTest
   }
 
   Feature("get proposals") {
-    Scenario("get proposals by created at date") {
-      Given("an authenticated user with the moderator role")
-      When("the user search proposals using created before")
-      And("there is a proposal matching criterias")
-      Then("The return code should be 200")
-
-      val beforeDateString: String = "2017-06-04T01:01:01.123Z"
-      val beforeDate: ZonedDateTime = ZonedDateTime.from(DateFormatters.default.parse(beforeDateString))
-
+    Scenario("get proposals") {
       when(
         proposalService.search(
           any[Option[UserId]],
           eqTo(
-            SearchQuery(filters = Some(
-              SearchFilters(
-                createdAt = Some(CreatedAtSearchFilter(before = Some(beforeDate), after = None)),
-                question = Some(QuestionSearchFilter(tyrion.availableQuestions))
-              )
-            )
+            SearchQuery(
+              filters = Some(SearchFilters(question = Some(QuestionSearchFilter(tyrion.availableQuestions)))),
+              sort = Some(Sort(Some(ProposalElasticsearchFieldName.agreementRate.field), None))
             )
           ),
           any[RequestContext]
         )
-      ).thenReturn(Future.successful(ProposalsSearchResult(total = 42, results = Seq.empty)))
+      ).thenReturn(
+        Future.successful(ProposalsSearchResult(total = 1, results = Seq(indexedProposal(ProposalId("search")))))
+      )
 
-      Get(s"/moderation/proposals?createdBefore=$beforeDateString")
+      Get(s"/moderation/proposals?_sort=agreementRate")
         .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val results: ProposalsSearchResult = entityAs[ProposalsSearchResult]
-        results.total should be(42)
+        header("x-total-count").map(_.value) should be(Some("1"))
+        val results = entityAs[Seq[ProposalListResponse]]
+        results.size should be(1)
+        results.head.id.value should be("search")
       }
 
     }
@@ -1200,6 +1168,88 @@ class ModerationProposalApiTest
         .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
+    }
+  }
+
+  val tagId1: TagId = TagId("tag-id-bulk")
+  val tagIdFake: TagId = TagId("tag-id-fake")
+
+  when(tagService.findByTagIds(eqTo(Seq(tagId1)))).thenReturn(Future.successful(Seq(tag(tagId1))))
+  when(tagService.getTag(eqTo(tagId1))).thenReturn(Future.successful(Some(tag(tagId1))))
+
+  when(proposalService.acceptAll(any[Seq[ProposalId]], any[UserId], any[RequestContext]))
+    .thenReturn(Future.successful(BulkActionResponse(Seq.empty, Seq.empty)))
+  when(proposalService.refuseAll(any[Seq[ProposalId]], any[UserId], any[RequestContext]))
+    .thenReturn(Future.successful(BulkActionResponse(Seq.empty, Seq.empty)))
+  when(proposalService.addTagsToAll(any[Seq[ProposalId]], any[Seq[TagId]], any[UserId], any[RequestContext]))
+    .thenReturn(Future.successful(BulkActionResponse(Seq.empty, Seq.empty)))
+  when(proposalService.deleteTagFromAll(any[Seq[ProposalId]], any[TagId], any[UserId], any[RequestContext]))
+    .thenReturn(Future.successful(BulkActionResponse(Seq.empty, Seq.empty)))
+
+  val proposalIdBulk: ProposalId = ProposalId("proposal-id-bulk")
+  val acceptAll = BulkAcceptProposal(Seq(proposalIdBulk)).asJson
+  val refuseAll = BulkRefuseProposal(Seq(proposalIdBulk)).asJson
+  val tagAll = BulkTagProposal(Seq(proposalIdBulk), Seq(tagId1)).asJson
+  val deleteTag = BulkDeleteTagProposal(Seq(proposalIdBulk), tagId1).asJson
+
+  for ((action, verb, entity) <- Seq(
+         ("accept", Post, acceptAll),
+         ("refuse-initials-proposals", Post, refuseAll),
+         ("tag", Post, tagAll),
+         ("tag", Delete, deleteTag)
+       )) {
+    Feature(s"bulk ${verb.method.value} $action") {
+      Scenario("unauthorized user") {
+        verb(s"/moderation/proposals/$action") ~> routes ~> check {
+          status should be(StatusCodes.Unauthorized)
+        }
+      }
+
+      Scenario("forbidden citizen") {
+        verb(s"/moderation/proposals/$action")
+          .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
+          status should be(StatusCodes.Forbidden)
+        }
+      }
+
+      Scenario("allowed moderator and admin") {
+        for (token <- Seq(tokenModerator, tokenAdmin, tokenSuperAdmin)) {
+          verb(s"/moderation/proposals/$action")
+            .withHeaders(Authorization(OAuth2BearerToken(token)))
+            .withEntity(ContentTypes.`application/json`, entity.toString()) ~> routes ~> check {
+            status should be(StatusCodes.OK)
+          }
+        }
+      }
+    }
+  }
+
+  Feature("bulk tag fails if a tag doesn't exist") {
+    Scenario("Add") {
+      val entity = BulkTagProposal(Seq(proposalIdBulk), Seq(tagId1, tagIdFake))
+      when(tagService.findByTagIds(eqTo(Seq(tagId1, tagIdFake)))).thenReturn(Future.successful(Seq(tag(tagId1))))
+      Post(s"/moderation/proposals/tag")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(ContentTypes.`application/json`, entity.asJson.toString()) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size shouldBe 1
+        errors.head.field shouldBe "tagId"
+      }
+    }
+
+    Scenario("Delete") {
+      val entity = BulkDeleteTagProposal(Seq(proposalIdBulk), tagIdFake).asJson
+      when(tagService.getTag(eqTo(tagIdFake))).thenReturn(Future.successful(None))
+      Delete(s"/moderation/proposals/tag")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(ContentTypes.`application/json`, entity.asJson.toString()) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size shouldBe 1
+        errors.head.field shouldBe "tagId"
+      }
+
     }
   }
 
