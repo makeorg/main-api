@@ -24,7 +24,7 @@ import java.time.temporal.ChronoUnit
 import java.util.UUID
 import cats.data.NonEmptyList
 import cats.syntax.list._
-import com.sksamuel.elastic4s.searches.sort.SortOrder
+import com.sksamuel.elastic4s.requests.searches.sort.SortOrder
 import eu.timepit.refined.auto._
 import eu.timepit.refined.scalacheck.numeric._
 import eu.timepit.refined.types.numeric.NonNegInt
@@ -53,6 +53,7 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.math.Ordering.Double.TotalOrdering
+import org.make.api.technical.ActorSystemComponent
 
 class ProposalSearchEngineIT
     extends MakeUnitTest
@@ -61,6 +62,7 @@ class ProposalSearchEngineIT
     with DefaultProposalSearchEngineComponent
     with ElasticsearchConfigurationComponent
     with DefaultElasticsearchClientComponent
+    with ActorSystemComponent
     with ScalaCheckDrivenPropertyChecks {
 
   override val StartContainersTimeout: FiniteDuration = 5.minutes

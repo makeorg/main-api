@@ -19,13 +19,11 @@
 
 package org.make.api.technical.healthcheck
 
-import com.sksamuel.elastic4s.ElasticImplicits.RichString
-import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.{ElasticApi, IndexAndType}
+import com.sksamuel.elastic4s.ElasticDsl._
+import com.sksamuel.elastic4s.{ElasticApi, Index}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.syntax._
 import org.make.api.docker.DockerElasticsearchService
-import org.make.api.proposal.ProposalSearchEngine
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
   DefaultElasticsearchConfigurationComponent,
@@ -46,14 +44,21 @@ import scala.collection.immutable.Seq
 import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
+import org.make.api.technical.ActorSystemComponent
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
 
 class ElasticSearchHealthCheckIT
     extends MakeUnitTest
     with CirceFormatters
     with DefaultElasticsearchConfigurationComponent
     with DefaultElasticsearchClientComponent
+    with ActorSystemComponent
     with ConfigComponent
     with DockerElasticsearchService {
+
+  implicit def actorSystem: ActorSystem[Nothing] =
+    ActorSystem(Behaviors.empty, "IdeaSearchEngineTest")
 
   override val config: Config = ElasticSearchHealthCheckIT.configuration
 
@@ -108,8 +113,7 @@ class ElasticSearchHealthCheckIT
   private def initializeElasticsearch(): Unit = {
     Await.result(elasticsearchClient.initialize(), 30.seconds)
 
-    val proposalAlias: IndexAndType =
-      elasticsearchConfiguration.proposalAliasName / ProposalSearchEngine.proposalIndexName
+    val proposalAlias: Index = elasticsearchConfiguration.proposalAliasName
 
     val insertFutures =
       elasticsearchClient.client.executeAsFuture(ElasticApi.indexInto(proposalAlias).doc(proposal.asJson.toString))

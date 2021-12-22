@@ -21,13 +21,9 @@ package org.make.api.technical.elasticsearch
 
 import akka.stream.scaladsl.Flow
 import akka.NotUsed
-import com.sksamuel.elastic4s.IndexAndType
+import com.sksamuel.elastic4s.Index
 import grizzled.slf4j.Logging
-import org.make.api.operation.{
-  OperationOfQuestionSearchEngine,
-  OperationOfQuestionSearchEngineComponent,
-  OperationServiceComponent
-}
+import org.make.api.operation.{OperationOfQuestionSearchEngineComponent, OperationServiceComponent}
 import org.make.api.question.QuestionServiceComponent
 import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
@@ -86,12 +82,7 @@ trait OperationOfQuestionIndexationStream
           }
       }.map(_.flatten).flatMap { operationOfQuestions =>
         elasticsearchOperationOfQuestionAPI
-          .indexOperationOfQuestions(
-            operationOfQuestions,
-            Some(
-              IndexAndType(operationOfQuestionIndexName, OperationOfQuestionSearchEngine.operationOfQuestionIndexName)
-            )
-          )
+          .indexOperationOfQuestions(operationOfQuestions, Some(Index(operationOfQuestionIndexName)))
       }
     }
   }
