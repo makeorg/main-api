@@ -19,7 +19,7 @@
 
 package org.make.api.technical.types
 
-import org.make.core.proposal.{BaseQualification, BaseVote}
+import org.make.core.proposal.{BaseQualification, BaseVote, BaseVoteOrQualification}
 
 sealed trait VotingOptionWrapper
 
@@ -44,4 +44,43 @@ final case class DisagreeWrapper(
   platitudeDisagree: BaseQualification
 ) extends VotingOptionWrapper
 
-final case class VotingOptions(agreeVote: AgreeWrapper, neutralVote: NeutralWrapper, disagreeVote: DisagreeWrapper)
+final case class VotingOptions(agreeVote: AgreeWrapper, neutralVote: NeutralWrapper, disagreeVote: DisagreeWrapper) {
+  val sequenceCounts: VoteCounts = VoteCounts(this, _.countSequence)
+  val segmentCounts: VoteCounts = VoteCounts(this, _.countSegment)
+  val verifiedCounts: VoteCounts = VoteCounts(this, _.countVerified)
+}
+
+final case class VoteCounts(
+  agreeVote: Int,
+  disagreeVote: Int,
+  neutralVote: Int,
+  doNotCare: Int,
+  doNotUnderstand: Int,
+  doable: Int,
+  impossible: Int,
+  likeIt: Int,
+  noOpinion: Int,
+  noWay: Int,
+  platitudeAgree: Int,
+  platitudeDisagree: Int
+) {
+  val totalVotes: Int = agreeVote + neutralVote + disagreeVote
+}
+
+object VoteCounts {
+  def apply(votingOptions: VotingOptions, counter: BaseVoteOrQualification[_] => Int): VoteCounts =
+    VoteCounts(
+      agreeVote = counter(votingOptions.agreeVote.vote),
+      disagreeVote = counter(votingOptions.disagreeVote.vote),
+      neutralVote = counter(votingOptions.neutralVote.vote),
+      doNotCare = counter(votingOptions.neutralVote.doNotCare),
+      doNotUnderstand = counter(votingOptions.neutralVote.doNotUnderstand),
+      doable = counter(votingOptions.agreeVote.doable),
+      impossible = counter(votingOptions.disagreeVote.impossible),
+      likeIt = counter(votingOptions.agreeVote.likeIt),
+      noOpinion = counter(votingOptions.neutralVote.noOpinion),
+      noWay = counter(votingOptions.disagreeVote.noWay),
+      platitudeAgree = counter(votingOptions.agreeVote.platitudeAgree),
+      platitudeDisagree = counter(votingOptions.disagreeVote.platitudeDisagree)
+    )
+}

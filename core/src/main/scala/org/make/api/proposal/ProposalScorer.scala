@@ -19,10 +19,16 @@
 
 package org.make.api.proposal
 
+import enumeratum.{Enum, EnumEntry}
 import grizzled.slf4j.Logging
 import org.apache.commons.math3.distribution.BetaDistribution
 import org.apache.commons.math3.random.{MersenneTwister, RandomGenerator}
-import org.make.api.proposal.ProposalScorer.{findSmoothing, Score, VotesCounter}
+import org.make.api.proposal.ProposalScorer.VotesCounter.{
+  SegmentVotesCounter,
+  SequenceVotesCounter,
+  VerifiedVotesVotesCounter
+}
+import org.make.api.proposal.ProposalScorer.Score
 import org.make.core.proposal.QualificationKey.{
   DoNotCare,
   DoNotUnderstand,
@@ -37,52 +43,32 @@ import org.make.core.proposal.QualificationKey.{
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{SequencePool, Zone}
+import org.make.core.proposal.Key._
 import org.make.core.sequence.SequenceConfiguration
 import org.make.api.technical.types._
 
-final class ProposalScorer(votingOptions: VotingOptions, counter: VotesCounter, nonSequenceVotesWeight: Double) {
+final class ProposalScorer(val counts: VoteCounts, val verifiedCounts: VoteCounts, nonSequenceVotesWeight: Double) {
 
-  private def tradeOff(generalScore: Double, specificScore: Double): Double = {
+  private def tradeOff(generalScore: Double, specificScore: Double): Double =
     nonSequenceVotesWeight * generalScore + (1 - nonSequenceVotesWeight) * specificScore
+
+  private def individualScore(keyCount: Int, smoothing: Double, totalVotes: Int): Double =
+    Math.min((keyCount + smoothing) / (1 + totalVotes), 1)
+
+  def score(keyCount: Int, keyVerifiedCount: Int, smoothing: Double): Double = {
+    tradeOff(
+      individualScore(keyVerifiedCount, smoothing, verifiedCounts.totalVotes),
+      individualScore(keyCount, smoothing, counts.totalVotes)
+    )
   }
 
-  private def countVotes(counter: VotesCounter): Int =
-    counter(votingOptions.agreeVote.vote) +
-      counter(votingOptions.neutralVote.vote) +
-      counter(votingOptions.disagreeVote.vote)
-
-  private def count(key: Key, countingFunction: VotesCounter): Int =
-    countingFunction {
-      key match {
-        case Agree             => votingOptions.agreeVote.vote
-        case Disagree          => votingOptions.disagreeVote.vote
-        case Neutral           => votingOptions.neutralVote.vote
-        case DoNotCare         => votingOptions.neutralVote.doNotCare
-        case DoNotUnderstand   => votingOptions.neutralVote.doNotUnderstand
-        case Doable            => votingOptions.agreeVote.doable
-        case Impossible        => votingOptions.disagreeVote.impossible
-        case LikeIt            => votingOptions.agreeVote.likeIt
-        case NoOpinion         => votingOptions.neutralVote.noOpinion
-        case NoWay             => votingOptions.disagreeVote.noWay
-        case PlatitudeAgree    => votingOptions.agreeVote.platitudeAgree
-        case PlatitudeDisagree => votingOptions.disagreeVote.platitudeDisagree
-      }
-    }
-
-  private def individualScore(key: Key, countingFunction: VotesCounter = counter): Double =
-    Math.min((count(key, countingFunction) + findSmoothing(key)) / (1 + countVotes(countingFunction)), 1)
-
-  def score(key: Key): Double = {
-    tradeOff(individualScore(key, _.countVerified), individualScore(key))
-  }
-
-  private def confidence(key: Key): Double = {
-    val specificVotesCount = countVotes(counter)
-    val specificVotes = individualScore(key)
+  private def confidence(keyCount: Int, smoothing: Double): Double = {
+    val specificVotesCount = counts.totalVotes
+    val specificVotes = individualScore(keyCount, smoothing, specificVotesCount)
     ProposalScorer.confidenceInterval(specificVotes, specificVotesCount)
   }
 
-  private def keyScore(key: Key): Score = Score.forKey(this, key, this.counter)
+  private def keyScore[T <: Key: HasCount: HasSmoothing](key: T): Score = Score.forKey(this, key)
 
   lazy val agree: Score = keyScore(Agree)
   lazy val disagree: Score = keyScore(Disagree)
@@ -138,7 +124,7 @@ final class ProposalScorer(votingOptions: VotingOptions, counter: VotesCounter, 
   }
 
   def pool(configuration: SequenceConfiguration, status: ProposalStatus): SequencePool = {
-    val votesCount: Int = countVotes(counter)
+    val votesCount: Int = counts.totalVotes
     val engagementRate: Double = engagement.lowerBound
     val scoreRate: Double = topScore.lowerBound
     val controversyRate: Double = controversy.lowerBound
@@ -205,7 +191,12 @@ object ProposalScorer extends Logging {
         platitudeDisagree = findQualificationOrFallback(disagreeOption.qualifications, PlatitudeDisagree)
       )
     )
-    new ProposalScorer(votingOptions, counter, nonSequenceVotesWeight)
+    val counts = counter match {
+      case SequenceVotesCounter      => votingOptions.sequenceCounts
+      case SegmentVotesCounter       => votingOptions.segmentCounts
+      case VerifiedVotesVotesCounter => votingOptions.verifiedCounts
+    }
+    new ProposalScorer(counts, votingOptions.verifiedCounts, nonSequenceVotesWeight)
   }
 
   private val random: RandomGenerator = new MersenneTwister()
@@ -214,8 +205,8 @@ object ProposalScorer extends Logging {
     random.setSeed(seed)
   }
 
-  private val votesSmoothing: Double = 0.33
-  private val qualificationsSmoothing: Double = 0.01
+  val votesSmoothing: Double = 0.33
+  val qualificationsSmoothing: Double = 0.01
 
   def confidenceInterval(probability: Double, observations: Double): Double = {
     val smoothedObservations: Double = observations + 4
@@ -254,30 +245,32 @@ object ProposalScorer extends Logging {
       )
     }
 
-    def forKey(votes: ProposalScorer, key: Key, scorer: VotesCounter): Score = {
-      val successes = votes.count(key, scorer)
-      val trials = votes.countVotes(scorer)
-      val smoothing = findSmoothing(key)
-      val sample = new BetaDistribution(random, successes + smoothing, trials - successes + 1).sample()
-      Score(score = votes.score(key), confidence = votes.confidence(key), sample = sample)
-    }
-  }
+    def forKey[T <: Key: HasCount: HasSmoothing](votes: ProposalScorer, key: T): Score = {
+      val successes = key.count(votes.counts)
+      val verifiedSuccesses = key.count(votes.verifiedCounts)
+      val trials = votes.counts.totalVotes
+      val smoothing = key.smoothing
 
-  def findSmoothing(key: Key): Double = {
-    key match {
-      case _: VoteKey          => ProposalScorer.votesSmoothing
-      case _: QualificationKey => ProposalScorer.qualificationsSmoothing
+      val sample = new BetaDistribution(random, successes + smoothing, trials - successes + 1).sample()
+      Score(
+        score = votes.score(successes, verifiedSuccesses, smoothing),
+        confidence = votes.confidence(successes, smoothing),
+        sample = sample
+      )
     }
   }
 
   private def sumConfidenceIntervals(firstConfidence: Double, secondConfidence: Double): Double =
     Math.sqrt(Math.pow(firstConfidence, 2) + Math.pow(secondConfidence, 2))
 
-  type VotesCounter = BaseVoteOrQualification[_] => Int
+  sealed abstract class VotesCounter extends EnumEntry
 
-  object VotesCounter {
-    val SequenceVotesCounter: VotesCounter = _.countSequence
-    val SegmentVotesCounter: VotesCounter = _.countSegment
-    val VerifiedVotesVotesCounter: VotesCounter = _.countVerified
+  object VotesCounter extends Enum[VotesCounter] {
+
+    case object SequenceVotesCounter extends VotesCounter
+    case object SegmentVotesCounter extends VotesCounter
+    case object VerifiedVotesVotesCounter extends VotesCounter
+
+    override val values: IndexedSeq[VotesCounter] = findValues
   }
 }

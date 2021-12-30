@@ -93,7 +93,7 @@ object SelectionAlgorithm {
       userSegment: Option[String],
       chosenNewProposalsCount: Int
     ): TestedProposalsSelectionConfiguration = {
-      val votesCounter = if (userSegment.isDefined) {
+      val votesCounter: VotesCounter = if (userSegment.isDefined) {
         VotesCounter.SegmentVotesCounter
       } else {
         VotesCounter.SequenceVotesCounter

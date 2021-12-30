@@ -39,6 +39,20 @@ import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import org.make.api.proposal.ProposalScorer
+import org.make.api.technical.types.VoteCounts
+import org.make.core.proposal.QualificationKey.{
+  DoNotCare,
+  DoNotUnderstand,
+  Doable,
+  Impossible,
+  LikeIt,
+  NoOpinion,
+  NoWay,
+  PlatitudeAgree,
+  PlatitudeDisagree
+}
+import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 
 import scala.annotation.meta.field
 
@@ -214,6 +228,48 @@ object Vote {
 
 sealed trait Key
 
+object Key {
+  implicit class CountOps[T <: Key](val key: T) extends AnyVal {
+    def count(voteCounts: VoteCounts)(implicit c: HasCount[T]): Int = c.keyCount(voteCounts)
+  }
+
+  implicit class SmoothingOps[T <: Key](val key: T) extends AnyVal {
+    def smoothing(implicit s: HasSmoothing[T]): Double = s.smoothing()
+  }
+}
+
+trait HasCount[T] {
+  def keyCount(voteCounts: VoteCounts): Int
+}
+
+object HasCount {
+  implicit val agreeCount: HasCount[Agree.type] = _.agreeVote
+  implicit val disagreeCount: HasCount[Disagree.type] = _.disagreeVote
+  implicit val neutralCount: HasCount[Neutral.type] = _.neutralVote
+  implicit val doNotCareCount: HasCount[DoNotCare.type] = _.doNotCare
+  implicit val doNotUnderstandCount: HasCount[DoNotUnderstand.type] = _.doNotUnderstand
+  implicit val doableCount: HasCount[Doable.type] = _.doable
+  implicit val impossibleCount: HasCount[Impossible.type] = _.impossible
+  implicit val likeItCount: HasCount[LikeIt.type] = _.likeIt
+  implicit val noOpinionCount: HasCount[NoOpinion.type] = _.noOpinion
+  implicit val noWayCount: HasCount[NoWay.type] = _.noWay
+  implicit val platitudeAgreeCount: HasCount[PlatitudeAgree.type] = _.platitudeAgree
+  implicit val platitudeDisagreeCount: HasCount[PlatitudeDisagree.type] = _.platitudeDisagree
+}
+
+trait HasSmoothing[T <: Key] {
+  def smoothing(): Double
+}
+
+object HasSmoothing {
+  implicit def voteSmoothing[T <: VoteKey]: HasSmoothing[T] = new HasSmoothing[T] {
+    override def smoothing(): Double = ProposalScorer.votesSmoothing
+  }
+
+  implicit def qualificationSmoothing[T <: QualificationKey]: HasSmoothing[T] = new HasSmoothing[T] {
+    override def smoothing(): Double = ProposalScorer.qualificationsSmoothing
+  }
+}
 sealed abstract class VoteKey(val value: String) extends StringEnumEntry with Key with Product with Serializable
 
 object VoteKey extends StringEnum[VoteKey] with StringCirceEnum[VoteKey] with JsoniterEnum[VoteKey] {
