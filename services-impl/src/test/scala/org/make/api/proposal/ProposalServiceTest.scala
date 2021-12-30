@@ -2171,7 +2171,8 @@ class ProposalServiceTest
             dateOfBirth = Some(LocalDate.parse("1998-01-01")),
             avatarUrl = Some("https://some-url"),
             postalCode = Some("12345")
-          )
+          ),
+          emailVerified = true
         )
       }
 
@@ -2190,6 +2191,7 @@ class ProposalServiceTest
         proposal.author.age.get >= 21 should be(true)
         proposal.author.organisationName should contain("regular-participation-organisation-name")
         proposal.author.organisationSlug should contain("regular-participation-organisation-name")
+        proposal.author.reachable should be(true)
       }
     }
     Scenario("anonymous participation") {
@@ -2224,6 +2226,7 @@ class ProposalServiceTest
         proposal.author.age should be(None)
         proposal.author.organisationName should be(None)
         proposal.author.organisationSlug should be(None)
+        proposal.author.reachable should be(false)
       }
     }
   }

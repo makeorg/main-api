@@ -249,7 +249,8 @@ class ModerationProposalApiTest
             age = None,
             avatarUrl = None,
             organisationName = None,
-            organisationSlug = None
+            organisationSlug = None,
+            reachable = false
           ),
           labels = proposalSim123.labels,
           status = Accepted,
@@ -289,7 +290,8 @@ class ModerationProposalApiTest
             organisationSlug = None,
             postalCode = None,
             age = None,
-            avatarUrl = None
+            avatarUrl = None,
+            reachable = false
           ),
           labels = proposalSim124.labels,
           status = Accepted,
@@ -375,7 +377,8 @@ class ModerationProposalApiTest
         postalCode = None,
         age = None,
         avatarUrl = None,
-        organisationSlug = None
+        organisationSlug = None,
+        reachable = false
       ),
       labels = Seq(),
       status = Accepted,

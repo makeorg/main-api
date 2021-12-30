@@ -196,7 +196,8 @@ class ModerationQuestionApiTest
                 postalCode = None,
                 age = None,
                 avatarUrl = None,
-                organisationSlug = None
+                organisationSlug = None,
+                reachable = false
               ),
               labels = Seq(),
               status = Accepted,
