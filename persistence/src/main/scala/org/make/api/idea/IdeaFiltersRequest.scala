@@ -19,7 +19,7 @@
 
 package org.make.api.idea
 
-import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
+import com.sksamuel.elastic4s.requests.searches.suggestion.Fuzziness
 import org.make.core.{Order, RequestContext}
 import org.make.core.idea.{IdeaSearchFilters, IdeaSearchQuery, NameSearchFilter, QuestionIdSearchFilter}
 import org.make.core.question.QuestionId

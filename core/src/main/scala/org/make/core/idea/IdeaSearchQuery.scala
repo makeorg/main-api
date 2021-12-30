@@ -20,11 +20,10 @@
 package org.make.core
 package idea
 
-import com.sksamuel.elastic4s.ElasticApi
-import com.sksamuel.elastic4s.http.ElasticDsl
-import com.sksamuel.elastic4s.searches.queries.Query
-import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
-import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
+import com.sksamuel.elastic4s.{ElasticApi, ElasticDsl}
+import com.sksamuel.elastic4s.requests.searches.queries.Query
+import com.sksamuel.elastic4s.requests.searches.sort.{FieldSort, SortOrder}
+import com.sksamuel.elastic4s.requests.searches.suggestion.Fuzziness
 import org.make.core.idea.indexed.IdeaElasticsearchFieldNames
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId

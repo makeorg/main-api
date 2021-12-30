@@ -19,7 +19,7 @@
 
 package org.make.api.sequence
 
-import com.sksamuel.elastic4s.searches.sort.SortOrder
+import com.sksamuel.elastic4s.requests.searches.sort.SortOrder
 import grizzled.slf4j.Logging
 import SelectionAlgorithm.{ExplorationSelectionAlgorithm, RandomSelectionAlgorithm, RoundRobinSelectionAlgorithm}
 import org.make.api.sequence.SequenceBehaviour.ConsensusParam

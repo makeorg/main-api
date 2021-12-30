@@ -41,6 +41,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import org.make.api.technical.ActorSystemComponent
 
 class OperationOfQuestionSearchEngineIT
     extends MakeUnitTest
@@ -48,6 +49,7 @@ class OperationOfQuestionSearchEngineIT
     with SearchEngineIT[QuestionId, IndexedOperationOfQuestion]
     with DefaultOperationOfQuestionSearchEngineComponent
     with ElasticsearchConfigurationComponent
+    with ActorSystemComponent
     with DefaultElasticsearchClientComponent {
 
   override val StartContainersTimeout: FiniteDuration = 5.minutes

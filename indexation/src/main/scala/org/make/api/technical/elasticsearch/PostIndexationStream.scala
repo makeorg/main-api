@@ -21,9 +21,9 @@ package org.make.api.technical.elasticsearch
 
 import akka.NotUsed
 import akka.stream.scaladsl.Flow
-import com.sksamuel.elastic4s.IndexAndType
+import com.sksamuel.elastic4s.Index
 import grizzled.slf4j.Logging
-import org.make.api.post.{PostSearchEngine, PostSearchEngineComponent}
+import org.make.api.post.PostSearchEngineComponent
 import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.post.Post
 import org.make.core.post.indexed.IndexedPost
@@ -43,10 +43,7 @@ trait PostIndexationStream extends IndexationStream with PostSearchEngineCompone
 
     private def executeIndexPosts(posts: Seq[Post], postIndexName: String): Future[IndexationStatus] = {
       elasticsearchPostAPI
-        .indexPosts(
-          posts.map(post => IndexedPost.createFromPost(post)),
-          Some(IndexAndType(postIndexName, PostSearchEngine.postIndexName))
-        )
+        .indexPosts(posts.map(post => IndexedPost.createFromPost(post)), Some(Index(postIndexName)))
     }
 
   }

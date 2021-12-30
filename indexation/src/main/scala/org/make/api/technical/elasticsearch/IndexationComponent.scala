@@ -24,9 +24,9 @@ import akka.actor.typed.scaladsl.AskPattern.schedulerFromActorSystem
 import akka.stream.scaladsl._
 import akka.util.Timeout
 import cats.data.NonEmptyList
-import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.http.index.CreateIndexResponse
-import com.sksamuel.elastic4s.http.index.admin.AliasActionResponse
+import com.sksamuel.elastic4s.ElasticDsl._
+import com.sksamuel.elastic4s.requests.indexes.CreateIndexResponse
+import com.sksamuel.elastic4s.requests.indexes.admin.AliasActionResponse
 import eu.timepit.refined.auto._
 import grizzled.slf4j.Logging
 import org.make.api.idea._
@@ -279,9 +279,7 @@ trait DefaultIndexationComponent
       }
 
       client.executeAsFuture {
-        aliases(addAlias(aliasName).on(newIndexName), indexes.map { index =>
-          removeAlias(aliasName).on(index)
-        }: _*)
+        aliases(addAlias(aliasName, newIndexName), indexes.map(removeAlias(aliasName, _)): _*)
       }
     }
 

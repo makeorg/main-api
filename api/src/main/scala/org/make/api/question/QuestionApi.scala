@@ -21,7 +21,7 @@ package org.make.api.question
 
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
-import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
+import com.sksamuel.elastic4s.requests.searches.suggestion.Fuzziness
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
 import org.make.api.demographics.ActiveDemographicsCardServiceComponent

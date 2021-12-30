@@ -19,7 +19,7 @@
 
 package org.make.api.technical.elasticsearch
 
-import com.sksamuel.elastic4s.http.ElasticError
+import com.sksamuel.elastic4s.ElasticError
 
 final case class ElasticException(message: String) extends RuntimeException(message) {
   def this(elasticError: ElasticError) =

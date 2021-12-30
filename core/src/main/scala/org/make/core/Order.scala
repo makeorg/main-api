@@ -19,7 +19,7 @@
 
 package org.make.core
 
-import com.sksamuel.elastic4s.searches.sort.SortOrder
+import com.sksamuel.elastic4s.requests.searches.sort.SortOrder
 import enumeratum.{Circe, Enum, EnumEntry}
 import io.circe.Decoder
 
