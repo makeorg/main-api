@@ -52,7 +52,8 @@ final case class ModerationProposalAuthorResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")
   avatarUrl: Option[String],
   organisationName: Option[String],
-  organisationSlug: Option[String]
+  organisationSlug: Option[String],
+  reachable: Boolean
 )
 
 object ModerationProposalAuthorResponse {
@@ -67,7 +68,8 @@ object ModerationProposalAuthorResponse {
         age = None,
         avatarUrl = None,
         organisationName = None,
-        organisationSlug = None
+        organisationSlug = None,
+        reachable = false
       )
     } else {
       ModerationProposalAuthorResponse(
@@ -81,7 +83,8 @@ object ModerationProposalAuthorResponse {
           .map(date => ChronoUnit.YEARS.between(date, LocalDate.now()).toInt),
         avatarUrl = user.profile.flatMap(_.avatarUrl),
         organisationName = user.organisationName,
-        organisationSlug = user.organisationName.map(SlugHelper.apply)
+        organisationSlug = user.organisationName.map(SlugHelper.apply),
+        reachable = user.emailVerified
       )
     }
   }
