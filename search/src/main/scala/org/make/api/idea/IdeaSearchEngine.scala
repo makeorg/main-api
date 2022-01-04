@@ -80,6 +80,7 @@ trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with Ci
         .sortBy(IdeaSearchFilters.getSort(ideaSearchQuery).toList)
         .size(IdeaSearchFilters.getLimitSearch(ideaSearchQuery))
         .from(IdeaSearchFilters.getSkipSearch(ideaSearchQuery))
+        .trackTotalHits(true)
 
       client
         .executeAsFuture(request)
