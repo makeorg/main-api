@@ -144,6 +144,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         .bool(BoolQuery(must = searchFilters, not = excludesFilters))
         .sortBy(SearchFilters.getSort(searchQuery).toList)
         .from(SearchFilters.getSkipSearch(searchQuery))
+        .trackTotalHits(true)
 
       request = request.size(SearchFilters.getLimitSearch(searchQuery))
 
@@ -163,6 +164,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val request = search(proposalAlias)
         .bool(BoolQuery(must = searchFilters))
         .limit(0)
+        .trackTotalHits(true)
 
       client.executeAsFuture(request).map { response =>
         response.totalHits
@@ -200,6 +202,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
             .minDocCount(min = 1)
         )
         .limit(0)
+        .trackTotalHits(true)
 
       client.executeAsFuture(finalRequest).map { response =>
         response.aggregations
@@ -218,6 +221,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val request = search(proposalAlias)
         .bool(BoolQuery(must = searchFilters))
         .aggregations(sumAgg("total_votes", "votes.count"))
+        .trackTotalHits(true)
 
       client.executeAsFuture(request).map { response =>
         response.aggregations.sum("total_votes").valueOpt.map(_.toInt).getOrElse(0)
@@ -302,6 +306,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
           ).size(size = size)
         )
         .limit(0)
+        .trackTotalHits(true)
 
       def popularTagResponseFrombucket(bucket: TermBucket): PopularTagResponse = {
         val Array(tagId, label) = bucket.key.split(",", 2)
@@ -356,6 +361,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
             .minDocCount(min = 1)
         )
         .size(0)
+        .trackTotalHits(true)
 
       client.executeAsFuture(finalRequest).map { response =>
         response.aggregations
@@ -374,6 +380,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         .bool(BoolQuery(must = searchFilters))
         .aggregations(termsAgg("by_idea", ProposalElasticsearchFieldName.ideaId.field))
         .size(0)
+        .trackTotalHits(true)
 
       client.executeAsFuture(request).map { response =>
         response.aggregations
@@ -426,6 +433,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
           globalAggregation
         )
         .size(0)
+        .trackTotalHits(true)
 
       request = RandomAlgorithm(seed).sortDefinition(request)
 
@@ -498,6 +506,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         .bool(BoolQuery(must = searchFilters))
         .aggregations(aggByQuestion)
         .limit(0)
+        .trackTotalHits(true)
 
       client.executeAsFuture(request).map { response =>
         response.aggregations

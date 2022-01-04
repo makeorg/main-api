@@ -79,6 +79,7 @@ trait DefaultPostSearchEngineComponent extends PostSearchEngineComponent with Ci
           .sortBy(PostSearchFilters.getSort(query).toList)
           .size(PostSearchFilters.getLimitSearch(query))
           .from(PostSearchFilters.getSkipSearch(query))
+          .trackTotalHits(true)
 
       client
         .executeAsFuture(request)
@@ -90,7 +91,7 @@ trait DefaultPostSearchEngineComponent extends PostSearchEngineComponent with Ci
     override def indexPosts(records: Seq[IndexedPost], maybeIndex: Option[Index]): Future[IndexationStatus] = {
       val index = maybeIndex.getOrElse(postAlias)
       client
-        .execute(bulk(records.map { record =>
+        .executeAsFuture(bulk(records.map { record =>
           indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.postId.value)
         }))
         .map(_ => IndexationStatus.Completed)

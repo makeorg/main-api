@@ -84,6 +84,7 @@ trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineC
         .bool(BoolQuery(must = searchFilters))
         .from(0)
         .size(1)
+        .trackTotalHits(true)
 
       client.executeAsFuture {
         request
@@ -97,6 +98,7 @@ trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineC
         .sortBy(OrganisationSearchFilters.getSort(query).toList)
         .size(OrganisationSearchFilters.getLimitSearch(query))
         .from(OrganisationSearchFilters.getSkipSearch(query))
+        .trackTotalHits(true)
 
       val requestSorted = query.sortAlgorithm match {
         case None                => request

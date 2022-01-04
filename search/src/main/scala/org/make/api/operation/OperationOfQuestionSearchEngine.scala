@@ -92,6 +92,7 @@ trait DefaultOperationOfQuestionSearchEngineComponent
       val request = search(operationOfQuestionAlias)
         .bool(BoolQuery(must = OperationOfQuestionSearchFilters.getOperationOfQuestionSearchFilters(query)))
         .limit(0)
+        .trackTotalHits(true)
 
       client.executeAsFuture(request).map { response =>
         response.totalHits
@@ -113,6 +114,7 @@ trait DefaultOperationOfQuestionSearchEngineComponent
         )
         .size(OperationOfQuestionSearchFilters.getLimitSearch(query))
         .from(OperationOfQuestionSearchFilters.getSkipSearch(query))
+        .trackTotalHits(true)
 
       val requestWithAlgorithm = query.sortAlgorithm match {
         case Some(algorithm) => algorithm.sortDefinition(request)
@@ -147,7 +149,7 @@ trait DefaultOperationOfQuestionSearchEngineComponent
     ): Future[IndexationStatus] = {
       val index = maybeIndex.getOrElse(operationOfQuestionAlias)
       client
-        .execute(bulk(records.map { record =>
+        .executeAsFuture(bulk(records.map { record =>
           indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.questionId.value)
         }))
         .map { _ =>
@@ -174,6 +176,7 @@ trait DefaultOperationOfQuestionSearchEngineComponent
                 OperationOfQuestionElasticsearchFieldName.proposalsCount.field
               )
             )
+            .trackTotalHits(true)
         )
         .map { response =>
           Highlights(
