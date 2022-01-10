@@ -628,7 +628,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                               operationKinds = Some(OperationKindsSearchFilter(OperationKind.values))
                             )
                           ),
-                          limit = end.map(_.value),
+                          limit = end.map(_.toLimit(start.orZero).value),
                           skip = start.map(_.value),
                           sort = sort,
                           order = order

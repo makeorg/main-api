@@ -112,7 +112,7 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
         RequestSessionVotedProposalsPaginate(
           sessionId = request.sessionId,
           proposalsIds = proposalsIds,
-          limit = offset + proposalsPerPage,
+          limit = proposalsPerPage,
           skip = offset
         )
       request.proposalsIds match {

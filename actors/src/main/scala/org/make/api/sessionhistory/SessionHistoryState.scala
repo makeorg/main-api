@@ -281,7 +281,7 @@ final case class Active(sessionHistory: SessionHistory, lastEventDate: Option[Zo
       case (_, votesAndQualifications) => votesAndQualifications.date
     }.collect {
       case (proposalId, _) if command.proposalsIds.forall(_.contains(proposalId)) => proposalId
-    }.slice(command.skip, command.limit)
+    }.slice(command.skip, command.skip + command.limit)
 
     Effect.reply(command.replyTo)(Envelope(votedProposals))
   }
