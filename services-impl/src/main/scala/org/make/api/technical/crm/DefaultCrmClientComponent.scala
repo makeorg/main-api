@@ -356,6 +356,14 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
                   loop(request, retries - 1)
                 }
               case other => Future.successful(other)
+            }.recoverWith {
+              case error =>
+                if (retries > 0) {
+                  logger.error(s"Mailjet request $request failed with:", error)
+                  loop(request, retries - 1)
+                } else {
+                  Future.failed(error)
+                }
             }
           case QueueOfferResult.Dropped     => Future.failed(CrmClientException.QueueException.QueueOverflowed)
           case QueueOfferResult.Failure(ex) => Future.failed(ex)
