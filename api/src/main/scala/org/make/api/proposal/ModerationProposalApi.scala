@@ -733,6 +733,7 @@ trait DefaultModerationProposalApiComponent
               parameters(
                 "id".csv[ProposalId],
                 "questionId".csv[QuestionId],
+                "userId".as[UserId].?,
                 "content".?,
                 "status".csv[ProposalStatus],
                 "userType".csv[UserType],
@@ -746,6 +747,7 @@ trait DefaultModerationProposalApiComponent
                 (
                   proposalIds: Option[Seq[ProposalId]],
                   questionIds: Option[Seq[QuestionId]],
+                  userId: Option[UserId],
                   content: Option[String],
                   status: Option[Seq[ProposalStatus]],
                   userTypes: Option[Seq[UserType]],
@@ -779,7 +781,8 @@ trait DefaultModerationProposalApiComponent
                     order = order,
                     limit = end.map(_.toLimit(start.orZero).value),
                     skip = start.map(_.value),
-                    userTypes = userTypes
+                    userTypes = userTypes,
+                    userId = userId
                   )
                   val query: SearchQuery = exhaustiveSearchRequest.toSearchQuery(requestContext)
                   provideAsync(
