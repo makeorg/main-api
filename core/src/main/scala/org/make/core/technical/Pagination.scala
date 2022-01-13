@@ -29,10 +29,12 @@ object Pagination {
     def zero: Start = Start(0)
   }
 
-  final case class End(value: Int) extends Pagination
+  final case class End(value: Int) extends Pagination {
+    def toLimit(start: Start): Limit = Limit(Math.max(value - start.value, 0))
+  }
 
   final case class Limit(value: Int) extends Pagination {
-    def toEnd(start: Start): End = End(value + start.value)
+    def toEnd(start: Start): End = End(Math.max(value + start.value, 0))
   }
 
   implicit class RichOptionStart(val self: Option[Start]) extends AnyVal {

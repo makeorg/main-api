@@ -91,7 +91,7 @@ trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinat
           filterVotes = request.filterVotes,
           filterQualifications = request.filterQualifications,
           proposalsIds = proposalsIds,
-          limit = offset + proposalsPerPage,
+          limit = proposalsPerPage,
           skip = offset,
           replyTo
         )

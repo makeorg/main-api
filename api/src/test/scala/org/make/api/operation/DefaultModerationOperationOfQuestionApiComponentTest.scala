@@ -835,7 +835,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
                 OperationOfQuestionSearchFilters(operationKinds = Some(OperationKindsSearchFilter(OperationKind.values))
                 )
               ),
-              sort = Some(OperationOfQuestionElasticsearchFieldName.slug)
+              sort = Some(OperationOfQuestionElasticsearchFieldName.slug),
+              limit = Some(7),
+              skip = Some(14)
             )
           )
         )
@@ -870,7 +872,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       )
 
       for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
-        Get("/moderation/operations-of-questions/search?_sort=slug")
+        Get("/moderation/operations-of-questions/search?_sort=slug&_end=21&_start=14")
           .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
           status should be(StatusCodes.OK)
           header("x-total-count").map(_.value) should be(Some("1"))

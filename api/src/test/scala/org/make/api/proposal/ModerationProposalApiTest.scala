@@ -1040,7 +1040,9 @@ class ModerationProposalApiTest
           eqTo(
             SearchQuery(
               filters = Some(SearchFilters(question = Some(QuestionSearchFilter(tyrion.availableQuestions)))),
-              sort = Some(Sort(Some(ProposalElasticsearchFieldName.agreementRate.field), None))
+              sort = Some(Sort(Some(ProposalElasticsearchFieldName.agreementRate.field), None)),
+              limit = Some(7),
+              skip = Some(14)
             )
           ),
           any[RequestContext]
@@ -1049,7 +1051,7 @@ class ModerationProposalApiTest
         Future.successful(ProposalsSearchResult(total = 1, results = Seq(indexedProposal(ProposalId("search")))))
       )
 
-      Get(s"/moderation/proposals?_sort=agreementRate")
+      Get(s"/moderation/proposals?_sort=agreementRate&_end=21&_start=14")
         .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         header("x-total-count").map(_.value) should be(Some("1"))

@@ -85,8 +85,10 @@ class ModerationIdeaApiTest
     )
   )
 
-  when(ideaService.fetchAll(any[IdeaSearchQuery]))
-    .thenReturn(Future.successful(IdeaSearchResult.empty))
+  when(
+    ideaService
+      .fetchAll(eqTo(IdeaSearchQuery(limit = Some(7), skip = Some(14))))
+  ).thenReturn(Future.successful(IdeaSearchResult.empty))
 
   when(ideaService.insert(eqTo(fooIdeaText), any[Question]))
     .thenReturn(Future.successful(fooIdea))
@@ -309,7 +311,7 @@ class ModerationIdeaApiTest
       Then("the result should be a IdeaSearchResult")
 
       for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
-        Get("/moderation/ideas")
+        Get("/moderation/ideas?_end=21&_start=14")
           .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
           status should be(StatusCodes.OK)
           val ideas: Seq[IdeaResponse] = entityAs[Seq[IdeaResponse]]

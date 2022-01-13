@@ -36,6 +36,7 @@ import org.make.core.idea._
 import org.make.core.idea.indexed.IndexedIdea
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
+import org.make.core.technical.Pagination.{End, Start}
 import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
@@ -170,11 +171,11 @@ trait DefaultModerationIdeaApiComponent
           parameters(
             "name".?,
             "questionId".as[QuestionId].?,
-            "_end".as[Int].?,
-            "_start".as[Int].?,
+            "_end".as[End].?,
+            "_start".as[Start].?,
             "_sort".?,
             "_order".as[Order].?
-          ) { (name, questionId, limit, skip, sort, order) =>
+          ) { (name, questionId, end, start, sort, order) =>
             makeOperation("GetAllIdeas") { requestContext =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                 requireModerationRole(userAuth.user) {
@@ -206,8 +207,8 @@ trait DefaultModerationIdeaApiComponent
                     IdeaFiltersRequest(
                       name = name,
                       questionId = questionId,
-                      limit = limit,
-                      skip = skip,
+                      limit = end.map(_.toLimit(start.orZero).value),
+                      skip = start.map(_.value),
                       sort = sort,
                       order = order
                     )

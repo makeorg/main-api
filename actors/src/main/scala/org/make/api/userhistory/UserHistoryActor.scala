@@ -79,7 +79,7 @@ object UserHistoryActor extends Logging {
           } && votesAndQualifications.trust.isTrusted
     }.toSeq.sortBy { case (_, votesAndQualifications) => votesAndQualifications.date }.map {
       case (proposalId, _) => proposalId
-    }.slice(skip, limit)
+    }.slice(skip, skip + limit)
     UserHistoryResponse(response)
   }
 

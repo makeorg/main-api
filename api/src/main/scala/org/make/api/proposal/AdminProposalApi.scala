@@ -373,7 +373,7 @@ trait DefaultAdminProposalApiComponent
                     status = status,
                     sort = sort.map(_.field),
                     order = order,
-                    limit = end.map(_.value),
+                    limit = end.map(_.toLimit(start.orZero).value),
                     skip = start.map(_.value),
                     userTypes = userTypes
                   )

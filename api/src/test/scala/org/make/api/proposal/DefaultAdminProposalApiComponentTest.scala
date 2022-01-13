@@ -92,12 +92,18 @@ class DefaultAdminProposalApiComponentTest
       when(
         proposalService.search(
           any,
-          eqTo(SearchQuery(sort = Some(Sort(Some(ProposalElasticsearchFieldName.agreementRate.field), None)))),
+          eqTo(
+            SearchQuery(
+              sort = Some(Sort(Some(ProposalElasticsearchFieldName.agreementRate.field), None)),
+              limit = Some(7),
+              skip = Some(14)
+            )
+          ),
           any
         )
       ).thenReturn(Future.successful(ProposalsSearchResult(1, Seq(indexedProposal(ProposalId("search"))))))
       for (token <- Seq(tokenAdmin, tokenSuperAdmin)) {
-        Get("/admin/proposals?_sort=agreementRate")
+        Get("/admin/proposals?_sort=agreementRate&_end=21&_start=14")
           .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
           status should be(StatusCodes.OK)
           header("x-total-count").map(_.value) should be(Some("1"))
