@@ -380,7 +380,7 @@ trait DefaultAdminProposalApiComponent
                   val query: SearchQuery = exhaustiveSearchRequest.toSearchQuery(requestContext)
                   provideAsync(
                     proposalService
-                      .search(userId = Some(userAuth.user.userId), query = query, requestContext = requestContext)
+                      .search(query = query, requestContext = requestContext)
                   ) { proposals =>
                     complete(
                       (

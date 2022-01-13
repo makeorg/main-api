@@ -710,11 +710,9 @@ trait DefaultModerationProposalApiComponent
                           userId = userId
                         )
                         val query: SearchQuery = exhaustiveSearchRequest.toSearchQuery(requestContext)
-                        provideAsync(
-                          proposalService
-                            .search(userId = Some(userAuth.user.userId), query = query, requestContext = requestContext)
-                        ) { proposals =>
-                          complete(proposals)
+                        provideAsync(proposalService.search(query = query, requestContext = requestContext)) {
+                          proposals =>
+                            complete(proposals)
                         }
                     }
                 }
@@ -787,7 +785,7 @@ trait DefaultModerationProposalApiComponent
                   val query: SearchQuery = exhaustiveSearchRequest.toSearchQuery(requestContext)
                   provideAsync(
                     proposalService
-                      .search(userId = Some(userAuth.user.userId), query = query, requestContext = requestContext)
+                      .search(query = query, requestContext = requestContext)
                   ) { proposals =>
                     complete(
                       (
@@ -1004,10 +1002,7 @@ trait DefaultModerationProposalApiComponent
                     ),
                     limit = Some(request.proposalIds.size + 1)
                   )
-                  provideAsync(
-                    proposalService
-                      .search(userId = Some(auth.user.userId), query = query, requestContext = requestContext)
-                  ) { proposals =>
+                  provideAsync(proposalService.search(query = query, requestContext = requestContext)) { proposals =>
                     val proposalIds = proposals.results.map(_.id)
                     val notFoundIds = request.proposalIds.diff(proposalIds.toSet)
                     Validation.validate(

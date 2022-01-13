@@ -157,7 +157,7 @@ class ModerationQuestionApiTest
     }
 
     Scenario("authenticated refuse initial proposals") {
-      when(proposalService.search(any[Option[UserId]], any[SearchQuery], any[RequestContext])).thenReturn(
+      when(proposalService.search(any[SearchQuery], any[RequestContext])).thenReturn(
         Future.successful(
           ProposalsSearchResult(
             total = 1,

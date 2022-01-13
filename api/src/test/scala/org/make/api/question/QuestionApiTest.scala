@@ -301,7 +301,7 @@ class QuestionApiTest
       )
 
       val proposalId = ProposalId("top-proposal")
-      when(proposalService.search(None, searchRequest, RequestContext.empty))
+      when(proposalService.search(searchRequest, RequestContext.empty))
         .thenReturn(Future.successful(ProposalsSearchResult(1, Seq(indexedProposal(proposalId)))))
 
       Get("/questions/question-slug/details") ~> routes ~> check {
