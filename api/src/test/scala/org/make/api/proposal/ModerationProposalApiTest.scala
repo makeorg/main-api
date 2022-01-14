@@ -675,18 +675,14 @@ class ModerationProposalApiTest
       )
     when(
       proposalService
-        .search(userId = any[Option[UserId]], query = eqTo(query(ids)), requestContext = any[RequestContext])
+        .search(query = eqTo(query(ids)), requestContext = any[RequestContext])
     ).thenReturn(Future.successful(ProposalsSearchResult(ids.size, indexedProposals)))
     when(
       proposalService
-        .search(userId = any[Option[UserId]], query = eqTo(query(ids :+ fake)), requestContext = any[RequestContext])
+        .search(query = eqTo(query(ids :+ fake)), requestContext = any[RequestContext])
     ).thenReturn(Future.successful(ProposalsSearchResult(ids.size, indexedProposals)))
     when(
-      proposalService.search(
-        userId = any[Option[UserId]],
-        query = eqTo(query(ids :+ unavailableProposalId)),
-        requestContext = any[RequestContext]
-      )
+      proposalService.search(query = eqTo(query(ids :+ unavailableProposalId)), requestContext = any[RequestContext])
     ).thenReturn(
       Future.successful(
         ProposalsSearchResult(
@@ -1036,7 +1032,6 @@ class ModerationProposalApiTest
     Scenario("get proposals") {
       when(
         proposalService.search(
-          any[Option[UserId]],
           eqTo(
             SearchQuery(
               filters = Some(SearchFilters(question = Some(QuestionSearchFilter(tyrion.availableQuestions)))),
@@ -1075,7 +1070,6 @@ class ModerationProposalApiTest
 
       when(
         proposalService.search(
-          any[Option[UserId]],
           eqTo(
             SearchQuery(filters = Some(
               SearchFilters(

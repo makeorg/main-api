@@ -263,10 +263,7 @@ trait DefaultModerationQuestionComponent
             requireAdminRole(userAuth.user) {
               val query = ExhaustiveSearchRequest(questionIds = Some(Seq(questionId)), initialProposal = Some(true))
                 .toSearchQuery(requestContext)
-              provideAsync(
-                proposalService
-                  .search(userId = Some(userAuth.user.userId), query = query, requestContext = requestContext)
-              ) { proposals =>
+              provideAsync(proposalService.search(query = query, requestContext = requestContext)) { proposals =>
                 provideAsync(Future.traverse(proposals.results.map(_.id)) { proposalId =>
                   proposalService
                     .refuseProposal(

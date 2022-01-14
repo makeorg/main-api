@@ -50,7 +50,7 @@ trait ProposalService {
 
   def getEventSourcingProposal(proposalId: ProposalId, requestContext: RequestContext): Future[Option[Proposal]]
 
-  def search(userId: Option[UserId], query: SearchQuery, requestContext: RequestContext): Future[ProposalsSearchResult]
+  def search(query: SearchQuery, requestContext: RequestContext): Future[ProposalsSearchResult]
 
   def searchForUser(
     userId: Option[UserId],

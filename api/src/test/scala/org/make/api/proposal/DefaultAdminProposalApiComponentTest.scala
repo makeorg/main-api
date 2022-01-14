@@ -91,7 +91,6 @@ class DefaultAdminProposalApiComponentTest
     Scenario("works for admins") {
       when(
         proposalService.search(
-          any,
           eqTo(
             SearchQuery(
               sort = Some(Sort(Some(ProposalElasticsearchFieldName.agreementRate.field), None)),

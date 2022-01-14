@@ -206,11 +206,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       proposalCoordinatorService.viewProposal(proposalId, requestContext)
     }
 
-    override def search(
-      maybeUserId: Option[UserId],
-      query: SearchQuery,
-      requestContext: RequestContext
-    ): Future[ProposalsSearchResult] = {
+    override def search(query: SearchQuery, requestContext: RequestContext): Future[ProposalsSearchResult] = {
       val logSearchContent: Future[Unit] = query.filters.flatMap(_.content) match {
         case Some(contentFilter) =>
           sessionHistoryCoordinatorService.logTransactionalHistory(
@@ -232,11 +228,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     }
 
     private def enrich(
-      search: (Option[UserId], RequestContext) => Future[ProposalsSearchResult],
+      search: (RequestContext) => Future[ProposalsSearchResult],
       maybeUserId: Option[UserId],
       requestContext: RequestContext
     ): Future[ProposalsResultResponse] = {
-      search(maybeUserId, requestContext).flatMap { searchResult =>
+      search(requestContext).flatMap { searchResult =>
         maybeUserId.map { userId =>
           userHistoryCoordinatorService.retrieveVoteAndQualifications(userId = userId, searchResult.results.map(_.id))
         }.getOrElse {
@@ -268,7 +264,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       query: SearchQuery,
       requestContext: RequestContext
     ): Future[ProposalsResultSeededResponse] = {
-      enrich(search(_, query, _), maybeUserId, requestContext).map(
+      enrich(search(query, _), maybeUserId, requestContext).map(
         proposalResultResponse =>
           ProposalsResultSeededResponse(proposalResultResponse.total, proposalResultResponse.results, query.getSeed)
       )
@@ -287,7 +283,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         case _ =>
           elasticsearchProposalAPI.getTopProposals(questionId, size, ProposalElasticsearchFieldName.selectedStakeTagId)
       }
-      enrich((_, _) => search.map(results => ProposalsSearchResult(results.size, results)), maybeUserId, requestContext)
+      enrich(_ => search.map(results => ProposalsSearchResult(results.size, results)), maybeUserId, requestContext)
         .map(
           proposalResultResponse =>
             ProposalsResultResponse(proposalResultResponse.total, proposalResultResponse.results)
@@ -809,7 +805,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     ): Future[Option[ModerationAuthorResponse]] = {
       val searchFilters = getSearchFilters(questionId, toEnrich, minVotesCount, minScore)
       search(
-        maybeUserId = Some(moderatorId),
         requestContext = requestContext,
         query = SearchQuery(
           filters = Some(searchFilters),
@@ -908,7 +903,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       val defaultNumberOfProposals = 50
       val searchFilters = getSearchFilters(questionId, toEnrich, minVotesCount, minScore)
       search(
-        maybeUserId = Some(moderator),
         requestContext = requestContext,
         query = SearchQuery(
           filters = Some(searchFilters),
@@ -1141,7 +1135,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
       val futureProposalsRest: Future[ProposalsResultSeededResponse] = {
         enrich(
-          (_, _) =>
+          _ =>
             elasticsearchProposalAPI.getFeaturedProposals(
               SearchQuery(
                 filters = Some(

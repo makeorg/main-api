@@ -459,7 +459,6 @@ trait DefaultQuestionApiComponent
       val futureTopProposal: Future[Option[ProposalResponse]] = if (features.contains(DisplayIntroCardWidget)) {
         proposalService
           .search(
-            userId = None,
             query = SearchQuery(
               limit = Some(1),
               sortAlgorithm = Some(PopularAlgorithm),
