@@ -22,32 +22,46 @@ package org.make.api.technical
 import grizzled.slf4j.Logging
 import kamon.instrumentation.http.{HttpMessage, HttpOperationNameGenerator}
 import kamon.Kamon
-import org.make.api.technical.tracing.Tracing
 import kamon.trace.Span
+import org.make.api.technical.tracing.Tracing
+import com.typesafe.config.ConfigFactory
 
 class MakeClientOperationNameGenerator extends HttpOperationNameGenerator with Logging {
 
-  logger.info("creating make name generator for akka-http")
+  private val esConfig =
+    ConfigFactory
+      .load("default-application.conf")
+      .getConfig("make-api.elasticSearch")
+
+  private val connectionString = esConfig.getString("connection-string")
+
+  logger.info("Creating the Make name generator for akka-http")
 
   override def name(request: HttpMessage.Request): Option[String] = {
     val operationName: Option[String] = Tracing.entrypoint
     val spanName: String = Kamon.currentSpan().operationName()
 
     if (spanName == Span.Empty.operationName() || operationName.contains(spanName)) {
-      createOperationNameFromRequest(request)
+      Some(createOperationNameFromRequest(request))
     } else {
       Some(spanName)
     }
-
   }
 
-  def createOperationNameFromRequest(request: HttpMessage.Request): Option[String] = {
-    val resolvedPort = if (request.port != 80 && request.port != 443 && request.port > 0) {
-      s":${request.port}"
+  private def createOperationNameFromRequest(request: HttpMessage.Request): String = {
+    // ES query parameters are part of its path. We need to clean it up by only keeping the relevant
+    // part so as not to blow up the granularity of operation names.
+    if (connectionString.contains(request.host)) {
+      // The .tail here removes the leading '/'
+      "elasticsearch" ++ request.path.tail.split("/").headOption.fold("")('-' +: _)
     } else {
-      ""
+      val resolvedPort =
+        if (request.port != 80 && request.port != 443 && request.port > 0) {
+          s":${request.port}"
+        } else {
+          ""
+        }
+      s"${request.host}$resolvedPort${request.path}"
     }
-    Some(s"${request.host}$resolvedPort${request.path}")
   }
-
 }
