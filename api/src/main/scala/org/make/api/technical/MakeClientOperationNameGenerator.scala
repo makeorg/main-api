@@ -28,13 +28,6 @@ import com.typesafe.config.ConfigFactory
 
 class MakeClientOperationNameGenerator extends HttpOperationNameGenerator with Logging {
 
-  private val esConfig =
-    ConfigFactory
-      .load("default-application.conf")
-      .getConfig("make-api.elasticSearch")
-
-  private val connectionString = esConfig.getString("connection-string")
-
   logger.info("Creating the Make name generator for akka-http")
 
   override def name(request: HttpMessage.Request): Option[String] = {
@@ -48,13 +41,8 @@ class MakeClientOperationNameGenerator extends HttpOperationNameGenerator with L
     }
   }
 
-  private def createOperationNameFromRequest(request: HttpMessage.Request): String = {
-    // ES query parameters are part of its path. We need to clean it up by only keeping the relevant
-    // part so as not to blow up the granularity of operation names.
-    if (connectionString.contains(request.host)) {
-      // The .tail here removes the leading '/'
-      "elasticsearch" ++ request.path.tail.split("/").headOption.fold("")('-' +: _)
-    } else {
+  private def createOperationNameFromRequest(request: HttpMessage.Request): String =
+    ElasticsearchSpanGeneration.generate(request).getOrElse {
       val resolvedPort =
         if (request.port != 80 && request.port != 443 && request.port > 0) {
           s":${request.port}"
@@ -63,5 +51,30 @@ class MakeClientOperationNameGenerator extends HttpOperationNameGenerator with L
         }
       s"${request.host}$resolvedPort${request.path}"
     }
-  }
+}
+
+object ElasticsearchSpanGeneration {
+
+  private val esConfig =
+    ConfigFactory
+      .load("default-application.conf")
+      .getConfig("make-api.elasticSearch")
+
+  private val connectionString = esConfig.getString("connection-string")
+
+  private val ideaAliasName = esConfig.getString("idea-alias-name")
+  private val proposalAliasName = esConfig.getString("proposal-alias-name")
+  private val organisationAliasName = esConfig.getString("organisation-alias-name")
+  private val operationOfQuestionAliasName = esConfig.getString("operation-of-question-alias-name")
+  private val postAliasName = esConfig.getString("post-alias-name")
+
+  private val ESAliasesNames =
+    List(ideaAliasName, proposalAliasName, organisationAliasName, operationOfQuestionAliasName, postAliasName)
+
+  def generate(request: HttpMessage.Request): Option[String] =
+    Option.when(connectionString.contains(request.host)) {
+      // ES query parameters are part of its path. We need to clean it up by only keeping the relevant
+      // part so as not to blow up the granularity of operation names.
+      "elasticsearch" ++ ESAliasesNames.find(request.path.contains).fold("")('-' +: _)
+    }
 }
