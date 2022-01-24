@@ -20,6 +20,7 @@
 package org.make.api.sequence
 
 import akka.http.scaladsl.server._
+import eu.timepit.refined.auto._
 import grizzled.slf4j.Logging
 import io.swagger.annotations._
 import org.make.api.keyword.KeywordServiceComponent
@@ -33,8 +34,9 @@ import org.make.core.demographics.DemographicsCardId
 import org.make.core.proposal.indexed.Zone
 import org.make.core.proposal.{ProposalId, ProposalKeywordKey}
 import org.make.core.question.QuestionId
+import org.make.core.sequence.SequenceConfiguration
 import org.make.core.user.{CountrySearchFilter => _, DescriptionSearchFilter => _, LanguageSearchFilter => _}
-import org.make.core.{HttpCodes, ParameterExtractors}
+import org.make.core.{ApplicationName, HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
 import javax.ws.rs.Path
@@ -139,20 +141,35 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent {
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             parameters("include".csv[ProposalId], "demographicsCardId".as[DemographicsCardId].?, "token".?) {
               (includes: Option[Seq[ProposalId]], cardId: Option[DemographicsCardId], token: Option[String]) =>
-                provideAsyncOrNotFound(questionService.getCachedQuestion(questionId)) { _ =>
-                  provideAsync(
-                    sequenceService
-                      .startNewSequence(
-                        behaviourParam = (),
-                        maybeUserId = userAuth.map(_.user.userId),
-                        questionId = questionId,
-                        includedProposalsIds = includes.getOrElse(Seq.empty),
-                        requestContext = requestContext,
-                        cardId = cardId,
-                        token = token
-                      )
-                  ) { sequenceResult =>
-                    complete(sequenceResult)
+                provideAsyncOrNotFound(questionService.getCachedQuestion(questionId)) { question =>
+                  // TODO: remove the following once "mafrance2022" consultation ends.
+                  val futureConfigurationOverride: Future[Option[SequenceConfiguration]] = {
+                    if (question.slug == "mafrance2022" && requestContext.applicationName
+                          .contains(ApplicationName.Widget)) {
+                      sequenceConfigurationService
+                        .getSequenceConfigurationByQuestionId(questionId)
+                        .map(config => Some(config.copy(mainSequence = config.mainSequence.copy(sequenceSize = 12))))
+                    } else {
+                      Future.successful(None)
+                    }
+                  }
+
+                  provideAsync(futureConfigurationOverride) { configurationOverride =>
+                    provideAsync(
+                      sequenceService
+                        .startNewSequence(
+                          behaviourParam = (),
+                          maybeUserId = userAuth.map(_.user.userId),
+                          questionId = questionId,
+                          includedProposalsIds = includes.getOrElse(Seq.empty),
+                          requestContext = requestContext,
+                          cardId = cardId,
+                          token = token,
+                          configurationOverride = configurationOverride
+                        )
+                    ) { sequenceResult =>
+                      complete(sequenceResult)
+                    }
                   }
                 }
             }
