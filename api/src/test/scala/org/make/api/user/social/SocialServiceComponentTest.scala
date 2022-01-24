@@ -306,15 +306,11 @@ class SocialServiceComponentTest
   Feature("login user from facebook provider") {
     Scenario("successful login social user") {
       Given("a user logged via facebook")
-      val facebookData = FacebookUserInfos(
-        id = "444444",
-        email = Some("facebook@make.org"),
-        firstName = Some("facebook"),
-        lastName = Some("user")
-      )
+      val facebookData =
+        FacebookUserInfos(id = "444444", email = Some("facebook@make.org"), firstName = Some("facebook"))
 
       val userFromFacebook =
-        TestUtils.user(id = UserId("boo"), email = "facebook@make.org", firstName = None, lastName = None)
+        TestUtils.user(id = UserId("boo"), email = "facebook@make.org", firstName = None)
 
       val accessToken = AccessToken(
         accessTokenValue,
@@ -330,7 +326,7 @@ class SocialServiceComponentTest
         firstName = Some("facebook"),
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("https://graph.facebook.com/v7.0/444444/picture?width=512&height=512"),
+        picture = Some("https://graph.facebook.com/v12.0/444444/picture?width=512&height=512"),
         dateOfBirth = None
       )
 
@@ -371,7 +367,7 @@ class SocialServiceComponentTest
             firstName = facebookData.firstName,
             googleId = None,
             facebookId = Some(facebookData.id),
-            picture = Some(s"https://graph.facebook.com/v7.0/${facebookData.id}/picture?width=512&height=512"),
+            picture = Some(s"https://graph.facebook.com/v12.0/${facebookData.id}/picture?width=512&height=512"),
             dateOfBirth = None
           )
 
@@ -389,10 +385,10 @@ class SocialServiceComponentTest
     Scenario("successful login social user without name") {
       Given("a user logged via facebook")
       val facebookData =
-        FacebookUserInfos(id = "444444", email = Some("facebook@make.org"), firstName = None, lastName = None)
+        FacebookUserInfos(id = "444444", email = Some("facebook@make.org"), firstName = None)
 
       val userFromFacebook =
-        TestUtils.user(id = UserId("boo"), email = "facebook@make.org", firstName = None, lastName = None)
+        TestUtils.user(id = UserId("boo"), email = "facebook@make.org", firstName = None)
 
       val accessToken = AccessToken(
         accessTokenValue,
@@ -408,7 +404,7 @@ class SocialServiceComponentTest
         firstName = None,
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("https://graph.facebook.com/v7.0/444444/picture?width=512&height=512"),
+        picture = Some("https://graph.facebook.com/v12.0/444444/picture?width=512&height=512"),
         dateOfBirth = None
       )
 
@@ -450,7 +446,7 @@ class SocialServiceComponentTest
             firstName = facebookData.firstName,
             googleId = None,
             facebookId = Some(facebookData.id),
-            picture = Some(s"https://graph.facebook.com/v7.0/${facebookData.id}/picture?width=512&height=512"),
+            picture = Some(s"https://graph.facebook.com/v12.0/${facebookData.id}/picture?width=512&height=512"),
             dateOfBirth = None
           )
 
@@ -467,16 +463,12 @@ class SocialServiceComponentTest
 
     Scenario("successfully create access token for persistent user") {
       Given("a user logged via facebook")
-      val facebookData = FacebookUserInfos(
-        id = "444444",
-        email = Some("facebook@make.org"),
-        firstName = Some("facebook"),
-        lastName = Some("USER")
-      )
+      val facebookData =
+        FacebookUserInfos(id = "444444", email = Some("facebook@make.org"), firstName = Some("facebook"))
 
       val userId = UserId("boo")
       val userFromFacebook =
-        TestUtils.user(id = userId, email = "facebook@make.org", firstName = None, lastName = None)
+        TestUtils.user(id = userId, email = "facebook@make.org", firstName = None)
 
       val accessToken = AccessToken(
         accessTokenValue,
