@@ -193,12 +193,6 @@ trait DefaultSendMailPublisherServiceComponent
               SendEmail.create(
                 templateId = Some(templateId.value.toInt),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-                from = Some(
-                  Recipient(
-                    name = Some(mailJetTemplateConfiguration.fromName),
-                    email = mailJetTemplateConfiguration.from
-                  )
-                ),
                 variables = Some(
                   Map(
                     "firstname" -> user.firstName.getOrElse(""),
@@ -229,12 +223,6 @@ trait DefaultSendMailPublisherServiceComponent
                   SendEmail.create(
                     templateId = Some(templateId.value.toInt),
                     recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-                    from = Some(
-                      Recipient(
-                        name = Some(mailJetTemplateConfiguration.fromName),
-                        email = mailJetTemplateConfiguration.from
-                      )
-                    ),
                     variables = Some(
                       Map(
                         "firstname" -> user.firstName.getOrElse(""),
@@ -276,12 +264,6 @@ trait DefaultSendMailPublisherServiceComponent
                   SendEmail.create(
                     templateId = Some(templateId.value.toInt),
                     recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-                    from = Some(
-                      Recipient(
-                        name = Some(mailJetTemplateConfiguration.fromName),
-                        email = mailJetTemplateConfiguration.from
-                      )
-                    ),
                     variables = Some(
                       Map(
                         "firstname" -> user.firstName.getOrElse(""),
@@ -319,12 +301,6 @@ trait DefaultSendMailPublisherServiceComponent
                 SendEmail.create(
                   templateId = Some(templateId.value.toInt),
                   recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-                  from = Some(
-                    Recipient(
-                      name = Some(mailJetTemplateConfiguration.fromName),
-                      email = mailJetTemplateConfiguration.from
-                    )
-                  ),
                   variables = Some(
                     Map(
                       "firstname" -> user.firstName.getOrElse(""),
@@ -366,12 +342,6 @@ trait DefaultSendMailPublisherServiceComponent
                 SendEmail.create(
                   templateId = Some(templateId.value.toInt),
                   recipients = Seq(Recipient(email = organisation.email, name = organisation.fullName)),
-                  from = Some(
-                    Recipient(
-                      name = Some(mailJetTemplateConfiguration.fromName),
-                      email = mailJetTemplateConfiguration.from
-                    )
-                  ),
                   variables = Some(
                     Map(
                       "forgotten_password_url" -> getForgottenPasswordUrl(
@@ -409,9 +379,6 @@ trait DefaultSendMailPublisherServiceComponent
             SendEmail.create(
               templateId = Some(templateId.value.toInt),
               recipients = Seq(Recipient(email = user.email, name = user.displayName)),
-              from = Some(
-                Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-              ),
               variables = Some(Map("email" -> newEmail)),
               customCampaign = None,
               monitoringCategory = Some(MonitoringCategory.account)
@@ -446,9 +413,6 @@ trait DefaultSendMailPublisherServiceComponent
             SendEmail.create(
               templateId = Some(templateId.value.toInt),
               recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-              from = Some(
-                Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-              ),
               variables = Some(variables(question, user, proposal)),
               customCampaign = None,
               monitoringCategory = Some(MonitoringCategory.moderation)
@@ -539,12 +503,6 @@ trait DefaultSendMailPublisherServiceComponent
                 SendEmail.create(
                   templateId = Some(templateId.value.toInt),
                   recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-                  from = Some(
-                    Recipient(
-                      name = Some(mailJetTemplateConfiguration.fromName),
-                      email = mailJetTemplateConfiguration.from
-                    )
-                  ),
                   variables = Some(
                     Map(
                       "mailto" -> user.email,
